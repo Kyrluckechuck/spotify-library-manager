@@ -5,7 +5,7 @@
     <h1>Song | {{ song_details.name }}</h1>
     Song ID: {{ song_details.id }}
     <br/>
-    Song UUID: ({{ song_details.uuid }})
+    Song GID: ({{ song_details.gid }})
     <br/>
     Artist: <a href="{% url 'library_manager:artist' song_details.primary_artist.id %}">{{ song_details.primary_artist.name }}</a>
     <br/><br/>

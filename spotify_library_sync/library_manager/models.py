@@ -4,7 +4,7 @@ from django_stubs_ext.db.models import TypedModelMeta
 # Create your models here.
 class Artist(models.Model):
     name = models.CharField(max_length=200)
-    uuid = models.UUIDField(unique=True)
+    gid = models.CharField(max_length=120, unique=True)
     tracked = models.BooleanField(default=False)
 
     @property
@@ -13,16 +13,16 @@ class Artist(models.Model):
 
     class Meta(TypedModelMeta):
         indexes = [
-            models.Index(fields=['uuid',]),
+            models.Index(fields=['gid',]),
             models.Index(fields=['tracked',]),
         ]
 
     def __str__(self):
-        return f"name: {self.name} | uuid: {self.uuid} | tracked: {self.tracked}"
+        return f"name: {self.name} | gid: {self.gid} | tracked: {self.tracked}"
 
 class Song(models.Model):
     name = models.CharField(max_length=200)
-    uuid = models.UUIDField(unique=True)
+    gid = models.CharField(max_length=120, unique=True)
     primary_artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
 
     @property
@@ -31,11 +31,11 @@ class Song(models.Model):
 
     class Meta(TypedModelMeta):
         indexes = [
-            models.Index(fields=['uuid',]),
+            models.Index(fields=['gid',]),
         ]
 
     def __str__(self):
-        return f"name: {self.name} | uuid: {self.uuid} | primary_artist: '{self.primary_artist}'"
+        return f"name: {self.name} | gid: {self.gid} | primary_artist: '{self.primary_artist}'"
 
 class ContributingArtist(models.Model):
     song = models.ForeignKey(Song, on_delete=models.CASCADE)
@@ -45,4 +45,4 @@ class ContributingArtist(models.Model):
         unique_together = ('song', 'artist',)
 
     def __str__(self):
-        return f"song_name: {self.song.name} | artist_name: {self.artist.name}"
+        return f"S: {self.song.name} | A: {self.artist.name}"

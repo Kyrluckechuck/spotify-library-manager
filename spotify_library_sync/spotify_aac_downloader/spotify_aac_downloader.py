@@ -8,32 +8,33 @@ from .constants import X_NOT_FOUND_STRING
 from .downloader import Downloader
 from library_manager.models import Artist, Song, ContributingArtist
 
+from django.conf import settings
+
 class Config:
 
     def __init__(
         self,
         urls: tuple[str] = [],
-        final_path: Path = Path("../Spotify"),
-        temp_path: Path = Path("../temp"),
-        cookies_location: Path = Path("../cookies.txt"),
-        wvd_location: Path = Path("../device.wvd"),
-        config_location: Path = Path("../config.json"),
-        ffmpeg_location: str = "../ffmpeg.exe",
-        aria2c_location: str = "../aria2c.exe",
-        template_folder_album: str = "{album_artist}/{album}",
-        template_folder_compilation: str = "Compilations/{album}",
-        template_file_single_disc: str = "{track:02d} {title}",
-        template_file_multi_disc: str = "{disc}-{track:02d} {title}",
-        download_mode: str = "ytdlp",
+        final_path: Path = Path(settings.final_path),
+        temp_path: Path = Path(settings.temp_path),
+        cookies_location: Path = Path(settings.cookies_location),
+        wvd_location: Path = Path(settings.wvd_location),
+        ffmpeg_location: str = settings.ffmpeg_location,
+        aria2c_location: str = settings.aria2c_location,
+        template_folder_album: str = settings.template_folder_album,
+        template_folder_compilation: str = settings.template_folder_compilation,
+        template_file_single_disc: str = settings.template_file_single_disc,
+        template_file_multi_disc: str = settings.template_file_multi_disc,
+        download_mode: str = settings.download_mode,
         exclude_tags: str = None,
-        truncate: int = 120,
-        log_level: str = "DEBUG",
-        premium_quality: bool = True,
-        lrc_only: bool = False,
-        no_lrc: bool = False,
-        save_cover: bool = False,
-        overwrite: bool = False,
-        print_exceptions: bool = True,
+        truncate: int = settings.truncate,
+        log_level: str = settings.log_level,
+        premium_quality: bool = settings.premium_quality,
+        lrc_only: bool = settings.lrc_only,
+        no_lrc: bool = settings.no_lrc,
+        save_cover: bool = settings.save_cover,
+        overwrite: bool = settings.overwrite,
+        print_exceptions: bool = settings.print_exceptions,
         url_txt: bool = None,
         track_artists: bool = False,
         artist_to_download: str = None,
@@ -43,7 +44,6 @@ class Config:
         self.temp_path = temp_path
         self.cookies_location = cookies_location
         self.wvd_location = wvd_location
-        self.config_location = config_location
         self.ffmpeg_location = ffmpeg_location
         self.aria2c_location = aria2c_location
         self.template_folder_album = template_folder_album
@@ -82,7 +82,6 @@ def main(
     if config.download_mode == "aria2c" and not downloader.aria2c_location:
         logger.critical(X_NOT_FOUND_STRING.format("aria2c", config.aria2c_location))
         return
-    print(config.cookies_location)
     if config.cookies_location is not None and not config.cookies_location.exists():
         logger.critical(X_NOT_FOUND_STRING.format("Cookies", config.cookies_location))
         return
@@ -148,12 +147,12 @@ def main(
 
                 primary_artist_defaults = {
                     'name': primary_artist['artist_name'],
-                    'uuid': primary_artist['artist_gid'],
+                    'gid': primary_artist['artist_gid'],
                 }
                 if config.track_artists:
                     primary_artist_defaults['tracked'] = True
                 db_artist = Artist.objects.update_or_create(
-                    uuid=primary_artist['artist_gid'],
+                    gid=primary_artist['artist_gid'],
                     defaults=primary_artist_defaults
                 )[0]
                 print(db_artist)
@@ -161,24 +160,24 @@ def main(
                 db_extra_artists = [db_artist]
                 for artist in other_artists:
                     db_extra_artists.append(Artist.objects.update_or_create(
-                        uuid=artist['artist_gid'],
+                        gid=artist['artist_gid'],
                         defaults={
                             'name': artist['artist_name'],
-                            'uuid': artist['artist_gid'],
+                            'gid': artist['artist_gid'],
                         })[0])
 
                 db_song = Song.objects.update_or_create(
-                    uuid=song['song_gid'],
+                    gid=song['song_gid'],
                     defaults={
                         'primary_artist': db_artist,
                         'name': song['song_name'],
-                        'uuid': song['song_gid'],
+                        'gid': song['song_gid'],
                     })[0]
                 print(db_song)
 
                 for artist in db_extra_artists:
                     ContributingArtist.objects.get_or_create(artist=artist, song=db_song)
-                continue
+                # continue
                 if metadata.get("has_lyrics"):
                     logger.debug("Getting lyrics")
                     lyrics_unsynced, lyrics_synced = downloader.get_lyrics(track_id)

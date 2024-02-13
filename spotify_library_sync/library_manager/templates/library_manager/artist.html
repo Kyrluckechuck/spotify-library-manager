@@ -5,7 +5,7 @@
     <h1>Artist | {{ artist_details.name }}</h1>
     Artist ID: {{ artist_details.id }}
     <br/>
-    Artist UUID: {{ artist_details.uuid }}
+    Artist GID: {{ artist_details.gid }}
     <br/>
     Number of songs: {{ artist_details.number_songs }}
     <br/>
@@ -14,6 +14,12 @@
         
         {{ form }}
         <input type="submit" name='toggle tracking' value="Save">
+    </form>
+    <br/>
+    <form action="{% url 'library_manager:download_all_albums_for_artist' artist_details.id %}" method="post">
+        {% csrf_token %}
+
+        <input type="submit" name='download all for artist' value="Download All Albums">
     </form>
     <br/>
     Songs:

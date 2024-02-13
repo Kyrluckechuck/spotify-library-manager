@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 
 from .models import Artist, ContributingArtist, Song
 from .forms import DownloadPlaylistForm, ToggleTrackedForm
+from .helpers import download_all_for_artist
 
 from spotify_aac_downloader.spotify_aac_downloader import Config, main as downloader_main
 
@@ -50,8 +51,11 @@ def download_all_for_tracked_artists(request):
     all_tracked_artists = Artist.objects.filter(tracked=True)
     for artist in all_tracked_artists:
         print(f"Would attempt for artist {artist}")
-        downloader_config = Config()
-        downloader_config.artist_to_download = artist.uuid
-        downloader_main(downloader_config)
+        download_all_for_artist(artist)
         return HttpResponseRedirect(reverse("library_manager:index"))
     return HttpResponseRedirect(reverse("library_manager:index"))
+
+def download_all_albums_for_artist(request, artist_id: int):
+    artist = get_object_or_404(Artist, pk=artist_id)
+    download_all_for_artist(artist)
+    return HttpResponseRedirect(reverse("library_manager:artist", args=(artist.id,)))
