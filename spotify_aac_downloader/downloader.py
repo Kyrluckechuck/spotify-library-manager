@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import functools
-import glob
 import re
 import shutil
 import subprocess
@@ -16,7 +15,7 @@ from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from pywidevine import PSSH, Cdm, Device, InvalidLicenseMessage
 from yt_dlp import YoutubeDL
 
-from .constants import *
+from .constants import MP4_TAGS_MAP
 
 class Downloader:
     def __init__(
@@ -194,7 +193,7 @@ class Downloader:
                 time.sleep(seconds_to_sleep)
             else:
                 # Re-initialize the download sessions as they must have expired
-                initialize_sessions(self)
+                self.initialize_sessions(self)
 
             challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
             license = self.session.post(

@@ -17,5 +17,8 @@ build-backend = "flit_core.buildapi"
 [project.scripts]
 spotify-aac-downloader = "spotify_aac_downloader.cli:main"
 
-[flake8]
-max-line-length = 180
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "myproject.settings"

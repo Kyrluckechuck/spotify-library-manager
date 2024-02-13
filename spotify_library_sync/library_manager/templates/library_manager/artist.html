@@ -1,0 +1,28 @@
+<head>
+
+</head>
+<body>
+    <h1>Artist | {{ artist_details.name }}</h1>
+    Artist ID: {{ artist_details.id }}
+    <br/>
+    Artist UUID: {{ artist_details.uuid }}
+    <br/>
+    Number of songs: {{ artist_details.number_songs }}
+    <br/>
+    <form action="{% url 'library_manager:track_artist' artist_details.id %}" method="post">
+        {% csrf_token %}
+        
+        {{ form }}
+        <input type="submit" name='toggle tracking' value="Save">
+    </form>
+    <br/>
+    Songs:
+    <ul>
+        {% for song_details in artist_songs %}
+            <li><a href="{% url 'library_manager:song' song_details.id %}">{{ song_details.name }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+<footer>
+
+</footer>

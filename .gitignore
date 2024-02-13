@@ -1,7 +1,11 @@
-/*
 __pycache__
-!spotify_aac_downloader
-!.gitignore
-!pyproject.toml
-!README.md
-!requirements.txt
+*.exe
+.vscode/
+
+# User Configs
+client*.bin
+cookies*.txt
+urls*.txt
+*.pem
+*.wvd
+

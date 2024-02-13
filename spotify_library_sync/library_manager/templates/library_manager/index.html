@@ -1,0 +1,30 @@
+{% load static %}
+<head>
+    <link rel="stylesheet" href="{% static 'library_manager/style.css' %}">
+</head>
+<body>
+    <h2 class="importer_header"><img src="{% static 'library_manager/images/spotify_icon_128.png' %}" width="128" height="128"><div class="title">Spotify AAC Downloader</div></h2>
+    <br>
+    This will be the artist/song management page
+
+    {% if artist_list %}
+    <ul>
+    {% for artist_details in artist_list %}
+        <li><a href="{% url 'library_manager:artist' artist_details.id %}">{{ artist_details.name }} - {{ artist_details.number_songs }} Song(s)</a></li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No artists are available.</p>
+    {% endif %}
+
+    
+    <form action="{% url 'library_manager:download_playlist' %}" method="post">
+        {% csrf_token %}
+        
+        {{ playlist_form }}
+        <input type="submit" name='download playlist' value="Download">
+    </form>
+</body>
+<footer>
+
+</footer>

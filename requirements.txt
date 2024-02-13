@@ -1,5 +1,10 @@
 click
+django
+django-debug-toolbar
+django-stubs[compatible-mypy]
+django-stubs-ext
 pybase62
+pylint-django
 pywidevine
 pyyaml
 yt-dlp
