@@ -8,8 +8,8 @@
     Song UUID: ({{ song_details.uuid }})
     <br/>
     Artist: <a href="{% url 'library_manager:artist' song_details.primary_artist.id %}">{{ song_details.primary_artist.name }}</a>
-    
-    {% if song_details.contributing_artists %}
+    <br/><br/>
+    {% if song_details.contributing_artists.count > 0 %}
     Contributing Artists:
     <ul>
     {% for artist_details in song_details.contributing_artists %}

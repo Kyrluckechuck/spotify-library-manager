@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import binascii
 import datetime
 import functools
 import re
@@ -144,6 +145,28 @@ class Downloader:
             album["tracks"]["items"].extend(album_next["items"])
             album_next_url = album_next["next"]
         return album
+
+    def get_artist_albums(self, artist_gid: str) -> list[str]:
+        """Get all albums (including EPs and Singles) for this artist
+
+        Args:
+            artist_gid (str): The artist GID as supplied by Spotify
+
+        Returns:
+            list[str]: an array of urls to each album for the artist
+        """
+        offset = -50
+        total = 0
+
+        urls = []
+        while offset <= total:
+            offset += 50
+            albums = self.session.get(f"https://api.spotify.com/v1/artists/{self.gid_to_uri(artist_gid.hex)}/albums?limit=50&offset={offset}").json()
+            total = albums['total']
+
+            for album in albums['items']:
+                urls.append(album['href'])
+        return urls
 
     def get_playlist(self, playlist_id: str) -> dict:
         playlist = self.session.get(
@@ -514,3 +537,7 @@ class Downloader:
 
     def cleanup_temp_path(self) -> None:
         shutil.rmtree(self.temp_path)
+
+    @staticmethod
+    def gid2id(gid):
+        return binascii.hexlify(gid).rjust(32, "0")

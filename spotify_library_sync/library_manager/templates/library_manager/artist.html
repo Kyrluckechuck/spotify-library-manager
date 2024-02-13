@@ -19,7 +19,7 @@
     Songs:
     <ul>
         {% for song_details in artist_songs %}
-            <li><a href="{% url 'library_manager:song' song_details.id %}">{{ song_details.name }}</a></li>
+            <li><a href="{% url 'library_manager:song' song_details.song.id %}">{{ song_details.song.name }}</a></li>
         {% endfor %}
     </ul>
 </body>

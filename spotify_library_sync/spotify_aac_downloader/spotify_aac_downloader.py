@@ -6,7 +6,7 @@ from pathlib import Path
 from . import __version__
 from .constants import X_NOT_FOUND_STRING
 from .downloader import Downloader
-from library_manager.models import Artist, Song, ContributingArtists
+from library_manager.models import Artist, Song, ContributingArtist
 
 class Config:
 
@@ -36,6 +36,7 @@ class Config:
         print_exceptions: bool = True,
         url_txt: bool = None,
         track_artists: bool = False,
+        artist_to_download: str = None,
     ):
         self.urls = urls
         self.final_path = final_path
@@ -61,6 +62,7 @@ class Config:
         self.print_exceptions = print_exceptions
         self.url_txt = url_txt
         self.track_artists = track_artists
+        self.artist_to_download = artist_to_download
 
 def main(
     config: Config
@@ -107,6 +109,13 @@ def main(
         return
     download_queue = []
     error_count = 0
+    if config.artist_to_download is not None:
+        # Do not track the artist if it's mass downloaded
+        config.track_artists = False
+
+        config.urls = downloader.get_artist_albums(config.artist_to_download)
+        print(f"Found {len(config.urls)} albums for this artist")
+
     for url_index, url in enumerate(config.urls, start=1):
         current_url = f"URL {url_index}/{len(config.urls)}"
         try:
@@ -168,7 +177,7 @@ def main(
                 print(db_song)
 
                 for artist in db_extra_artists:
-                    ContributingArtists.objects.get_or_create(artist=artist, song=db_song)
+                    ContributingArtist.objects.get_or_create(artist=artist, song=db_song)
                 continue
                 if metadata.get("has_lyrics"):
                     logger.debug("Getting lyrics")

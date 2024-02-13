@@ -9,7 +9,7 @@ class Artist(models.Model):
 
     @property
     def number_songs(self):
-        return ContributingArtists.objects.filter(artist=self).count
+        return ContributingArtist.objects.filter(artist=self).count
 
     class Meta(TypedModelMeta):
         indexes = [
@@ -27,7 +27,7 @@ class Song(models.Model):
 
     @property
     def contributing_artists(self):
-        return ContributingArtists.objects.filter(song=self).exclude(artist=self.primary_artist)
+        return ContributingArtist.objects.filter(song=self).exclude(artist=self.primary_artist)
 
     class Meta(TypedModelMeta):
         indexes = [
@@ -37,7 +37,7 @@ class Song(models.Model):
     def __str__(self):
         return f"name: {self.name} | uuid: {self.uuid} | primary_artist: '{self.primary_artist}'"
 
-class ContributingArtists(models.Model):
+class ContributingArtist(models.Model):
     song = models.ForeignKey(Song, on_delete=models.CASCADE)
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
 
