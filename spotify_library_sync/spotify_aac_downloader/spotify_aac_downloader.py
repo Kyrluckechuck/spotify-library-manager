@@ -6,32 +6,61 @@ from pathlib import Path
 from . import __version__
 from .constants import X_NOT_FOUND_STRING
 from .downloader import Downloader
-from ..spotify_library_sync.library_manager.models import Artist, Song
+from library_manager.models import Artist, Song, ContributingArtists
 
 class Config:
-    urls: tuple[str] = []
-    final_path: Path = "./Spotify"
-    temp_path: Path = "./temp"
-    cookies_location: Path = "./cookies.txt"
-    wvd_location: Path = "./device.wvd"
-    config_location: Path = "./config.json"
-    ffmpeg_location: str = "ffmpeg"
-    aria2c_location: str = "aria2c"
-    template_folder_album: str = "{album_artist}/{album}"
-    template_folder_compilation: str = "Compilations/{album}"
-    template_file_single_disc: str = "{track:02d} {title}"
-    template_file_multi_disc: str = "{disc}-{track:02d} {title}"
-    download_mode: str = "ytdlp"
-    exclude_tags: str = None
-    truncate: int = 120
-    log_level: str = "INFO"
-    premium_quality: bool = True
-    lrc_only: bool = False
-    no_lrc: bool = False
-    save_cover: bool = False
-    overwrite: bool = False
-    print_exceptions: bool = True
-    url_txt: bool = None
+
+    def __init__(
+        self,
+        urls: tuple[str] = [],
+        final_path: Path = Path("../Spotify"),
+        temp_path: Path = Path("../temp"),
+        cookies_location: Path = Path("../cookies.txt"),
+        wvd_location: Path = Path("../device.wvd"),
+        config_location: Path = Path("../config.json"),
+        ffmpeg_location: str = "../ffmpeg.exe",
+        aria2c_location: str = "../aria2c.exe",
+        template_folder_album: str = "{album_artist}/{album}",
+        template_folder_compilation: str = "Compilations/{album}",
+        template_file_single_disc: str = "{track:02d} {title}",
+        template_file_multi_disc: str = "{disc}-{track:02d} {title}",
+        download_mode: str = "ytdlp",
+        exclude_tags: str = None,
+        truncate: int = 120,
+        log_level: str = "DEBUG",
+        premium_quality: bool = True,
+        lrc_only: bool = False,
+        no_lrc: bool = False,
+        save_cover: bool = False,
+        overwrite: bool = False,
+        print_exceptions: bool = True,
+        url_txt: bool = None,
+        track_artists: bool = False,
+    ):
+        self.urls = urls
+        self.final_path = final_path
+        self.temp_path = temp_path
+        self.cookies_location = cookies_location
+        self.wvd_location = wvd_location
+        self.config_location = config_location
+        self.ffmpeg_location = ffmpeg_location
+        self.aria2c_location = aria2c_location
+        self.template_folder_album = template_folder_album
+        self.template_folder_compilation = template_folder_compilation
+        self.template_file_single_disc = template_file_single_disc
+        self.template_file_multi_disc = template_file_multi_disc
+        self.download_mode = download_mode
+        self.exclude_tags = exclude_tags
+        self.truncate = truncate
+        self.log_level = log_level
+        self.premium_quality = premium_quality
+        self.lrc_only = lrc_only
+        self.no_lrc = no_lrc
+        self.save_cover = save_cover
+        self.overwrite = overwrite
+        self.print_exceptions = print_exceptions
+        self.url_txt = url_txt
+        self.track_artists = track_artists
 
 def main(
     config: Config
@@ -44,13 +73,14 @@ def main(
     logger.setLevel(config.log_level)
     logger.debug(f"Version: {__version__}")
     logger.debug("Starting downloader")
-    downloader = Downloader(**locals())
+    downloader = Downloader(**config.__dict__)
     if not downloader.ffmpeg_location:
         logger.critical(X_NOT_FOUND_STRING.format("FFmpeg", config.ffmpeg_location))
         return
     if config.download_mode == "aria2c" and not downloader.aria2c_location:
         logger.critical(X_NOT_FOUND_STRING.format("aria2c", config.aria2c_location))
         return
+    print(config.cookies_location)
     if config.cookies_location is not None and not config.cookies_location.exists():
         logger.critical(X_NOT_FOUND_STRING.format("Cookies", config.cookies_location))
         return
@@ -99,6 +129,47 @@ def main(
                 logger.debug("Getting metadata")
                 gid = downloader.uri_to_gid(track_id)
                 metadata = downloader.get_metadata(gid)
+                print(metadata)
+                primary_artist = downloader.get_primary_artist(metadata)
+                print(primary_artist)
+                other_artists = downloader.get_other_artists(metadata, primary_artist['artist_gid'])
+                print(other_artists)
+                song = downloader.get_song_core_info(metadata)
+                print(song)
+
+                primary_artist_defaults = {
+                    'name': primary_artist['artist_name'],
+                    'uuid': primary_artist['artist_gid'],
+                }
+                if config.track_artists:
+                    primary_artist_defaults['tracked'] = True
+                db_artist = Artist.objects.update_or_create(
+                    uuid=primary_artist['artist_gid'],
+                    defaults=primary_artist_defaults
+                )[0]
+                print(db_artist)
+
+                db_extra_artists = [db_artist]
+                for artist in other_artists:
+                    db_extra_artists.append(Artist.objects.update_or_create(
+                        uuid=artist['artist_gid'],
+                        defaults={
+                            'name': artist['artist_name'],
+                            'uuid': artist['artist_gid'],
+                        })[0])
+
+                db_song = Song.objects.update_or_create(
+                    uuid=song['song_gid'],
+                    defaults={
+                        'primary_artist': db_artist,
+                        'name': song['song_name'],
+                        'uuid': song['song_gid'],
+                    })[0]
+                print(db_song)
+
+                for artist in db_extra_artists:
+                    ContributingArtists.objects.get_or_create(artist=artist, song=db_song)
+                continue
                 if metadata.get("has_lyrics"):
                     logger.debug("Getting lyrics")
                     lyrics_unsynced, lyrics_synced = downloader.get_lyrics(track_id)

@@ -230,6 +230,36 @@ class Downloader:
             + f' & {artist_list[-1]["name"]}'
         )
 
+    def get_primary_artist(self, metadata: dict) -> dict:
+        artists_with_roles = metadata['artist_with_role']
+        found_artist = None
+        # Grab first main artist listed (there may be multiple)
+        for artist in artists_with_roles:
+            if artist['role'] == 'ARTIST_ROLE_MAIN_ARTIST':
+                found_artist = artist
+                break
+        if found_artist is None:
+            artist = metadata['artist'][0]
+            found_artist = {
+                'artist_gid': artist['gid'],
+                'artist_name': artist['name'],
+            }
+        return found_artist
+
+    def get_other_artists(self, metadata: dict, primary_artist_gid: str) -> dict:
+        found_artists = []
+        for artist in metadata['artist_with_role']:
+            if artist['artist_gid'] != primary_artist_gid:
+                found_artists.append(artist)
+        return found_artists
+
+
+    def get_song_core_info(self, metadata: dict) -> str:
+        return {
+            'song_gid': metadata['gid'],
+            'song_name': metadata['name'],
+        }
+
     def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
         lrc_timestamp = datetime.datetime.fromtimestamp(
             time / 1000.0, tz=datetime.timezone.utc

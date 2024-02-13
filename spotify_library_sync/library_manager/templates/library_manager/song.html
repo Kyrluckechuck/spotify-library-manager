@@ -8,6 +8,15 @@
     Song UUID: ({{ song_details.uuid }})
     <br/>
     Artist: <a href="{% url 'library_manager:artist' song_details.primary_artist.id %}">{{ song_details.primary_artist.name }}</a>
+    
+    {% if song_details.contributing_artists %}
+    Contributing Artists:
+    <ul>
+    {% for artist_details in song_details.contributing_artists %}
+        <li><a href="{% url 'library_manager:artist' artist_details.artist.id %}">{{ artist_details.artist.name }}</a></li>
+    {% endfor %}
+    </ul>
+    {% endif %}
 </body>
 <footer>
 

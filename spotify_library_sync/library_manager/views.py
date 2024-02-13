@@ -6,13 +6,13 @@ from django.core.exceptions import ValidationError
 from .models import Artist, Song
 from .forms import DownloadPlaylistForm, ToggleTrackedForm
 
-from ...spotify_aac_downloader.spotify_aac_downloader import Config, main as downloader_main
+from spotify_aac_downloader.spotify_aac_downloader import Config, main as downloader_main
 
 
 def index(request):
     artist_list = Artist.objects.order_by("name")
     # Remove default playlist after
-    download_playlist_form = DownloadPlaylistForm({'playlist_url': "https://open.spotify.com/album/6eUW0wxWtzkFdaEFsTJto6?si=tDyOWtIVSuKAxeTEEVdkhw"})
+    download_playlist_form = DownloadPlaylistForm({'playlist_url': "https://open.spotify.com/playlist/2fsEEIDWMo3Njprr8nw9J6?si=d28f33dade9c42f3"})
     return render(request, "library_manager/index.html", {"artist_list": artist_list, "playlist_form": download_playlist_form})
 
 def artist(request, artist_id: int):
@@ -40,7 +40,8 @@ def download_playlist(request):
     if playlist_download_form.is_valid():
         print(playlist_download_form.cleaned_data)
         downloader_config = Config()
-        downloader_config.urls = tuple(playlist_download_form.cleaned_data['playlist_url'])
+        downloader_config.urls = [playlist_download_form.cleaned_data['playlist_url']]
+        downloader_config.track_artists = True
         downloader_main(downloader_config)
         return HttpResponseRedirect(reverse("library_manager:index",))
     raise ValidationError({'playlist': ["Must be a valid spotify URL!",]})
