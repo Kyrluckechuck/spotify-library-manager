@@ -4,6 +4,7 @@ django-debug-toolbar
 django-stubs[compatible-mypy]
 django-stubs-ext
 dynaconf
+huey
 pybase62
 pylint-django
 pywidevine

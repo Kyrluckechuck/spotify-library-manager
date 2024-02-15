@@ -10,3 +10,4 @@ class DownloadPlaylistForm(forms.Form):
         validators=[URLValidator()],
         widget=forms.TextInput(attrs={'placeholder': 'https://open.spotify.com/album/6eUW0wxWtzkFdaEFsTJto6?si=tDyOWtIVSuKAxeTEEVdkhw'})
     )
+    tracked = forms.BooleanField(required=False, initial=False)

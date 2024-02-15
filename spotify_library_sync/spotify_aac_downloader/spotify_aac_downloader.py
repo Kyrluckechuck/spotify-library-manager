@@ -22,6 +22,7 @@ class Config:
         wvd_location: Path = Path(settings.wvd_location),
         ffmpeg_location: str = settings.ffmpeg_location,
         aria2c_location: str = settings.aria2c_location,
+        template_artist_folder_album: str = settings.template_artist_folder_album,
         template_folder_album: str = settings.template_folder_album,
         template_folder_compilation: str = settings.template_folder_compilation,
         template_file_single_disc: str = settings.template_file_single_disc,
@@ -47,6 +48,7 @@ class Config:
         self.wvd_location = wvd_location
         self.ffmpeg_location = ffmpeg_location
         self.aria2c_location = aria2c_location
+        self.template_artist_folder_album = template_artist_folder_album
         self.template_folder_album = template_folder_album
         self.template_folder_compilation = template_folder_compilation
         self.template_file_single_disc = template_file_single_disc
@@ -115,7 +117,7 @@ def main(
         config.track_artists = False
 
         config.urls = downloader.get_artist_albums(config.artist_to_download)
-        print(f"Found {len(config.urls)} albums for this artist")
+        logger.info(f"Found {len(config.urls)} albums for this artist")
 
     for url_index, url in enumerate(config.urls, start=1):
         current_url = f"URL {url_index}/{len(config.urls)}"
@@ -140,26 +142,18 @@ def main(
         )[0]
 
         for track_index, track in enumerate(queue_item, start=1):
-            print(track_index)
-            # print(track)
             current_track = f"Track {track_index}/{len(queue_item)} from URL {queue_item_index}/{len(download_queue)}"
             download_queue_item.progress = round(track_index / len(queue_item), 1) * 1000
             download_queue_item.save()
             try:
                 logger.info(f'({current_track}) Downloading "{track["name"]}"')
-                logger.info(track)
-                logger.info(track["id"])
                 track_id = track["id"]
                 logger.debug("Getting metadata")
                 gid = downloader.uri_to_gid(track_id)
                 metadata = downloader.get_metadata(gid)
-                print(metadata)
                 primary_artist = downloader.get_primary_artist(metadata)
-                print(primary_artist)
                 other_artists = downloader.get_other_artists(metadata, primary_artist['artist_gid'])
-                print(other_artists)
                 song = downloader.get_song_core_info(metadata)
-                print(song)
 
                 primary_artist_defaults = {
                     'name': primary_artist['artist_name'],
@@ -171,7 +165,6 @@ def main(
                     gid=primary_artist['artist_gid'],
                     defaults=primary_artist_defaults
                 )[0]
-                print(db_artist)
 
                 db_extra_artists = [db_artist]
                 for artist in other_artists:
@@ -189,7 +182,6 @@ def main(
                         'name': song['song_name'],
                         'gid': song['song_gid'],
                     })[0]
-                print(db_song)
 
                 for artist in db_extra_artists:
                     ContributingArtist.objects.get_or_create(artist=artist, song=db_song)

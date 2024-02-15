@@ -9,6 +9,6 @@ urls*.txt
 *.pem
 *.wvd
 
-*.sqlite3
+db/
 Spotify/
 temp/

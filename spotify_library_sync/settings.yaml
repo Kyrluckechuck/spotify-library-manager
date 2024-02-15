@@ -5,6 +5,7 @@ default:
   wvd_location: "../device.wvd"
   ffmpeg_location: "../ffmpeg.exe"
   aria2c_location: "../aria2c.exe"
+  template_artist_folder_album: "{artist_folder}/{album}"
   template_folder_album: "{album_artist}/{album}"
   template_folder_compilation: "Compilations/{album}"
   template_file_single_disc: "{track:02d} {title}"
@@ -37,6 +38,7 @@ default:
     - django.contrib.messages
     - django.contrib.staticfiles
     - debug_toolbar
+    - huey.contrib.djhuey
   MIDDLEWARE:
     - django.middleware.security.SecurityMiddleware
     - django.contrib.sessions.middleware.SessionMiddleware
@@ -63,7 +65,7 @@ default:
   DATABASES:
     default:
       ENGINE: django.db.backends.sqlite3
-      NAME: db.sqlite3
+      NAME: db/db.sqlite3
   # Password validation
   # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
   AUTH_PASSWORD_VALIDATORS:
@@ -87,3 +89,6 @@ default:
     - '127.0.0.1'
     - '10.0.2.2'
     - 'localhost'
+
+
+

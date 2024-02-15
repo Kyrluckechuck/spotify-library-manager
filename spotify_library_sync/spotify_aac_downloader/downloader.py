@@ -28,6 +28,7 @@ class Downloader:
         ffmpeg_location: str,
         aria2c_location: str,
         template_folder_album: str,
+        template_artist_folder_album: str,
         template_folder_compilation: str,
         template_file_single_disc: str,
         template_file_multi_disc: str,
@@ -46,6 +47,7 @@ class Downloader:
         self.aria2c_location = (
             shutil.which(aria2c_location) if aria2c_location else None
         )
+        self.template_artist_folder_album = template_artist_folder_album
         self.template_folder_album = template_folder_album
         self.template_folder_compilation = template_folder_compilation
         self.template_file_single_disc = template_file_single_disc
@@ -253,6 +255,9 @@ class Downloader:
             + f' & {artist_list[-1]["name"]}'
         )
 
+    def get_artist_folder(self, artist_list: list[dict]) -> str:
+        return artist_list[0]["name"]
+
     def get_primary_artist(self, metadata: dict) -> dict:
         artists_with_roles = metadata['artist_with_role']
         found_artist = None
@@ -354,6 +359,7 @@ class Downloader:
             # All artists, `;` separated
             "artists": self.get_artists(metadata["artist"]),
             # All artists, "display"-style
+            "artist_folder": self.get_artist_folder(metadata["artist"]),
             "artist": self.get_artist(metadata["artist"]),
             "album_artist": self.get_artist(metadata["album"]["artist"]),
 
@@ -409,7 +415,7 @@ class Downloader:
         final_location_folder = (
             self.template_folder_compilation.split("/")
             if tags["compilation"]
-            else self.template_folder_album.split("/")
+            else self.template_artist_folder_album.split("/")
         )
         final_location_file = (
             self.template_file_multi_disc.split("/")
