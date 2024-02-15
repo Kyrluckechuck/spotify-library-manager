@@ -1,7 +1,13 @@
+{% load static %}
 <head>
 
 </head>
 <body>
+    <h2 class="importer_header"><img src="{% static 'library_manager/images/spotify_icon_128.png' %}" width="128" height="128"><div class="title">Spotify AAC Downloader</div></h2>
+    <br>
+    <br>
+    <a href="{% url 'library_manager:index' %}">Home</a>
+    <br>
     <h1>Song | {{ song_details.name }}</h1>
     Song ID: {{ song_details.id }}
     <br/>

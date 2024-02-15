@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 
-from .models import Artist, ContributingArtist, Song
+from .models import Artist, ContributingArtist, DownloadHistory, Song
 from .forms import DownloadPlaylistForm, ToggleTrackedForm
 from .helpers import download_all_for_artist
 
@@ -46,6 +46,11 @@ def download_playlist(request):
         downloader_main(downloader_config)
         return HttpResponseRedirect(reverse("library_manager:index",))
     raise ValidationError({'playlist': ["Must be a valid spotify URL!",]})
+
+def download_history(request):
+    download_history = DownloadHistory.objects.order_by("-added_at")
+    download_playlist_form = DownloadPlaylistForm()
+    return render(request, "library_manager/download_history.html", {"download_history": download_history, "playlist_form": download_playlist_form})
 
 def download_all_for_tracked_artists(request):
     all_tracked_artists = Artist.objects.filter(tracked=True)

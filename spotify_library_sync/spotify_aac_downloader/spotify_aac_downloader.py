@@ -6,9 +6,10 @@ from pathlib import Path
 from . import __version__
 from .constants import X_NOT_FOUND_STRING
 from .downloader import Downloader
-from library_manager.models import Artist, Song, ContributingArtist
+from library_manager.models import Artist, Song, ContributingArtist, DownloadHistory
 
 from django.conf import settings
+from django.db.models.functions import Now
 
 class Config:
 
@@ -107,6 +108,7 @@ def main(
         logger.critical("Cannot download in premium quality with a free account")
         return
     download_queue = []
+    download_queue_urls = []
     error_count = 0
     if config.artist_to_download is not None:
         # Do not track the artist if it's mass downloaded
@@ -120,6 +122,7 @@ def main(
         try:
             logger.debug(f'({current_url}) Checking "{url}"')
             download_queue.append(downloader.get_download_queue(url))
+            download_queue_urls.append(url)
         except Exception:
             error_count += 1
             logger.error(
@@ -127,8 +130,21 @@ def main(
                 exc_info=config.print_exceptions,
             )
     for queue_item_index, queue_item in enumerate(download_queue, start=1):
+        download_queue_url = download_queue_urls[queue_item_index - 1]
+        download_queue_item = DownloadHistory.objects.get_or_create(
+            url=download_queue_url,
+            completed_at=None,
+            defaults={
+                'url': download_queue_url,
+            }
+        )[0]
+
         for track_index, track in enumerate(queue_item, start=1):
+            print(track_index)
+            # print(track)
             current_track = f"Track {track_index}/{len(queue_item)} from URL {queue_item_index}/{len(download_queue)}"
+            download_queue_item.progress = round(track_index / len(queue_item), 1) * 1000
+            download_queue_item.save()
             try:
                 logger.info(f'({current_track}) Downloading "{track["name"]}"')
                 logger.info(track)
@@ -251,4 +267,8 @@ def main(
                 if config.temp_path.exists():
                     logger.debug(f'Cleaning up "{config.temp_path}"')
                     downloader.cleanup_temp_path()
+            if track_index == len(queue_item):
+                download_queue_item.completed_at = Now()
+                download_queue_item.save()
     logger.info(f"Done ({error_count} error(s))")
+

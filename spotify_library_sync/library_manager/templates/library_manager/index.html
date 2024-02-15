@@ -6,6 +6,10 @@
     <h2 class="importer_header"><img src="{% static 'library_manager/images/spotify_icon_128.png' %}" width="128" height="128"><div class="title">Spotify AAC Downloader</div></h2>
     <br>
     This will be the artist/song management page
+    <br>
+    <a href="{% url 'library_manager:download_history' %}">Download History</a>
+    <br>
+    <br>
 
     {% if artist_list %}
     <ul>

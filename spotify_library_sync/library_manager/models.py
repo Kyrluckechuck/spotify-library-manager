@@ -1,3 +1,4 @@
+import django.core.validators
 from django.db import models
 from django_stubs_ext.db.models import TypedModelMeta
 
@@ -46,3 +47,22 @@ class ContributingArtist(models.Model):
 
     def __str__(self):
         return f"S: {self.song.name} | A: {self.artist.name}"
+
+class DownloadHistory(models.Model):
+    url = models.CharField(max_length=2048)
+    added_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(default=None, null=True)
+    progress = models.SmallIntegerField(
+        default=0,
+        validators=[
+            django.core.validators.MinValueValidator(1),
+            django.core.validators.MaxValueValidator(1000),
+        ],
+    )
+
+    @property
+    def progress_percent(self) -> float:
+        return self.progress / 10
+
+    class Meta(TypedModelMeta):
+        pass

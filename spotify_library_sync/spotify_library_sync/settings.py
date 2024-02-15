@@ -34,6 +34,4 @@ settings = dynaconf.DjangoDynaconf(
     ENVVAR_FOR_DYNACONF="DJANGO_ENV",
 )  # noqa
 
-print(settings.__dict__)
-
 # HERE ENDS DYNACONF EXTENSION LOAD (No more code below this line)
