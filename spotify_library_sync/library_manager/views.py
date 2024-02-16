@@ -11,11 +11,17 @@ from . import helpers
 
 def index(request: HttpRequest):
     search_term = request.GET.get("search_artist")
+    tracked_term = request.GET.get("tracked")
     raw_artist_list = Artist.objects
-    search_term_and_page = '?page'
+    search_term_and_page = '?'
     if search_term is not None:
         raw_artist_list = raw_artist_list.filter(name__icontains=search_term)
-        search_term_and_page = f"?search_artist={search_term}&page"
+        search_term_and_page += f"search_artist={search_term}&"
+    if tracked_term is not None:
+        tracked_artists = tracked_term is True or tracked_term.lower() == 'true'
+        raw_artist_list = raw_artist_list.filter(tracked=tracked_artists)
+        search_term_and_page += f"tracked={tracked_artists}&"
+    search_term_and_page += 'page'
     artist_list = raw_artist_list.order_by(Lower("name")).all()
     paginator = Paginator(artist_list, 50)
     # Remove default playlist after
@@ -48,12 +54,15 @@ def download_playlist(request: HttpRequest):
     if playlist_download_form.is_valid():
         helpers.download_playlist(playlist_download_form.cleaned_data['playlist_url'], playlist_download_form.cleaned_data['tracked'])
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+    print(playlist_download_form)
+    print(playlist_download_form.errors)
     raise ValidationError({'playlist': ["Must be a valid spotify URL!",]})
 
 def download_history(request: HttpRequest):
-    download_history = DownloadHistory.objects.order_by("-added_at")
+    download_history_not_done = DownloadHistory.objects.filter(completed_at=None).order_by("-added_at")
+    download_history_done = DownloadHistory.objects.exclude(completed_at=None).order_by("-added_at")[:50]
     download_playlist_form = DownloadPlaylistForm()
-    return render(request, "library_manager/download_history.html", {"download_history": download_history, "playlist_form": download_playlist_form})
+    return render(request, "library_manager/download_history.html", {"download_history_not_done": download_history_not_done, "download_history_done": download_history_done, "playlist_form": download_playlist_form})
 
 def download_all_for_tracked_artists(request: HttpRequest):
     all_tracked_artists = Artist.objects.filter(tracked=True)

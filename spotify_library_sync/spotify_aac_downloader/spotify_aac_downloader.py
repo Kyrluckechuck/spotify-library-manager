@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from requests import JSONDecodeError
+
 from . import __version__
 from .constants import X_NOT_FOUND_STRING
 from .downloader import Downloader
@@ -155,7 +157,11 @@ def main(
                 track_id = track["id"]
                 logger.debug("Getting metadata")
                 gid = downloader.uri_to_gid(track_id)
-                metadata = downloader.get_metadata(gid)
+                try:
+                    metadata = downloader.get_metadata(gid)
+                except JSONDecodeError:
+                    downloader.initialize_sessions()
+                    metadata = downloader.get_metadata(gid)
                 primary_artist = downloader.get_primary_artist(metadata)
                 other_artists = downloader.get_other_artists(metadata, primary_artist['artist_gid'])
                 song = downloader.get_song_core_info(metadata)

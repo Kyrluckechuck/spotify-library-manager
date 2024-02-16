@@ -166,7 +166,7 @@ class Downloader:
         albums = []
         while offset <= total:
             offset += 50
-            raw_albums = self.session.get(f"https://api.spotify.com/v1/artists/{self.gid_to_uri(artist_gid)}/albums?limit=50&offset={offset}").json()
+            raw_albums = self.session.get(f"https://api.spotify.com/v1/artists/{self.gid_to_uri(artist_gid)}/albums?include_groups=album,single&limit=50&offset={offset}").json()
             total = raw_albums['total']
 
             for album in raw_albums['items']:
