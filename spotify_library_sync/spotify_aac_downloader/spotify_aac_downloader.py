@@ -6,7 +6,7 @@ from pathlib import Path
 from . import __version__
 from .constants import X_NOT_FOUND_STRING
 from .downloader import Downloader
-from library_manager.models import Artist, Song, ContributingArtist, DownloadHistory
+from library_manager.models import Album, Artist, Song, ContributingArtist, DownloadHistory
 
 from django.conf import settings
 from django.db.models.functions import Now
@@ -115,9 +115,14 @@ def main(
     if config.artist_to_download is not None:
         # Do not track the artist if it's mass downloaded
         config.track_artists = False
+        config.urls = []
+        albums = downloader.get_artist_albums(config.artist_to_download)
+        for album in albums:
+            if album.downloaded:
+                continue
+            config.urls.append(album.spotify_uri)
 
-        config.urls = downloader.get_artist_albums(config.artist_to_download)
-        logger.info(f"Found {len(config.urls)} albums for this artist")
+        logger.info(f"Found {len(config.urls)} new albums for this artist")
 
     for url_index, url in enumerate(config.urls, start=1):
         current_url = f"URL {url_index}/{len(config.urls)}"
@@ -143,7 +148,7 @@ def main(
 
         for track_index, track in enumerate(queue_item, start=1):
             current_track = f"Track {track_index}/{len(queue_item)} from URL {queue_item_index}/{len(download_queue)}"
-            download_queue_item.progress = round(track_index / len(queue_item), 1) * 1000
+            download_queue_item.progress = round(track_index / len(queue_item) * 1000, 1)
             download_queue_item.save()
             try:
                 logger.info(f'({current_track}) Downloading "{track["name"]}"')
@@ -262,5 +267,11 @@ def main(
             if track_index == len(queue_item):
                 download_queue_item.completed_at = Now()
                 download_queue_item.save()
+
+                if download_queue_url.startswith('spotify:album:'):
+                    album = Album.objects.get(spotify_uri=download_queue_url)
+                    if album is not None:
+                        album.downloaded = True
+                        album.save()
     logger.info(f"Done ({error_count} error(s))")
 

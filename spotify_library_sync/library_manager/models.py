@@ -66,3 +66,13 @@ class DownloadHistory(models.Model):
 
     class Meta(TypedModelMeta):
         pass
+
+class Album(models.Model):
+    spotify_gid = models.CharField(max_length=2048, unique=True)
+    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, to_field="gid", db_column="artist_gid")
+    spotify_uri = models.CharField(max_length=2048)
+    downloaded = models.BooleanField(default=False)
+    total_tracks = models.IntegerField(default=0)
+
+    class Meta(TypedModelMeta):
+        pass

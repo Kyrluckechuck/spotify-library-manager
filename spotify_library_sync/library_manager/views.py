@@ -10,13 +10,19 @@ from .forms import DownloadPlaylistForm, ToggleTrackedForm
 from . import helpers
 
 def index(request: HttpRequest):
-    artist_list = Artist.objects.order_by(Lower("name")).all()
+    search_term = request.GET.get("search_artist")
+    raw_artist_list = Artist.objects
+    search_term_and_page = '?page'
+    if search_term is not None:
+        raw_artist_list = raw_artist_list.filter(name__icontains=search_term)
+        search_term_and_page = f"?search_artist={search_term}&page"
+    artist_list = raw_artist_list.order_by(Lower("name")).all()
     paginator = Paginator(artist_list, 50)
     # Remove default playlist after
     download_playlist_form = DownloadPlaylistForm()
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    return render(request, "library_manager/index.html", {"playlist_form": download_playlist_form, "page_obj": page_obj})
+    return render(request, "library_manager/index.html", {"playlist_form": download_playlist_form, "page_obj": page_obj, "search_term_and_page": search_term_and_page})
 
 def artist(request: HttpRequest, artist_id: int):
     artist_details = get_object_or_404(Artist, pk=artist_id)

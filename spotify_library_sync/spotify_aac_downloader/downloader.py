@@ -18,6 +18,8 @@ from yt_dlp import YoutubeDL
 
 from .constants import MP4_TAGS_MAP
 
+from library_manager.models import Album, Artist
+
 class Downloader:
     def __init__(
         self,
@@ -148,7 +150,7 @@ class Downloader:
             album_next_url = album_next["next"]
         return album
 
-    def get_artist_albums(self, artist_gid: str) -> list[str]:
+    def get_artist_albums(self, artist_gid: str) -> list[Album]:
         """Get all albums (including EPs and Singles) for this artist
 
         Args:
@@ -159,16 +161,26 @@ class Downloader:
         """
         offset = -50
         total = 0
+        artist = Artist.objects.get(gid=artist_gid)
 
-        urls = []
+        albums = []
         while offset <= total:
             offset += 50
-            albums = self.session.get(f"https://api.spotify.com/v1/artists/{self.gid_to_uri(artist_gid)}/albums?limit=50&offset={offset}").json()
-            total = albums['total']
+            raw_albums = self.session.get(f"https://api.spotify.com/v1/artists/{self.gid_to_uri(artist_gid)}/albums?limit=50&offset={offset}").json()
+            total = raw_albums['total']
 
-            for album in albums['items']:
-                urls.append(album['href'])
-        return urls
+            for album in raw_albums['items']:
+                album_model = Album.objects.get_or_create(
+                    spotify_gid=album['id'],
+                    defaults={
+                        'spotify_gid': album['id'],
+                        'artist': artist,
+                        'spotify_uri': album['uri'],
+                        'total_tracks': album['total_tracks'],
+                    }
+                )[0]
+                albums.append(album_model)
+        return albums
 
     def get_playlist(self, playlist_id: str) -> dict:
         playlist = self.session.get(
