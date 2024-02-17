@@ -11,3 +11,8 @@ li a {
         margin-left: 1em;
     }
 }
+
+.track_artist_row {
+    display: flex;
+    max-height: 18px;
+}
