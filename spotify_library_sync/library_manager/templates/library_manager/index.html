@@ -1,6 +1,5 @@
 {% include 'library_manager/partials/header.html' %}
 <body>
-    <br>
     This will be the artist/song management page
     <form action="{% url 'library_manager:download_playlist' %}" method="post">
         {% csrf_token %}
@@ -8,16 +7,23 @@
         <input type="submit" name='download playlist' value="Download">
     </form>
 
-    <form action="{% url 'library_manager:fetch_all_for_tracked_artists' %}" method="post">
-        {% csrf_token %}
-        <input type="submit" name='fetch all missing albums for tracked artists' value="Fetch All">
-    </form>
+    <div class="track_artist_row">
+        <form action="{% url 'library_manager:fetch_all_for_tracked_artists' %}" method="post">
+            {% csrf_token %}
+            <input type="submit" name='fetch all missing albums for tracked artists' value="Fetch All">
+        </form>
 
-    <form action="{% url 'library_manager:index' %}" method="get">
-        {% csrf_token %}
-        <input name="search_artist" type="text" placeholder="Search artists...">
-        <input type="submit" name='search artists' value="Search">
-    </form>
+        <form action="{% url 'library_manager:download_all_for_tracked_artists' %}" method="post">
+            {% csrf_token %}
+            <input type="submit" name='download all missing albums for tracked artists' value="Download All Missing For Tracked Artists">
+        </form>
+
+        <form action="{% url 'library_manager:index' %}" method="get">
+            {% csrf_token %}
+            <input name="search_artist" type="text" placeholder="Search artists...">
+            <input type="submit" name='search artists' value="Search">
+        </form>
+    </div>
 
     {% if page_obj %}
     <ul>

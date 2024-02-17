@@ -4,8 +4,8 @@ from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 
-from .models import Album, Artist, ContributingArtist, DownloadHistory, Song
-from .forms import DownloadPlaylistForm, ToggleTrackedForm
+from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist
+from .forms import DownloadPlaylistForm, ToggleTrackedForm, TrackedPlaylistForm
 from . import helpers
 
 def index(request: HttpRequest):
@@ -89,7 +89,7 @@ def download_history(request: HttpRequest):
     })
 
 def download_all_for_tracked_artists(request: HttpRequest):
-    all_tracked_artists = Artist.objects.filter(tracked=True)
+    all_tracked_artists = Artist.objects.filter(tracked=True).order_by("-added_at")
     for artist in all_tracked_artists:
         helpers.download_missing_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
@@ -109,3 +109,28 @@ def download_wanted_albums_for_artist(request: HttpRequest, artist_id: int):
     artist = get_object_or_404(Artist, pk=artist_id)
     helpers.download_missing_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def tracked_playlists(request: HttpRequest):
+    tracked_playlists = TrackedPlaylist.objects.order_by("name")
+    tracked_playlist_form = TrackedPlaylistForm()
+    return render(request, "library_manager/tracked_playlists.html", {
+        "tracked_playlists": tracked_playlists,
+        "tracked_playlist_form": tracked_playlist_form,
+    })
+
+def track_playlist(request: HttpRequest):
+    form = TrackedPlaylistForm(request.POST)
+    if form.is_valid():
+        url_to_track = form.cleaned_data['playlist_url']
+        enabled = bool(form.cleaned_data['enabled'])
+        name = form.cleaned_data['name']
+        tracked_playlist = TrackedPlaylist.objects.update_or_create(
+            url=url_to_track,
+            defaults={
+                'url': url_to_track,
+                'enabled': enabled,
+                'name': name,
+            }
+        )
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+    raise ValidationError({'tracked': ["Must be a boolean!",]})

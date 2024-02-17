@@ -369,11 +369,11 @@ class Downloader:
         if metadata.get("external_id"):
             isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
         tags = {
-            # All artists, `;` separated
-            "artists": self.get_artists(metadata["artist"]),
             # All artists, "display"-style
             "artist_folder": self.get_artist_folder(metadata["artist"]),
             "artist": self.get_artist(metadata["artist"]),
+            # All artists, `;` separated
+            "artists": self.get_artists(metadata["artist"]),
             "album_artist": self.get_artist(metadata["album"]["artist"]),
 
             "album": metadata["album"]["name"],

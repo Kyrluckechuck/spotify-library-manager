@@ -10,6 +10,9 @@ urlpatterns = [
     path("download_all_for_tracked_artists", views.download_all_for_tracked_artists, name="download_all_for_tracked_artists"),
     path("fetch_all_for_tracked_artists", views.fetch_all_for_tracked_artists, name="fetch_all_for_tracked_artists"),
     path("download_history", views.download_history, name="download_history"),
+    path("tracked_playlists", views.tracked_playlists, name="tracked_playlists"),
+    path("track_playlist", views.track_playlist, name="track_playlist"),
+    # path("tracked_playlists/edit", views.edit_tracked_playlists, name="edit_tracked_playlists"),
     # ex: /library_manager/artist/5/
     path("artist/<int:artist_id>/", views.artist, name="artist"),
     path("artist/<int:artist_id>/fetch_all", views.fetch_all_albums_for_artist, name="fetch_all_albums_for_artist"),

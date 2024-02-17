@@ -8,7 +8,7 @@ from requests import JSONDecodeError
 from . import __version__
 from .constants import X_NOT_FOUND_STRING
 from .downloader import Downloader
-from library_manager.models import Album, Artist, Song, ContributingArtist, DownloadHistory
+from library_manager.models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist
 
 from django.conf import settings
 from django.db.models.functions import Now
@@ -121,7 +121,7 @@ def main(
         logger.critical("Cannot download in premium quality with a free account")
         return
     download_queue = []
-    download_queue_urls = []
+    download_queue_urls: list[str] = []
     error_count = 0
     if config.artist_to_fetch is not None:
         # Do not track the artist if it's mass downloaded
@@ -291,5 +291,10 @@ def main(
                     if album is not None:
                         album.downloaded = True
                         album.save()
+
+                tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
+                if tracked_playlist is not None:
+                    tracked_playlist.last_synced = Now()
+                    tracked_playlist.save()
     update_process_info(config, 1000)
     logger.info(f"Done ({error_count} error(s))")

@@ -1,0 +1,37 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+
+    <form action="{% url 'library_manager:track_playlist' %}" method="post">
+        {% csrf_token %}
+        {{ tracked_playlist_form }}
+        <input type="submit" name='track playlist' value="Track">
+    </form>
+
+    <h2>Tracked Playlists:</h2>
+    {% if tracked_playlists %}
+    <ul>
+    {% for tracked_playlist in tracked_playlists %}
+        <li>
+            Name: {{ tracked_playlist.name }}
+            <br/>
+            URL: <a href="{{ tracked_playlist.url }}">{{ tracked_playlist.url }}</a>
+            <br/>
+            Last Synced: {{ tracked_playlist.last_synced }}
+            <br/>
+            Enabled: {{ tracked_playlist.enabled }}
+            <br/>
+
+            {% comment %} <form action="{% url 'library_manager:edit_tracked_playlist' {{ tracked_playlist.id }} %}" method="get">
+                {% csrf_token %}
+                <input type="submit" name='update tracked playlist' value="Update Tracked Playlist">
+            </form> {% endcomment %}
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>There are no tracked playlists.</p>
+    {% endif %}
+</body>
+<footer>
+
+</footer>

@@ -87,3 +87,12 @@ class Album(models.Model):
 
     class Meta(TypedModelMeta):
         pass
+
+class TrackedPlaylist(models.Model):
+    name = models.CharField(max_length=2048)
+    url = models.CharField(max_length=2048, unique=True)
+    enabled = models.BooleanField(default=True)
+    last_synced = models.DateTimeField(default=None, null=True)
+
+    class Meta(TypedModelMeta):
+        pass
