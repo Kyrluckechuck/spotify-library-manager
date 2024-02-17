@@ -17,7 +17,7 @@ class Config:
 
     def __init__(
         self,
-        urls: tuple[str] = [],
+        urls: list[str] = [],
         final_path: Path = Path(settings.final_path),
         temp_path: Path = Path(settings.temp_path),
         cookies_location: Path = Path(settings.cookies_location),
@@ -41,7 +41,7 @@ class Config:
         print_exceptions: bool = settings.print_exceptions,
         url_txt: bool = None,
         track_artists: bool = False,
-        artist_to_download: str = None,
+        artist_to_fetch: str = None,
     ):
         self.urls = urls
         self.final_path = final_path
@@ -67,7 +67,7 @@ class Config:
         self.print_exceptions = print_exceptions
         self.url_txt = url_txt
         self.track_artists = track_artists
-        self.artist_to_download = artist_to_download
+        self.artist_to_fetch = artist_to_fetch
 
 def main(
     config: Config
@@ -114,17 +114,11 @@ def main(
     download_queue = []
     download_queue_urls = []
     error_count = 0
-    if config.artist_to_download is not None:
+    if config.artist_to_fetch is not None:
         # Do not track the artist if it's mass downloaded
-        config.track_artists = False
-        config.urls = []
-        albums = downloader.get_artist_albums(config.artist_to_download)
-        for album in albums:
-            if album.downloaded:
-                continue
-            config.urls.append(album.spotify_uri)
-
-        logger.info(f"Found {len(config.urls)} new albums for this artist")
+        albums = downloader.get_artist_albums(config.artist_to_fetch)
+        logger.info(f"Fetched latest {len(albums)} album(s) for this artist")
+        return
 
     for url_index, url in enumerate(config.urls, start=1):
         current_url = f"URL {url_index}/{len(config.urls)}"
@@ -196,6 +190,7 @@ def main(
 
                 for artist in db_extra_artists:
                     ContributingArtist.objects.get_or_create(artist=artist, song=db_song)
+
                 # continue
                 if metadata.get("has_lyrics"):
                     logger.debug("Getting lyrics")

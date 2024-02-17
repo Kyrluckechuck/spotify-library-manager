@@ -1,6 +1,7 @@
 ## Features To Add:
 - Fallback to yt-dlp when no Spotify AAC
-
+- Fetch all available albums for all artists
+- Refresh all tracked artists
 
 ## Pages:
 - List of artists
@@ -18,3 +19,5 @@
 - Settings
  - Tasks
   - Frequency to check latest songs
+
+

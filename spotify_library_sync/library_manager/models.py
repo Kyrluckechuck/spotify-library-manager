@@ -12,6 +12,15 @@ class Artist(models.Model):
     def number_songs(self):
         return ContributingArtist.objects.filter(artist=self).count
 
+    @property
+    def albums(self):
+        album_base = Album.objects.filter(artist=self)
+        return {
+            'known': album_base.count,
+            'missing': album_base.filter(wanted=True, downloaded=False).count,
+            'downloaded': album_base.filter(downloaded=True).count,
+        }
+
     class Meta(TypedModelMeta):
         indexes = [
             models.Index(fields=['gid',]),
@@ -73,6 +82,8 @@ class Album(models.Model):
     spotify_uri = models.CharField(max_length=2048)
     downloaded = models.BooleanField(default=False)
     total_tracks = models.IntegerField(default=0)
+    wanted = models.BooleanField(default=True)
+    name = models.CharField(max_length=2048)
 
     class Meta(TypedModelMeta):
         pass

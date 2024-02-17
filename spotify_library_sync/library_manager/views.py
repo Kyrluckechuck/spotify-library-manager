@@ -1,11 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models.functions import Lower
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
 
-from .models import Artist, ContributingArtist, DownloadHistory, Song
+from .models import Album, Artist, ContributingArtist, DownloadHistory, Song
 from .forms import DownloadPlaylistForm, ToggleTrackedForm
 from . import helpers
 
@@ -36,6 +35,27 @@ def artist(request: HttpRequest, artist_id: int):
     form = ToggleTrackedForm({'tracked': artist_details.tracked})
     return render(request, "library_manager/artist.html", {"artist_details": artist_details, "artist_songs": artist_songs, 'form': form})
 
+def albums(request: HttpRequest, artist_id: int):
+    artist_details = get_object_or_404(Artist, pk=artist_id)
+    albums_wanted = Album.objects.filter(artist=artist_details, downloaded=False, wanted=True)
+    albums_not_wanted = Album.objects.filter(artist=artist_details, downloaded=False, wanted=False)
+    albums_downloaded = Album.objects.filter(artist=artist_details, downloaded=True)
+    return render(request, "library_manager/albums.html", {
+        "artist_details": artist_details,
+        "albums_wanted": albums_wanted,
+        "albums_not_wanted": albums_not_wanted,
+        "albums_downloaded": albums_downloaded,
+    })
+
+def album_set_wanted(request: HttpRequest, artist_id: int, album_id: int):
+    artist_details = get_object_or_404(Artist, pk=artist_id)
+    album = get_object_or_404(Album, pk=album_id, artist=artist_details)
+    tracked = request.POST.get('tracked').lower() == 'true'
+    print(f"got {tracked}")
+    album.wanted = tracked
+    album.save()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
 def song(request: HttpRequest, song_id: int):
     song_details = get_object_or_404(Song, pk=song_id)
     return render(request, "library_manager/song.html", {"song_details": song_details})
@@ -62,18 +82,30 @@ def download_history(request: HttpRequest):
     download_history_not_done = DownloadHistory.objects.filter(completed_at=None).order_by("-added_at")
     download_history_done = DownloadHistory.objects.exclude(completed_at=None).order_by("-added_at")[:50]
     download_playlist_form = DownloadPlaylistForm()
-    return render(request, "library_manager/download_history.html", {"download_history_not_done": download_history_not_done, "download_history_done": download_history_done, "playlist_form": download_playlist_form})
+    return render(request, "library_manager/download_history.html", {
+        "download_history_not_done": download_history_not_done,
+        "download_history_done": download_history_done,
+        "playlist_form": download_playlist_form
+    })
 
 def download_all_for_tracked_artists(request: HttpRequest):
     all_tracked_artists = Artist.objects.filter(tracked=True)
-    print("Disabled for now, but let's finish this off")
-    print("would have downloaded for")
-    print(all_tracked_artists)
-    # for artist in all_tracked_artists:
-    #     helpers.download_all_for_artist(artist.id)
+    for artist in all_tracked_artists:
+        helpers.download_missing_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
-def download_all_albums_for_artist(request: HttpRequest, artist_id: int):
+def fetch_all_for_tracked_artists(request: HttpRequest):
+    all_tracked_artists = Artist.objects.all()
+    for artist in all_tracked_artists:
+        helpers.fetch_all_albums_for_artist(artist.id)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def fetch_all_albums_for_artist(request: HttpRequest, artist_id: int):
     artist = get_object_or_404(Artist, pk=artist_id)
-    helpers.download_all_for_artist(artist.id)
+    helpers.fetch_all_albums_for_artist(artist.id)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def download_wanted_albums_for_artist(request: HttpRequest, artist_id: int):
+    artist = get_object_or_404(Artist, pk=artist_id)
+    helpers.download_missing_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

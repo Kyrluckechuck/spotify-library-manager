@@ -3,7 +3,6 @@
 
     <form action="{% url 'library_manager:download_playlist' %}" method="post">
         {% csrf_token %}
-        
         {{ playlist_form }}
         <input type="submit" name='download playlist' value="Download">
     </form>

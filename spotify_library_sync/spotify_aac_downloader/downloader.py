@@ -170,13 +170,14 @@ class Downloader:
             total = raw_albums['total']
 
             for album in raw_albums['items']:
-                album_model = Album.objects.get_or_create(
+                album_model = Album.objects.update_or_create(
                     spotify_gid=album['id'],
                     defaults={
                         'spotify_gid': album['id'],
                         'artist': artist,
                         'spotify_uri': album['uri'],
                         'total_tracks': album['total_tracks'],
+                        'name': album['name'],
                     }
                 )[0]
                 albums.append(album_model)
