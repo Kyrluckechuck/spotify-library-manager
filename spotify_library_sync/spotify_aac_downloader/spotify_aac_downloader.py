@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations, division
 
 import logging
 from pathlib import Path
@@ -13,6 +13,7 @@ from library_manager.models import Album, Artist, Song, ContributingArtist, Down
 from django.conf import settings
 from django.db.models.functions import Now
 
+from huey_monitor.tqdm import ProcessInfo
 class Config:
 
     def __init__(
@@ -42,6 +43,7 @@ class Config:
         url_txt: bool = None,
         track_artists: bool = False,
         artist_to_fetch: str = None,
+        process_info: ProcessInfo = None,
     ):
         self.urls = urls
         self.final_path = final_path
@@ -68,6 +70,13 @@ class Config:
         self.url_txt = url_txt
         self.track_artists = track_artists
         self.artist_to_fetch = artist_to_fetch
+        self.process_info = process_info
+
+def update_process_info(config: Config, progress: int):
+    if config.process_info is None:
+        return
+    config.process_info.total_progress = progress
+    config.process_info.update(n=0)
 
 def main(
     config: Config
@@ -132,6 +141,10 @@ def main(
                 f'({current_url}) Failed to check "{url}"',
                 exc_info=config.print_exceptions,
             )
+
+    if len(download_queue) > 0:
+        one_queue_increment = (1 / len(download_queue)) * 1000
+
     for queue_item_index, queue_item in enumerate(download_queue, start=1):
         download_queue_url = download_queue_urls[queue_item_index - 1]
         download_queue_item = DownloadHistory.objects.get_or_create(
@@ -142,10 +155,14 @@ def main(
             }
         )[0]
 
+        main_queue_progress = ((queue_item_index - 1) / len(download_queue)) * 1000
+
         for track_index, track in enumerate(queue_item, start=1):
             current_track = f"Track {track_index}/{len(queue_item)} from URL {queue_item_index}/{len(download_queue)}"
             download_queue_item.progress = round(track_index / len(queue_item) * 1000, 1)
             download_queue_item.save()
+
+            update_process_info(config, main_queue_progress + round(track_index / len(queue_item), 3) * one_queue_increment)
             try:
                 logger.info(f'({current_track}) Downloading "{track["name"]}"')
                 track_id = track["id"]
@@ -274,5 +291,5 @@ def main(
                     if album is not None:
                         album.downloaded = True
                         album.save()
+    update_process_info(config, 1000)
     logger.info(f"Done ({error_count} error(s))")
-

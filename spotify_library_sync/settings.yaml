@@ -39,6 +39,8 @@ default:
     - django.contrib.staticfiles
     - debug_toolbar
     - huey.contrib.djhuey
+    - bx_django_utils # https://github.com/boxine/bx_django_utils
+    - huey_monitor
   MIDDLEWARE:
     - django.middleware.security.SecurityMiddleware
     - django.contrib.sessions.middleware.SessionMiddleware
