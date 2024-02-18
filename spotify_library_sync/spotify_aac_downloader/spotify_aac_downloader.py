@@ -287,14 +287,19 @@ def main(
                 download_queue_item.save()
 
                 if download_queue_url.startswith('spotify:album:'):
-                    album = Album.objects.get(spotify_uri=download_queue_url)
-                    if album is not None:
+                    try:
+                        album = Album.objects.get(spotify_uri=download_queue_url)
                         album.downloaded = True
                         album.save()
+                    except Album.DoesNotExist:
+                        print("Spotify album downloaded but was not expected")
 
-                tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
-                if tracked_playlist is not None:
+                try:
+                    tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
                     tracked_playlist.last_synced = Now()
                     tracked_playlist.save()
+                except TrackedPlaylist.DoesNotExist:
+                    pass
+
     update_process_info(config, 1000)
     logger.info(f"Done ({error_count} error(s))")

@@ -27,7 +27,13 @@ def index(request: HttpRequest):
     download_playlist_form = DownloadPlaylistForm()
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    return render(request, "library_manager/index.html", {"playlist_form": download_playlist_form, "page_obj": page_obj, "search_term_and_page": search_term_and_page})
+
+    # Extra stats
+    extra_stats = {
+        'num_wanted': Album.objects.filter(downloaded=False, wanted=True).select_related('artist').filter(artist__tracked=True).count(),
+        'num_downloaded': Album.objects.filter(downloaded=True).count()
+    }
+    return render(request, "library_manager/index.html", {"playlist_form": download_playlist_form, "page_obj": page_obj, "search_term_and_page": search_term_and_page, "extra_stats": extra_stats})
 
 def artist(request: HttpRequest, artist_id: int):
     artist_details = get_object_or_404(Artist, pk=artist_id)

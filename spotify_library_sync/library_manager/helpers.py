@@ -10,18 +10,24 @@ def fetch_all_albums_for_artist(artist_id: int):
     artist = Artist.objects.get(id=artist_id)
     downloader_config = Config()
     downloader_config.artist_to_fetch = artist.gid
+    downloader_config.urls = []
     downloader_main(downloader_config)
 
 @task(context=True)
 def download_missing_albums_for_artist(artist_id: int, task: Task = None):
     artist = Artist.objects.get(id=artist_id)
     missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True)
+    print(f"missing albums search for artist {artist.id} found {missing_albums.count()}")
     downloader_config = Config()
     if task is not None:
-        process_info = ProcessInfo(task, desc='artist missing album download', total=1000)
+        process_info = ProcessInfo(task, desc=f"artist missing album download (artist.id: {artist.id})", total=1000)
         downloader_config.process_info = process_info
+    # TODO: Figure out why the Config instance is persisting between runs, somehow 😕
+    downloader_config.urls = []
     for missing_album in missing_albums:
         downloader_config.urls.append(missing_album.spotify_uri)
+
+    print(f"missing albums search for artist {artist.id} kicking off {len(downloader_config.urls)}")
     downloader_main(downloader_config)
 
 @task(context=True)

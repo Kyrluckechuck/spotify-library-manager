@@ -8,6 +8,10 @@
     </form>
 
     <div class="track_artist_row">
+        Num Wanted: {{ extra_stats.num_wanted }} | Num Downloaded: {{ extra_stats.num_downloaded }}
+    </div>
+
+    <div class="track_artist_row">
         <form action="{% url 'library_manager:fetch_all_for_tracked_artists' %}" method="post">
             {% csrf_token %}
             <input type="submit" name='fetch all missing albums for tracked artists' value="Fetch All">
