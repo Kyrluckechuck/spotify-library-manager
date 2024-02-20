@@ -13,7 +13,8 @@ from pathlib import Path
 import base62
 import requests
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
-from pywidevine import PSSH, Cdm, Device, InvalidLicenseMessage
+from pywidevine import PSSH, Cdm, Device
+from pywidevine.exceptions import InvalidLicenseMessage
 from yt_dlp import YoutubeDL
 
 from .constants import MP4_TAGS_MAP

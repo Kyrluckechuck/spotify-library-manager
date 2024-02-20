@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-import huey
 
 import django_stubs_ext
 
@@ -20,15 +19,8 @@ django_stubs_ext.monkeypatch()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# settings.py
-HUEY = huey.SqliteHuey(
-    name='spotify_library_sync',
-    filename='db/huey.sqlite3'
-)
-
 # HERE STARTS DYNACONF EXTENSION LOAD (Keep at the very bottom of settings.py)
 # Read more at https://www.dynaconf.com/django/
-
 import dynaconf  # noqa
 
 settings = dynaconf.DjangoDynaconf(
@@ -36,8 +28,9 @@ settings = dynaconf.DjangoDynaconf(
     PRELOAD_FOR_DYNACONF=[
         "../settings.toml",
         "../.secrets.toml",
+        "/config/settings.yaml",
     ],
     ENVVAR_FOR_DYNACONF="DJANGO_ENV",
 )  # noqa
 
-# HERE ENDS DYNACONF EXTENSION LOAD (No more code below this line)
+Path(settings.CONFIG_DIR + "/db/").mkdir(parents=True, exist_ok=True)

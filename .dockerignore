@@ -1,0 +1,19 @@
+__pycache__
+*.exe
+.vscode/
+
+# User Configs
+client*.bin
+cookies*.txt
+urls*.txt
+*.pem
+*.wvd
+.secrets.yaml
+
+# No executables
+*.exe
+bin/
+
+db/
+Spotify/
+temp/

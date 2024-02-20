@@ -1,3 +1,0 @@
-pip install -e .
-
-C:\Users\Justin\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\scripts\spotify-aac-downloader.exe -u urls.txt -p -e -f "Z:\downloads\tmp\spotify_tmp"

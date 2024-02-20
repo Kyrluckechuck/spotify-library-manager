@@ -1,10 +1,13 @@
 default:
-  final_path: "../Spotify"
-  temp_path: "../temp"
-  cookies_location: "../cookies.txt"
-  wvd_location: "../device.wvd"
-  ffmpeg_location: "../ffmpeg.exe"
-  aria2c_location: "../aria2c.exe"
+  # Default input/output locations
+  # Please customize this to your desired location
+  CONFIG_DIR: "/config"
+  final_path: "@jinja {{this.CONFIG_DIR}}/Spotify"
+  temp_path: "@jinja {{this.CONFIG_DIR}}/temp"
+  cookies_location: "@jinja {{this.CONFIG_DIR}}/cookies.txt"
+  wvd_location: "@jinja {{this.CONFIG_DIR}}/device.wvd"
+  ffmpeg_location: "ffmpeg"
+  aria2c_location: "aria2c"
   template_artist_folder_album: "{artist_folder}/{album}"
   template_folder_album: "{album_artist}/{album}"
   template_folder_compilation: "Compilations/{album}"
@@ -67,7 +70,7 @@ default:
   DATABASES:
     default:
       ENGINE: django.db.backends.sqlite3
-      NAME: db/db.sqlite3
+      NAME: "/config/db/db.sqlite3"
   # Password validation
   # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
   AUTH_PASSWORD_VALIDATORS:
@@ -91,6 +94,13 @@ default:
     - '127.0.0.1'
     - '10.0.2.2'
     - 'localhost'
+
+  HUEY: {
+    huey_class: 'huey.SqliteHuey',
+    name: 'spotify_library_sync',
+    filename: "/config/db/huey.sqlite3",
+    immediate: false,
+  }
 
 
 
