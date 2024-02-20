@@ -1,4 +1,38 @@
-# Spotify AAC Downloader
+# Spotify Library Manager
+Originally derived as a fork of [glomatico/spotify-aac-downloader](https://github.com/glomatico/spotify-aac-downloader), this has grown into a completely different behemoth.
+
+This started as a simple want to mass-download songs for specific artists since they were not otherwise available, and snowballed into a full-fledged library management platform including:
+- Task queuing system, allowing downloads to continue after restarts*
+  - Semi-lossy, where jobs which are interrupted will not be recovered, but any un-started jobs can be. Jobs can safely be restarted manually, though.
+- Artist discography syncing and mass-downloading
+- Artist tracking
+- Fetch metdata for all albums available for tracked artists
+- Mark un-downloaded albums as non-wanted
+  - Useful for artists which have a large backlog of music you don't want, but you still want to track their latest stuff automatically
+- Download all "wanted" albums (via queued tasks)
+- Download playlists/albums directly
+  - Can choose to auto mark all artists on given playlists as "Tracked", useful for "favourites" playlists
+
+- WIP: Tracked playlist syncing (WIP)
+  - Can continuously refresh and sync on a cadence
+  - Can include auto-tracking new artists (TBD)
+- WIP: Artist tracking supporting auto-downloading newly released albums (including tracks) on a cadence (TBD)
+
+## Configuration / Usage (WIP)
+It's currently being designed to mostly run on Linux-based systems, however, many of the configurations should only require minor tweaks to adjust for Windows-based systems.
+
+Existing settings (that are applicable) are now set via `/config/settings.yaml`, and will override any default configurations.
+They must follow the format:
+```yaml
+default:
+    final_path: /my/output/path
+```
+
+An example docker-compose file is included in this repo that can be dropped into Portainer or your flavour of running it, swapping out any locations for your local directory structure.
+
+
+
+# Original README Below While WIP
 A Python script to download songs/albums/playlists directly from Spotify in 256kbps/128kbps AAC.
 
 ## Features
