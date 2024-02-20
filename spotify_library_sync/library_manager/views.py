@@ -1,8 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import Sum
 from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist
 from .forms import DownloadPlaylistForm, ToggleTrackedForm, TrackedPlaylistForm
@@ -31,7 +32,9 @@ def index(request: HttpRequest):
     # Extra stats
     extra_stats = {
         'num_wanted': Album.objects.filter(downloaded=False, wanted=True).select_related('artist').filter(artist__tracked=True).count(),
-        'num_downloaded': Album.objects.filter(downloaded=True).count()
+        'sum_num_wanted': Album.objects.filter(downloaded=False, wanted=True).select_related('artist').filter(artist__tracked=True).aggregate(Sum('total_tracks'))['total_tracks__sum'],
+        'num_downloaded': Album.objects.filter(downloaded=True).count(),
+        'sum_num_downloaded': Album.objects.filter(downloaded=True).aggregate(Sum('total_tracks'))['total_tracks__sum'],
     }
     return render(request, "library_manager/index.html", {"playlist_form": download_playlist_form, "page_obj": page_obj, "search_term_and_page": search_term_and_page, "extra_stats": extra_stats})
 
@@ -124,6 +127,20 @@ def tracked_playlists(request: HttpRequest):
         "tracked_playlist_form": tracked_playlist_form,
     })
 
+def tracked_playlists_prefilled(request: HttpRequest, tracked_playlist_id: int):
+    tracked_playlist = get_object_or_404(TrackedPlaylist, pk=tracked_playlist_id)
+
+    tracked_playlist_form = TrackedPlaylistForm({
+        'playlist_url': tracked_playlist.url,
+        'name': tracked_playlist.name,
+        'enabled': tracked_playlist.enabled,
+    })
+    tracked_playlists = TrackedPlaylist.objects.order_by("name")
+    return render(request, "library_manager/tracked_playlists.html", {
+        "tracked_playlists": tracked_playlists,
+        "tracked_playlist_form": tracked_playlist_form,
+    })
+
 def track_playlist(request: HttpRequest):
     form = TrackedPlaylistForm(request.POST)
     if form.is_valid():
@@ -140,3 +157,8 @@ def track_playlist(request: HttpRequest):
         )
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
     raise ValidationError({'tracked': ["Must be a boolean!",]})
+
+def delete_tracked_playlist(request: HttpRequest, tracked_playlist_id: int):
+    tracked_playlist = get_object_or_404(TrackedPlaylist, pk=tracked_playlist_id)
+    tracked_playlist.delete()
+    return redirect('library_manager:tracked_playlists')

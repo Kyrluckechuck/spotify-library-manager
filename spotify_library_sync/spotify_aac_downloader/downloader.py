@@ -231,7 +231,7 @@ class Downloader:
                 time.sleep(seconds_to_sleep)
             else:
                 # Re-initialize the download sessions as they must have expired
-                self.initialize_sessions(self)
+                self.initialize_sessions()
 
             challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
             license = self.session.post(
