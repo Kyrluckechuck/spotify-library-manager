@@ -26,11 +26,16 @@ import dynaconf  # noqa
 settings = dynaconf.DjangoDynaconf(
     __name__,
     PRELOAD_FOR_DYNACONF=[
-        "../settings.toml",
-        "../.secrets.toml",
+        "../settings.yaml",
+        "*.yaml",
         "/config/settings.yaml",
     ],
     ENVVAR_FOR_DYNACONF="DJANGO_ENV",
+    settings_files=[
+        "../settings.yaml",
+        "*.yaml",
+        "/config/settings.yaml",
+    ],
 )  # noqa
 
-Path(settings.CONFIG_DIR + "/db/").mkdir(parents=True, exist_ok=True)
+Path("/config/db/").mkdir(parents=True, exist_ok=True)

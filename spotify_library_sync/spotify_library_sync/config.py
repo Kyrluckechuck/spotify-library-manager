@@ -2,9 +2,9 @@ from dynaconf import Dynaconf
 
 # default
 settings = Dynaconf(settings_files=[
-    "settings.toml",
+    "../settings.yaml",
     "*.yaml",
-    "/config/settings.yaml"
+    "/config/settings.yaml",
 ])
 
 # `envvar_prefix` = export envvars with `export DYNACONF_FOO=bar`.
