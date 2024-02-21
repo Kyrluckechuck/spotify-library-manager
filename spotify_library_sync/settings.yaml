@@ -1,11 +1,10 @@
 default:
   # Default input/output locations
   # Please customize this to your desired location
-  CONFIG_DIR: "/config"
-  final_path: "@jinja {{this.CONFIG_DIR}}/Spotify"
-  temp_path: "@jinja {{this.CONFIG_DIR}}/temp"
-  cookies_location: "@jinja {{this.CONFIG_DIR}}/cookies.txt"
-  wvd_location: "@jinja {{this.CONFIG_DIR}}/device.wvd"
+  final_path: "/config/final_path"
+  temp_path: "/config/temp"
+  cookies_location: "/config/cookies.txt"
+  wvd_location: "/config/device.wvd"
   ffmpeg_location: "ffmpeg"
   aria2c_location: "aria2c"
   template_artist_folder_album: "{artist_folder}/{album}"
