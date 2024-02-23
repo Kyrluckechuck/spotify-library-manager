@@ -141,6 +141,7 @@ def tracked_playlists_prefilled(request: HttpRequest, tracked_playlist_id: int):
         'playlist_url': tracked_playlist.url,
         'name': tracked_playlist.name,
         'enabled': tracked_playlist.enabled,
+        'auto_track_artists': tracked_playlist.auto_track_artists,
     })
     tracked_playlists = TrackedPlaylist.objects.order_by("name")
     return render(request, "library_manager/tracked_playlists.html", {
@@ -153,6 +154,7 @@ def track_playlist(request: HttpRequest):
     if form.is_valid():
         url_to_track = form.cleaned_data['playlist_url']
         enabled = bool(form.cleaned_data['enabled'])
+        auto_track_artists = bool(form.cleaned_data['auto_track_artists'])
         name = form.cleaned_data['name']
         tracked_playlist = TrackedPlaylist.objects.update_or_create(
             url=url_to_track,
@@ -160,6 +162,7 @@ def track_playlist(request: HttpRequest):
                 'url': url_to_track,
                 'enabled': enabled,
                 'name': name,
+                'auto_track_artists': auto_track_artists,
             }
         )
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

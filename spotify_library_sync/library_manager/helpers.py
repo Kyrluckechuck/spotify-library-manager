@@ -1,4 +1,4 @@
-from .models import Artist
+from .models import Artist, TrackedPlaylist
 from . import tasks
 
 from huey.contrib.djhuey import HUEY as rawHuey
@@ -15,8 +15,8 @@ def get_all_tasks_with_name(task_name: str):
 
     return found_tasks
 
-def convert_first_task_args_to_list(pending_tasks: list[Task]):
-    pending_args: list[int] = []
+def convert_first_task_args_to_list(pending_tasks: list[Task]) -> list[int] | list[str]:
+    pending_args: list[int] | list[str] = []
 
     for pending_task in pending_tasks:
         pending_args.append(pending_task.args[0])
@@ -24,8 +24,6 @@ def convert_first_task_args_to_list(pending_tasks: list[Task]):
     return pending_args
 
 def update_tracked_artists_albums(already_enqueued_artists: list[int], artists_to_enqueue: list[Artist]):
-    already_enqueued_artists: list[int] = []
-
     for artist in artists_to_enqueue:
         if artist.id in already_enqueued_artists:
             continue
@@ -33,23 +31,16 @@ def update_tracked_artists_albums(already_enqueued_artists: list[int], artists_t
         tasks.fetch_all_albums_for_artist(artist.id)
 
 def download_missing_tracked_artists(already_enqueued_artists: list[int], artists_to_enqueue: list[Artist]):
-    already_enqueued_artists: list[int] = []
-
     for artist in artists_to_enqueue:
         if artist.id in already_enqueued_artists:
             continue
 
         tasks.download_missing_albums_for_artist(artist.id)
 
-# Temp passthrough to clear old queue
-import huey.contrib.djhuey as huey
-from huey.contrib.djhuey import HUEY as hueycur
-@huey.task()
-def fetch_all_albums_for_artist(artist_id: int):
-    hueycur.flush()
-    pass
 
-@huey.task(context=True)
-def download_missing_albums_for_artist(artist_id: int, task: Task = None):
-    hueycur.flush()
-    pass
+def download_non_enqueued_playlists(already_enqueued_playlists: list[str], all_enabled_playlists: list[TrackedPlaylist]):
+    for playlist in all_enabled_playlists:
+        if playlist.url in already_enqueued_playlists:
+            continue
+
+        tasks.download_playlist(playlist_url=playlist.url, tracked=playlist.auto_track_artists)

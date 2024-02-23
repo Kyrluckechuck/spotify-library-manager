@@ -26,3 +26,4 @@ class TrackedPlaylistForm(forms.Form):
         widget=forms.TextInput(attrs={'placeholder': 'Playlist name'}),
     )
     enabled = forms.BooleanField(required=False, initial=True)
+    auto_track_artists = forms.BooleanField(required=False, initial=False)

@@ -1,4 +1,4 @@
-from .models import Album, Artist
+from .models import Album, Artist, TrackedPlaylist
 from . import helpers
 from spotify_aac_downloader.spotify_aac_downloader import Config, main as downloader_main
 
@@ -50,7 +50,6 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
 @huey.periodic_task(crontab(minute='0', hour='*/2'))
 # @huey.task(priority=10)
 def update_tracked_artists():
-    # Check setting, if enabled, auto update
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
     existing_tasks = helpers.get_all_tasks_with_name('fetch_all_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
@@ -59,8 +58,15 @@ def update_tracked_artists():
 @huey.periodic_task(crontab(minute='15', hour='*/4'))
 # @huey.task(priority=10)
 def download_missing_tracked_artists():
-    # Check setting, if enabled, auto download
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
     existing_tasks = helpers.get_all_tasks_with_name('download_missing_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.download_missing_tracked_artists(already_enqueued_artists, all_tracked_artists)
+
+@huey.periodic_task(crontab(minute='0', hour='*/6'))
+# @huey.task(priority=10)
+def sync_tracked_playlists():
+    all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by("last_synced_at", "id")
+    existing_tasks = helpers.get_all_tasks_with_name('download_playlist')
+    already_enqueued_playlists = helpers.convert_first_task_args_to_list(existing_tasks)
+    helpers.download_non_enqueued_playlists(already_enqueued_playlists, all_enabled_playlists)
