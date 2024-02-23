@@ -1,6 +1,8 @@
 from .models import Album, Artist
 from spotify_aac_downloader.spotify_aac_downloader import Config, main as downloader_main
-from huey.contrib.djhuey import task
+
+from huey import crontab
+from huey.contrib.djhuey import task, HUEY as rawHuey
 from huey.api import Task
 
 from huey_monitor.tqdm import ProcessInfo
@@ -39,3 +41,42 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
         process_info = ProcessInfo(task, desc='playlist download', total=1000)
         downloader_config.process_info = process_info
     downloader_main(downloader_config)
+
+# Disable period tasks for now
+# @huey.periodic_task(crontab(minute='0', hour='*/3'))
+@task(priority=10)
+def update_tracked_artists():
+    # Check setting, if enabled, auto update
+    all_tracked_artists = Artist.objects.filter(tracked=True).all()
+    pending_tasks: list[Task] = rawHuey.pending()
+
+    pending_artist_fetches: list[int] = []
+
+    for pending_task in pending_tasks:
+        if pending_task.name == 'fetch_all_albums_for_artist':
+            pending_artist_fetches.append(pending_task.args[0])
+
+    for artist in all_tracked_artists:
+        if artist.id in pending_artist_fetches:
+            continue
+
+        fetch_all_albums_for_artist(artist.id)
+
+# @huey.periodic_task(crontab(minute='0', hour='*/3'))
+# @task(priority=10)
+def download_missing_tracked_artists():
+    # Check setting, if enabled, auto download
+    all_tracked_artists = Artist.objects.filter(tracked=True).all()
+    pending_tasks: list[Task] = rawHuey.pending()
+
+    pending_artist_downloads: list[int] = []
+
+    for pending_task in pending_tasks:
+        if pending_task.name == 'download_missing_albums_for_artist':
+            pending_artist_downloads.append(pending_task.args[0])
+
+    for artist in all_tracked_artists:
+        if artist.id in pending_artist_downloads:
+            continue
+
+        download_missing_albums_for_artist(artist.id)

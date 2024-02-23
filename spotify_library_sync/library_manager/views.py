@@ -32,8 +32,8 @@ def index(request: HttpRequest):
     wanted_base = Album.objects.filter(downloaded=False, wanted=True).select_related('artist').filter(artist__tracked=True)
     downloaded_base = Album.objects.filter(downloaded=True)
 
-    sum_num_wanted = wanted_base.aggregate(Sum('total_tracks'))['total_tracks__sum']
-    sum_num_downloaded = downloaded_base.aggregate(Sum('total_tracks'))['total_tracks__sum']
+    sum_num_wanted = wanted_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
+    sum_num_downloaded = downloaded_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
 
     # Extra stats
     extra_stats = {
@@ -105,7 +105,7 @@ def download_history(request: HttpRequest):
     })
 
 def download_all_for_tracked_artists(request: HttpRequest):
-    all_tracked_artists = Artist.objects.filter(tracked=True).order_by("-added_at")
+    all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
     for artist in all_tracked_artists:
         helpers.download_missing_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

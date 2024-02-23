@@ -7,6 +7,8 @@ class Artist(models.Model):
     name = models.CharField(max_length=200)
     gid = models.CharField(max_length=120, unique=True)
     tracked = models.BooleanField(default=False)
+    added_at = models.DateTimeField(auto_now_add=True)
+    last_synced_at = models.DateTimeField(default=None, null=True)
 
     @property
     def number_songs(self):
