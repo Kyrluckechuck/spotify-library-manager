@@ -4,8 +4,9 @@ from spotify_aac_downloader.spotify_aac_downloader import Config, main as downlo
 from huey import crontab
 from huey.contrib.djhuey import task, HUEY as rawHuey
 from huey.api import Task
-
 from huey_monitor.tqdm import ProcessInfo
+
+from django.db.models.functions import Now
 
 @task()
 def fetch_all_albums_for_artist(artist_id: int):
@@ -31,6 +32,8 @@ def download_missing_albums_for_artist(artist_id: int, task: Task = None):
 
     print(f"missing albums search for artist {artist.id} kicking off {len(downloader_config.urls)}")
     downloader_main(downloader_config)
+    artist.last_synced_at = Now()
+    artist.save()
 
 @task(context=True)
 def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None):
