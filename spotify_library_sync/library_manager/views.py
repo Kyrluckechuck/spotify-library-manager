@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist
 from .forms import DownloadPlaylistForm, ToggleTrackedForm, TrackedPlaylistForm
-from . import helpers
+from . import tasks
 
 def index(request: HttpRequest):
     search_term = request.GET.get("search_artist")
@@ -88,7 +88,7 @@ def track_artist(request: HttpRequest, artist_id: int):
 def download_playlist(request: HttpRequest):
     playlist_download_form = DownloadPlaylistForm(request.POST)
     if playlist_download_form.is_valid():
-        helpers.download_playlist(playlist_download_form.cleaned_data['playlist_url'], playlist_download_form.cleaned_data['tracked'])
+        tasks.download_playlist(playlist_download_form.cleaned_data['playlist_url'], playlist_download_form.cleaned_data['tracked'])
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
     print(playlist_download_form)
     print(playlist_download_form.errors)
@@ -107,23 +107,23 @@ def download_history(request: HttpRequest):
 def download_all_for_tracked_artists(request: HttpRequest):
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
     for artist in all_tracked_artists:
-        helpers.download_missing_albums_for_artist(artist.id)
+        tasks.download_missing_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 def fetch_all_for_tracked_artists(request: HttpRequest):
     all_tracked_artists = Artist.objects.all()
     for artist in all_tracked_artists:
-        helpers.fetch_all_albums_for_artist(artist.id)
+        tasks.fetch_all_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 def fetch_all_albums_for_artist(request: HttpRequest, artist_id: int):
     artist = get_object_or_404(Artist, pk=artist_id)
-    helpers.fetch_all_albums_for_artist(artist.id)
+    tasks.fetch_all_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 def download_wanted_albums_for_artist(request: HttpRequest, artist_id: int):
     artist = get_object_or_404(Artist, pk=artist_id)
-    helpers.download_missing_albums_for_artist(artist.id)
+    tasks.download_missing_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 def tracked_playlists(request: HttpRequest):
