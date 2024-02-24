@@ -9,6 +9,8 @@
     <br/>
     Albums ({{ artist_details.albums.known }}) - Missing: {{ artist_details.albums.missing }} | Downloaded: {{ artist_details.albums.downloaded }}
     <br/>
+    Songs Missing: {{ artist_details.albums.songs.missing }}
+    <br/>
     <form action="{% url 'library_manager:track_artist' artist_details.id %}" method="post">
         {% csrf_token %}
         {{ form }}

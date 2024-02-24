@@ -1,5 +1,6 @@
 import django.core.validators
 from django.db import models
+from django.db.models import Sum
 from django_stubs_ext.db.models import TypedModelMeta
 
 # Create your models here.
@@ -21,6 +22,9 @@ class Artist(models.Model):
             'known': album_base.count,
             'missing': album_base.filter(wanted=True, downloaded=False).count,
             'downloaded': album_base.filter(downloaded=True).count,
+            'songs': {
+                'missing': album_base.filter(wanted=True, downloaded=False).aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0,
+            },
         }
 
     class Meta(TypedModelMeta):
