@@ -111,7 +111,7 @@ def download_all_for_tracked_artists(request: HttpRequest):
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 def fetch_all_for_tracked_artists(request: HttpRequest):
-    all_tracked_artists = Artist.objects.all()
+    all_tracked_artists = Artist.objects.filter(tracked=True)
     for artist in all_tracked_artists:
         tasks.fetch_all_albums_for_artist(artist.id)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
