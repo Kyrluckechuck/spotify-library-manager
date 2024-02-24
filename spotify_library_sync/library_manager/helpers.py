@@ -23,24 +23,33 @@ def convert_first_task_args_to_list(pending_tasks: list[Task]) -> list[int] | li
 
     return pending_args
 
-def update_tracked_artists_albums(already_enqueued_artists: list[int], artists_to_enqueue: list[Artist]):
+def update_tracked_artists_albums(already_enqueued_artists: list[int], artists_to_enqueue: list[Artist], priority: int | None = None):
     for artist in artists_to_enqueue:
         if artist.id in already_enqueued_artists:
             continue
 
-        tasks.fetch_all_albums_for_artist(artist.id)
+        extra_args = {}
+        if priority is not None:
+            extra_args['priority'] = priority
+        tasks.fetch_all_albums_for_artist(artist.id, **extra_args)
 
-def download_missing_tracked_artists(already_enqueued_artists: list[int], artists_to_enqueue: list[Artist]):
+def download_missing_tracked_artists(already_enqueued_artists: list[int], artists_to_enqueue: list[Artist], priority: int | None = None):
     for artist in artists_to_enqueue:
         if artist.id in already_enqueued_artists:
             continue
 
-        tasks.download_missing_albums_for_artist(artist.id)
+        extra_args = {}
+        if priority is not None:
+            extra_args['priority'] = priority
+        tasks.download_missing_albums_for_artist(artist.id, **extra_args)
 
 
-def download_non_enqueued_playlists(already_enqueued_playlists: list[str], all_enabled_playlists: list[TrackedPlaylist]):
+def download_non_enqueued_playlists(already_enqueued_playlists: list[str], all_enabled_playlists: list[TrackedPlaylist], priority: int | None = None):
     for playlist in all_enabled_playlists:
         if playlist.url in already_enqueued_playlists:
             continue
 
-        tasks.download_playlist(playlist_url=playlist.url, tracked=playlist.auto_track_artists)
+        extra_args = {}
+        if priority is not None:
+            extra_args['priority'] = priority
+        tasks.download_playlist(playlist_url=playlist.url, tracked=playlist.auto_track_artists, **extra_args)
