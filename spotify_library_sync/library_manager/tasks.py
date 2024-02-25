@@ -29,13 +29,15 @@ def download_missing_albums_for_artist(artist_id: int, task: Task = None):
     if task is not None:
         process_info = ProcessInfo(task, desc=f"artist missing album download (artist.id: {artist.id})", total=1000)
         downloader_config.process_info = process_info
-    # TODO: Figure out why the Config instance is persisting between runs, somehow 😕
-    downloader_config.urls = []
-    for missing_album in missing_albums:
-        downloader_config.urls.append(missing_album.spotify_uri)
+    downloader_config.urls = []  # This must be reset or it will persist between runs
+    if missing_albums.count() > 0:
+        for missing_album in missing_albums:
+            downloader_config.urls.append(missing_album.spotify_uri)
 
-    print(f"missing albums search for artist {artist.id} kicking off {len(downloader_config.urls)}")
-    downloader_main(downloader_config)
+        print(f"missing albums search for artist {artist.id} kicking off {len(downloader_config.urls)}")
+        downloader_main(downloader_config)
+    else:
+        print(f"missing albums search for artist {artist.id} is skipping since there are none missing")
     artist.last_synced_at = Now()
     artist.save()
 
