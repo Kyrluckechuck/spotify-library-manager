@@ -61,7 +61,7 @@ def update_tracked_artists(task: Task = None):
 
 @huey.periodic_task(crontab(minute='15', hour='*/4'), context=True)
 def download_missing_tracked_artists(task: Task = None):
-    all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
+    all_tracked_artists = Artist.objects.filter(tracked=True, album__downloaded=False, album__wanted=True).distinct().order_by("last_synced_at", "added_at", "id")
     existing_tasks = helpers.get_all_tasks_with_name('download_missing_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.download_missing_tracked_artists(already_enqueued_artists, all_tracked_artists, priority=task.priority)
