@@ -229,11 +229,7 @@ def main(
                     logger.debug("Getting file info")
                     file_id = downloader.get_file_id(metadata)
                     if not file_id:
-                        logger.error(
-                            f"({current_track}) Track not available on Spotify's "
-                            "servers and no alternative found, skipping"
-                        )
-                        continue
+                        raise Exception(f"({current_track}) Track not available on Spotify's servers and no alternative found, skipping")
                     logger.debug("Getting PSSH")
                     pssh = downloader.get_pssh(file_id)
                     logger.debug("Getting decryption key")
@@ -282,6 +278,7 @@ def main(
                 if config.temp_path.exists():
                     logger.debug(f'Cleaning up "{config.temp_path}"')
                     downloader.cleanup_temp_path()
+
             if track_index == len(queue_item):
                 download_queue_item.completed_at = Now()
                 download_queue_item.save()
@@ -292,7 +289,7 @@ def main(
                         album.downloaded = True
                         album.save()
                     except Album.DoesNotExist:
-                        print("Spotify album downloaded but was not expected")
+                        logger.warn("Spotify album downloaded but was not expected")
 
                 try:
                     tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
