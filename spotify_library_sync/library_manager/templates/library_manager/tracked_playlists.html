@@ -21,6 +21,8 @@
             <br/>
             Enabled: {{ tracked_playlist.enabled }}
             <br/>
+            Auto Track Artists: {{ tracked_playlist.auto_track_artists }}
+            <br/>
 
             <div class="track_artist_row">
                 <form action="{% url 'library_manager:tracked_playlists_prefilled' tracked_playlist.id %}" method="get">
