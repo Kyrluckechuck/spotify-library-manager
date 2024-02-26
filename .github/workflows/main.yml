@@ -15,16 +15,12 @@ jobs:
             packages: write
         steps:
             -   uses: actions/checkout@v4
-            -   name: set lower case owner name
+            -   name: Set lower case owner name
                 run: |
                     echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >>${GITHUB_ENV}
                 env:
                     IMAGE_NAME: '${{ github.repository }}'
-            -   name: Build image
-                run: docker build . --file Dockerfile --tag $IMAGE_NAME_LC --label "runnumber=${GITHUB_RUN_ID}"
-            -   name: Log in to registry
-                run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-            -   name: Push image
+            -   name: Set any other env variables
                 run: |
                     IMAGE_ID=ghcr.io/$IMAGE_NAME_LC
                     IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
@@ -33,5 +29,16 @@ jobs:
                     [ "$VERSION" == "main" ] && VERSION=latest
                     echo IMAGE_ID=$IMAGE_ID
                     echo VERSION=$VERSION
+                    echo "IMAGE_ID=$IMAGE_ID" >>${GITHUB_ENV}
+                    echo "VERSION=$VERSION" >>${GITHUB_ENV}
+            -   name: Build image
+                run: |
+                    docker pull ghcr.io/$IMAGE_NAME_LC:latest || true
+                    docker pull ghcr.io/$IMAGE_NAME_LC:$VERSION || true
+                    docker build . --file Dockerfile --tag $IMAGE_NAME_LC --label "runnumber=${GITHUB_RUN_ID}"
+            -   name: Log in to registry
+                run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+            -   name: Push image
+                run: |
                     docker tag $IMAGE_NAME_LC $IMAGE_ID:$VERSION
                     docker push $IMAGE_ID:$VERSION
