@@ -69,7 +69,12 @@ default:
   DATABASES:
     default:
       ENGINE: django.db.backends.sqlite3
-      NAME: "/config/db/db.sqlite3"
+      NAME: "/config/db/db.sqlite3",
+      OPTIONS: {
+        timeout: 20,  # in seconds
+        # see also
+        # https://docs.python.org/3.7/library/sqlite3.html#sqlite3.connect
+      }
   # Password validation
   # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
   AUTH_PASSWORD_VALIDATORS:
