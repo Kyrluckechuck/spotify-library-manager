@@ -69,7 +69,7 @@ default:
   DATABASES:
     default:
       ENGINE: django.db.backends.sqlite3
-      NAME: "/config/db/db.sqlite3",
+      NAME: "/config/db/db.sqlite3"
       OPTIONS: {
         timeout: 20,  # in seconds
         # see also
