@@ -293,7 +293,7 @@ def main(
 
                 try:
                     tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
-                    tracked_playlist.last_synced = Now()
+                    tracked_playlist.last_synced_at = Now()
                     tracked_playlist.save()
                 except TrackedPlaylist.DoesNotExist:
                     pass
