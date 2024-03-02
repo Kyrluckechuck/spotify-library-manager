@@ -1,8 +1,8 @@
 from __future__ import annotations, division
 
+from datetime import datetime
 import logging
 from pathlib import Path
-
 from requests import JSONDecodeError
 
 from . import __version__
@@ -78,6 +78,12 @@ def update_process_info(config: Config, progress: int):
     config.process_info.total_progress = progress
     config.process_info.update(n=0)
 
+def convert_date_string_to_datetime(string):
+    added_at: str = string
+    # Convert from Zulu UTC to datetime UTC
+    added_at = added_at.replace('Z', '+00:00')
+    return datetime.fromisoformat(added_at)
+
 def main(
     config: Config
 ):
@@ -132,7 +138,7 @@ def main(
     for url_index, url in enumerate(config.urls, start=1):
         current_url = f"URL {url_index}/{len(config.urls)}"
         try:
-            logger.debug(f'({current_url}) Checking "{url}"')
+            logger.info(f'({current_url}) Checking "{url}"')
             download_queue.append(downloader.get_download_queue(url))
             download_queue_urls.append(url)
         except Exception:
@@ -155,9 +161,34 @@ def main(
             }
         )[0]
 
+        try:
+            tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
+            # Check this is the playlist has ever been synced
+            if tracked_playlist.last_synced_at is not None:
+                playlist_needs_update = False
+                for track_index, track in enumerate(queue_item, start=1):
+                    track_added_at = convert_date_string_to_datetime(track['added_at'])
+                    if track_added_at > tracked_playlist.last_synced_at:
+                        playlist_needs_update = True
+                if not playlist_needs_update:
+                    logger.info(f"Playlist has no newer tracks than the last time it synced at {tracked_playlist.last_synced_at}, skipping")
+                    continue
+                else:
+                    logger.info(f"Playlist has newer tracks than the last time it synced at {tracked_playlist.last_synced_at}, resyncing")
+        except TrackedPlaylist.DoesNotExist:
+            tracked_playlist = None
+
         main_queue_progress = ((queue_item_index - 1) / len(download_queue)) * 1000
 
         for track_index, track in enumerate(queue_item, start=1):
+
+            # Check if this is a tracked playlist, and if so let's only sync if the track is newer than the last sync
+            if tracked_playlist is not None and tracked_playlist.last_synced_at is not None:
+                track_added_at = convert_date_string_to_datetime(track['added_at'])
+                if track_added_at < tracked_playlist.last_synced_at:
+                    logger.debug('track older than last playlist sync, skipping')
+                    continue
+
             current_track = f"Track {track_index}/{len(queue_item)} from URL {queue_item_index}/{len(download_queue)}"
             download_queue_item.progress = round(track_index / len(queue_item) * 1000, 1)
             download_queue_item.save()
@@ -249,7 +280,7 @@ def main(
                     downloader.apply_tags(fixed_location, tags, cover_url)
                     logger.debug(f'Moving to "{final_location}"')
                     downloader.move_to_final_location(fixed_location, final_location)
-                    
+
                 if config.no_lrc or not lyrics_synced:
                     pass
                 elif lrc_location.exists() and not config.overwrite:
@@ -291,12 +322,9 @@ def main(
                     except Album.DoesNotExist:
                         logger.warn("Spotify album downloaded but was not expected")
 
-                try:
-                    tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
+                if tracked_playlist is not None:
                     tracked_playlist.last_synced_at = Now()
                     tracked_playlist.save()
-                except TrackedPlaylist.DoesNotExist:
-                    pass
 
     update_process_info(config, 1000)
     logger.info(f"Done ({error_count} error(s))")

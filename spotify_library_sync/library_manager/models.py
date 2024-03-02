@@ -40,6 +40,7 @@ class Song(models.Model):
     name = models.CharField(max_length=200)
     gid = models.CharField(max_length=120, unique=True)
     primary_artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     @property
     def contributing_artists(self):

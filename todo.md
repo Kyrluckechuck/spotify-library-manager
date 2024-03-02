@@ -7,7 +7,6 @@
  - Display `Auto Track Artist` flag
 
 
-
 - Refresh all tracked artists
 
 ## Pages:

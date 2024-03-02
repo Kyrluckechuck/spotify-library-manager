@@ -125,8 +125,11 @@ class Downloader:
         elif "track" in url:
             download_queue.append(self.get_track(uri))
         elif "playlist" in url:
+            raw_playlist = self.get_playlist(uri)["tracks"]["items"]
+            for i in raw_playlist:
+                i['track']['added_at'] = i['added_at']
             download_queue.extend(
-                [i["track"] for i in self.get_playlist(uri)["tracks"]["items"]]
+                [i["track"] for i in raw_playlist]
             )
         else:
             raise Exception("Not a valid Spotify URL")
