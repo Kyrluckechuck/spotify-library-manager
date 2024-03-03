@@ -4,7 +4,6 @@
 - Tracked Playlists
  - Manually trigger tracked playlist refresh (single)
  - Improve update experience (not URL-locked)
- - Display `Auto Track Artist` flag
 
 
 - Refresh all tracked artists

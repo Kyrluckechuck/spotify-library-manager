@@ -184,6 +184,9 @@ class Downloader:
 
                 albums_to_create_or_update.append(new_or_updated_album_data)
 
+        if albums_to_create_or_update.count() == 0:
+            return []
+
         albums: list[Artist] = Album.objects.bulk_create(
             [Album(**album) for album in albums_to_create_or_update],
             update_conflicts=True,
