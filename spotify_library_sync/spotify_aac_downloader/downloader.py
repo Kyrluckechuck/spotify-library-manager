@@ -166,25 +166,30 @@ class Downloader:
         offset = -50
         total = 0
         artist = Artist.objects.get(gid=artist_gid)
+        albums_to_create_or_update: list[dict] = []
 
-        albums = []
         while offset <= total:
             offset += 50
             raw_albums = self.session.get(f"https://api.spotify.com/v1/artists/{self.gid_to_uri(artist_gid)}/albums?include_groups=album,single&limit=50&offset={offset}").json()
             total = raw_albums['total']
 
             for album in raw_albums['items']:
-                album_model = Album.objects.update_or_create(
-                    spotify_gid=album['id'],
-                    defaults={
-                        'spotify_gid': album['id'],
-                        'artist': artist,
-                        'spotify_uri': album['uri'],
-                        'total_tracks': album['total_tracks'],
-                        'name': album['name'],
-                    }
-                )[0]
-                albums.append(album_model)
+                new_or_updated_album_data: dict = {
+                    'spotify_gid': album['id'],
+                    'artist': artist,
+                    'spotify_uri': album['uri'],
+                    'total_tracks': album['total_tracks'],
+                    'name': album['name'],
+                }
+
+                albums_to_create_or_update.append(new_or_updated_album_data)
+
+        albums: list[Artist] = Album.objects.bulk_create(
+            [Album(**album) for album in albums_to_create_or_update],
+            update_conflicts=True,
+            unique_fields=["spotify_gid"],
+            update_fields=albums_to_create_or_update[0].keys(),
+        )
         return albums
 
     def get_playlist(self, playlist_id: str) -> dict:
