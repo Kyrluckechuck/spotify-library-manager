@@ -66,9 +66,11 @@ def download_missing_tracked_artists(task: Task = None):
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.download_missing_tracked_artists(already_enqueued_artists, all_tracked_artists, priority=task.priority)
 
+@huey.task(context=True, priority=2)
+def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
+    helpers.enqueue_playlists([tracked_playlist], priority=task.priority)
+
 @huey.periodic_task(crontab(minute='0', hour='*/6'), priority=1, context=True)
 def sync_tracked_playlists(task: Task = None):
     all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by("last_synced_at", "id")
-    existing_tasks = helpers.get_all_tasks_with_name('download_playlist')
-    already_enqueued_playlists = helpers.convert_first_task_args_to_list(existing_tasks)
-    helpers.download_non_enqueued_playlists(already_enqueued_playlists, all_enabled_playlists, priority=task.priority)
+    helpers.enqueue_playlists(all_enabled_playlists, priority=task.priority)

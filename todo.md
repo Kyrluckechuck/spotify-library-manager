@@ -2,11 +2,7 @@
 - Fallback to yt-dlp when no Spotify AAC
 - Fetch all available albums for all artists
 - Tracked Playlists
- - Manually trigger tracked playlist refresh (single)
  - Improve update experience (not URL-locked)
-
-
-- Refresh all tracked artists
 
 ## Pages:
 - Index (List of artists)
@@ -23,3 +19,7 @@
  - Track artist
 - Artist's albums
 - Song details
+- Tracked Playlists
+ - Add / Update
+ - Delete
+ - Manually Sync
