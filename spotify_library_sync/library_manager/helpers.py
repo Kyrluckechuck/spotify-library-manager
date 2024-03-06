@@ -4,6 +4,8 @@ from . import tasks
 from huey.contrib.djhuey import HUEY as rawHuey
 from huey.api import Task
 
+from django.db import connection
+
 def get_all_tasks_with_name(task_name: str):
     potential_tasks: list[Task] = rawHuey.pending()
 
@@ -58,3 +60,11 @@ def enqueue_playlists(playlists_to_enqueue: list[TrackedPlaylist], priority=None
     existing_tasks = get_all_tasks_with_name('download_playlist')
     already_enqueued_playlists = convert_first_task_args_to_list(existing_tasks)
     download_non_enqueued_playlists(already_enqueued_playlists, playlists_to_enqueue, priority=priority)
+
+def cleanup_huey_history():
+    with connection.cursor() as cursor:
+        cursor.execute("UPDATE huey_monitor_signalinfomodel SET task_id = NULL WHERE create_dt < DATETIME('now', '-3 day');")
+        cursor.execute("UPDATE huey_monitor_taskmodel SET parent_task_id = NULL WHERE create_dt < DATETIME('now', '-3 day');")
+        cursor.execute("DELETE FROM huey_monitor_signalinfomodel WHERE create_dt < DATETIME('now', '-3 day');")
+        cursor.execute("DELETE FROM huey_monitor_taskmodel WHERE create_dt < DATETIME('now', '-3 day');")
+        cursor.execute("VACUUM;")

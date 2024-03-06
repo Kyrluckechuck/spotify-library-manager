@@ -74,3 +74,7 @@ def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
 def sync_tracked_playlists(task: Task = None):
     all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by("last_synced_at", "id")
     helpers.enqueue_playlists(all_enabled_playlists, priority=task.priority)
+
+@huey.periodic_task(crontab(minute='0', hour='6'), priority=3)
+def cleanup_huey_history():
+    helpers.cleanup_huey_history()
