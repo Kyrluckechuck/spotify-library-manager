@@ -25,16 +25,16 @@ Features from spotify-aac-downloader:
 
 ## TODO
 ### Features To Add:
-- Fallback to yt-dlp when no Spotify AAC
-- Tracked Playlists
- - Improve update experience (not URL-locked)
-- Allow periodic tasks to be configurable intervals
-- Add artists directly (by artist name?)
+- [ ] Fallback to yt-dlp when no Spotify AAC
+- [ ] Tracked Playlists
+ - [ ] Improve update experience (not URL-locked)
+- [ ] Allow periodic tasks to be configurable intervals
+- [ ] Add artists directly (by artist name?)
 
 ### Other Changes:
-- Re-add Downloader configuration(s) loading via `settings.yaml`
-- Improve onboarding documentation
- - Add critical steps such as first startup, any missing examples, etc
+- [ ] Re-add Downloader configuration(s) loading via `settings.yaml`
+- [ ] Improve onboarding documentation
+ - [ ] Add critical steps such as first startup, any missing examples, etc
 
 ## Configuration / Usage
 It's currently being designed to mostly run on Linux-based systems, however, many of the configurations should only require minor tweaks to adjust for Windows-based systems.
@@ -70,6 +70,7 @@ An example docker-compose file is included in this repo that can be dropped into
 
 > [!NOTE]
 > This is currently only configured for running on Unix-based systems due to the default configuration folder, but if anyone wants to update this doc with the correct configuration I'd welcome the upload!
+>
 > If developing on Windows, using WSL should work just fine, installing python, ffmpeg, and aria2c via `apt`
 
 1. Install Python 3.7 or higher
