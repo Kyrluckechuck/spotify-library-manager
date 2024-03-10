@@ -1,5 +1,14 @@
 click
+django
+django-debug-toolbar
+django-huey-monitor
+django-stubs[compatible-mypy]
+django-stubs-ext
+dynaconf
+huey
+jinja2
 pybase62
+pylint-django
 pywidevine
 pyyaml
 yt-dlp

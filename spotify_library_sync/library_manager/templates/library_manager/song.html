@@ -1,0 +1,21 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+    <h1>Song | {{ song_details.name }}</h1>
+    Song ID: {{ song_details.id }}
+    <br/>
+    Song GID: ({{ song_details.gid }})
+    <br/>
+    Artist: <a href="{% url 'library_manager:artist' song_details.primary_artist.id %}">{{ song_details.primary_artist.name }}</a>
+    <br/><br/>
+    {% if song_details.contributing_artists.count > 0 %}
+    Contributing Artists:
+    <ul>
+    {% for artist_details in song_details.contributing_artists %}
+        <li><a href="{% url 'library_manager:artist' artist_details.artist.id %}">{{ artist_details.artist.name }}</a></li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+</body>
+<footer>
+
+</footer>

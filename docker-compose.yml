@@ -1,0 +1,26 @@
+services:
+  web:
+    image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
+    command:  bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:5000"
+    volumes:
+      - config_storage:/config
+      - /mnt/some_external_nas/music_spotify:/mnt/music_spotify
+    ports:
+      - "5000:5000"
+  worker:
+    image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
+    command: python manage.py run_huey
+    volumes:
+      - config_storage:/config
+      - /mnt/some_external_nas/music_spotify:/mnt/music_spotify
+    depends_on:
+      - web
+
+volumes:
+  config_storage:
+    name: config_storage
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/opt/configs/spotify_library_manager/'

@@ -1,38 +1,44 @@
-name: publish
+name: build-and-publish
 
-# Controls when the workflow will run
 on:
-    
-    # Workflow will run when a release has been published for the package
-    release:
-        types:
-            - published
-
-    # Allows you to run this workflow manually from the Actions tab
+    push:
     workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+env:
+    REGISTRY: ghcr.io
+
 jobs:
-
-    # This workflow contains a single job called "publish"
-    publish:
-
-        # The type of runner that the job will run on
+    build-and-publish:
         runs-on: ubuntu-latest
-
-        # Steps represent a sequence of tasks that will be executed as part of the job
+        permissions:
+            contents: read
+            packages: write
         steps:
-
-            # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-            -   uses: actions/checkout@v3
-
-            -   name: Set up Python 3.9
-                uses: actions/setup-python@v3
-                with:
-                    python-version: 3.9
-                    cache: pip
-
-            -   name: To PyPI using Flit
-                uses: AsifArmanRahman/to-pypi-using-flit@v1
-                with:
-                    password: ${{ secrets.PYPI_API_TOKEN }}
+            -   uses: actions/checkout@v4
+            -   name: Set lower case owner name
+                run: |
+                    echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >>${GITHUB_ENV}
+                env:
+                    IMAGE_NAME: '${{ github.repository }}'
+            -   name: Set any other env variables
+                run: |
+                    IMAGE_ID=ghcr.io/$IMAGE_NAME_LC
+                    IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+                    VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+                    [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+                    [ "$VERSION" == "main" ] && VERSION=latest
+                    echo IMAGE_ID=$IMAGE_ID
+                    echo VERSION=$VERSION
+                    echo "IMAGE_ID=$IMAGE_ID" >>${GITHUB_ENV}
+                    echo "VERSION=$VERSION" >>${GITHUB_ENV}
+            -   name: Build image
+                run: |
+                    docker pull ghcr.io/$IMAGE_NAME_LC:latest || true
+                    docker pull ghcr.io/$IMAGE_NAME_LC:$VERSION || true
+                    docker build . --file Dockerfile --tag $IMAGE_NAME_LC --label "runnumber=${GITHUB_RUN_ID}"
+            -   name: Log in to registry
+                run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+            -   name: Push image
+                run: |
+                    docker tag $IMAGE_NAME_LC $IMAGE_ID:$VERSION
+                    docker push $IMAGE_ID:$VERSION

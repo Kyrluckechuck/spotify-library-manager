@@ -1,0 +1,88 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+    <h1>Artist | {{ artist_details.name }}</h1>
+
+    <form action="{% url 'library_manager:fetch_all_albums_for_artist' artist_details.id %}" method="post">
+        {% csrf_token %}
+        <input type="submit" name='fetch all albums for artist' value="Fetch All Albums">
+    </form>
+    <br/>
+    <form action="{% url 'library_manager:download_wanted_albums_for_artist' artist_details.id %}" method="post">
+        {% csrf_token %}
+        <input type="submit" name='download wanted albums for artist' value="Download Wanted Albums">
+    </form>
+
+    <h2>Albums (Wanted):</h2>
+    {% if albums_wanted %}
+    <ul>
+    {% for album in albums_wanted %}
+        <li>
+            Name: {{ album.name }}
+            <br/>
+            Wanted: {{ album.wanted }}
+            <br/>
+            Downloaded: {{ album.downloaded }}
+            <br/>
+            Spotify URI: {{ album.spotify_uri }}
+            <br/>
+            <form action="{% url 'library_manager:album_set_wanted' artist_details.id album.id %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="tracked" name="tracked" value="false">
+                <input type="submit" name='toggle if the album is wanted' value="Toggle Not Wanted">
+            </form>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No download history available.</p>
+    {% endif %}
+
+    <h2>Albums (Not Wanted):</h2>
+    {% if albums_not_wanted %}
+    <ul>
+    {% for album in albums_not_wanted %}
+        <li>
+            Name: {{ album.name }}
+            <br/>
+            Wanted: {{ album.wanted }}
+            <br/>
+            Downloaded: {{ album.downloaded }}
+            <br/>
+            Spotify URI: {{ album.spotify_uri }}
+            <br/>
+            <form action="{% url 'library_manager:album_set_wanted' artist_details.id album.id %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="tracked" name="tracked" value="true">
+                <input type="submit" name='toggle if the album is wanted' value="Toggle Wanted">
+            </form>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No download history available.</p>
+    {% endif %}
+
+    <h2>Albums (Downloaded):</h2>
+    {% if albums_downloaded %}
+    <ul>
+    {% for album in albums_downloaded %}
+        <li>
+            Name: {{ album.name }}
+            <br/>
+            Was Wanted: {{ album.wanted }}
+            <br/>
+            Downloaded: {{ album.downloaded }}
+            <br/>
+            Spotify URI: {{ album.spotify_uri }}
+            <br/>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No download history available.</p>
+    {% endif %}
+
+</body>
+<footer>
+
+</footer>

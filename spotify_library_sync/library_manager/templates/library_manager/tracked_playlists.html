@@ -1,0 +1,50 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+
+    <b>Track a playlist, or update an existing playlist. Unique on URL.</b>
+    <form action="{% url 'library_manager:track_playlist' %}" method="post">
+        {% csrf_token %}
+        {{ tracked_playlist_form }}
+        <input type="submit" name='track playlist' value="Track/Update">
+    </form>
+
+    <h2>Tracked Playlists:</h2>
+    {% if tracked_playlists %}
+    <ul>
+    {% for tracked_playlist in tracked_playlists %}
+        <li>
+            Name: {{ tracked_playlist.name }}
+            <br/>
+            URL: <a href="{{ tracked_playlist.url }}">{{ tracked_playlist.url }}</a>
+            <br/>
+            Last Synced: {{ tracked_playlist.last_synced_at }}
+            <br/>
+            Enabled: {{ tracked_playlist.enabled }}
+            <br/>
+            Auto Track Artists: {{ tracked_playlist.auto_track_artists }}
+            <br/>
+
+            <div class="track_artist_row">
+                <form action="{% url 'library_manager:tracked_playlists_prefilled' tracked_playlist.id %}" method="get">
+                    {% csrf_token %}
+                    <input type="submit" name='update tracked playlist' value="Update Tracked Playlist">
+                </form>
+                <form action="{% url 'library_manager:sync_tracked_playlist' tracked_playlist.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="submit" name='sync tracked playlist' value="Sync Tracked Playlist">
+                </form>
+                <form action="{% url 'library_manager:delete_tracked_playlist' tracked_playlist.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="submit" name='delete tracked playlist' value="Delete Tracked Playlist">
+                </form>
+            </div>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>There are no tracked playlists.</p>
+    {% endif %}
+</body>
+<footer>
+
+</footer>

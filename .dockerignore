@@ -8,6 +8,11 @@ cookies*.txt
 urls*.txt
 *.pem
 *.wvd
+.secrets.yaml
+
+# No executables
+*.exe
+bin/
 
 db/
 Spotify/

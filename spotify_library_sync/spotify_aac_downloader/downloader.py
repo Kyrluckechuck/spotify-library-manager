@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import binascii
 import datetime
 import functools
-import glob
 import re
 import shutil
 import subprocess
@@ -13,10 +13,13 @@ from pathlib import Path
 import base62
 import requests
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
-from pywidevine import PSSH, Cdm, Device, InvalidLicenseMessage
+from pywidevine import PSSH, Cdm, Device
+from pywidevine.exceptions import InvalidLicenseMessage
 from yt_dlp import YoutubeDL
 
-from .constants import *
+from .constants import MP4_TAGS_MAP
+
+from library_manager.models import Album, Artist
 
 class Downloader:
     def __init__(
@@ -28,6 +31,7 @@ class Downloader:
         ffmpeg_location: str,
         aria2c_location: str,
         template_folder_album: str,
+        template_artist_folder_album: str,
         template_folder_compilation: str,
         template_file_single_disc: str,
         template_file_multi_disc: str,
@@ -46,6 +50,7 @@ class Downloader:
         self.aria2c_location = (
             shutil.which(aria2c_location) if aria2c_location else None
         )
+        self.template_artist_folder_album = template_artist_folder_album
         self.template_folder_album = template_folder_album
         self.template_folder_compilation = template_folder_compilation
         self.template_file_single_disc = template_file_single_disc
@@ -66,7 +71,7 @@ class Downloader:
             {
                 "app-platform": "WebPlayer",
                 "accept": "application/json",
-                "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2",
+                "accept-language": "en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2",
                 "content-type": "application/json",
                 "origin": "https://open.spotify.com",
                 "referer": "https://open.spotify.com/",
@@ -120,8 +125,11 @@ class Downloader:
         elif "track" in url:
             download_queue.append(self.get_track(uri))
         elif "playlist" in url:
+            raw_playlist = self.get_playlist(uri)["tracks"]["items"]
+            for i in raw_playlist:
+                i['track']['added_at'] = i['added_at']
             download_queue.extend(
-                [i["track"] for i in self.get_playlist(uri)["tracks"]["items"]]
+                [i["track"] for i in raw_playlist]
             )
         else:
             raise Exception("Not a valid Spotify URL")
@@ -145,6 +153,47 @@ class Downloader:
             album["tracks"]["items"].extend(album_next["items"])
             album_next_url = album_next["next"]
         return album
+
+    def get_artist_albums(self, artist_gid: str) -> list[Album]:
+        """Get all albums (including EPs and Singles) for this artist
+
+        Args:
+            artist_gid (str): The artist GID as supplied by Spotify
+
+        Returns:
+            list[str]: an array of urls to each album for the artist
+        """
+        offset = -50
+        total = 0
+        artist = Artist.objects.get(gid=artist_gid)
+        albums_to_create_or_update: list[dict] = []
+
+        while offset <= total:
+            offset += 50
+            raw_albums = self.session.get(f"https://api.spotify.com/v1/artists/{self.gid_to_uri(artist_gid)}/albums?include_groups=album,single&limit=50&offset={offset}").json()
+            total = raw_albums['total']
+
+            for album in raw_albums['items']:
+                new_or_updated_album_data: dict = {
+                    'spotify_gid': album['id'],
+                    'artist': artist,
+                    'spotify_uri': album['uri'],
+                    'total_tracks': album['total_tracks'],
+                    'name': album['name'],
+                }
+
+                albums_to_create_or_update.append(new_or_updated_album_data)
+
+        if len(albums_to_create_or_update) == 0:
+            return []
+
+        albums: list[Artist] = Album.objects.bulk_create(
+            [Album(**album) for album in albums_to_create_or_update],
+            update_conflicts=True,
+            unique_fields=["spotify_gid"],
+            update_fields=albums_to_create_or_update[0].keys(),
+        )
+        return albums
 
     def get_playlist(self, playlist_id: str) -> dict:
         playlist = self.session.get(
@@ -194,7 +243,7 @@ class Downloader:
                 time.sleep(seconds_to_sleep)
             else:
                 # Re-initialize the download sessions as they must have expired
-                initialize_sessions(self)
+                self.initialize_sessions()
 
             challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
             license = self.session.post(
@@ -223,11 +272,51 @@ class Downloader:
             return artist_list[0]["name"]
         return ";".join(i["name"] for i in artist_list)
 
-    def get_artist(self, artist_list: list[dict]):
+    def get_artist(self, artist_list: list[dict]) -> str:
+        if len(artist_list) == 1:
+            return artist_list[0]["name"]
+        return (
+            ", ".join(i["name"] for i in artist_list[:-1])
+            + f' & {artist_list[-1]["name"]}'
+        )
+
+    def get_artist_folder(self, artist_list: list[dict]) -> str:
         return artist_list[0]["name"]
 
+    def get_primary_artist(self, metadata: dict) -> dict:
+        artists_with_roles = metadata['artist_with_role']
+        found_artist = None
+        # Grab first main artist listed (there may be multiple)
+        for artist in artists_with_roles:
+            if artist['role'] == 'ARTIST_ROLE_MAIN_ARTIST':
+                found_artist = artist
+                break
+        if found_artist is None:
+            artist = metadata['artist'][0]
+            found_artist = {
+                'artist_gid': artist['gid'],
+                'artist_name': artist['name'],
+            }
+        return found_artist
+
+    def get_other_artists(self, metadata: dict, primary_artist_gid: str) -> dict:
+        found_artists = []
+        for artist in metadata['artist_with_role']:
+            if artist['artist_gid'] != primary_artist_gid:
+                found_artists.append(artist)
+        return found_artists
+
+
+    def get_song_core_info(self, metadata: dict) -> str:
+        return {
+            'song_gid': metadata['gid'],
+            'song_name': metadata['name'],
+        }
+
     def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
-        lrc_timestamp = datetime.datetime.fromtimestamp(time / 1000.0)
+        lrc_timestamp = datetime.datetime.fromtimestamp(
+            time / 1000.0, tz=datetime.timezone.utc
+        )
         return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
     def get_lyrics(self, track_id: str) -> tuple[str, str]:
@@ -288,11 +377,18 @@ class Downloader:
                 album["copyrights"],
             )
             pass
-        isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
+        isrc = None
+        if metadata.get("external_id"):
+            isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
         tags = {
-            "album": metadata["album"]["name"],
-            "album_artist": self.get_artists(metadata["album"]["artist"]),
+            # All artists, "display"-style
+            "artist_folder": self.get_artist_folder(metadata["artist"]),
             "artist": self.get_artist(metadata["artist"]),
+            # All artists, `;` separated
+            "artists": self.get_artists(metadata["artist"]),
+            "album_artist": self.get_artist(metadata["album"]["artist"]),
+
+            "album": metadata["album"]["name"],
             "comment": f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}',
             "compilation": True if album["album_type"] == "compilation" else False,
             "copyright": copyright,
@@ -344,7 +440,7 @@ class Downloader:
         final_location_folder = (
             self.template_folder_compilation.split("/")
             if tags["compilation"]
-            else self.template_folder_album.split("/")
+            else self.template_artist_folder_album.split("/")
         )
         final_location_file = (
             self.template_file_multi_disc.split("/")
@@ -472,3 +568,7 @@ class Downloader:
 
     def cleanup_temp_path(self) -> None:
         shutil.rmtree(self.temp_path)
+
+    @staticmethod
+    def gid2id(gid):
+        return binascii.hexlify(gid).rjust(32, "0")

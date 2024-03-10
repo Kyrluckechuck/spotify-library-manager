@@ -1,0 +1,66 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+
+    <form action="{% url 'library_manager:download_playlist' %}" method="post">
+        {% csrf_token %}
+        {{ playlist_form }}
+        <input type="submit" name='download playlist' value="Download">
+    </form>
+
+    <h2>Incomplete/In Progress:</h2>
+    {% if download_history_not_done %}
+    <ul>
+    {% for download_details in download_history_not_done %}
+        <li>
+            Added: {{ download_details.added_at }}
+            <br/>
+            Completed: {{ download_details.completed_at }}
+            <br/>
+            Progress: {{ download_details.progress_percent }}%
+            <br/>
+            URL: <a id="download_id_{{ download_details.id }}" href="{{ download_details.url }}">{{ download_details.url }}</a>
+            <br/>
+
+            <button style="text-align:center;" onclick="CopyText('download_id_{{ download_details.id }}')">Copy URL</button>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No download history available.</p>
+    {% endif %}
+
+    <h2>Recently completed:</h2>
+    {% if download_history_done %}
+    <ul>
+    {% for download_details in download_history_done %}
+        <li>
+            Added: {{ download_details.added_at }}
+            <br/>
+            Completed: {{ download_details.completed_at }}
+            <br/>
+            Progress: {{ download_details.progress_percent }}%
+            <br/>
+            URL: <a id="download_id_{{ download_details.id }}" href="{{ download_details.url }}">{{ download_details.url }}</a>
+            <br/>
+
+            <button style="text-align:center;" onclick="CopyText('download_id_{{ download_details.id }}')">Copy URL</button>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No download history available.</p>
+    {% endif %}
+
+</body>
+<footer>
+
+</footer>
+
+{% block scripts %}
+<script>
+function CopyText(textIdToCopy) {
+    var text = document.getElementById(textIdToCopy)
+    navigator.clipboard.writeText(text.href);
+}
+</script>
+{% endblock scripts %}

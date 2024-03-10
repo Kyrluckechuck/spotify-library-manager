@@ -1,0 +1,41 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+    <h1>Artist | {{ artist_details.name }}</h1>
+    Artist ID: {{ artist_details.id }}
+    <br/>
+    Artist GID: {{ artist_details.gid }}
+    <br/>
+    Number of songs: {{ artist_details.number_songs }}
+    <br/>
+    Albums ({{ artist_details.albums.known }}) - Missing: {{ artist_details.albums.missing }} | Downloaded: {{ artist_details.albums.downloaded }}
+    <br/>
+    Songs Missing: {{ artist_details.albums.songs.missing }}
+    <br/>
+    <form action="{% url 'library_manager:track_artist' artist_details.id %}" method="post">
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit" name='toggle tracking' value="Save">
+    </form>
+    <br/>
+    <form action="{% url 'library_manager:fetch_all_albums_for_artist' artist_details.id %}" method="post">
+        {% csrf_token %}
+        <input type="submit" name='fetch all albums for artist' value="Fetch All Albums">
+    </form>
+    <a href="{% url 'library_manager:albums' artist_details.id %}">Album Management</a>
+    <br/>
+    <br/>
+    <form action="{% url 'library_manager:download_wanted_albums_for_artist' artist_details.id %}" method="post">
+        {% csrf_token %}
+        <input type="submit" name='download wanted albums for artist' value="Download Wanted Albums">
+    </form>
+    <br/>
+    Songs:
+    <ul>
+        {% for song_details in artist_songs %}
+            <li><a href="{% url 'library_manager:song' song_details.song.id %}">{{ song_details.song.name }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+<footer>
+
+</footer>
