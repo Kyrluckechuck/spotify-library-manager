@@ -36,6 +36,12 @@ Features from spotify-aac-downloader:
 - [ ] Improve onboarding documentation
  - [ ] Add critical steps such as first startup, any missing examples, etc
 
+## Screenshots
+![Main Dashboard](https://github.com/Kyrluckechuck/spotify-library-manager/assets/7606153/6d32f8d5-fe6b-4884-a5a9-7970aaba284a)
+![Example Artist Page](https://github.com/Kyrluckechuck/spotify-library-manager/assets/7606153/2dcceee2-41e4-4101-b257-2ca754017c20)
+
+
+
 ## Configuration / Usage
 It's currently being designed to mostly run on Linux-based systems, however, many of the configurations should only require minor tweaks to adjust for Windows-based systems.
 
