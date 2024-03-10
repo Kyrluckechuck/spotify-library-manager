@@ -42,6 +42,10 @@ def download_missing_albums_for_artist(artist_id: int, task: Task = None):
     artist.save()
 
 @huey.task(context=True, priority=2)
+def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
+    helpers.enqueue_playlists([tracked_playlist], priority=task.priority)
+
+@huey.task(context=True, priority=2)
 def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None):
     downloader_config = Config()
     downloader_config.urls = [playlist_url]
@@ -51,26 +55,21 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
         downloader_config.process_info = process_info
     downloader_main(downloader_config)
 
-# Disable period tasks for now
-@huey.periodic_task(crontab(minute='0', hour='*/2'), priority=1, context=True)
+@huey.periodic_task(crontab(minute='0', hour='*/6'), priority=1, context=True)
 def update_tracked_artists(task: Task = None):
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
     existing_tasks = helpers.get_all_tasks_with_name('fetch_all_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.update_tracked_artists_albums(already_enqueued_artists, all_tracked_artists, priority=task.priority)
 
-@huey.periodic_task(crontab(minute='15', hour='*/4'), context=True)
+@huey.periodic_task(crontab(minute='45', hour='*/6'), context=True)
 def download_missing_tracked_artists(task: Task = None):
     all_tracked_artists = Artist.objects.filter(tracked=True, album__downloaded=False, album__wanted=True).distinct().order_by("last_synced_at", "added_at", "id")
     existing_tasks = helpers.get_all_tasks_with_name('download_missing_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.download_missing_tracked_artists(already_enqueued_artists, all_tracked_artists, priority=task.priority)
 
-@huey.task(context=True, priority=2)
-def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
-    helpers.enqueue_playlists([tracked_playlist], priority=task.priority)
-
-@huey.periodic_task(crontab(minute='0', hour='*/6'), priority=1, context=True)
+@huey.periodic_task(crontab(minute='0', hour='*/4'), priority=1, context=True)
 def sync_tracked_playlists(task: Task = None):
     all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by("last_synced_at", "id")
     helpers.enqueue_playlists(all_enabled_playlists, priority=task.priority)

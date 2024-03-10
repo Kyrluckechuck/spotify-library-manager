@@ -4,7 +4,7 @@ services:
     command:  bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:5000"
     volumes:
       - config_storage:/config
-      - /media/music:/media/music
+      - /mnt/some_external_nas/music_spotify:/mnt/music_spotify
     ports:
       - "5000:5000"
   worker:
@@ -12,7 +12,7 @@ services:
     command: python manage.py run_huey
     volumes:
       - config_storage:/config
-      - /media/music:/media/music
+      - /mnt/some_external_nas/music_spotify:/mnt/music_spotify
     depends_on:
       - web
 
