@@ -2,6 +2,9 @@ name: build-and-publish
 
 on:
     push:
+        paths:
+            # Do not trigger build for doc updates
+            - '!/**/*.md'
     workflow_dispatch:
 
 env:

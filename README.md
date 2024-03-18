@@ -3,10 +3,10 @@ Originally derived as a fork of [glomatico/spotify-aac-downloader](https://githu
 
 This started as a simple want to mass-download songs for specific artists since they were not otherwise available, and snowballed into a full-fledged library management platform including:
 - Task queuing system, allowing downloads to continue after restarts*
-  - Semi-lossy, where jobs which are interrupted will not be recovered, but any un-started jobs can be. Jobs can safely be restarted manually, though.
+  - *Semi-lossy, where jobs which are interrupted will not be recovered, but any un-started jobs will be. Jobs can safely be restarted manually, though.
 - Artist discography syncing and mass-downloading
-- Artist tracking
-- Fetch metdata for all albums available for tracked artists
+- Artist tracking - auto downloading missing releases (including new)
+- Fetch metadata for all albums available for tracked artists
 - Mark un-downloaded albums as non-wanted
   - Useful for artists which have a large backlog of music you don't want, but you still want to track their latest stuff automatically
 - Download all "wanted" albums (via queued tasks)
@@ -26,15 +26,15 @@ Features from spotify-aac-downloader:
 ## TODO
 ### Features To Add:
 - [ ] Fallback to yt-dlp when no Spotify AAC
-- [ ] Tracked Playlists
- - [ ] Improve update experience (not URL-locked)
+- [X] Tracked Playlists
+  - [ ] Improve update experience (not URL-locked)
 - [ ] Allow periodic tasks to be configurable intervals
 - [ ] Add artists directly (by artist name?)
 
 ### Other Changes:
 - [ ] Re-add Downloader configuration(s) loading via `settings.yaml`
 - [ ] Improve onboarding documentation
- - [ ] Add critical steps such as first startup, any missing examples, etc
+  - [ ] Add critical steps such as first startup, any missing examples, etc
 
 ## Screenshots
 ![Main Dashboard](https://github.com/Kyrluckechuck/spotify-library-manager/assets/7606153/6d32f8d5-fe6b-4884-a5a9-7970aaba284a)
