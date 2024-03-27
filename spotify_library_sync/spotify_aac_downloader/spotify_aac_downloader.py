@@ -22,7 +22,7 @@ class Config:
         final_path: Path = Path(settings.final_path),
         temp_path: Path = Path(settings.temp_path),
         cookies_location: Path = Path(settings.cookies_location),
-        wvd_location: Path = Path(settings.wvd_location),
+        wvd_location: Path | None = Path(settings.wvd_location) if settings.wvd_location else None,
         ffmpeg_location: str = settings.ffmpeg_location,
         aria2c_location: str = settings.aria2c_location,
         template_artist_folder_album: str = settings.template_artist_folder_album,
