@@ -114,9 +114,7 @@ class Downloader:
         )
 
     def setup_cdm(self) -> None:
-        self.cdm = Cdm.from_device(Device.load(self.wvd_location))
         if self.wvd_location:
-            self.cdm_session = self.cdm.open()
             self.cdm = Cdm.from_device(Device.load(self.wvd_location))
         else:
             self.cdm = Cdm.from_device(Device.loads(HARDCODED_WVD))
