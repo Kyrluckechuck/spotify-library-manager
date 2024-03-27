@@ -22,6 +22,7 @@ This started as a simple want to mass-download songs for specific artists since 
 Features from spotify-aac-downloader:
 * Download songs in 128kbps AAC or 256kbps AAC with a premium account
 * Download synced lyrics
+* Includes a device wvd so no need to load your own!
 
 ## TODO
 ### Features To Add:
