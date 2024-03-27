@@ -58,17 +58,7 @@ An example docker-compose file is included in this repo that can be dropped into
 1. Export your cookies using this Google Chrome extension on the Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif
    - Make sure to be logged in
    - Save it as `cookies.txt`
-2. Place your .wvd file in the same folder, naming it `device.wvd`
-   - To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump a L3 CDM from an Android device. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
-        1. Install pywidevine with pip
-            ```bash
-            pip install pywidevine pyyaml
-            ```
-        2. Create the .wvd file
-            ```bash
-            pywidevine create-device -t ANDROID -l 3 -k private_key.pem -c client_id.bin -o .
-            ```
-3. // TODO - Execute docker container, mapping /config to the local directory with your cookies.txt, device.wvd, and settings.yml
+2. // TODO - Execute docker container, mapping /config to the local directory with your cookies.txt, device.wvd, and settings.yml
 
 ## Running From Source (not recommended unless developing)
 > [!WARNING]
@@ -84,22 +74,12 @@ An example docker-compose file is included in this repo that can be dropped into
     * Older versions of FFmpeg may not work
 3. Place your cookies in `/config/` as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
-4. Place your .wvd file in `/config/` as `device.wvd`
-    * To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump a L3 CDM from an Android device. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
-        1. Install pywidevine with pip
-            ```bash
-            pip install pywidevine pyyaml
-            ```
-        2. Create the .wvd file
-            ```bash
-            pywidevine create-device -t ANDROID -l 3 -k private_key.pem -c client_id.bin -o .
-            ```
-5. Install spotify-aac-downloader using pip
+4. Install spotify-aac-downloader using pip
     ```bash
     pip install spotify-aac-downloader
     ```
 
-6. (Optional) I personally like setting huey into instant-run mode so as to not have a separate worker, but if you are using this for non-development I would advise against this due to degraded performance!
+5. (Optional) I personally like setting huey into instant-run mode so as to not have a separate worker, but if you are using this for non-development I would advise against this due to degraded performance!
 This should be placed in `/config/` as `settings.yaml`
 ```yaml
 default:
@@ -114,6 +94,23 @@ default:
 bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:5000"
 ```
 
+## Extracting A Manual WVD
+While the wvd that's hard-coded into this project _should_ work, you can still extract the native one from your device via the following instructions:
+ - To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump a L3 CDM from an Android device. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
+  1. Install pywidevine with pip
+    ```bash
+    pip install pywidevine pyyaml
+    ```
+  2. Create the .wvd file
+    ```bash
+    pywidevine create-device -t ANDROID -l 3 -k private_key.pem -c client_id.bin -o .
+    ```
+    
+> [!NOTE]
+> This needs to be polished and likely will not work until the below Configuration section is merged into the `settings.yaml`, but should not impede the ability to use this.
+> 
+> Place your .wvd file in `/config/` as `device.wvd`, and specify this in the configuration
+
 ## Configuration (IGNORE)
 > [!CAUTION]
 > TO BE MIGRATED TO `settings.yaml` -- THESE WILL CHANGE NOTHING PRESENTLY
@@ -124,7 +121,7 @@ spotify-aac-downloader can be configured using the command line arguments or the
 | `-f`, `--final-path` / `final_path`                             | Path where the downloaded files will be saved.                        | `./Spotify`                                         |
 | `-t`, `--temp-path` / `temp_path`                               | Path where the temporary files will be saved.                         | `./temp`                                            |
 | `-c`, `--cookies-location` / `cookies_location`                 | Location of the cookies file.                                         | `./cookies.txt`                                     |
-| `-w`, `--wvd-location` / `wvd_location`                         | Location of the .wvd file.                                            | `./device.wvd`                                      |
+| `-w`, `--wvd-location` / `wvd_location`                         | Location of the .wvd file.                                            | `null`                                              |
 | `--config-location` / -                                         | Location of the config file.                                          | `<home_folder>/.spotify-aac-downloader/config.json` |
 | `--ffmpeg-location` / `ffmpeg_location`                         | Location of the FFmpeg binary.                                        | `ffmpeg`                                            |
 | `--aria2c-location` / `aria2c_location`                         | Location of the aria2c binary.                                        | `aria2c`                                            |

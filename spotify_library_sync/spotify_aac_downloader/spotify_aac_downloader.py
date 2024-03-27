@@ -116,7 +116,7 @@ def main(
                 _urls.extend(f.read().splitlines())
         config.urls = tuple(_urls)
     if not config.lrc_only:
-        if not config.wvd_location.exists():
+        if config.wvd_location and not config.wvd_location.exists():
             logger.critical(X_NOT_FOUND_STRING.format(".wvd file", config.wvd_location))
             return
         logger.debug("Setting up CDM")

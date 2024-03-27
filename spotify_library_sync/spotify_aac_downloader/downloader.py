@@ -17,7 +17,7 @@ from pywidevine import PSSH, Cdm, Device
 from pywidevine.exceptions import InvalidLicenseMessage
 from yt_dlp import YoutubeDL
 
-from .constants import MP4_TAGS_MAP
+from .constants import HARDCODED_WVD, MP4_TAGS_MAP
 
 from library_manager.models import Album, Artist
 
@@ -115,7 +115,11 @@ class Downloader:
 
     def setup_cdm(self) -> None:
         self.cdm = Cdm.from_device(Device.load(self.wvd_location))
-        self.cdm_session = self.cdm.open()
+        if self.wvd_location:
+            self.cdm_session = self.cdm.open()
+            self.cdm = Cdm.from_device(Device.load(self.wvd_location))
+        else:
+            self.cdm = Cdm.from_device(Device.loads(HARDCODED_WVD))
 
     def get_download_queue(self, url: str) -> list[dict]:
         uri = re.search(r"(\w{22})", url).group(1)
@@ -232,6 +236,9 @@ class Downloader:
     def get_decryption_key(self, pssh: str) -> str:
         pssh = PSSH(pssh)
         decrypt_attempts = 0
+        cdm_session = self.cdm.open()
+        challenge = self.cdm.get_license_challenge(cdm_session, pssh)
+        
         while decrypt_attempts < 3:
             if (decrypt_attempts < 2):
                 seconds_to_sleep = 60 * decrypt_attempts
@@ -244,22 +251,25 @@ class Downloader:
             else:
                 # Re-initialize the download sessions as they must have expired
                 self.initialize_sessions()
-
-            challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
+            
             license = self.session.post(
                 'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license',
                 challenge,
             ).content
             try:
-                self.cdm.parse_license(self.cdm_session, license)
+                self.cdm.parse_license(cdm_session, license)
                 # Success, we can continue
                 break
             except InvalidLicenseMessage as license_exception:
                 print(license_exception)
             decrypt_attempts += 1
-        return next(
-            i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT"
+
+        decryption_key = next(
+            i for i in self.cdm.get_keys(cdm_session) if i.type == "CONTENT"
         ).key.hex()
+        
+        self.cdm.close(cdm_session)
+        return decryption_key
 
     def get_stream_url(self, file_id: str) -> str:
         return self.session.get(

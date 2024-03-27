@@ -4,7 +4,7 @@ default:
   final_path: "/config/final_path"
   temp_path: "/config/temp"
   cookies_location: "/config/cookies.txt"
-  wvd_location: "/config/device.wvd"
+  wvd_location: null
   ffmpeg_location: "ffmpeg"
   aria2c_location: "aria2c"
   template_artist_folder_album: "{artist_folder}/{album}"
