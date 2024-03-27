@@ -105,7 +105,7 @@ def main(
     if config.cookies_location is not None and not config.cookies_location.exists():
         logger.critical(X_NOT_FOUND_STRING.format("Cookies", config.cookies_location))
         return
-    if not config.wvd_location.exists() and not config.lrc_only:
+    if config.wvd_location and not config.wvd_location.exists() and not config.lrc_only:
         logger.critical(X_NOT_FOUND_STRING.format(".wvd file", config.wvd_location))
         return
     if config.url_txt:
