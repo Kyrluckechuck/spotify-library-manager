@@ -23,6 +23,11 @@ Features from spotify-aac-downloader:
 * Download songs in 128kbps AAC or 256kbps AAC with a premium account
 * Download synced lyrics
 * Includes a device wvd so no need to load your own!
+     
+## Notes
+While this has a lot of opportunity to improve, it's reached a "stable" state for my personal usage. Therefore I will fix critical issues as I encounter them, but will not actively be working on additional features except when inspiration hits me, or there are specific community requests.
+
+If there is enough desire from folks, I am happy to put more time in, and of course always welcome Pull Requests!
 
 ## TODO
 ### Features To Add:
