@@ -123,9 +123,6 @@ def main(
         downloader.setup_cdm()
     logger.debug("Setting up session")
     downloader.initialize_sessions()
-    if config.premium_quality and downloader.is_premium == "false":
-        logger.critical("Cannot download in premium quality with a free account")
-        return
     download_queue = []
     download_queue_urls: list[str] = []
     error_count = 0

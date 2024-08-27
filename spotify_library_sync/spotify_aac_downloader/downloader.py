@@ -3,6 +3,7 @@ from __future__ import annotations
 import binascii
 import datetime
 import functools
+import json
 import re
 import shutil
 import subprocess
@@ -22,6 +23,26 @@ from .constants import HARDCODED_WVD, MP4_TAGS_MAP
 from library_manager.models import Album, Artist
 
 class Downloader:
+    SPOTIFY_HOME_PAGE_URL = "https://open.spotify.com/"
+    CLIENT_VERSION = "1.2.46.25.g7f189073"
+    GID_METADATA_API_URL = (
+        "https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token"
+    )
+    VIDEO_MANIFEST_API_URL = "https://gue1-spclient.spotify.com/manifests/v7/json/sources/{gid}/options/supports_drm"
+    WIDEVINE_LICENSE_API_URL = (
+        "https://gue1-spclient.spotify.com/widevine-license/v1/{type}/license"
+    )
+    LYRICS_API_URL = "https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}"
+    PSSH_API_URL = "https://seektables.scdn.co/seektable/{file_id}.json"
+    STREAM_URL_API_URL = (
+        "https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/"
+        "{file_id}?version=10000000&product=9&platform=39&alt=json"
+    )
+    METADATA_API_URL = "https://api.spotify.com/v1/{type}/{track_id}"
+    PATHFINDER_API_URL = "https://api-partner.spotify.com/pathfinder/v1/query"
+    TRACK_CREDITS_API_URL = "https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{track_id}/credits"
+    EXTEND_TRACK_COLLECTION_WAIT_TIME = 0.5
+
     def __init__(
         self,
         final_path: Path,
@@ -64,33 +85,51 @@ class Downloader:
         self.audio_quality = "MP4_256" if premium_quality else "MP4_128"
 
     def initialize_sessions(self):
+        self.session = requests.Session()
+        clear_token = None
         cookies = MozillaCookieJar(self.cookies_location)
         cookies.load(ignore_discard=True, ignore_expires=True)
-        self.session = requests.Session()
+        self.session.cookies.update(cookies)
+        clear_auth_info = self.get_clear_auth_info(
+            self.session.cookies.get("sp_dc")
+        )
+        clear_token = clear_auth_info["accessToken"]
         self.session.headers.update(
             {
-                "app-platform": "WebPlayer",
                 "accept": "application/json",
-                "accept-language": "en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2",
                 "content-type": "application/json",
-                "origin": "https://open.spotify.com",
-                "referer": "https://open.spotify.com/",
-                "sec-ch-ua": '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
+                "origin": self.SPOTIFY_HOME_PAGE_URL,
+                "priority": "u=1, i",
+                "referer": self.SPOTIFY_HOME_PAGE_URL,
+                "sec-ch-ua": '"Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"',
                 "sec-ch-ua-mobile": "?0",
                 "sec-ch-ua-platform": '"Windows"',
                 "sec-fetch-dest": "empty",
                 "sec-fetch-mode": "cors",
                 "sec-fetch-site": "same-site",
-                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+                "spotify-app-version": self.CLIENT_VERSION,
+                "app-platform": "WebPlayer",
             }
         )
-        self.session.cookies.update(cookies)
-        home_page = self.session.get("https://open.spotify.com/").text
-        token = re.search(r'accessToken":"(.*?)"', home_page).group(1)
-        self.is_premium = re.search(r'isPremium":(.*?),', home_page).group(1)
+
+        home_page = self.session.get(self.SPOTIFY_HOME_PAGE_URL).text
+        self.session_info = json.loads(
+            re.search(
+                r'<script id="session" data-testid="session" type="application/json">(.+?)</script>',
+                home_page,
+            ).group(1)
+        )
+        self.config_info = json.loads(
+            re.search(
+                r'<script id="config" data-testid="config" type="application/json">(.+?)</script>',
+                home_page,
+            ).group(1)
+        )
+
         self.session.headers.update(
             {
-                "authorization": f"Bearer {token}",
+                "Authorization": f"Bearer {clear_token or self.session_info['accessToken']}",
             }
         )
         # Create unauthorized basic session to help in some scenarios
@@ -580,3 +619,16 @@ class Downloader:
     @staticmethod
     def gid2id(gid):
         return binascii.hexlify(gid).rjust(32, "0")
+
+    @staticmethod
+    def get_clear_auth_info(sp_dc: str) -> str:
+        response = requests.get(
+            "https://open.spotify.com/get_access_token",
+            cookies={
+                "sp_dc": sp_dc,
+            },
+        )
+        response.raise_for_status()
+        auth_info: dict = response.json()
+        assert auth_info.get("accessToken")
+        return auth_info
