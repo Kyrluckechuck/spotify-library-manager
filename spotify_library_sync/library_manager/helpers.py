@@ -65,5 +65,5 @@ def cleanup_huey_history():
     with connection.cursor() as cursor:
         cursor.execute("UPDATE huey_monitor_taskmodel SET parent_task_id = NULL, state_id = NULL WHERE create_dt < DATETIME('now', '-3 day');")
         cursor.execute("DELETE FROM huey_monitor_signalinfomodel WHERE create_dt < DATETIME('now', '-3 day');")
-        cursor.execute("DELETE FROM huey_monitor_taskmodel WHERE create_dt < DATETIME('now', '-3 day');")
+        cursor.execute("DELETE FROM huey_monitor_taskmodel WHERE create_dt < DATETIME('now', '-4 day');")
         cursor.execute("VACUUM;")
