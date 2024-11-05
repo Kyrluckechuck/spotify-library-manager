@@ -2,11 +2,14 @@ click
 django
 django-debug-toolbar
 django-huey-monitor
+django-rest-framework
 django-stubs[compatible-mypy]
 django-stubs-ext
+django-vite
 dynaconf
 huey
 jinja2
+pillow
 pybase62
 pylint-django
 pywidevine

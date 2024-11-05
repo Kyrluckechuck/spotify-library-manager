@@ -1,5 +1,7 @@
 {% load static %}
+{% load django_vite %}
 <head>
+    {% vite_hmr_client %}
     <link rel="stylesheet" href="{% static 'library_manager/style.css' %}">
     <h2 class="importer_header"><img src="{% static 'library_manager/images/spotify_icon_128.png' %}" width="128" height="128"><div class="title">Spotify AAC Downloader</div></h2>
     <ul>

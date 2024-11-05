@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 import django_stubs_ext
@@ -36,6 +37,16 @@ settings = dynaconf.DjangoDynaconf(
         "*.yaml",
         "/config/settings.yaml",
     ],
+    STATICFILES_DIRS=[
+        os.path.join(BASE_DIR, "frontend", "dist"),
+        BASE_DIR / "assets",
+    ],
+    DJANGO_VITE={
+        "default": {
+            "dev_mode": True,
+            "manifest_path": os.path.join(BASE_DIR, "frontend", "dist", "manifest.json"),
+        },
+    }
 )  # noqa
 
 Path("/config/db/").mkdir(parents=True, exist_ok=True)

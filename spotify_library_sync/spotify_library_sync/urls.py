@@ -21,4 +21,5 @@ urlpatterns = [
     path("library_manager/", include("library_manager.urls")),
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),
+    # path("api/v1/"),
 ]
