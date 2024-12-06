@@ -2,11 +2,13 @@
 {% load django_vite %}
 <head>
     {% vite_hmr_client %}
-    <link rel="stylesheet" href="{% static 'library_manager/style.css' %}">
-    <h2 class="importer_header"><img src="{% static 'library_manager/images/spotify_icon_128.png' %}" width="128" height="128"><div class="title">Spotify AAC Downloader</div></h2>
-    <ul>
-        <li><a href="{% url 'library_manager:index' %}">Home</a></li>
-        <li><a href="{% url 'library_manager:download_history' %}">Download History</a></li>
-        <li><a href="{% url 'library_manager:tracked_playlists' %}">Tracked Playlists</a></li>
-    </ul>
+    <div id="oldheader">
+        <link rel="stylesheet" href="{% static 'library_manager/style.css' %}">
+        <h2 class="importer_header"><img src="{% static 'library_manager/images/spotify_icon_128.png' %}" width="128" height="128"><div class="title">Spotify AAC Downloader</div></h2>
+        <ul>
+            <li><a href="{% url 'library_manager:index' %}">Home</a></li>
+            <li><a href="{% url 'library_manager:download_history' %}">Download History</a></li>
+            <li><a href="{% url 'library_manager:tracked_playlists' %}">Tracked Playlists</a></li>
+        </ul>
+    </div>
 </head>

@@ -1,9 +1,13 @@
 {% load django_vite %}
 
-{% include 'library_manager/partials/header.html' %}
+{% comment %} {% include 'library_manager/partials/header.html' %} {% endcomment %}
 {% vite_asset 'frontend/src/main.ts' %}
 <body>
+    {% vite_hmr_client %}
     <div>
+        <div id="app"></div> 
+    </div>
+    {% comment %} <div>
         This will be the artist/song management page
         <form action="{% url 'library_manager:download_playlist' %}" method="post">
             {% csrf_token %}
@@ -73,10 +77,7 @@
         {% else %}
             <p>No artists are available.</p>
         {% endif %}
-    </div>
-    <div>
-        <div id="app"></div> 
-    </div>
+    </div> {% endcomment %}
 </body>
 
 <footer>

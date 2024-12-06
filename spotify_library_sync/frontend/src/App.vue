@@ -1,30 +1,37 @@
 <script setup lang="ts">
-// import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterLink, RouterView } from 'vue-router'
+import LibraryOverview from './components/LibraryOverview.vue'
 
 </script>
 
 <template>
   <header>
-    <img
-      alt="Vue logo"
-      class="logo"
-      :src="'/static/library_manager/images/logo.svg'"
-      width="125"
-      height="125"
-    />
+    <h2 class="importer_header">
+      <img
+        alt="Vue logo"
+        class="logo"
+        :src="'/static/library_manager/images/spotify_icon_128.png'"
+        width="128"
+        height="128"
+      />
+      <div class="title">Spotify AAC Downloader</div>
+    </h2>
 
     <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+      <LibraryOverview/>
 
-      <!-- <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouddterLink to="/about">About</RouterLink>
-      </nav> -->
+      <nav>
+        <RouterLink to="/library_manager">Home</RouterLink>
+        <!-- <RouterLink to="/library_manager/about">About</RouterLink> -->
+        <RouterLink to="/library_manager/artists">Artists</RouterLink>
+        <RouterLink to="/library_manager/albums">Albums</RouterLink>
+        <RouterLink to="/library_manager/download_history">Download History</RouterLink>
+        <RouterLink to="/library_manager/tracked_playlists">Tracked Playlists</RouterLink>
+      </nav>
     </div>
   </header>
 
-  <!-- <RouterView /> -->
+  <RouterView />
 </template>
 
 <style scoped>
