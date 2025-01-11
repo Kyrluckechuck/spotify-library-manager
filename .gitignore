@@ -12,3 +12,4 @@ urls*.txt
 db/
 Spotify/
 temp/
+node_modules/
