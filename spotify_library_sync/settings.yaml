@@ -90,8 +90,8 @@ default:
     huey_class: 'huey.SqliteHuey',
     name: 'spotify_library_sync',
     filename: "/config/db/huey.sqlite3",
-    # immediate: false,
-    immediate_use_memory: true,
+    immediate: false,
+    # immediate_use_memory: true,
   }
 
 
