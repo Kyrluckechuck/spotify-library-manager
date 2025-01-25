@@ -57,16 +57,16 @@ class Downloader:
     @functools.lru_cache()
     def get_album(self, album_id: str) -> dict:
         album = self.spotipy_client.album(album_id)
-        album_content_iterator = self.spotipy_client.next(album)
+        album_track_iterator = self.spotipy_client.next(album["tracks"])
 
-        while album_content_iterator is not None:
-            album["tracks"]["items"].extend(album_content_iterator["items"])
-            album_content_iterator = self.spotipy_client.next(album_content_iterator)
+        while album_track_iterator is not None:
+            album["tracks"]["items"].extend(album_track_iterator["items"])
+            album_track_iterator = self.spotipy_client.next(album_track_iterator)
         return album
     
     def get_playlist(self, playlist_id: str) -> dict:
         playlist = self.spotipy_client.playlist(playlist_id)
-        playlist_iterator = self.spotipy_client.next(playlist)
+        playlist_iterator = self.spotipy_client.next(playlist["tracks"])
 
         while playlist_iterator is not None:
             playlist["tracks"]["items"].extend(playlist_iterator["items"])
