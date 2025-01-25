@@ -10,6 +10,7 @@ jinja2
 pybase62
 pylint-django
 pyyaml
+tinytag
 # spotdl
 git+https://github.com/Kyrluckechuck/spotify-downloader.git@add-yt-dlp-extractor-support#egg=spotdl
 

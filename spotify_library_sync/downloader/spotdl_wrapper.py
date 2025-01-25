@@ -11,7 +11,9 @@ from __future__ import annotations, division
 import asyncio
 from argparse import Namespace
 import logging
+import pathlib
 import traceback
+from tinytag import TinyTag
 
 from . import __version__
 from . import utils
@@ -28,6 +30,9 @@ from spotdl.download.downloader import Downloader as SpotdlDownloader
 from spotdl.types.song import Song as SpotdlSong
 from spotdl.utils.config import create_settings
 from spotdl.utils.spotify import SpotifyClient
+
+class BitrateException(Exception):
+    pass
 
 # Apply monkeypatches to Spotdl for compatibility
 # See spotdl_override module for more information
@@ -203,10 +208,23 @@ class SpotdlWrapper:
                     song_success, output_path = self.spotdl.download(SpotdlSong.from_url(track['external_urls']['spotify']))
                     if (song_success is None or output_path is None):
                         raise Exception("Failed to download correctly")
+                    
+                    # Validate the song is in the correct audio bitrate
+                    # Validate premium successfully applied, for example
+                    expected_bitrate = 127 if config.cookies_location is not None and config.po_token is not None else 255
+
+                    tag = TinyTag.get(output_path)
+                    if (tag.bitrate < expected_bitrate):
+                        pathlib.Path.unlink(output_path)
+                        raise BitrateException(f"File was downloaded successfully but not in the correct bitrate ({tag.bitrate} found, but {expected_bitrate} is minimum expected)")
+                except BitrateException as exception:
+                    self.logger.erorr("Critical bitrate exception occurred, halting download queue")
+                    self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
+                    self.logger.error(f"exception: {exception}")
+                    raise exception
                 except Exception as exception:
                     error_count += 1
-                    self.logger.error(
-                        f'({current_track}) Failed to download "{track["name"]}"')
+                    self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
                     self.logger.error(f"exception: {exception}")
                     if (config.print_exceptions):
                         self.logger.error(traceback.format_exc())
