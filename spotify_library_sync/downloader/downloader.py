@@ -29,7 +29,7 @@ class Downloader:
         while album_iterator is not None:
             for album in album_iterator['items']:
                 new_or_updated_album_data: dict = {
-                    'spotify_gid': utils.uri_to_gid(album['id']),
+                    'spotify_gid': album['id'],
                     'artist': artist,
                     'spotify_uri': album['uri'],
                     'total_tracks': album['total_tracks'],
