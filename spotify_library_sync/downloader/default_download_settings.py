@@ -45,7 +45,7 @@ DEFAULT_DOWNLOAD_SETTINGS = {
     "id3_separator": "/",
     "ytm_data": False,
     "add_unavailable": False,
-    "generate_lrc": True,
+    "generate_lrc": False,
     "force_update_metadata": False,
     "only_verified_results": False,
     "sync_without_deleting": False,
