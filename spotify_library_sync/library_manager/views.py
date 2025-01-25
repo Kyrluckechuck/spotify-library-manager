@@ -34,6 +34,7 @@ def index(request: HttpRequest):
 
     sum_num_wanted = wanted_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
     sum_num_downloaded = downloaded_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
+    percent_completed = round(sum_num_downloaded / (sum_num_downloaded + sum_num_wanted) * 100, 2) if (sum_num_downloaded + sum_num_wanted) > 0 else 100
 
     # Extra stats
     extra_stats = {
@@ -41,7 +42,7 @@ def index(request: HttpRequest):
         'sum_num_wanted': sum_num_wanted,
         'num_downloaded': downloaded_base.count(),
         'sum_num_downloaded': sum_num_downloaded,
-        'percent_completed': round(sum_num_downloaded / (sum_num_downloaded + sum_num_wanted) * 100, 2),
+        'percent_completed': percent_completed,
     }
     return render(request, "library_manager/index.html", {"playlist_form": download_playlist_form, "page_obj": page_obj, "search_term_and_page": search_term_and_page, "extra_stats": extra_stats})
 

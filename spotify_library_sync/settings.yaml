@@ -1,24 +1,11 @@
 default:
   # Default input/output locations
   # Please customize this to your desired location
-  final_path: "/config/final_path"
-  temp_path: "/config/temp"
+  # Cookies & PO Tokens are *both* required for HQ downloads
   cookies_location: "/config/cookies.txt"
-  wvd_location: null
-  ffmpeg_location: "ffmpeg"
-  aria2c_location: "aria2c"
-  template_artist_folder_album: "{artist_folder}/{album}"
-  template_folder_album: "{album_artist}/{album}"
-  template_folder_compilation: "Compilations/{album}"
-  template_file_single_disc: "{track:02d} {title}"
-  template_file_multi_disc: "{disc}-{track:02d} {title}"
-  download_mode: "ytdlp"
-  truncate: 180
+  po_token: null
   log_level: "DEBUG"
-  premium_quality: true
-  lrc_only: false
   no_lrc: false
-  save_cover: false
   overwrite: false
   print_exceptions: true
 
@@ -103,8 +90,8 @@ default:
     huey_class: 'huey.SqliteHuey',
     name: 'spotify_library_sync',
     filename: "/config/db/huey.sqlite3",
-    immediate: false,
-    # immediate_use_memory: true,
+    # immediate: false,
+    immediate_use_memory: true,
   }
 
 

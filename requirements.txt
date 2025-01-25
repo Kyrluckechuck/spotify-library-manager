@@ -9,6 +9,7 @@ huey
 jinja2
 pybase62
 pylint-django
-pywidevine
 pyyaml
-yt-dlp
+# spotdl
+git+https://github.com/Kyrluckechuck/spotify-downloader.git@add-yt-dlp-extractor-support#egg=spotdl
+
