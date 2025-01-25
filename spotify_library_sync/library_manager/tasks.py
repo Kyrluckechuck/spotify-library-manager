@@ -1,4 +1,4 @@
-from .models import Album, Artist, TrackedPlaylist
+from .models import Album, Artist, DownloadHistory, TrackedPlaylist
 from . import helpers
 from downloader.spotdl_wrapper import SpotdlWrapper
 from lib.config_class import Config
@@ -9,6 +9,7 @@ from huey.api import Task
 from huey_monitor.tqdm import ProcessInfo
 
 from django.db.models.functions import Now
+from django.utils import timezone
 
 spotdl_wrapper = SpotdlWrapper(Config())
 
@@ -67,6 +68,11 @@ def update_tracked_artists(task: Task = None):
 
 @huey.periodic_task(crontab(minute='45', hour='*/6'), context=True)
 def download_missing_tracked_artists(task: Task = None):
+    twelve_hours_ago = timezone.now()-timezone.timedelta(hours=12)
+    recently_downloaded_songs = DownloadHistory.objects.filter(added_at__gte=twelve_hours_ago)
+    if (recently_downloaded_songs.count() > 5000):
+        print(f"Skipping queued missing tracked artists due to quantity of recent downloads ({recently_downloaded_songs.count()})")
+        return
     all_tracked_artists = Artist.objects.filter(tracked=True, album__downloaded=False, album__wanted=True).distinct().order_by("last_synced_at", "added_at", "id")
     existing_tasks = helpers.get_all_tasks_with_name('download_missing_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
