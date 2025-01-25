@@ -57,20 +57,20 @@ class Downloader:
     @functools.lru_cache()
     def get_album(self, album_id: str) -> dict:
         album = self.spotipy_client.album(album_id)
-        album_next_url = album["tracks"]["next"]
-        while album_next_url is not None:
-            album_next = self.session.get(album_next_url).json()
-            album["tracks"]["items"].extend(album_next["items"])
-            album_next_url = album_next["next"]
+        album_content_iterator = self.spotipy_client.next(album)
+
+        while album_content_iterator is not None:
+            album["tracks"]["items"].extend(album_content_iterator["items"])
+            album_content_iterator = self.spotipy_client.next(album_content_iterator)
         return album
     
     def get_playlist(self, playlist_id: str) -> dict:
         playlist = self.spotipy_client.playlist(playlist_id)
-        playlist_next_url = playlist["tracks"]["next"]
-        while playlist_next_url is not None:
-            playlist_next = self.session.get(playlist_next_url).json()
-            playlist["tracks"]["items"].extend(playlist_next["items"])
-            playlist_next_url = playlist_next["next"]
+        playlist_iterator = self.spotipy_client.next(playlist)
+
+        while playlist_iterator is not None:
+            playlist["tracks"]["items"].extend(playlist_iterator["items"])
+            playlist_iterator = self.spotipy_client.next(playlist_iterator)
         return playlist
     
     def get_download_queue(self, url: str) -> list[dict]:
