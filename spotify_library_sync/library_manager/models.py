@@ -41,6 +41,7 @@ class Song(models.Model):
     gid = models.CharField(max_length=120, unique=True)
     primary_artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    failed_count = models.IntegerField(default=0)
 
     @property
     def contributing_artists(self):
@@ -91,6 +92,7 @@ class Album(models.Model):
     total_tracks = models.IntegerField(default=0)
     wanted = models.BooleanField(default=True)
     name = models.CharField(max_length=2048)
+    failed_count = models.IntegerField(default=0)
 
     class Meta(TypedModelMeta):
         pass

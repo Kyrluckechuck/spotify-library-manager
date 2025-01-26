@@ -54,6 +54,17 @@ class Downloader:
     def get_track(self, track_id: str) -> dict:
         return self.spotipy_client.track(track_id)
 
+    def create_album(self, album_id: str, artist: Artist) -> Album:
+        album_details = self.get_album(album_id)
+        album = Album.objects.create(
+            spotify_gid=album_details['id'],
+            artist=artist,
+            spotify_uri=album_details['uri'],
+            total_tracks=album_details['total_tracks'],
+            name=album_details['name'],
+        )
+        return album
+
     @functools.lru_cache()
     def get_album(self, album_id: str) -> dict:
         album = self.spotipy_client.album(album_id)

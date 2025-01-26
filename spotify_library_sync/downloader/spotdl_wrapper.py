@@ -30,8 +30,11 @@ from spotdl.download.downloader import Downloader as SpotdlDownloader
 from spotdl.types.song import Song as SpotdlSong
 from spotdl.utils.config import create_settings
 from spotdl.utils.spotify import SpotifyClient
+from spotdl.utils.logging import init_logging
 
 class BitrateException(Exception):
+    pass
+class SpotdlDownloadError(Exception):
     pass
 
 # Apply monkeypatches to Spotdl for compatibility
@@ -77,6 +80,7 @@ def initiate_logger(log_level: str):
     )
     logger = logging.getLogger(__name__)
     logger.setLevel(log_level)
+    init_logging(log_level)
 
     return logger
 
@@ -97,7 +101,7 @@ class SpotdlWrapper:
     def execute(
         self,
         config: Config
-    ):
+    ) -> int:
         download_queue = []
         download_queue_urls: list[str] = []
         error_count = 0
@@ -209,25 +213,38 @@ class SpotdlWrapper:
 
                     song_success, output_path = self.spotdl.download(SpotdlSong.from_url(track['external_urls']['spotify']))
                     if (song_success is None or output_path is None):
-                        raise Exception("Failed to download correctly")
+                        self.logger.debug(song_success)
+                        self.logger.debug(f"output_path: {output_path}")
+                        raise SpotdlDownloadError("Failed to download correctly")
                     
                     # Validate the song is in the correct audio bitrate
                     # Validate premium successfully applied, for example
-                    expected_bitrate = 127 if config.cookies_location is not None and config.po_token is not None else 255
+                    expected_bitrate = 255 if config.cookies_location is not None and config.po_token is not None else 127
 
                     tag = TinyTag.get(output_path)
                     if (tag.bitrate < expected_bitrate):
                         pathlib.Path.unlink(output_path)
                         raise BitrateException(f"File was downloaded successfully but not in the correct bitrate ({tag.bitrate} found, but {expected_bitrate} is minimum expected)")
                 except BitrateException as exception:
-                    self.logger.erorr("Critical bitrate exception occurred, halting download queue")
+                    error_count += 1
+                    self.logger.error("Critical bitrate exception occurred, halting download queue")
                     self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
                     self.logger.error(f"exception: {exception}")
+                    # Don't count a bitrate exception towards song/album failures since it's likely a misconfiguration problem
                     raise exception
+                except SpotdlDownloadError as exception:
+                    error_count += 1
+                    self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
+                    self.logger.error(f"exception: {exception}")
+                    self.logger.error("This track is possibly not available in your region")
+                    db_song.failed_count += 1
+                    db_song.save()
                 except Exception as exception:
                     error_count += 1
                     self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
                     self.logger.error(f"exception: {exception}")
+                    db_song.failed_count += 1
+                    db_song.save()
                     if (config.print_exceptions):
                         self.logger.error(traceback.format_exc())
 
@@ -238,10 +255,13 @@ class SpotdlWrapper:
                     if download_queue_url.startswith('spotify:album:'):
                         try:
                             album = Album.objects.get(spotify_uri=download_queue_url)
+                        except Album.DoesNotExist:
+                            album = self.downloader.create_album(download_queue_url, artist)
+                        if (album is not None):
                             album.downloaded = True
                             album.save()
-                        except Album.DoesNotExist:
-                            self.logger.warning("Spotify album downloaded but was not expected")
+                        else:
+                            self.logger.warning("Spotify album downloaded but was not expected and could not be created")
 
                     if tracked_playlist is not None:
                         tracked_playlist.last_synced_at = Now()
@@ -249,3 +269,4 @@ class SpotdlWrapper:
 
         update_process_info(config, 1000)
         self.logger.info(f"Done ({error_count} error(s))")
+        return error_count
