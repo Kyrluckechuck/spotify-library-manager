@@ -52,6 +52,8 @@ def generate_spotdl_settings(config: Config):
     del spotify_settings["use_cache_file"]
     spotify_settings["downloader_settings"] = downloader_settings
 
+    spotify_settings["downloader_settings"]["log_level"] = config.log_level
+
     for key in DEFAULT_DOWNLOAD_SETTINGS.keys():
         if key in spotify_settings:
             spotify_settings[key] = DEFAULT_DOWNLOAD_SETTINGS[key]

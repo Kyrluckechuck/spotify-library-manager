@@ -4,7 +4,7 @@ default:
   # Cookies & PO Tokens are *both* required for HQ downloads
   cookies_location: "/config/cookies.txt"
   po_token: null
-  log_level: "DEBUG"
+  log_level: "INFO"
   no_lrc: false
   overwrite: false
   print_exceptions: true
