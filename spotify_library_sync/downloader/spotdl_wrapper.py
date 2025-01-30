@@ -221,7 +221,7 @@ class SpotdlWrapper:
                     # Validate premium successfully applied, for example
                     expected_bitrate = 255 if config.cookies_location is not None and config.po_token is not None else 127
 
-                    media_info = MediaInfo(output_path)
+                    media_info = MediaInfo.parse(output_path)
                     for track in media_info.tracks:
                         if track.track_type == "Audio":
                             audio_track = track
