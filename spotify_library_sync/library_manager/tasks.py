@@ -1,5 +1,5 @@
 import time
-from .models import Album, Artist, DownloadHistory, TrackedPlaylist
+from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD
 from . import helpers
 from downloader.spotdl_wrapper import SpotdlWrapper
 from lib.config_class import Config
@@ -13,9 +13,6 @@ from django.db.models.functions import Now
 from django.utils import timezone
 
 spotdl_wrapper = SpotdlWrapper(Config())
-
-# TODO: Make this configurable, allowing appears_on" to optionally be requested, or others be de-selected
-ALBUM_TYPES_TO_DOWNLOAD = ["single", "album", "compilation"]
 
 @huey.task(context=True, priority=3)
 def fetch_all_albums_for_artist(artist_id: int, task: Task = None):
