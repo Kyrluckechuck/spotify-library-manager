@@ -93,6 +93,7 @@ class Album(models.Model):
     wanted = models.BooleanField(default=True)
     name = models.CharField(max_length=2048)
     failed_count = models.IntegerField(default=0)
+    album_type = models.CharField(max_length=100, null=True)
 
     class Meta(TypedModelMeta):
         pass

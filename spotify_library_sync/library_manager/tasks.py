@@ -1,3 +1,4 @@
+import time
 from .models import Album, Artist, DownloadHistory, TrackedPlaylist
 from . import helpers
 from downloader.spotdl_wrapper import SpotdlWrapper
@@ -13,6 +14,9 @@ from django.utils import timezone
 
 spotdl_wrapper = SpotdlWrapper(Config())
 
+# TODO: Make this configurable, allowing appears_on" to optionally be requested, or others be de-selected
+ALBUM_TYPES_TO_DOWNLOAD = ["single", "album", "compilation"]
+
 @huey.task(context=True, priority=3)
 def fetch_all_albums_for_artist(artist_id: int, task: Task = None):
     artist = Artist.objects.get(id=artist_id)
@@ -25,7 +29,10 @@ def fetch_all_albums_for_artist(artist_id: int, task: Task = None):
     spotdl_wrapper.execute(downloader_config)
 
 @huey.task(context=True, priority=1)
-def download_missing_albums_for_artist(artist_id: int, task: Task = None):
+def download_missing_albums_for_artist(artist_id: int, task: Task = None, delay: int = 0):
+    # Add delay (if applicable) to reduce chance of flagging when backfilling library
+    time.sleep(delay)
+
     artist = Artist.objects.get(id=artist_id)
     missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True)
     print(f"missing albums search for artist {artist.id} found {missing_albums.count()}")
@@ -66,14 +73,17 @@ def update_tracked_artists(task: Task = None):
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.update_tracked_artists_albums(already_enqueued_artists, all_tracked_artists, priority=task.priority)
 
-@huey.periodic_task(crontab(minute='45', hour='*/6'), context=True)
+# Severely throttling automatic playlist download for tracked artists for the time being;
+# There is a high likelyhood of being flagged due to high usage at the moment and a new scalable solution needs to be investigated.
+@huey.periodic_task(crontab(minute='45', hour='*/6'), priority=0, context=True)
 def download_missing_tracked_artists(task: Task = None):
-    twelve_hours_ago = timezone.now()-timezone.timedelta(hours=12)
+    twelve_hours_ago = timezone.now() - timezone.timedelta(hours=12)
     recently_downloaded_songs = DownloadHistory.objects.filter(added_at__gte=twelve_hours_ago)
-    if (recently_downloaded_songs.count() > 5000):
+    if (recently_downloaded_songs.count() > 250):
         print(f"Skipping queued missing tracked artists due to quantity of recent downloads ({recently_downloaded_songs.count()})")
         return
-    all_tracked_artists = Artist.objects.filter(tracked=True, album__downloaded=False, album__wanted=True).distinct().order_by("last_synced_at", "added_at", "id")
+    # Limit to only desired album types (ignoring `appears_on`), and limit results so this won't throttle
+    all_tracked_artists = Artist.objects.filter(tracked=True, album__downloaded=False, album__wanted=True, album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD).distinct().order_by("last_synced_at", "added_at", "id")[:150]
     existing_tasks = helpers.get_all_tasks_with_name('download_missing_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.download_missing_tracked_artists(already_enqueued_artists, all_tracked_artists, priority=task.priority)
@@ -83,6 +93,6 @@ def sync_tracked_playlists(task: Task = None):
     all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by("last_synced_at", "id")
     helpers.enqueue_playlists(all_enabled_playlists, priority=task.priority)
 
-@huey.periodic_task(crontab(minute='0', hour='6'), priority=3)
+@huey.periodic_task(crontab(minute='0', hour='6'), priority=10)
 def cleanup_huey_history():
     helpers.cleanup_huey_history()

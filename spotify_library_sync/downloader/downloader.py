@@ -34,6 +34,7 @@ class Downloader:
                     'spotify_uri': album['uri'],
                     'total_tracks': album['total_tracks'],
                     'name': album['name'],
+                    'album_type': album['album_type']
                 }
 
                 albums_to_create_or_update.append(new_or_updated_album_data)
