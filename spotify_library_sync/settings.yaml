@@ -60,7 +60,7 @@ default:
       OPTIONS: {
         timeout: 20,  # in seconds
         # see also
-        # https://docs.python.org/3.7/library/sqlite3.html#sqlite3.connect
+        # https://docs.python.org/3.13/library/sqlite3.html#sqlite3.connect
       }
   # Password validation
   # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

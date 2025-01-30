@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /code
 
 # Update all image packages & install user-friendly cli editor
-RUN apt-get update && apt-get upgrade -y && apt install nano -y
+RUN apt-get update && apt-get upgrade -y && apt install nano mediainfo -y
 
 # Install deps
 COPY requirements.txt /code/

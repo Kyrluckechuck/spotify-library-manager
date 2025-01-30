@@ -13,7 +13,7 @@ from argparse import Namespace
 import logging
 import pathlib
 import traceback
-from tinytag import TinyTag
+from pymediainfo import MediaInfo
 
 from . import __version__
 from . import utils
@@ -221,11 +221,18 @@ class SpotdlWrapper:
                     # Validate premium successfully applied, for example
                     expected_bitrate = 255 if config.cookies_location is not None and config.po_token is not None else 127
 
-                    tag = TinyTag.get(output_path)
-                    if (tag.bitrate < expected_bitrate):
-                        self.logger.debug(f"||| not unlinking {output_path}")
+                    media_info = MediaInfo(output_path)
+                    for track in media_info.tracks:
+                        if track.track_type == "Audio":
+                            audio_track = track
+                            bit_rate = audio_track.bit_rate / 1000
+                            break
+                    
+                    if (audio_track is None or bit_rate < expected_bitrate):
                         # pathlib.Path.unlink(output_path)
-                        raise BitrateException(f"File was downloaded successfully but not in the correct bitrate ({tag.bitrate} found, but {expected_bitrate} is minimum expected)")
+                        if audio_track is None:
+                            raise BitrateException(f"File was downloaded successfully, but no audio track existed | output_path: {output_path}")
+                        raise BitrateException(f"File was downloaded successfully but not in the correct bitrate ({bit_rate} found, but {expected_bitrate} is minimum expected) | output_path: {output_path}")
                 except BitrateException as exception:
                     error_count += 1
                     self.logger.error("Critical bitrate exception occurred, halting download queue")

@@ -75,7 +75,7 @@ An example docker-compose file is included in this repo that can be dropped into
 >
 > If developing on Windows, using WSL should work just fine, installing python via `apt`
 
-1. Install Python 3.10 or higher
+1. Install Python 3.13 or higher
 2. Place your cookies in `/config/` as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc. Make sure to be logged in.
 
