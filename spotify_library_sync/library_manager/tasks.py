@@ -63,7 +63,7 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
-@huey.periodic_task(crontab(minute='0', hour='*/6'), priority=1, context=True)
+@huey.periodic_task(crontab(minute='0', hour='*/8'), priority=1, context=True)
 def update_tracked_artists(task: Task = None):
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
     existing_tasks = helpers.get_all_tasks_with_name('fetch_all_albums_for_artist')
@@ -72,7 +72,7 @@ def update_tracked_artists(task: Task = None):
 
 # Severely throttling automatic playlist download for tracked artists for the time being;
 # There is a high likelyhood of being flagged due to high usage at the moment and a new scalable solution needs to be investigated.
-@huey.periodic_task(crontab(minute='45', hour='*/6'), priority=0, context=True)
+@huey.periodic_task(crontab(minute='45', hour='*/8'), priority=0, context=True)
 def download_missing_tracked_artists(task: Task = None):
     twelve_hours_ago = timezone.now() - timezone.timedelta(hours=12)
     recently_downloaded_songs = DownloadHistory.objects.filter(added_at__gte=twelve_hours_ago)
