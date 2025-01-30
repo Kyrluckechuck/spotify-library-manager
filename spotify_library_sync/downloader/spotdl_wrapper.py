@@ -223,7 +223,8 @@ class SpotdlWrapper:
 
                     tag = TinyTag.get(output_path)
                     if (tag.bitrate < expected_bitrate):
-                        pathlib.Path.unlink(output_path)
+                        self.logger.debug(f"||| not unlinking {output_path}")
+                        # pathlib.Path.unlink(output_path)
                         raise BitrateException(f"File was downloaded successfully but not in the correct bitrate ({tag.bitrate} found, but {expected_bitrate} is minimum expected)")
                 except BitrateException as exception:
                     error_count += 1
