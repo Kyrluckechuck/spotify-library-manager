@@ -1,6 +1,7 @@
 click
 django
 django-debug-toolbar
+django-extensions
 django-huey-monitor
 django-stubs[compatible-mypy]
 django-stubs-ext

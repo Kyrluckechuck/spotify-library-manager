@@ -8,6 +8,7 @@ default:
   no_lrc: false
   overwrite: false
   print_exceptions: true
+  disable_missing_tracked_artist_download: false
 
   # Quick-start development settings - unsuitable for production
   # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -26,6 +27,7 @@ default:
     - django.contrib.sessions
     - django.contrib.messages
     - django.contrib.staticfiles
+    - django_extensions
     - debug_toolbar
     - huey.contrib.djhuey
     - bx_django_utils # https://github.com/boxine/bx_django_utils

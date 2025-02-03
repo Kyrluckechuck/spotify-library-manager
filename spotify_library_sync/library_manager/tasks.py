@@ -1,11 +1,12 @@
 import time
 from urllib.parse import urljoin, urlparse
 
+from django.conf import settings
+
 from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD
 from . import helpers
 from downloader.spotdl_wrapper import SpotdlWrapper
 from lib.config_class import Config
-
 
 from huey import crontab
 import huey.contrib.djhuey as huey
@@ -84,6 +85,10 @@ def update_tracked_artists(task: Task = None):
 # There is a high likelyhood of being flagged due to high usage at the moment and a new scalable solution needs to be investigated.
 @huey.periodic_task(crontab(minute='45', hour='*/8'), priority=0, context=True)
 def download_missing_tracked_artists(task: Task = None):
+    if settings.disable_missing_tracked_artist_download:
+        print(f"Skipping queued missing tracked artists due to disable_missing_tracked_artist_download setting")
+        return
+    
     twelve_hours_ago = timezone.now() - timezone.timedelta(hours=12)
     recently_downloaded_songs = DownloadHistory.objects.filter(added_at__gte=twelve_hours_ago)
     if (recently_downloaded_songs.count() > 250):
