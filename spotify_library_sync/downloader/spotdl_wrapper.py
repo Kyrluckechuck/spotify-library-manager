@@ -255,6 +255,10 @@ class SpotdlWrapper:
                     db_song.save()
                     if (config.print_exceptions):
                         self.logger.error(traceback.format_exc())
+                finally:
+                    # Clear any errors from the persisted object, otherwise it will continue printing old failures
+                    if len(self.spotdl.downloader.errors) > 0:
+                        self.spotdl.downloader.errors.clear()
 
                 if track_index == len(queue_item):
                     download_queue_item.completed_at = Now()
