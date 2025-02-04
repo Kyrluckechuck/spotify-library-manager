@@ -14,4 +14,4 @@ pymediainfo
 pyyaml
 # spotdl
 git+https://github.com/Kyrluckechuck/spotify-downloader.git@add-yt-dlp-extractor-support#egg=spotdl
-
+Werkzeug[watchdog]

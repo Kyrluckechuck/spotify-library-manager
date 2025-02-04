@@ -228,28 +228,24 @@ class SpotdlWrapper:
                             bit_rate = audio_track.bit_rate / 1000
                             break
                     
+                    if (audio_track is not None and bit_rate > 0):
+                        db_song.bitrate = bit_rate
+                        db_song.save()
                     if (audio_track is None or bit_rate < expected_bitrate):
                         # pathlib.Path.unlink(output_path)
                         if audio_track is None:
                             raise BitrateException(f"File was downloaded successfully, but no audio track existed | output_path: {output_path}")
-                        raise BitrateException(f"File was downloaded successfully but not in the correct bitrate ({bit_rate} found, but {expected_bitrate} is minimum expected) | output_path: {output_path}")
-                except BitrateException as exception:
-                    error_count += 1
-                    self.logger.error("Critical bitrate exception occurred, halting download queue")
-                    self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
-                    self.logger.error(f"exception: {exception}")
-                    # Don't count a bitrate exception towards song/album failures since it's likely a misconfiguration problem
-                    raise exception
+                        self.logger.error(f"File was downloaded successfully but not in the correct bitrate ({bit_rate} found, but {expected_bitrate} is minimum expected) | output_path: {output_path}")
                 except SpotdlDownloadError as exception:
                     error_count += 1
-                    self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
+                    self.logger.error(f'({current_track}) Failed to download "{db_song.name}"')
                     self.logger.error(f"exception: {exception}")
                     self.logger.error("This track is possibly not available in your region")
                     db_song.failed_count += 1
                     db_song.save()
                 except Exception as exception:
                     error_count += 1
-                    self.logger.error(f'({current_track}) Failed to download "{track["name"]}"')
+                    self.logger.error(f'({current_track}) Failed to download "{db_song.name}"')
                     self.logger.error(f"exception: {exception}")
                     db_song.failed_count += 1
                     db_song.save()

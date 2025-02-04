@@ -45,6 +45,7 @@ class Song(models.Model):
     primary_artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     failed_count = models.IntegerField(default=0)
+    bitrate = models.IntegerField(default=0)
 
     @property
     def contributing_artists(self):
