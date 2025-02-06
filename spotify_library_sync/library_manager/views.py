@@ -5,7 +5,7 @@ from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD
+from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
 from .forms import DownloadPlaylistForm, ToggleTrackedForm, TrackedPlaylistForm
 from . import tasks
 
@@ -29,8 +29,8 @@ def index(request: HttpRequest):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    wanted_base = Album.objects.filter(downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).select_related('artist').filter(artist__tracked=True)
-    wanted_downloaded_base = Album.objects.filter(downloaded=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).select_related('artist').filter(artist__tracked=True)
+    wanted_base = Album.objects.filter(downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE).select_related('artist').filter(artist__tracked=True)
+    wanted_downloaded_base = Album.objects.filter(downloaded=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE).select_related('artist').filter(artist__tracked=True)
 
     sum_num_wanted = wanted_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
     sum_num_wanted_downloaded = wanted_downloaded_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0

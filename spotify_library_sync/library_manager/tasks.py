@@ -3,7 +3,7 @@ from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 
-from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_TYPES_TO_DOWNLOAD
+from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
 from . import helpers
 from downloader.spotdl_wrapper import SpotdlWrapper
 from lib.config_class import Config
@@ -35,7 +35,7 @@ def download_missing_albums_for_artist(artist_id: int, task: Task = None, delay:
     time.sleep(delay)
 
     artist = Artist.objects.get(id=artist_id)
-    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD)
+    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
     print(f"missing albums search for artist {artist.id} found {missing_albums.count()}")
     downloader_config = Config()
     if task is not None:
@@ -77,7 +77,7 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
 @huey.task(context=True, priority=3)
 def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
     artist = Artist.objects.get(id=artist_id)
-    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_type__in=EXTRA_TYPES_TO_DOWNLOAD)
+    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_group__in=EXTRA_GROUPS_TO_IGNORE)
     print(f"extra album missing albums search for artist {artist.id} found {missing_albums.count()}")
     downloader_config = Config()
     if task is not None:
@@ -116,7 +116,7 @@ def download_missing_tracked_artists(task: Task = None):
         print(f"Skipping queued missing tracked artists due to quantity of recent downloads ({recently_downloaded_songs.count()})")
         return
     # Limit to only desired album types (ignoring `appears_on`), and limit results so this won't throttle
-    all_tracked_artists = Artist.objects.filter(tracked=True, album__downloaded=False, album__wanted=True, album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD).distinct().order_by("last_synced_at", "added_at", "id")[:150]
+    all_tracked_artists = Artist.objects.filter(tracked=True, album__downloaded=False, album__wanted=True, album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album__album_group__in=EXTRA_GROUPS_TO_IGNORE).distinct().order_by("last_synced_at", "added_at", "id")[:150]
     existing_tasks = helpers.get_all_tasks_with_name('download_missing_albums_for_artist')
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     helpers.download_missing_tracked_artists(already_enqueued_artists, all_tracked_artists, priority=task.priority)

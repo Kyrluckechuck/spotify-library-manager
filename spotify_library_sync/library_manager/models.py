@@ -3,9 +3,9 @@ from django.db import models
 from django.db.models import Sum
 from django_stubs_ext.db.models import TypedModelMeta
 
-# TODO: Make this configurable, allowing appears_on" to optionally be requested, or others be de-selected
-ALBUM_TYPES_TO_DOWNLOAD = ["single", "album"]
-EXTRA_TYPES_TO_DOWNLOAD = ["compilation"]
+# TODO: Make this configurable, allowing "appears_on" to optionally be requested, or others be de-selected
+ALBUM_TYPES_TO_DOWNLOAD = ["single", "album", "compilation"]
+EXTRA_GROUPS_TO_IGNORE = ["appears_on"]
 
 # Create your models here.
 class Artist(models.Model):
@@ -21,7 +21,7 @@ class Artist(models.Model):
 
     @property
     def albums(self):
-        album_base = Album.objects.filter(artist=self, album_type__in=ALBUM_TYPES_TO_DOWNLOAD)
+        album_base = Album.objects.filter(artist=self, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
         return {
             'known': album_base.count,
             'missing': album_base.filter(wanted=True, downloaded=False).count,
@@ -103,7 +103,7 @@ class Album(models.Model):
 
     @property
     def desired_album_type(self):
-        return self.album_type in ALBUM_TYPES_TO_DOWNLOAD
+        return self.album_type in ALBUM_TYPES_TO_DOWNLOAD and self.album_group not in EXTRA_GROUPS_TO_IGNORE
 
     class Meta(TypedModelMeta):
         pass
