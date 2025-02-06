@@ -99,6 +99,7 @@ class Album(models.Model):
     name = models.CharField(max_length=2048)
     failed_count = models.IntegerField(default=0)
     album_type = models.CharField(max_length=100, null=True)
+    album_group = models.CharField(max_length=100, null=True)
 
     @property
     def desired_album_type(self):
