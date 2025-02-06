@@ -1,3 +1,4 @@
+from urllib.parse import urljoin, urlparse
 import base62
 from datetime import datetime
 
@@ -20,3 +21,12 @@ def uri_to_gid(uri: str) -> str:
 
 def gid_to_uri(gid: str) -> str:
     return base62.encode(int(gid, 16), charset=base62.CHARSET_INVERTED).zfill(22)
+
+def sanitize_and_strip_url(raw_url: str) -> str:
+    raw_url = raw_url.strip()
+
+    # Strip "personalized" tokens spotify auto-inserts into http URLs (Not applicable to URIs)
+    if (raw_url.startswith('http')):
+        raw_url = urljoin(raw_url, urlparse(raw_url).path)
+    
+    return raw_url

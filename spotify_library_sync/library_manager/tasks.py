@@ -1,10 +1,10 @@
 import time
-from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 
 from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
 from . import helpers
+from downloader.utils import sanitize_and_strip_url
 from downloader.spotdl_wrapper import SpotdlWrapper
 from lib.config_class import Config
 
@@ -59,12 +59,7 @@ def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
 
 @huey.task(context=True, priority=2)
 def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None):
-    # Strip any extra whitespace before/after
-    playlist_url = playlist_url.strip()
-
-    # Strip "personalized" tokens spotify auto-inserts into http URLs (Not applicable to URIs)
-    if (playlist_url.startswith('http')):
-        urljoin(playlist_url, urlparse(playlist_url).path)
+    playlist_url = sanitize_and_strip_url(playlist_url)
 
     downloader_config = Config()
     downloader_config.urls = [playlist_url]

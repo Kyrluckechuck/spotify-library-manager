@@ -5,6 +5,7 @@ from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 
+from downloader.utils import sanitize_and_strip_url
 from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
 from .forms import DownloadPlaylistForm, ToggleTrackedForm, TrackedPlaylistForm
 from . import tasks
@@ -154,7 +155,7 @@ def tracked_playlists_prefilled(request: HttpRequest, tracked_playlist_id: int):
 def track_playlist(request: HttpRequest):
     form = TrackedPlaylistForm(request.POST)
     if form.is_valid():
-        url_to_track = form.cleaned_data['playlist_url']
+        url_to_track = sanitize_and_strip_url(form.cleaned_data['playlist_url'])
         enabled = bool(form.cleaned_data['enabled'])
         auto_track_artists = bool(form.cleaned_data['auto_track_artists'])
         name = form.cleaned_data['name']
