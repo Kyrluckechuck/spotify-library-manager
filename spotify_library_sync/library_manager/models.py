@@ -4,7 +4,8 @@ from django.db.models import Sum
 from django_stubs_ext.db.models import TypedModelMeta
 
 # TODO: Make this configurable, allowing appears_on" to optionally be requested, or others be de-selected
-ALBUM_TYPES_TO_DOWNLOAD = ["single", "album", "compilation"]
+ALBUM_TYPES_TO_DOWNLOAD = ["single", "album"]
+EXTRA_TYPES_TO_DOWNLOAD = ["compilation"]
 
 # Create your models here.
 class Artist(models.Model):

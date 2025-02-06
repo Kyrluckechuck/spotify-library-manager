@@ -3,7 +3,7 @@ from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 
-from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD
+from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_TYPES_TO_DOWNLOAD
 from . import helpers
 from downloader.spotdl_wrapper import SpotdlWrapper
 from lib.config_class import Config
@@ -35,7 +35,7 @@ def download_missing_albums_for_artist(artist_id: int, task: Task = None, delay:
     time.sleep(delay)
 
     artist = Artist.objects.get(id=artist_id)
-    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True)
+    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD)
     print(f"missing albums search for artist {artist.id} found {missing_albums.count()}")
     downloader_config = Config()
     if task is not None:
@@ -73,6 +73,27 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
         process_info = ProcessInfo(task, desc='playlist download', total=1000)
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
+
+@huey.task(context=True, priority=3)
+def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
+    artist = Artist.objects.get(id=artist_id)
+    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_type__in=EXTRA_TYPES_TO_DOWNLOAD)
+    print(f"extra album missing albums search for artist {artist.id} found {missing_albums.count()}")
+    downloader_config = Config()
+    if task is not None:
+        process_info = ProcessInfo(task, desc=f"extra album artist missing album download (artist.id: {artist.id})", total=1000)
+        downloader_config.process_info = process_info
+    downloader_config.urls = []  # This must be reset or it will persist between runs
+    if missing_albums.count() > 0:
+        for missing_album in missing_albums:
+            downloader_config.urls.append(missing_album.spotify_uri)
+
+        print(f"extra album missing albums search for artist {artist.id} kicking off {len(downloader_config.urls)}")
+        spotdl_wrapper.execute(downloader_config)
+    else:
+        print(f"extra album missing albums search for artist {artist.id} is skipping since there are none missing")
+    artist.last_synced_at = Now()
+    artist.save()
 
 @huey.periodic_task(crontab(minute='0', hour='*/8'), priority=1, context=True)
 def update_tracked_artists(task: Task = None):
