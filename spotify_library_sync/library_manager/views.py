@@ -180,3 +180,8 @@ def sync_tracked_playlist(request: HttpRequest, tracked_playlist_id: int):
     tracked_playlist = get_object_or_404(TrackedPlaylist, pk=tracked_playlist_id)
     tasks.sync_tracked_playlist(tracked_playlist)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def sync_tracked_playlist_artists(request: HttpRequest, tracked_playlist_id: int):
+    tracked_playlist = get_object_or_404(TrackedPlaylist, pk=tracked_playlist_id)
+    tasks.sync_tracked_playlist_artists(tracked_playlist)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

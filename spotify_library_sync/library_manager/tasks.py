@@ -6,6 +6,7 @@ from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES
 from . import helpers
 from downloader.utils import sanitize_and_strip_url
 from downloader.spotdl_wrapper import SpotdlWrapper
+from downloader.spotipy_tasks import track_artists_in_playlist
 from lib.config_class import Config
 
 from huey import crontab
@@ -61,9 +62,11 @@ def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
 def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None):
     playlist_url = sanitize_and_strip_url(playlist_url)
 
-    downloader_config = Config()
-    downloader_config.urls = [playlist_url]
-    downloader_config.track_artists = tracked
+    downloader_config = Config(
+        urls=[playlist_url],
+        track_artists = tracked
+    )
+
     if task is not None:
         process_info = ProcessInfo(task, desc='playlist download', total=1000)
         downloader_config.process_info = process_info
@@ -89,6 +92,11 @@ def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
         print(f"extra album missing albums search for artist {artist.id} is skipping since there are none missing")
     artist.last_synced_at = Now()
     artist.save()
+
+@huey.task(context=True, priority=3)
+def sync_tracked_playlist_artists(playlist: TrackedPlaylist, task: Task = None):
+    # Given a playlist, track the artists without actually downloading the playlist (potentially, again)
+    track_artists_in_playlist(playlist.url, task)
 
 @huey.periodic_task(crontab(minute='0', hour='*/8'), priority=1, context=True)
 def update_tracked_artists(task: Task = None):

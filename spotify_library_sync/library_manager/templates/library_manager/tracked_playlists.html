@@ -37,6 +37,10 @@
                     {% csrf_token %}
                     <input type="submit" name='delete tracked playlist' value="Delete Tracked Playlist">
                 </form>
+                <form action="{% url 'library_manager:sync_tracked_playlist_artists' tracked_playlist.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="submit" name='sync artists from tracked playlist' value="Sync Artists From Tracked Playlist">
+                </form>
             </div>
         </li>
     {% endfor %}
