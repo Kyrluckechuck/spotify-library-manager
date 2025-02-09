@@ -24,7 +24,11 @@ def track_artists_in_playlist(playlist_url: str, task: Task):
     playlist = downloader.get_playlist(playlist_url)
     # pp(playlist)
     artists_to_track = []
-    for track in playlist["tracks"]['items']:        
+    for track in playlist["tracks"]['items']:
+        if len(track['track']['artists']) == 0:
+            print(f"Skipping track {track['track']['name']}('{track['track']['uri']}') due to lack of artists")
+            print(track['track'])
+            continue
         primary_artist = track['track']['artists'][0]
         primary_artist_gid = utils.uri_to_gid(primary_artist['id'])
         primary_artist_info = {
