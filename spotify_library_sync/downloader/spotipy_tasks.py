@@ -30,6 +30,10 @@ def track_artists_in_playlist(playlist_url: str, task: Task):
             print(track['track'])
             continue
         primary_artist = track['track']['artists'][0]
+        if primary_artist['id'] is None:
+            print(f"Skipping track {track['track']['name']}('{track['track']['uri']}') due to being placeholder artist")
+            print(primary_artist)
+            continue
         primary_artist_gid = utils.uri_to_gid(primary_artist['id'])
         primary_artist_info = {
             'name': primary_artist['name'],
