@@ -10,6 +10,7 @@ urlpatterns = [
     path("download_all_for_tracked_artists", views.download_all_for_tracked_artists, name="download_all_for_tracked_artists"),
     path("fetch_all_for_tracked_artists", views.fetch_all_for_tracked_artists, name="fetch_all_for_tracked_artists"),
     path("download_history", views.download_history, name="download_history"),
+    path("failed_songs", views.failed_songs, name="failed_songs"),
     path("tracked_playlists", views.tracked_playlists, name="tracked_playlists"),
     path("tracked_playlists/<int:tracked_playlist_id>/", views.tracked_playlists_prefilled, name="tracked_playlists_prefilled"),
     path("tracked_playlists/<int:tracked_playlist_id>/sync", views.sync_tracked_playlist, name="sync_tracked_playlist"),

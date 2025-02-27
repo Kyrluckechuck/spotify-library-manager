@@ -239,14 +239,17 @@ class SpotdlWrapper:
                 except SpotdlDownloadError as exception:
                     error_count += 1
                     self.logger.error(f'({current_track}) Failed to download "{db_song.name}"')
-                    self.logger.error(f"exception: {exception}")
+                    self.logger.error(f"Exception: {exception}")
                     self.logger.error("This track is possibly not available in your region")
                     db_song.failed_count += 1
+                    # Don't infinitely retry failed songs
+                    if db_song.failed_count >= 3:
+                        db_song.unavailable = True
                     db_song.save()
                 except Exception as exception:
                     error_count += 1
                     self.logger.error(f'({current_track}) Failed to download "{db_song.name}"')
-                    self.logger.error(f"exception: {exception}")
+                    self.logger.error(f"General Exception: {exception}")
                     db_song.failed_count += 1
                     db_song.save()
                     if (config.print_exceptions):

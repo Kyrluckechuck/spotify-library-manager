@@ -1,0 +1,70 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+
+    <form action="{% url 'library_manager:download_playlist' %}" method="post">
+        {% csrf_token %}
+        {{ playlist_form }}
+        <input type="submit" name='download playlist' value="Download">
+    </form>
+
+    <h2>Failed/Incomplete Songs:</h2>
+    {% if failed_songs_list %}
+    <ul>
+    {% for song_data in failed_songs_list %}
+        <li>
+            Created: {{ song_data.created_at }}
+            <br/>
+            Song: {{ song_data.name }}
+            <br/>
+            Artist: {{ song_data.primary_artist.name }}
+            <br/>
+            Failed Attempts: {{ song_data.failed_count }}
+            <br/>
+            Spotify URI: <a id="download_id_{{ song_data.id }}" href="{{ song_data.spotify_uri }}">{{ song_data.spotify_uri }}</a>
+            <br/>
+
+            <button style="text-align:center;" onclick="CopyText('download_id_{{ song_data.id }}')">Copy URI</button>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No (still missing) failed song history.</p>
+    {% endif %}
+
+    <h2>Considered Unavailable:</h2>
+    {% if failed_songs_list_unavailable %}
+    <ul>
+    {% for song_data in failed_songs_list_unavailable %}
+        <li>
+            Created: {{ song_data.created_at }}
+            <br/>
+            Song: {{ song_data.name }}
+            <br/>
+            Artist: {{ song_data.primary_artist.name }}
+            <br/>
+            Failed Attempts: {{ song_data.failed_count }}
+            <br/>
+            Spotify URI: <a id="download_id_{{ song_data.id }}" href="{{ song_data.spotify_uri }}">{{ song_data.spotify_uri }}</a>
+            <br/>
+
+            <button style="text-align:center;" onclick="CopyText('download_id_{{ song_data.id }}')">Copy URI</button>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No (still missing) failed song history.</p>
+    {% endif %}
+
+</body>
+<footer>
+
+</footer>
+
+{% block scripts %}
+<script>
+function CopyText(textIdToCopy) {
+    var text = document.getElementById(textIdToCopy)
+    navigator.clipboard.writeText(text.href);
+}
+</script>
+{% endblock scripts %}

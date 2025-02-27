@@ -3,6 +3,8 @@ from django.db import models
 from django.db.models import Sum
 from django_stubs_ext.db.models import TypedModelMeta
 
+from downloader import utils
+
 # TODO: Make this configurable, allowing "appears_on" to optionally be requested, or others be de-selected
 ALBUM_TYPES_TO_DOWNLOAD = ["single", "album", "compilation"]
 EXTRA_GROUPS_TO_IGNORE = ["appears_on"]
@@ -47,10 +49,16 @@ class Song(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     failed_count = models.IntegerField(default=0)
     bitrate = models.IntegerField(default=0)
+    unavailable = models.BooleanField(default=False)
 
     @property
     def contributing_artists(self):
         return ContributingArtist.objects.filter(song=self).exclude(artist=self.primary_artist)
+    
+    @property
+    def spotify_uri(self):
+        song_uri = utils.gid_to_uri(self.gid)
+        return f"spotify:track:{song_uri}"
 
     class Meta(TypedModelMeta):
         indexes = [

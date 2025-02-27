@@ -107,6 +107,16 @@ def download_history(request: HttpRequest):
         "playlist_form": download_playlist_form
     })
 
+def failed_songs(request: HttpRequest):
+    failed_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("-created_at").select_related('primary_artist')
+    failed_songs_list_unavailable = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=True).order_by("-created_at").select_related('primary_artist')
+    download_playlist_form = DownloadPlaylistForm()
+    return render(request, "library_manager/failed_songs.html", {
+        "failed_songs_list": failed_songs_list,
+        "failed_songs_list_unavailable": failed_songs_list_unavailable,
+        "playlist_form": download_playlist_form
+    })
+
 def download_all_for_tracked_artists(request: HttpRequest):
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by("last_synced_at", "added_at", "id")
     for artist in all_tracked_artists:
