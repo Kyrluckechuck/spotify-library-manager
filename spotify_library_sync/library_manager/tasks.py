@@ -79,7 +79,7 @@ def retry_all_missing_known_songs(task: Task = None):
     # Combine results for iterating
     missing_known_songs_list = missing_known_songs_list | failed_known_songs_list
 
-    if failed_song_array.count() == 0:
+    if missing_known_songs_list.count() == 0:
         print("All songs downloaded, exiting missing known song loop!")
 
     failed_song_array = [song.spotify_uri for song in missing_known_songs_list]
