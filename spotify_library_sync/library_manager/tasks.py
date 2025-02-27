@@ -81,17 +81,18 @@ def retry_all_missing_known_songs(task: Task = None):
 
     if missing_known_songs_list.count() == 0:
         print("All songs downloaded, exiting missing known song loop!")
+        return
 
     failed_song_array = [song.spotify_uri for song in missing_known_songs_list]
 
-    print(f"Downloading {failed_song_array.count()} missing songs")
+    print(f"Downloading {len(failed_song_array)} missing songs")
     downloader_config = Config(
         urls=failed_song_array,
         track_artists = False
     )
 
     if task is not None:
-        process_info = ProcessInfo(task, desc='failed song download', total=1000)
+        process_info = ProcessInfo(task, desc='missing/failed song download', total=1000)
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
