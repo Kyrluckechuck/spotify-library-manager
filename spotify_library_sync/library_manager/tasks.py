@@ -80,15 +80,24 @@ def retry_all_missing_known_songs(task: Task = None):
 
     failed_song_array = [song.spotify_uri for song in missing_known_songs_list]
 
-    downloader_config = Config(
-        urls=failed_song_array,
-        track_artists = False
-    )
+    batch_total = len(failed_song_array)
+    batch_size = 1000
+    batch_num = 0
 
-    if task is not None:
-        process_info = ProcessInfo(task, desc='failed song download', total=1000)
-        downloader_config.process_info = process_info
-    spotdl_wrapper.execute(downloader_config)
+    for i in range(0, batch_total, batch_size):
+        batch_num += 1
+        print(f"processing batch #{batch_num}, songs {batch_size * batch_num} of {batch_total}")
+        songs_to_download = failed_song_array[i:i+batch_size]
+        downloader_config = Config(
+            urls=songs_to_download,
+            track_artists = False
+        )
+
+        if task is not None:
+            process_info = ProcessInfo(task, desc='failed song download', total=1000)
+            downloader_config.process_info = process_info
+        spotdl_wrapper.execute(downloader_config)
+        print(f"completed batch #{batch_num}")
 
 @huey.task(context=True, priority=3)
 def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
