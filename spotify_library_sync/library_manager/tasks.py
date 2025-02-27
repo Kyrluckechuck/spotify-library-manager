@@ -2,7 +2,7 @@ import time
 
 from django.conf import settings
 
-from .models import Album, Artist, DownloadHistory, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
+from .models import Album, Artist, DownloadHistory, Song, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
 from . import helpers
 from downloader.utils import sanitize_and_strip_url
 from downloader.spotdl_wrapper import SpotdlWrapper
@@ -69,6 +69,20 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
 
     if task is not None:
         process_info = ProcessInfo(task, desc='playlist download', total=1000)
+        downloader_config.process_info = process_info
+    spotdl_wrapper.execute(downloader_config)
+
+def retry_all_failed_songs(task: Task = None):
+    failed_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("created_at")
+    failed_song_array = [song.spotify_uri for song in failed_songs_list]
+
+    downloader_config = Config(
+        urls=failed_song_array,
+        track_artists = False
+    )
+
+    if task is not None:
+        process_info = ProcessInfo(task, desc='failed song download', total=1000)
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 

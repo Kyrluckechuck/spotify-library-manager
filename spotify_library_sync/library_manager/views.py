@@ -97,6 +97,10 @@ def download_playlist(request: HttpRequest):
     print(playlist_download_form.errors)
     raise ValidationError({'playlist': ["Must be a valid spotify URL!",]})
 
+def retry_all_failed_songs(request: HttpRequest):
+    tasks.retry_all_failed_songs()
+    return redirect('library_manager:failed_songs')
+
 def download_history(request: HttpRequest):
     download_history_not_done = DownloadHistory.objects.filter(completed_at=None).order_by("-added_at")
     download_history_done = DownloadHistory.objects.exclude(completed_at=None).order_by("-added_at")[:50]
