@@ -72,32 +72,33 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
+@huey.task(context=True, priority=0)
 def retry_all_missing_known_songs(task: Task = None):
-    missing_known_songs_list = Song.objects.filter(bitrate=0,unavailable=False).order_by("created_at").select_related('primary_artist').filter(primary_artist__tracked=True)
-    failed_known_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("created_at")
+    missing_known_songs_list = Song.objects.filter(bitrate=0,unavailable=False).order_by("created_at").select_related('primary_artist').filter(primary_artist__tracked=True)[:100]
+    failed_known_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("created_at")[:100]
     # Combine results for iterating
     missing_known_songs_list = missing_known_songs_list | failed_known_songs_list
 
     failed_song_array = [song.spotify_uri for song in missing_known_songs_list]
 
-    batch_total = len(failed_song_array)
-    batch_size = 1000
-    batch_num = 0
+    if failed_song_array.count() == 0:
+        print("All songs downloaded, exiting missing known song loop!")
 
-    for i in range(0, batch_total, batch_size):
-        batch_num += 1
-        print(f"processing batch #{batch_num}, songs {batch_size * batch_num} of {batch_total}")
-        songs_to_download = failed_song_array[i:i+batch_size]
-        downloader_config = Config(
-            urls=songs_to_download,
-            track_artists = False
-        )
+    print(f"Downloading {failed_song_array.count()} missing songs")
+    downloader_config = Config(
+        urls=failed_song_array,
+        track_artists = False
+    )
 
-        if task is not None:
-            process_info = ProcessInfo(task, desc='failed song download', total=1000)
-            downloader_config.process_info = process_info
-        spotdl_wrapper.execute(downloader_config)
-        print(f"completed batch #{batch_num}")
+    if task is not None:
+        process_info = ProcessInfo(task, desc='failed song download', total=1000)
+        downloader_config.process_info = process_info
+    spotdl_wrapper.execute(downloader_config)
+
+    # Queue up next batch
+    retry_all_missing_known_songs()
+
+
 
 @huey.task(context=True, priority=3)
 def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
