@@ -242,7 +242,7 @@ class SpotdlWrapper:
                     self.logger.error(f"Exception: {exception}")
                     self.logger.error("This track is possibly not available in your region")
                     db_song.failed_count += 1
-                    # Don't infinitely retry failed songs
+                    # Don't infinitely retry missing songs
                     if db_song.failed_count >= 3:
                         db_song.unavailable = True
                     db_song.save()

@@ -97,9 +97,9 @@ def download_playlist(request: HttpRequest):
     print(playlist_download_form.errors)
     raise ValidationError({'playlist': ["Must be a valid spotify URL!",]})
 
-def retry_all_failed_songs(request: HttpRequest):
-    tasks.retry_all_failed_songs()
-    return redirect('library_manager:failed_songs')
+def retry_all_missing_known_songs(request: HttpRequest):
+    tasks.retry_all_missing_known_songs()
+    return redirect('library_manager:missing_known_songs')
 
 def download_history(request: HttpRequest):
     download_history_not_done = DownloadHistory.objects.filter(completed_at=None).order_by("-added_at")
@@ -111,13 +111,17 @@ def download_history(request: HttpRequest):
         "playlist_form": download_playlist_form
     })
 
-def failed_songs(request: HttpRequest):
-    failed_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("-created_at").select_related('primary_artist')
-    failed_songs_list_unavailable = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=True).order_by("-created_at").select_related('primary_artist')
+def missing_known_songs(request: HttpRequest):
+    missing_known_songs_list = Song.objects.filter(bitrate=0,unavailable=False).order_by("-created_at").select_related('primary_artist').filter(primary_artist__tracked=True)
+    failed_known_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("-created_at").select_related('primary_artist')
+    # Combine results for displaying
+    missing_known_songs_list = missing_known_songs_list | failed_known_songs_list
+
+    missing_known_songs_list_unavailable = Song.objects.filter(bitrate=0,unavailable=True).order_by("-created_at").select_related('primary_artist')
     download_playlist_form = DownloadPlaylistForm()
-    return render(request, "library_manager/failed_songs.html", {
-        "failed_songs_list": failed_songs_list,
-        "failed_songs_list_unavailable": failed_songs_list_unavailable,
+    return render(request, "library_manager/missing_known_songs.html", {
+        "missing_known_songs_list": missing_known_songs_list,
+        "missing_known_songs_list_unavailable": missing_known_songs_list_unavailable,
         "playlist_form": download_playlist_form
     })
 

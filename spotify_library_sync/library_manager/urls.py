@@ -7,11 +7,11 @@ urlpatterns = [
     # ex: /library_manager/
     path("", views.index, name="index"),
     path("download_playlist", views.download_playlist, name="download_playlist"),
-    path("retry_all_failed_songs", views.retry_all_failed_songs, name="retry_all_failed_songs"),
+    path("retry_all_missing_known_songs", views.retry_all_missing_known_songs, name="retry_all_missing_known_songs"),
     path("download_all_for_tracked_artists", views.download_all_for_tracked_artists, name="download_all_for_tracked_artists"),
     path("fetch_all_for_tracked_artists", views.fetch_all_for_tracked_artists, name="fetch_all_for_tracked_artists"),
     path("download_history", views.download_history, name="download_history"),
-    path("failed_songs", views.failed_songs, name="failed_songs"),
+    path("missing_known_songs", views.missing_known_songs, name="missing_known_songs"),
     path("tracked_playlists", views.tracked_playlists, name="tracked_playlists"),
     path("tracked_playlists/<int:tracked_playlist_id>/", views.tracked_playlists_prefilled, name="tracked_playlists_prefilled"),
     path("tracked_playlists/<int:tracked_playlist_id>/sync", views.sync_tracked_playlist, name="sync_tracked_playlist"),
