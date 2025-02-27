@@ -56,15 +56,4 @@
     {% endif %}
 
 </body>
-<footer>
-
-</footer>
-
-{% block scripts %}
-<script>
-function CopyText(textIdToCopy) {
-    var text = document.getElementById(textIdToCopy)
-    navigator.clipboard.writeText(text.href);
-}
-</script>
-{% endblock scripts %}
+{% include 'library_manager/partials/footer.html' %}
