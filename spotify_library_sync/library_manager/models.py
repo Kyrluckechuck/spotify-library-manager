@@ -19,15 +19,15 @@ class Artist(models.Model):
 
     @property
     def number_songs(self):
-        return ContributingArtist.objects.filter(artist=self).count
+        return ContributingArtist.objects.filter(artist=self).count()
 
     @property
     def albums(self):
         album_base = Album.objects.filter(artist=self, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
         return {
-            'known': album_base.count,
-            'missing': album_base.filter(wanted=True, downloaded=False).count,
-            'downloaded': album_base.filter(downloaded=True).count,
+            'known': album_base.count(),
+            'missing': album_base.filter(wanted=True, downloaded=False).count(),
+            'downloaded': album_base.filter(downloaded=True).count(),
             'songs': {
                 'missing': album_base.filter(wanted=True, downloaded=False).aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0,
             },

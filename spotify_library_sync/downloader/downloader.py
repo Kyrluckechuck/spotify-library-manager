@@ -1,5 +1,3 @@
-import functools
-import json
 import re
 
 from library_manager.models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist
@@ -67,7 +65,6 @@ class Downloader:
         )
         return album
 
-    @functools.lru_cache()
     def get_album(self, album_id: str) -> dict:
         album = self.spotipy_client.album(album_id)
         album_track_iterator = self.spotipy_client.next(album["tracks"])
