@@ -13,5 +13,5 @@ pylint-django
 pymediainfo
 pyyaml
 # spotdl
-git+https://github.com/Kyrluckechuck/spotify-downloader.git@add-yt-dlp-extractor-support#egg=spotdl
+git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl
 Werkzeug[watchdog]
