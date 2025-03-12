@@ -26,6 +26,7 @@ default:
     - django.contrib.contenttypes
     - django.contrib.sessions
     - django.contrib.messages
+    - whitenoise.runserver_nostatic
     - django.contrib.staticfiles
     - django_extensions
     - debug_toolbar
@@ -34,6 +35,7 @@ default:
     - huey_monitor
   MIDDLEWARE:
     - django.middleware.security.SecurityMiddleware
+    - whitenoise.middleware.WhiteNoiseMiddleware
     - django.contrib.sessions.middleware.SessionMiddleware
     - django.middleware.common.CommonMiddleware
     - django.middleware.csrf.CsrfViewMiddleware
@@ -95,3 +97,6 @@ default:
     immediate: false,
     # immediate_use_memory: true,
   }
+  STORAGES:
+    staticfiles: 
+      BACKEND: whitenoise.storage.CompressedManifestStaticFilesStorage
