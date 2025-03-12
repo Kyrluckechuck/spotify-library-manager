@@ -15,7 +15,7 @@ default:
   # SECURITY WARNING: keep the secret key used in production secret!
   SECRET_KEY: 'django-insecure-7e!$54*ii^iyw!963-e3a*r8d0mb)zz@ij6s#s_(0qy(1_^bx*'
   # SECURITY WARNING: don't run with debug turned on in production!
-  DEBUG: True
+  DEBUG: False
   ALLOWED_HOSTS:
     - '*'
   # Application definition
