@@ -123,6 +123,15 @@ class SpotdlWrapper:
                 self.logger.error(f"exception: {exception}")
                 if (config.print_exceptions):
                     self.logger.error(traceback.format_exc())
+                
+                # Handle (gracefully) songs that no longer exist (at all) with Spotify
+                if "too many 404 error responses" in str(exception) and url.startswith("spotify:track:"):
+                    song_gid = utils.uri_to_gid(url.split("spotify:track:", 1)[1])
+                    db_song = Song.objects.get(gid=song_gid)
+                    if not db_song:
+                        continue
+                    db_song.failed_count += 1
+                    db_song.save()
 
         if len(download_queue) > 0:
             one_queue_increment = (1 / len(download_queue)) * 1000

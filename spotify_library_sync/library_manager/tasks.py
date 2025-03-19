@@ -96,8 +96,8 @@ def retry_all_missing_known_songs(task: Task = None):
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
-    # Queue up next batch
-    retry_all_missing_known_songs()
+    # Queue up next batch after ensuring rate limit has passed
+    retry_all_missing_known_songs.schedule(delay=30)
 
 
 
