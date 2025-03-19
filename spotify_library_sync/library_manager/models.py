@@ -59,6 +59,12 @@ class Song(models.Model):
     def spotify_uri(self):
         song_uri = utils.gid_to_uri(self.gid)
         return f"spotify:track:{song_uri}"
+    
+    def increment_failed_count(self):
+        self.failed_count += 1
+        if self.failed_count > 3:
+            self.unavailable = True
+        self.save()
 
     class Meta(TypedModelMeta):
         indexes = [

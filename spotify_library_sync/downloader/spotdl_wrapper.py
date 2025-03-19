@@ -130,8 +130,7 @@ class SpotdlWrapper:
                     db_song = Song.objects.get(gid=song_gid)
                     if not db_song:
                         continue
-                    db_song.failed_count += 1
-                    db_song.save()
+                    db_song.increment_failed_count()
 
         if len(download_queue) > 0:
             one_queue_increment = (1 / len(download_queue)) * 1000
@@ -250,11 +249,8 @@ class SpotdlWrapper:
                     self.logger.error(f'({current_track}) Failed to download "{db_song.name}"')
                     self.logger.error(f"Exception: {exception}")
                     self.logger.error("This track is possibly not available in your region")
-                    db_song.failed_count += 1
                     # Don't infinitely retry missing songs
-                    if db_song.failed_count >= 3:
-                        db_song.unavailable = True
-                    db_song.save()
+                    db_song.increment_failed_count()
                 except Exception as exception:
                     error_count += 1
                     self.logger.error(f'({current_track}) Failed to download "{db_song.name}"')
