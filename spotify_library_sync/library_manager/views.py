@@ -120,8 +120,10 @@ def missing_known_songs(request: HttpRequest):
     missing_known_songs_list_unavailable = Song.objects.filter(bitrate=0,unavailable=True).order_by("-created_at").select_related('primary_artist')
     download_playlist_form = DownloadPlaylistForm()
     return render(request, "library_manager/missing_known_songs.html", {
-        "missing_known_songs_list": missing_known_songs_list[:200],
-        "missing_known_songs_list_unavailable": missing_known_songs_list_unavailable[:200],
+        "missing_known_songs_list": missing_known_songs_list[:25],
+        "missing_known_songs_list_count": missing_known_songs_list.count(),
+        "missing_known_songs_list_unavailable": missing_known_songs_list_unavailable[:25],
+        "missing_known_songs_list_unavailable_count": missing_known_songs_list_unavailable.count(),
         "playlist_form": download_playlist_form
     })
 

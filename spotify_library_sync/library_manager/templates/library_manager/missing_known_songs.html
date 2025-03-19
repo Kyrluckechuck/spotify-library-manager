@@ -14,6 +14,7 @@
 
     <h2>Missing Songs:</h2>
     {% if missing_known_songs_list %}
+    Total songs: {{ missing_known_songs_list_count }} (display limit 25)
     <ul>
     {% for song_data in missing_known_songs_list %}
         <li>
@@ -38,6 +39,7 @@
 
     <h2>Considered Unavailable:</h2>
     {% if missing_known_songs_list_unavailable %}
+    Total songs: {{ missing_known_songs_list_unavailable_count }} (display limit 25)
     <ul>
     {% for song_data in missing_known_songs_list_unavailable %}
         <li>
