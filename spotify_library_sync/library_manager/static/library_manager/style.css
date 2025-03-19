@@ -1,7 +1,3 @@
-li a {
-    color: green;
-}
-
 .importer_header {
     color: black;
     display: flex;
@@ -15,4 +11,15 @@ li a {
 .track_artist_row {
     display: flex;
     max-height: 18px;
+}
+
+.header_links {
+    padding: 0px;
+    li {
+        display:inline;
+        padding: 5px 5px;
+        a {
+            color: green;
+        }
+    }
 }
