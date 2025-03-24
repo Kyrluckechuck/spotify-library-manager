@@ -101,6 +101,10 @@ def retry_all_missing_known_songs(request: HttpRequest):
     tasks.retry_all_missing_known_songs()
     return redirect('library_manager:missing_known_songs')
 
+def validate_undownloaded_songs(request: HttpRequest):
+    tasks.validate_undownloaded_songs()
+    return redirect('library_manager:validate_undownloaded_songs')
+
 def download_history(request: HttpRequest):
     download_history_not_done = DownloadHistory.objects.filter(completed_at=None).order_by("-added_at")
     download_history_done = DownloadHistory.objects.exclude(completed_at=None).order_by("-added_at")[:50]
@@ -124,6 +128,16 @@ def missing_known_songs(request: HttpRequest):
         "missing_known_songs_list_count": missing_known_songs_list.count(),
         "missing_known_songs_list_unavailable": missing_known_songs_list_unavailable[:25],
         "missing_known_songs_list_unavailable_count": missing_known_songs_list_unavailable.count(),
+        "playlist_form": download_playlist_form
+    })
+
+def undownloaded_songs(request:HttpRequest):
+    songs_not_marked_downloaded_that_should_be = Song.objects.filter(bitrate__gt=0,unavailable=False,downloaded=False)
+    
+    download_playlist_form = DownloadPlaylistForm()
+    return render(request, "library_manager/undownloaded_songs.html", {
+        "songs_not_marked_downloaded_that_should_be": songs_not_marked_downloaded_that_should_be[:25],
+        "songs_not_marked_downloaded_that_should_be_count": songs_not_marked_downloaded_that_should_be.count(),
         "playlist_form": download_playlist_form
     })
 

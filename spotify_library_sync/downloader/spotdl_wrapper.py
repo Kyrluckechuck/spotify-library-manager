@@ -238,6 +238,8 @@ class SpotdlWrapper:
                     
                     if (audio_track is not None and bit_rate > 0):
                         db_song.bitrate = bit_rate
+                        db_song.file_path = output_path
+                        db_song.downloaded = True
                         db_song.save()
                     if (audio_track is None or bit_rate < expected_bitrate):
                         # pathlib.Path.unlink(output_path)

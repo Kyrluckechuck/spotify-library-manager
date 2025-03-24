@@ -99,8 +99,6 @@ def retry_all_missing_known_songs(task: Task = None):
     # Queue up next batch after ensuring rate limit has passed
     retry_all_missing_known_songs.schedule(delay=30)
 
-
-
 @huey.task(context=True, priority=3)
 def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
     artist = Artist.objects.get(id=artist_id)
@@ -161,3 +159,27 @@ def sync_tracked_playlists(task: Task = None):
 @huey.periodic_task(crontab(minute='0', hour='6'), priority=10)
 def cleanup_huey_history():
     helpers.cleanup_huey_history()
+
+@huey.task(context=True, priority=0)
+def validate_undownloaded_songs(task: Task = None):
+    non_downloaded_songs_that_should_exist = Song.objects.filter(bitrate__gt=0,unavailable=False,downloaded=False).order_by("created_at")[:50]
+
+    if non_downloaded_songs_that_should_exist.count() == 0:
+        print("All songs marked downloaded that should be!")
+        return
+
+    missing_song_array = [song.spotify_uri for song in non_downloaded_songs_that_should_exist]
+
+    print(f"Downloading {len(missing_song_array)} missing songs")
+    downloader_config = Config(
+        urls=missing_song_array,
+        track_artists = False
+    )
+
+    if task is not None:
+        process_info = ProcessInfo(task, desc='missing song download', total=1000)
+        downloader_config.process_info = process_info
+    spotdl_wrapper.execute(downloader_config)
+
+    # Queue up next batch after ensuring rate limit has passed
+    retry_all_missing_known_songs.schedule(delay=30)
