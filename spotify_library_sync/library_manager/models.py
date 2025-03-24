@@ -50,6 +50,8 @@ class Song(models.Model):
     failed_count = models.IntegerField(default=0)
     bitrate = models.IntegerField(default=0)
     unavailable = models.BooleanField(default=False)
+    file_path = models.FilePathField(null=True)
+    downloaded = models.BooleanField(default=False)
 
     @property
     def contributing_artists(self):
