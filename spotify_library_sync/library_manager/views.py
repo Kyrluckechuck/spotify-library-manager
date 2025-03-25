@@ -103,7 +103,7 @@ def retry_all_missing_known_songs(request: HttpRequest):
 
 def validate_undownloaded_songs(request: HttpRequest):
     tasks.validate_undownloaded_songs()
-    return redirect('library_manager:validate_undownloaded_songs')
+    return redirect('library_manager:undownloaded_songs')
 
 def download_history(request: HttpRequest):
     download_history_not_done = DownloadHistory.objects.filter(completed_at=None).order_by("-added_at")
