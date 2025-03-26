@@ -182,4 +182,4 @@ def validate_undownloaded_songs(task: Task = None):
     spotdl_wrapper.execute(downloader_config)
 
     # Queue up next batch after ensuring rate limit has passed
-    retry_all_missing_known_songs.schedule(delay=30)
+    validate_undownloaded_songs.schedule(delay=30)
