@@ -30,7 +30,7 @@ def fetch_all_albums_for_artist(artist_id: int, task: Task = None):
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
-@huey.task(context=True, priority=1)
+@huey.task(context=True, priority=1, retries=2, retry_delay=30)
 def download_missing_albums_for_artist(artist_id: int, task: Task = None, delay: int = 0):
     # Add delay (if applicable) to reduce chance of flagging when backfilling library
     time.sleep(delay)
@@ -54,11 +54,11 @@ def download_missing_albums_for_artist(artist_id: int, task: Task = None, delay:
     artist.last_synced_at = Now()
     artist.save()
 
-@huey.task(context=True, priority=2)
+@huey.task(context=True, priority=2, retries=2, retry_delay=30)
 def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
     helpers.enqueue_playlists([tracked_playlist], priority=task.priority)
 
-@huey.task(context=True, priority=2)
+@huey.task(context=True, priority=2, retries=2, retry_delay=30)
 def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None):
     playlist_url = sanitize_and_strip_url(playlist_url)
 
@@ -72,7 +72,7 @@ def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
-@huey.task(context=True, priority=0)
+@huey.task(context=True, priority=0, retries=2, retry_delay=30)
 def retry_all_missing_known_songs(task: Task = None):
     missing_known_songs_list = Song.objects.filter(bitrate=0,unavailable=False).order_by("created_at").select_related('primary_artist').filter(primary_artist__tracked=True)[:100]
     failed_known_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("created_at")[:100]
@@ -99,7 +99,7 @@ def retry_all_missing_known_songs(task: Task = None):
     # Queue up next batch after ensuring rate limit has passed
     retry_all_missing_known_songs.schedule(delay=30)
 
-@huey.task(context=True, priority=3)
+@huey.task(context=True, priority=3, retries=2, retry_delay=30)
 def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
     artist = Artist.objects.get(id=artist_id)
     missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_group__in=EXTRA_GROUPS_TO_IGNORE)
@@ -160,7 +160,7 @@ def sync_tracked_playlists(task: Task = None):
 def cleanup_huey_history():
     helpers.cleanup_huey_history()
 
-@huey.task(context=True, priority=0)
+@huey.task(context=True, priority=0, retries=2, retry_delay=30)
 def validate_undownloaded_songs(task: Task = None):
     non_downloaded_songs_that_should_exist = Song.objects.filter(bitrate__gt=0,unavailable=False,downloaded=False).order_by("created_at")[:50]
 
