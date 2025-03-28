@@ -11,6 +11,7 @@ class DownloadPlaylistForm(forms.Form):
         widget=forms.TextInput(attrs={'placeholder': 'https://open.spotify.com/album/6eUW0wxWtzkFdaEFsTJto6?si=tDyOWtIVSuKAxeTEEVdkhw'})
     )
     tracked = forms.BooleanField(required=False, initial=False)
+    force_playlist_resync = forms.BooleanField(required=False, initial=False)
 
 class TrackedPlaylistForm(forms.Form):
     playlist_url = forms.Field(

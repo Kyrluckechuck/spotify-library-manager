@@ -147,7 +147,11 @@ class SpotdlWrapper:
 
             try:
                 tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
-                # Check this is the playlist has ever been synced
+                
+                if config.force_playlist_resync:
+                    tracked_playlist.last_synced_at = None
+                    tracked_playlist.save()
+                # Check if this playlist has ever been synced
                 if tracked_playlist.last_synced_at is not None:
                     playlist_needs_update = False
                     for track_index, track in enumerate(queue_item, start=1):

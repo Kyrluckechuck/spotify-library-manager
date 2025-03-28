@@ -59,12 +59,13 @@ def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
     helpers.enqueue_playlists([tracked_playlist], priority=task.priority)
 
 @huey.task(context=True, priority=2, retries=2, retry_delay=30)
-def download_playlist(playlist_url: str, tracked: bool = True, task: Task = None):
+def download_playlist(playlist_url: str, tracked: bool = True, force_playlist_resync: bool = False, task: Task = None):
     playlist_url = sanitize_and_strip_url(playlist_url)
 
     downloader_config = Config(
         urls=[playlist_url],
-        track_artists = tracked
+        track_artists = tracked,
+        force_playlist_resync = force_playlist_resync
     )
 
     if task is not None:

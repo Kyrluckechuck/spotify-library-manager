@@ -16,6 +16,7 @@ class Config:
         artist_to_fetch: str = None,
         print_exceptions: bool = True,
         process_info: ProcessInfo = None,
+        force_playlist_resync: bool = False,
 
     ):
         self.urls = urls
@@ -28,3 +29,4 @@ class Config:
         self.artist_to_fetch = artist_to_fetch
         self.print_exceptions = print_exceptions
         self.process_info = process_info
+        self.force_playlist_resync = force_playlist_resync

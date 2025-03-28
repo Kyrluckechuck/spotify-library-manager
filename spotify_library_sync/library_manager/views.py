@@ -91,7 +91,10 @@ def track_artist(request: HttpRequest, artist_id: int):
 def download_playlist(request: HttpRequest):
     playlist_download_form = DownloadPlaylistForm(request.POST)
     if playlist_download_form.is_valid():
-        tasks.download_playlist(playlist_download_form.cleaned_data['playlist_url'], playlist_download_form.cleaned_data['tracked'])
+        playlist_url = playlist_download_form.cleaned_data['playlist_url']
+        tracked = playlist_download_form.cleaned_data['tracked']
+        force_playlist_resync = playlist_download_form.cleaned_data['force_playlist_resync'] or False
+        tasks.download_playlist(playlist_url, tracked=tracked, force_playlist_resync=force_playlist_resync)
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
     print(playlist_download_form)
     print(playlist_download_form.errors)
