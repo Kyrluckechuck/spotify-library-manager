@@ -161,14 +161,21 @@ def cleanup_huey_history():
     helpers.cleanup_huey_history()
 
 @huey.task(context=True, priority=0, retries=2, retry_delay=30)
-def validate_undownloaded_songs(task: Task = None):
+def validate_undownloaded_songs(task: Task = None, ):
     non_downloaded_songs_that_should_exist = Song.objects.filter(bitrate__gt=0,unavailable=False,downloaded=False).order_by("created_at")[:50]
+    non_downloaded_songs_that_maybe_should_exist = Song.objects.filter(bitrate__gt=0,unavailable=True,downloaded=False).order_by("created_at")[:50]
 
-    if non_downloaded_songs_that_should_exist.count() == 0:
+    non_downloaded_songs = non_downloaded_songs_that_should_exist | non_downloaded_songs_that_maybe_should_exist
+
+    non_downloaded_songs_count = non_downloaded_songs.count()
+    non_downloaded_songs_that_should_exist_count = non_downloaded_songs_that_should_exist.count()
+
+    # No songs to attempt
+    if non_downloaded_songs_count == 0:
         print("All songs marked downloaded that should be!")
         return
 
-    missing_song_array = [song.spotify_uri for song in non_downloaded_songs_that_should_exist]
+    missing_song_array = [song.spotify_uri for song in non_downloaded_songs]
 
     print(f"Downloading {len(missing_song_array)} missing songs")
     downloader_config = Config(
@@ -181,5 +188,9 @@ def validate_undownloaded_songs(task: Task = None):
         downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
+    # Don't call recursively if there weren't any songs that definitely should have existed
+    if non_downloaded_songs_that_should_exist_count == 0:
+        print("All songs marked downloaded that should be!")
+        return
     # Queue up next batch after ensuring rate limit has passed
     validate_undownloaded_songs()
