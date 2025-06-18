@@ -5,7 +5,8 @@ from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist
+from downloader.utils import sanitize_and_strip_url
+from .models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
 from .forms import DownloadPlaylistForm, ToggleTrackedForm, TrackedPlaylistForm
 from . import tasks
 
@@ -29,19 +30,21 @@ def index(request: HttpRequest):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    wanted_base = Album.objects.filter(downloaded=False, wanted=True).select_related('artist').filter(artist__tracked=True)
-    downloaded_base = Album.objects.filter(downloaded=True)
+    wanted_base = Album.objects.filter(downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE).select_related('artist').filter(artist__tracked=True)
+    wanted_downloaded_base = Album.objects.filter(downloaded=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE).select_related('artist').filter(artist__tracked=True)
 
     sum_num_wanted = wanted_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
-    sum_num_downloaded = downloaded_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
+    sum_num_wanted_downloaded = wanted_downloaded_base.aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0
+    wanted_percent_completed = round(sum_num_wanted_downloaded / (sum_num_wanted_downloaded + sum_num_wanted) * 100, 2) if (sum_num_wanted_downloaded + sum_num_wanted) > 0 else 100
 
     # Extra stats
     extra_stats = {
         'num_wanted': wanted_base.count(),
         'sum_num_wanted': sum_num_wanted,
-        'num_downloaded': downloaded_base.count(),
-        'sum_num_downloaded': sum_num_downloaded,
-        'percent_completed': round(sum_num_downloaded / (sum_num_downloaded + sum_num_wanted) * 100, 2),
+        'num_wanted_downloaded': wanted_downloaded_base.count(),
+        'sum_num_wanted_downloaded': sum_num_wanted_downloaded,
+        'wanted_percent_completed': wanted_percent_completed,
+        'total_downloaded': Album.objects.filter(downloaded=True).count()
     }
     return render(request, "library_manager/index.html", {"playlist_form": download_playlist_form, "page_obj": page_obj, "search_term_and_page": search_term_and_page, "extra_stats": extra_stats})
 
@@ -88,11 +91,22 @@ def track_artist(request: HttpRequest, artist_id: int):
 def download_playlist(request: HttpRequest):
     playlist_download_form = DownloadPlaylistForm(request.POST)
     if playlist_download_form.is_valid():
-        tasks.download_playlist(playlist_download_form.cleaned_data['playlist_url'], playlist_download_form.cleaned_data['tracked'])
+        playlist_url = playlist_download_form.cleaned_data['playlist_url']
+        tracked = playlist_download_form.cleaned_data['tracked']
+        force_playlist_resync = playlist_download_form.cleaned_data['force_playlist_resync'] or False
+        tasks.download_playlist(playlist_url, tracked=tracked, force_playlist_resync=force_playlist_resync)
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
     print(playlist_download_form)
     print(playlist_download_form.errors)
     raise ValidationError({'playlist': ["Must be a valid spotify URL!",]})
+
+def retry_all_missing_known_songs(request: HttpRequest):
+    tasks.retry_all_missing_known_songs()
+    return redirect('library_manager:missing_known_songs')
+
+def validate_undownloaded_songs(request: HttpRequest):
+    tasks.validate_undownloaded_songs()
+    return redirect('library_manager:undownloaded_songs')
 
 def download_history(request: HttpRequest):
     download_history_not_done = DownloadHistory.objects.filter(completed_at=None).order_by("-added_at")
@@ -101,6 +115,32 @@ def download_history(request: HttpRequest):
     return render(request, "library_manager/download_history.html", {
         "download_history_not_done": download_history_not_done,
         "download_history_done": download_history_done,
+        "playlist_form": download_playlist_form
+    })
+
+def missing_known_songs(request: HttpRequest):
+    missing_known_songs_list = Song.objects.filter(bitrate=0,unavailable=False).order_by("-created_at").select_related('primary_artist').filter(primary_artist__tracked=True)
+    failed_known_songs_list = Song.objects.filter(failed_count__gt=0,bitrate=0,unavailable=False).order_by("-created_at").select_related('primary_artist')
+    # Combine results for displaying
+    missing_known_songs_list = missing_known_songs_list | failed_known_songs_list
+
+    missing_known_songs_list_unavailable = Song.objects.filter(bitrate=0,unavailable=True).order_by("-created_at").select_related('primary_artist')
+    download_playlist_form = DownloadPlaylistForm()
+    return render(request, "library_manager/missing_known_songs.html", {
+        "missing_known_songs_list": missing_known_songs_list[:25],
+        "missing_known_songs_list_count": missing_known_songs_list.count(),
+        "missing_known_songs_list_unavailable": missing_known_songs_list_unavailable[:25],
+        "missing_known_songs_list_unavailable_count": missing_known_songs_list_unavailable.count(),
+        "playlist_form": download_playlist_form
+    })
+
+def undownloaded_songs(request:HttpRequest):
+    songs_not_marked_downloaded_that_should_be = Song.objects.filter(bitrate__gt=0,unavailable=False,downloaded=False)
+    
+    download_playlist_form = DownloadPlaylistForm()
+    return render(request, "library_manager/undownloaded_songs.html", {
+        "songs_not_marked_downloaded_that_should_be": songs_not_marked_downloaded_that_should_be[:25],
+        "songs_not_marked_downloaded_that_should_be_count": songs_not_marked_downloaded_that_should_be.count(),
         "playlist_form": download_playlist_form
     })
 
@@ -152,7 +192,7 @@ def tracked_playlists_prefilled(request: HttpRequest, tracked_playlist_id: int):
 def track_playlist(request: HttpRequest):
     form = TrackedPlaylistForm(request.POST)
     if form.is_valid():
-        url_to_track = form.cleaned_data['playlist_url']
+        url_to_track = sanitize_and_strip_url(form.cleaned_data['playlist_url'])
         enabled = bool(form.cleaned_data['enabled'])
         auto_track_artists = bool(form.cleaned_data['auto_track_artists'])
         name = form.cleaned_data['name']
@@ -176,4 +216,9 @@ def delete_tracked_playlist(request: HttpRequest, tracked_playlist_id: int):
 def sync_tracked_playlist(request: HttpRequest, tracked_playlist_id: int):
     tracked_playlist = get_object_or_404(TrackedPlaylist, pk=tracked_playlist_id)
     tasks.sync_tracked_playlist(tracked_playlist)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+def sync_tracked_playlist_artists(request: HttpRequest, tracked_playlist_id: int):
+    tracked_playlist = get_object_or_404(TrackedPlaylist, pk=tracked_playlist_id)
+    tasks.sync_tracked_playlist_artists(tracked_playlist)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

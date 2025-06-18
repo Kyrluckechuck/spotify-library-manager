@@ -1,0 +1,37 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+
+    <form action="{% url 'library_manager:download_playlist' %}" method="post">
+        {% csrf_token %}
+        {{ playlist_form }}
+        <input type="submit" name='download playlist' value="Download">
+    </form>
+    <br/>
+    <form action="{% url 'library_manager:validate_undownloaded_songs' %}" method="post">
+        {% csrf_token %}
+        <input type="submit" name='retry downloading all missing songs' value="Retry All 'Undownloaded' Songs">
+    </form>
+
+    <h2>Undownloaded Songs:</h2>
+    {% if songs_not_marked_downloaded_that_should_be %}
+    Total songs: {{ songs_not_marked_downloaded_that_should_be_count }} (display limit 25)
+    <ul>
+    {% for song_data in songs_not_marked_downloaded_that_should_be %}
+        <li>
+            Created: {{ song_data.created_at }}
+            <br/>
+            Song: {{ song_data.name }}
+            <br/>
+            Spotify URI: <a id="download_id_{{ song_data.id }}" href="{{ song_data.spotify_uri }}">{{ song_data.spotify_uri }}</a>
+            <br/>
+
+            <button style="text-align:center;" onclick="CopyText('download_id_{{ song_data.id }}')">Copy URI</button>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No unmarked downloaded but not downloaded songs.</p>
+    {% endif %}
+
+</body>
+{% include 'library_manager/partials/footer.html' %}

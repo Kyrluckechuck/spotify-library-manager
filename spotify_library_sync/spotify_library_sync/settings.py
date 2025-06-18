@@ -36,6 +36,7 @@ settings = dynaconf.DjangoDynaconf(
         "*.yaml",
         "/config/settings.yaml",
     ],
+    STATIC_ROOT = BASE_DIR / "staticfiles"
 )  # noqa
 
 Path("/config/db/").mkdir(parents=True, exist_ok=True)

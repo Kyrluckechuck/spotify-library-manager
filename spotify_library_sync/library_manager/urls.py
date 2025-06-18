@@ -7,13 +7,18 @@ urlpatterns = [
     # ex: /library_manager/
     path("", views.index, name="index"),
     path("download_playlist", views.download_playlist, name="download_playlist"),
+    path("retry_all_missing_known_songs", views.retry_all_missing_known_songs, name="retry_all_missing_known_songs"),
+    path("validate_undownloaded_songs", views.validate_undownloaded_songs, name="validate_undownloaded_songs"),
     path("download_all_for_tracked_artists", views.download_all_for_tracked_artists, name="download_all_for_tracked_artists"),
     path("fetch_all_for_tracked_artists", views.fetch_all_for_tracked_artists, name="fetch_all_for_tracked_artists"),
     path("download_history", views.download_history, name="download_history"),
+    path("missing_known_songs", views.missing_known_songs, name="missing_known_songs"),
+    path("undownloaded_songs", views.undownloaded_songs, name="undownloaded_songs"),
     path("tracked_playlists", views.tracked_playlists, name="tracked_playlists"),
     path("tracked_playlists/<int:tracked_playlist_id>/", views.tracked_playlists_prefilled, name="tracked_playlists_prefilled"),
     path("tracked_playlists/<int:tracked_playlist_id>/sync", views.sync_tracked_playlist, name="sync_tracked_playlist"),
     path("tracked_playlists/<int:tracked_playlist_id>/delete", views.delete_tracked_playlist, name="delete_tracked_playlist"),
+    path("tracked_playlists/<int:tracked_playlist_id>/sync_artists", views.sync_tracked_playlist_artists, name="sync_tracked_playlist_artists"),
     path("track_playlist", views.track_playlist, name="track_playlist"),
     # path("tracked_playlists/edit", views.edit_tracked_playlists, name="edit_tracked_playlists"),
     # ex: /library_manager/artist/5/

@@ -40,7 +40,11 @@ def download_missing_tracked_artists(already_enqueued_artists: list[int], artist
         if artist.id in already_enqueued_artists:
             continue
 
-        extra_args = {}
+        extra_args = {
+            # Delay album downloads for the artists for 5 seconds (once they begin)
+            'delay': 5
+        }
+
         if priority is not None:
             extra_args['priority'] = priority
         tasks.download_missing_albums_for_artist(artist.id, **extra_args)

@@ -1,6 +1,7 @@
 click
 django
 django-debug-toolbar
+django-extensions
 django-huey-monitor
 django-stubs[compatible-mypy]
 django-stubs-ext
@@ -9,6 +10,9 @@ huey
 jinja2
 pybase62
 pylint-django
-pywidevine
+pymediainfo
 pyyaml
-yt-dlp
+# spotdl
+git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl
+Werkzeug[watchdog]
+whitenoise[brotli]

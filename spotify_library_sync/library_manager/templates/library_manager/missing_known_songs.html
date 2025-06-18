@@ -1,0 +1,66 @@
+{% include 'library_manager/partials/header.html' %}
+<body>
+
+    <form action="{% url 'library_manager:download_playlist' %}" method="post">
+        {% csrf_token %}
+        {{ playlist_form }}
+        <input type="submit" name='download playlist' value="Download">
+    </form>
+    <br/>
+    <form action="{% url 'library_manager:retry_all_missing_known_songs' %}" method="post">
+        {% csrf_token %}
+        <input type="submit" name='retry downloading all missing songs' value="Retry All Missing Songs">
+    </form>
+
+    <h2>Missing Songs:</h2>
+    {% if missing_known_songs_list %}
+    Total songs: {{ missing_known_songs_list_count }} (display limit 25)
+    <ul>
+    {% for song_data in missing_known_songs_list %}
+        <li>
+            Created: {{ song_data.created_at }}
+            <br/>
+            Song: {{ song_data.name }}
+            <br/>
+            Artist: {{ song_data.primary_artist.name }}
+            <br/>
+            Failed Attempts: {{ song_data.failed_count }}
+            <br/>
+            Spotify URI: <a id="download_id_{{ song_data.id }}" href="{{ song_data.spotify_uri }}">{{ song_data.spotify_uri }}</a>
+            <br/>
+
+            <button style="text-align:center;" onclick="CopyText('download_id_{{ song_data.id }}')">Copy URI</button>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No (still missing) failed song history.</p>
+    {% endif %}
+
+    <h2>Considered Unavailable:</h2>
+    {% if missing_known_songs_list_unavailable %}
+    Total songs: {{ missing_known_songs_list_unavailable_count }} (display limit 25)
+    <ul>
+    {% for song_data in missing_known_songs_list_unavailable %}
+        <li>
+            Created: {{ song_data.created_at }}
+            <br/>
+            Song: {{ song_data.name }}
+            <br/>
+            Artist: {{ song_data.primary_artist.name }}
+            <br/>
+            Failed Attempts: {{ song_data.failed_count }}
+            <br/>
+            Spotify URI: <a id="download_id_{{ song_data.id }}" href="{{ song_data.spotify_uri }}">{{ song_data.spotify_uri }}</a>
+            <br/>
+
+            <button style="text-align:center;" onclick="CopyText('download_id_{{ song_data.id }}')">Copy URI</button>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No (still missing) failed song history.</p>
+    {% endif %}
+
+</body>
+{% include 'library_manager/partials/footer.html' %}

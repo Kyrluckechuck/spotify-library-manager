@@ -3,6 +3,12 @@ from django.db import models
 from django.db.models import Sum
 from django_stubs_ext.db.models import TypedModelMeta
 
+from downloader import utils
+
+# TODO: Make this configurable, allowing "appears_on" to optionally be requested, or others be de-selected
+ALBUM_TYPES_TO_DOWNLOAD = ["single", "album", "compilation"]
+EXTRA_GROUPS_TO_IGNORE = ["appears_on"]
+
 # Create your models here.
 class Artist(models.Model):
     name = models.CharField(max_length=200)
@@ -13,15 +19,15 @@ class Artist(models.Model):
 
     @property
     def number_songs(self):
-        return ContributingArtist.objects.filter(artist=self).count
+        return ContributingArtist.objects.filter(artist=self).count()
 
     @property
     def albums(self):
-        album_base = Album.objects.filter(artist=self)
+        album_base = Album.objects.filter(artist=self, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
         return {
-            'known': album_base.count,
-            'missing': album_base.filter(wanted=True, downloaded=False).count,
-            'downloaded': album_base.filter(downloaded=True).count,
+            'known': album_base.count(),
+            'missing': album_base.filter(wanted=True, downloaded=False).count(),
+            'downloaded': album_base.filter(downloaded=True).count(),
             'songs': {
                 'missing': album_base.filter(wanted=True, downloaded=False).aggregate(Sum('total_tracks'))['total_tracks__sum'] or 0,
             },
@@ -41,10 +47,26 @@ class Song(models.Model):
     gid = models.CharField(max_length=120, unique=True)
     primary_artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    failed_count = models.IntegerField(default=0)
+    bitrate = models.IntegerField(default=0)
+    unavailable = models.BooleanField(default=False)
+    file_path = models.FilePathField(null=True)
+    downloaded = models.BooleanField(default=False)
 
     @property
     def contributing_artists(self):
         return ContributingArtist.objects.filter(song=self).exclude(artist=self.primary_artist)
+    
+    @property
+    def spotify_uri(self):
+        song_uri = utils.gid_to_uri(self.gid)
+        return f"spotify:track:{song_uri}"
+    
+    def increment_failed_count(self):
+        self.failed_count += 1
+        if self.failed_count > 3:
+            self.unavailable = True
+        self.save()
 
     class Meta(TypedModelMeta):
         indexes = [
@@ -91,6 +113,13 @@ class Album(models.Model):
     total_tracks = models.IntegerField(default=0)
     wanted = models.BooleanField(default=True)
     name = models.CharField(max_length=2048)
+    failed_count = models.IntegerField(default=0)
+    album_type = models.CharField(max_length=100, null=True)
+    album_group = models.CharField(max_length=100, null=True)
+
+    @property
+    def desired_album_type(self):
+        return self.album_type in ALBUM_TYPES_TO_DOWNLOAD and self.album_group not in EXTRA_GROUPS_TO_IGNORE
 
     class Meta(TypedModelMeta):
         pass

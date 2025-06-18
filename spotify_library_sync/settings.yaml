@@ -1,33 +1,21 @@
 default:
   # Default input/output locations
   # Please customize this to your desired location
-  final_path: "/config/final_path"
-  temp_path: "/config/temp"
+  # Cookies & PO Tokens are *both* required for HQ downloads
   cookies_location: "/config/cookies.txt"
-  wvd_location: null
-  ffmpeg_location: "ffmpeg"
-  aria2c_location: "aria2c"
-  template_artist_folder_album: "{artist_folder}/{album}"
-  template_folder_album: "{album_artist}/{album}"
-  template_folder_compilation: "Compilations/{album}"
-  template_file_single_disc: "{track:02d} {title}"
-  template_file_multi_disc: "{disc}-{track:02d} {title}"
-  download_mode: "ytdlp"
-  truncate: 180
-  log_level: "DEBUG"
-  premium_quality: true
-  lrc_only: false
+  po_token: null
+  log_level: "INFO"
   no_lrc: false
-  save_cover: false
   overwrite: false
   print_exceptions: true
+  disable_missing_tracked_artist_download: false
 
   # Quick-start development settings - unsuitable for production
   # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
   # SECURITY WARNING: keep the secret key used in production secret!
   SECRET_KEY: 'django-insecure-7e!$54*ii^iyw!963-e3a*r8d0mb)zz@ij6s#s_(0qy(1_^bx*'
   # SECURITY WARNING: don't run with debug turned on in production!
-  DEBUG: True
+  DEBUG: False
   ALLOWED_HOSTS:
     - '*'
   # Application definition
@@ -38,13 +26,16 @@ default:
     - django.contrib.contenttypes
     - django.contrib.sessions
     - django.contrib.messages
+    - whitenoise.runserver_nostatic
     - django.contrib.staticfiles
+    - django_extensions
     - debug_toolbar
     - huey.contrib.djhuey
     - bx_django_utils # https://github.com/boxine/bx_django_utils
     - huey_monitor
   MIDDLEWARE:
     - django.middleware.security.SecurityMiddleware
+    - whitenoise.middleware.WhiteNoiseMiddleware
     - django.contrib.sessions.middleware.SessionMiddleware
     - django.middleware.common.CommonMiddleware
     - django.middleware.csrf.CsrfViewMiddleware
@@ -73,7 +64,7 @@ default:
       OPTIONS: {
         timeout: 20,  # in seconds
         # see also
-        # https://docs.python.org/3.7/library/sqlite3.html#sqlite3.connect
+        # https://docs.python.org/3.13/library/sqlite3.html#sqlite3.connect
       }
   # Password validation
   # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -106,6 +97,6 @@ default:
     immediate: false,
     # immediate_use_memory: true,
   }
-
-
-
+  STORAGES:
+    staticfiles: 
+      BACKEND: whitenoise.storage.CompressedManifestStaticFilesStorage
