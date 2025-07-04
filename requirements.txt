@@ -16,3 +16,4 @@ pyyaml
 git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl
 Werkzeug[watchdog]
 whitenoise[brotli]
+yt-dlp==2025.06.30
