@@ -125,7 +125,11 @@ class SpotdlWrapper:
                     self.logger.error(traceback.format_exc())
                 
                 # Handle (gracefully) songs that no longer exist (at all) with Spotify
-                if "too many 404 error responses" in str(exception) and url.startswith("spotify:track:"):
+                if (
+                        "too many 404 error responses" in str(exception) or "Track no longer exists" in str(exception)
+                    ) and (
+                        url.startswith("spotify:track:") or url.startswith("https://open.spotify.com/track")
+                    ):
                     song_gid = utils.uri_to_gid(url.split("spotify:track:", 1)[1])
                     db_song = Song.objects.get(gid=song_gid)
                     if not db_song:
