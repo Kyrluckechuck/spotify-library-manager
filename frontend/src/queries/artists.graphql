@@ -1,49 +1,133 @@
-query GetArtists($tracked: Boolean, $limit: Int = 20) {
-  artists(tracked: $tracked, limit: $limit) {
-    id
-    name
-    gid
-    tracked
-    addedAt
-    lastSyncedAt
+query GetArtists($tracked: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
+  artists(tracked: $tracked, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      id
+      name
+      gid
+      tracked
+      addedAt
+      lastSyncedAt
+    }
   }
 }
 
-query GetAlbums($artistId: Int, $limit: Int = 20) {
-  albums(artistId: $artistId, limit: $limit) {
-    id
-    name
-    spotifyGid
-    totalTracks
-    wanted
-    downloaded
-    albumType
-    albumGroup
+query GetAlbums($artistId: Int, $first: Int = 20, $after: String) {
+  albums(artistId: $artistId, first: $first, after: $after) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      id
+      name
+      spotifyGid
+      totalTracks
+      wanted
+      downloaded
+      albumType
+      albumGroup
+    }
   }
 }
 
-query GetSongs($artistId: Int, $limit: Int = 20) {
-  songs(artistId: $artistId, limit: $limit) {
-    id
-    name
-    gid
-    createdAt
-    failedCount
-    bitrate
-    unavailable
-    filePath
-    downloaded
-    spotifyUri
+query GetSongs($artistId: Int, $first: Int = 20, $after: String) {
+  songs(artistId: $artistId, first: $first, after: $after) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      id
+      name
+      gid
+      createdAt
+      failedCount
+      bitrate
+      unavailable
+      filePath
+      downloaded
+      spotifyUri
+    }
   }
 }
 
-query GetPlaylists($enabled: Boolean, $limit: Int = 20) {
-  playlists(enabled: $enabled, limit: $limit) {
-    id
-    name
-    url
-    enabled
-    autoTrackArtists
-    lastSyncedAt
+query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String) {
+  playlists(enabled: $enabled, first: $first, after: $after) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      id
+      name
+      url
+      enabled
+      autoTrackArtists
+      lastSyncedAt
+    }
+  }
+}
+
+mutation TrackArtist($artistId: Int!) {
+  trackArtist(artistId: $artistId) {
+    success
+    message
+    artist {
+      id
+      name
+      tracked
+    }
+  }
+}
+
+mutation UntrackArtist($artistId: Int!) {
+  untrackArtist(artistId: $artistId) {
+    success
+    message
+    artist {
+      id
+      name
+      tracked
+    }
+  }
+}
+
+mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
+  setAlbumWanted(albumId: $albumId, wanted: $wanted) {
+    success
+    message
+    album {
+      id
+      name
+      wanted
+    }
+  }
+}
+
+mutation TogglePlaylist($playlistId: Int!) {
+  togglePlaylist(playlistId: $playlistId) {
+    success
+    message
+    playlist {
+      id
+      name
+      enabled
+    }
   }
 } 
