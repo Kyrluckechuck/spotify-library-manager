@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { ApolloProvider } from '@apollo/client'
 import './index.css'
+import { apolloClient } from './apolloClient'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
@@ -16,13 +18,14 @@ declare module '@tanstack/react-router' {
   }
 }
 
-
 const rootElement = document.getElementById('root')!
 if (!rootElement.innerHTML) {
   const root = createRoot(rootElement)
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <ApolloProvider client={apolloClient}>
+        <RouterProvider router={router} />
+      </ApolloProvider>
     </StrictMode>,
   )
 }

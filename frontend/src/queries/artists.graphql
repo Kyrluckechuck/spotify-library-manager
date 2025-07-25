@@ -1,0 +1,49 @@
+query GetArtists($tracked: Boolean, $limit: Int = 20) {
+  artists(tracked: $tracked, limit: $limit) {
+    id
+    name
+    gid
+    tracked
+    addedAt
+    lastSyncedAt
+  }
+}
+
+query GetAlbums($artistId: Int, $limit: Int = 20) {
+  albums(artistId: $artistId, limit: $limit) {
+    id
+    name
+    spotifyGid
+    totalTracks
+    wanted
+    downloaded
+    albumType
+    albumGroup
+  }
+}
+
+query GetSongs($artistId: Int, $limit: Int = 20) {
+  songs(artistId: $artistId, limit: $limit) {
+    id
+    name
+    gid
+    createdAt
+    failedCount
+    bitrate
+    unavailable
+    filePath
+    downloaded
+    spotifyUri
+  }
+}
+
+query GetPlaylists($enabled: Boolean, $limit: Int = 20) {
+  playlists(enabled: $enabled, limit: $limit) {
+    id
+    name
+    url
+    enabled
+    autoTrackArtists
+    lastSyncedAt
+  }
+} 

@@ -1,6 +1,2 @@
-module.exports = {
-  plugins: {
-    "@tailwindcss/postcss": {},
-    autoprefixer: {},
-  },
-} 
+// TailwindCSS v4 with Vite plugin doesn't need PostCSS
+module.exports = {}; 

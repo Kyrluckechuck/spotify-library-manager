@@ -4,7 +4,23 @@ import os
 import sys
 import signal
 import subprocess
+import threading
+import time
 from pathlib import Path
+
+def print_with_prefix(prefix, line):
+    """Print output with a colored prefix"""
+    if line.strip():
+        print(f"\033[1;34m[{prefix}]\033[0m {line.strip()}")
+
+def stream_output(process, prefix):
+    """Stream process output with prefix"""
+    try:
+        for line in iter(process.stdout.readline, ''):
+            if line.strip():
+                print_with_prefix(prefix, line.rstrip())
+    except (OSError, ValueError):
+        pass
 
 def run_api():
     api_dir = Path("api")
@@ -14,7 +30,11 @@ def run_api():
     process = subprocess.Popen(
         ["python", "run.py"],
         cwd=api_dir,
-        env=env
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1
     )
     return process
 
@@ -22,23 +42,54 @@ def run_frontend():
     frontend_dir = Path("frontend")
     process = subprocess.Popen(
         ["yarn", "dev"],
-        cwd=frontend_dir
+        cwd=frontend_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1
     )
     return process
 
 def main():
+    print("\033[1;32m🚀 Starting Spotify Library Manager Development Servers...\033[0m\n")
+    
     # Start API server
-    print("Starting API server...")
+    print_with_prefix("SETUP", "Starting API server...")
     api_process = run_api()
-
-    # Start frontend dev server
-    print("Starting frontend dev server...")
+    
+    # Start frontend dev server  
+    print_with_prefix("SETUP", "Starting frontend dev server...")
     frontend_process = run_frontend()
+    
+    # Wait a moment for servers to start
+    time.sleep(2)
+    
+    # Start output streaming threads
+    api_thread = threading.Thread(target=stream_output, args=(api_process, "API"), daemon=True)
+    frontend_thread = threading.Thread(target=stream_output, args=(frontend_process, "FRONTEND"), daemon=True)
+    
+    api_thread.start()
+    frontend_thread.start()
+    
+    print_with_prefix("SETUP", "Development servers starting up...")
+    print_with_prefix("INFO", "API will be available at: http://localhost:5000/graphql")
+    print_with_prefix("INFO", "Frontend will be available at: http://localhost:3000")
+    print_with_prefix("INFO", "Press Ctrl+C to stop all servers\n")
 
-    def cleanup(signum, frame):
-        print("\nShutting down development servers...")
-        api_process.terminate()
-        frontend_process.terminate()
+    def cleanup(signum=None, frame=None):
+        print_with_prefix("SHUTDOWN", "Shutting down development servers...")
+        try:
+            api_process.terminate()
+            frontend_process.terminate()
+            # Give processes time to shutdown gracefully
+            api_process.wait(timeout=5)
+            frontend_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            api_process.kill()
+            frontend_process.kill()
+        except (OSError, ValueError):
+            pass
+        print_with_prefix("SHUTDOWN", "All servers stopped.")
         sys.exit(0)
 
     # Handle Ctrl+C gracefully
@@ -46,11 +97,19 @@ def main():
     signal.signal(signal.SIGTERM, cleanup)
 
     try:
-        # Wait for either process to exit
-        api_process.wait()
-        frontend_process.terminate()
+        # Keep the main thread alive
+        while True:
+            if api_process.poll() is not None:
+                print_with_prefix("ERROR", "API server exited unexpectedly")
+                break
+            if frontend_process.poll() is not None:
+                print_with_prefix("ERROR", "Frontend server exited unexpectedly")
+                break
+            time.sleep(1)
     except KeyboardInterrupt:
-        cleanup(None, None)
+        pass
+    finally:
+        cleanup()
 
 if __name__ == "__main__":
     main() 

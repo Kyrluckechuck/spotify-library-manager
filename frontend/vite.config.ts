@@ -9,10 +9,7 @@ export default defineConfig({
     port: 3000,
   },
   plugins: [
-    tanstackRouter({
-      target: 'react',
-      autoCodeSplitting: true,
-    }),
+    tanstackRouter(),
     react(),
     tailwindcss(),
     tsConfigPaths(),
