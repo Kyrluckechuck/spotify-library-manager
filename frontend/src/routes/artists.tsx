@@ -4,7 +4,13 @@ import { GetArtistsDocument, TrackArtistDocument, UntrackArtistDocument } from '
 import type { Artist } from '../types/generated/graphql';
 import { useState } from 'react';
 
-type SortField = 'name' | 'tracked' | 'added_at' | 'last_synced_at' | null;
+// Components
+import { ArtistFilters } from '../components/artists/ArtistFilters';
+import { ArtistsTable } from '../components/artists/ArtistsTable';
+import { PageSizeSelector } from '../components/ui/PageSizeSelector';
+import { LoadMoreButton } from '../components/ui/LoadMoreButton';
+import type { SortField } from '../components/artists/ArtistsTable';
+
 type SortDirection = 'asc' | 'desc';
 
 function Artists() {
@@ -116,13 +122,6 @@ function Artists() {
     }
   };
 
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return '↕️'; // Both arrows when not sorted
-    }
-    return sortDirection === 'asc' ? '↑' : '↓';
-  };
-
   if (loading && !data) {
     return (
       <section>
@@ -149,8 +148,6 @@ function Artists() {
   const totalCount = data?.artists.totalCount || 0;
   const pageInfo = data?.artists.pageInfo;
 
-  console.log('Current filter:', filter); // Debug logging
-
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -158,20 +155,10 @@ function Artists() {
           Artists ({artists.length} of {totalCount})
         </h1>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label htmlFor="pageSize" className="text-sm text-gray-600">Show:</label>
-            <select
-              id="pageSize"
-              value={pageSize}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              className="border border-gray-300 rounded px-2 py-1 text-sm"
-            >
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value={200}>200</option>
-            </select>
-          </div>
+          <PageSizeSelector 
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
+          />
           {totalCount > artists.length && (
             <span className="text-sm text-gray-500">
               Showing first {artists.length} artists
@@ -180,153 +167,26 @@ function Artists() {
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6">
-        <button 
-          onClick={() => handleFilterChange('all')}
-          className={`px-4 py-2 rounded transition-colors font-medium border ${
-            filter === 'all' 
-              ? 'bg-indigo-700 border-indigo-700 shadow-md ring-2 ring-indigo-300' 
-              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
-          }`}
-          style={{ 
-            backgroundColor: filter === 'all' ? '#3730a3' : 'white',
-            color: filter === 'all' ? 'white' : '#374151'
-          }}
-        >
-          Show All
-        </button>
-        <button 
-          onClick={() => handleFilterChange('tracked')}
-          className={`px-4 py-2 rounded transition-colors font-medium border ${
-            filter === 'tracked' 
-              ? 'bg-green-700 border-green-700 shadow-md ring-2 ring-green-300' 
-              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
-          }`}
-          style={{ 
-            backgroundColor: filter === 'tracked' ? '#15803d' : 'white',
-            color: filter === 'tracked' ? 'white' : '#374151'
-          }}
-        >
-          Tracked Only
-        </button>
-        <button 
-          onClick={() => handleFilterChange('untracked')}
-          className={`px-4 py-2 rounded transition-colors font-medium border ${
-            filter === 'untracked' 
-              ? 'bg-orange-700 border-orange-700 shadow-md ring-2 ring-orange-300' 
-              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
-          }`}
-          style={{ 
-            backgroundColor: filter === 'untracked' ? '#c2410c' : 'white',
-            color: filter === 'untracked' ? 'white' : '#374151'
-          }}
-        >
-          Untracked Only
-        </button>
-      </div>
+      <ArtistFilters 
+        currentFilter={filter}
+        onFilterChange={handleFilterChange}
+      />
 
-      <div className="bg-white rounded shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('name')}
-              >
-                <div className="flex items-center gap-1">
-                  Artist {getSortIcon('name')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('tracked')}
-              >
-                <div className="flex items-center gap-1">
-                  Status {getSortIcon('tracked')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('last_synced_at')}
-              >
-                <div className="flex items-center gap-1">
-                  Last Synced {getSortIcon('last_synced_at')}
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {artists.map((artist: Artist) => (
-              <tr key={artist.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {artist.name}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    ID: {artist.gid}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    artist.tracked
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {artist.tracked ? 'Tracked' : 'Not Tracked'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {artist.lastSyncedAt
-                    ? new Date(artist.lastSyncedAt).toLocaleDateString()
-                    : 'Never'
-                  }
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                  <button className="text-indigo-600 hover:text-indigo-900 underline">
-                    View Albums
-                  </button>
-                  <button 
-                    onClick={() => handleTrackToggle(artist)}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      artist.tracked
-                        ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                        : 'bg-green-100 text-green-800 hover:bg-green-200'
-                    }`}
-                  >
-                    {artist.tracked ? 'Untrack' : 'Track'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <ArtistsTable
+        artists={artists}
+        sortField={sortField}
+        sortDirection={sortDirection}
+        onSort={handleSort}
+        onTrackToggle={handleTrackToggle}
+        loading={loading}
+      />
 
-        {artists.length === 0 && (
-          <div className="p-6 text-center text-gray-500">
-            No artists found.
-          </div>
-        )}
-
-        {pageInfo?.hasNextPage && (
-          <div className="p-4 text-center border-t border-gray-200">
-            <button
-              onClick={handleLoadMore}
-              disabled={loading}
-              className="px-6 py-3 rounded font-medium transition-colors"
-              style={{
-                backgroundColor: loading ? '#6b7280' : '#3730a3',
-                color: 'white',
-                cursor: loading ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {loading ? 'Loading...' : `Load More (${totalCount - artists.length} remaining)`}
-            </button>
-          </div>
-        )}
-      </div>
+      <LoadMoreButton
+        hasNextPage={!!pageInfo?.hasNextPage}
+        loading={loading}
+        remainingCount={totalCount - artists.length}
+        onLoadMore={handleLoadMore}
+      />
     </section>
   );
 }
