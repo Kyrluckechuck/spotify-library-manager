@@ -20,6 +20,7 @@ export type Scalars = {
 export type Album = {
   albumGroup?: Maybe<Scalars['String']['output']>;
   albumType?: Maybe<Scalars['String']['output']>;
+  artist?: Maybe<Scalars['String']['output']>;
   downloaded: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
@@ -117,7 +118,11 @@ export type Query = {
 export type QueryAlbumsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   artistId?: InputMaybe<Scalars['Int']['input']>;
+  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
   first?: Scalars['Int']['input'];
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
+  wanted?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -134,6 +139,8 @@ export type QueryPlaylistsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   first?: Scalars['Int']['input'];
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -190,12 +197,16 @@ export type GetArtistsQuery = { artists: { totalCount: number, pageInfo: { hasNe
 
 export type GetAlbumsQueryVariables = Exact<{
   artistId?: InputMaybe<Scalars['Int']['input']>;
+  wanted?: InputMaybe<Scalars['Boolean']['input']>;
+  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type GetAlbumsQuery = { albums: { totalCount: number, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ id: number, name: string, spotifyGid: string, totalTracks: number, wanted: boolean, downloaded: boolean, albumType?: string | null, albumGroup?: string | null }> } };
+export type GetAlbumsQuery = { albums: { totalCount: number, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ id: number, name: string, spotifyGid: string, totalTracks: number, wanted: boolean, downloaded: boolean, albumType?: string | null, albumGroup?: string | null, artist?: string | null }> } };
 
 export type GetSongsQueryVariables = Exact<{
   artistId?: InputMaybe<Scalars['Int']['input']>;
@@ -210,6 +221,8 @@ export type GetPlaylistsQueryVariables = Exact<{
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -310,8 +323,16 @@ export type GetArtistsLazyQueryHookResult = ReturnType<typeof useGetArtistsLazyQ
 export type GetArtistsSuspenseQueryHookResult = ReturnType<typeof useGetArtistsSuspenseQuery>;
 export type GetArtistsQueryResult = Apollo.QueryResult<GetArtistsQuery, GetArtistsQueryVariables>;
 export const GetAlbumsDocument = gql`
-    query GetAlbums($artistId: Int, $first: Int = 20, $after: String) {
-  albums(artistId: $artistId, first: $first, after: $after) {
+    query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
+  albums(
+    artistId: $artistId
+    wanted: $wanted
+    downloaded: $downloaded
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -328,6 +349,7 @@ export const GetAlbumsDocument = gql`
       downloaded
       albumType
       albumGroup
+      artist
     }
   }
 }
@@ -346,8 +368,12 @@ export const GetAlbumsDocument = gql`
  * const { data, loading, error } = useGetAlbumsQuery({
  *   variables: {
  *      artistId: // value for 'artistId'
+ *      wanted: // value for 'wanted'
+ *      downloaded: // value for 'downloaded'
  *      first: // value for 'first'
  *      after: // value for 'after'
+ *      sortBy: // value for 'sortBy'
+ *      sortDirection: // value for 'sortDirection'
  *   },
  * });
  */
@@ -428,8 +454,14 @@ export type GetSongsLazyQueryHookResult = ReturnType<typeof useGetSongsLazyQuery
 export type GetSongsSuspenseQueryHookResult = ReturnType<typeof useGetSongsSuspenseQuery>;
 export type GetSongsQueryResult = Apollo.QueryResult<GetSongsQuery, GetSongsQueryVariables>;
 export const GetPlaylistsDocument = gql`
-    query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String) {
-  playlists(enabled: $enabled, first: $first, after: $after) {
+    query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
+  playlists(
+    enabled: $enabled
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -464,6 +496,8 @@ export const GetPlaylistsDocument = gql`
  *      enabled: // value for 'enabled'
  *      first: // value for 'first'
  *      after: // value for 'after'
+ *      sortBy: // value for 'sortBy'
+ *      sortDirection: // value for 'sortDirection'
  *   },
  * });
  */

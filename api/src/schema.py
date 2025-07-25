@@ -37,6 +37,7 @@ class Album:
     wanted: bool
     album_type: Optional[str] = None
     album_group: Optional[str] = None
+    artist: Optional[str] = None  # Artist name
 
     @classmethod
     def from_django(cls, django_album: DjangoAlbum) -> "Album":
@@ -50,6 +51,7 @@ class Album:
             wanted=django_album.wanted,
             album_type=django_album.album_type,
             album_group=django_album.album_group,
+            artist=None,  # Will be populated in the resolver
         )
 
 @strawberry.type
@@ -265,37 +267,112 @@ class Query:
 
     @strawberry.field
     async def albums(
-        self, 
-        artist_id: Optional[int] = None, 
+        self,
+        artist_id: Optional[int] = None,
+        wanted: Optional[bool] = None,
+        downloaded: Optional[bool] = None,
         first: int = 20,
-        after: Optional[str] = None
+        after: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: Optional[str] = None
     ) -> AlbumsConnection:
         @sync_to_async
         def get_albums_page():
-            qs = DjangoAlbum.objects.all().order_by('id')
+            # Build base queryset
+            qs = DjangoAlbum.objects.all()
             if artist_id:
-                qs = qs.filter(artist_id=artist_id)
-            
-            total_count = qs.count()
-            
-            start_id = 0
-            if after:
+                # Get the artist's GID from the ID
                 try:
-                    start_id = int(after)
+                    artist = DjangoArtist.objects.get(id=artist_id)
+                    qs = qs.filter(artist=artist.gid)
+                except DjangoArtist.DoesNotExist:
+                    return {
+                        'items': [],
+                        'total_count': 0,
+                        'has_next_page': False,
+                        'has_previous_page': False,
+                        'start_cursor': None,
+                        'end_cursor': None
+                    }
+            if wanted is not None:
+                qs = qs.filter(wanted=wanted)
+            if downloaded is not None:
+                qs = qs.filter(downloaded=downloaded)
+
+            # Apply sorting
+            sort_field = 'id'  # default
+            if sort_by == 'name':
+                sort_field = 'name'
+            elif sort_by == 'wanted':
+                sort_field = 'wanted'
+            elif sort_by == 'downloaded':
+                sort_field = 'downloaded'
+            elif sort_by == 'album_type':
+                sort_field = 'album_type'
+
+            # Apply sort direction
+            if sort_direction == 'desc':
+                sort_field = f'-{sort_field}'
+
+            qs = qs.order_by(sort_field, 'id')  # Always include id for consistent pagination
+
+            # Get total count
+            total_count = qs.count()
+
+            # Handle cursor pagination
+            if after and sort_by != 'id':
+                # For non-id sorting, use offset-based pagination
+                try:
+                    offset = int(after)
+                    items = list(qs[offset:offset + first + 1])
+                    has_next_page = len(items) > first
+                    if has_next_page:
+                        items = items[:first]
+
+                    has_previous_page = offset > 0
+                    start_cursor = str(offset) if items else None
+                    end_cursor = str(offset + len(items)) if items else None
                 except (ValueError, TypeError):
-                    start_id = 0
-            
-            filtered_qs = qs.filter(id__gt=start_id)
-            items = list(filtered_qs[:first + 1])
-            
-            has_next_page = len(items) > first
-            if has_next_page:
-                items = items[:first]
-            
-            has_previous_page = start_id > 0
-            start_cursor = str(items[0].id) if items else None
-            end_cursor = str(items[-1].id) if items else None
-            
+                    offset = 0
+                    items = list(qs[:first + 1])
+                    has_next_page = len(items) > first
+                    if has_next_page:
+                        items = items[:first]
+                    has_previous_page = False
+                    start_cursor = "0" if items else None
+                    end_cursor = str(len(items)) if items else None
+            else:
+                # For id-based sorting or first page, use cursor pagination
+                start_id = 0
+                if after and sort_by in [None, 'id']:
+                    try:
+                        start_id = int(after)
+                    except (ValueError, TypeError):
+                        start_id = 0
+
+                if sort_by in [None, 'id'] and sort_direction != 'desc':
+                    filtered_qs = qs.filter(id__gt=start_id)
+                else:
+                    # Use offset for other sorts
+                    offset = int(after) if after else 0
+                    filtered_qs = qs[offset:]
+
+                items = list(filtered_qs[:first + 1])
+
+                has_next_page = len(items) > first
+                if has_next_page:
+                    items = items[:first]
+
+                has_previous_page = start_id > 0 if sort_by in [None, 'id'] else int(after or 0) > 0
+
+                if sort_by in [None, 'id'] and sort_direction != 'desc':
+                    start_cursor = str(items[0].id) if items else None
+                    end_cursor = str(items[-1].id) if items else None
+                else:
+                    offset = int(after) if after else 0
+                    start_cursor = str(offset) if items else None
+                    end_cursor = str(offset + len(items)) if items else None
+
             return {
                 'items': items,
                 'total_count': total_count,
@@ -306,9 +383,29 @@ class Query:
             }
 
         result = await get_albums_page()
-        
+
+        # Populate artist names for albums
+        @sync_to_async
+        def get_artist_names(albums):
+            artist_gids = {album.artist for album in albums if album.artist}
+            artists = {artist.gid: artist.name for artist in DjangoArtist.objects.filter(gid__in=artist_gids)}
+            return artists
+
+        artist_names = await get_artist_names(result['items'])
+
         return AlbumsConnection(
-            edges=[Album.from_django(album) for album in result['items']],
+            edges=[Album(
+                id=album.id,
+                spotify_gid=album.spotify_gid or "",
+                spotify_uri=album.spotify_uri or "",
+                name=album.name,
+                total_tracks=album.total_tracks or 0,
+                downloaded=album.downloaded,
+                wanted=album.wanted,
+                album_type=album.album_type,
+                album_group=album.album_group,
+                artist=artist_names.get(album.artist)
+            ) for album in result['items']],
             page_info=PageInfo(
                 has_next_page=result['has_next_page'],
                 has_previous_page=result['has_previous_page'],
@@ -375,37 +472,94 @@ class Query:
 
     @strawberry.field
     async def playlists(
-        self, 
-        enabled: Optional[bool] = None, 
+        self,
+        enabled: Optional[bool] = None,
         first: int = 20,
-        after: Optional[str] = None
+        after: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: Optional[str] = None
     ) -> PlaylistsConnection:
         @sync_to_async
         def get_playlists_page():
-            qs = DjangoTrackedPlaylist.objects.all().order_by('id')
+            # Build base queryset
+            qs = DjangoTrackedPlaylist.objects.all()
             if enabled is not None:
                 qs = qs.filter(enabled=enabled)
-            
+
+            # Apply sorting
+            sort_field = 'id'  # default
+            if sort_by == 'name':
+                sort_field = 'name'
+            elif sort_by == 'enabled':
+                sort_field = 'enabled'
+            elif sort_by == 'auto_track_artists':
+                sort_field = 'auto_track_artists'
+            elif sort_by == 'last_synced_at':
+                sort_field = 'last_synced_at'
+
+            # Apply sort direction
+            if sort_direction == 'desc':
+                sort_field = f'-{sort_field}'
+
+            qs = qs.order_by(sort_field, 'id')  # Always include id for consistent pagination
+
+            # Get total count
             total_count = qs.count()
-            
-            start_id = 0
-            if after:
+
+            # Handle cursor pagination
+            if after and sort_by != 'id':
+                # For non-id sorting, use offset-based pagination
                 try:
-                    start_id = int(after)
+                    offset = int(after)
+                    items = list(qs[offset:offset + first + 1])
+                    has_next_page = len(items) > first
+                    if has_next_page:
+                        items = items[:first]
+
+                    has_previous_page = offset > 0
+                    start_cursor = str(offset) if items else None
+                    end_cursor = str(offset + len(items)) if items else None
                 except (ValueError, TypeError):
-                    start_id = 0
-            
-            filtered_qs = qs.filter(id__gt=start_id)
-            items = list(filtered_qs[:first + 1])
-            
-            has_next_page = len(items) > first
-            if has_next_page:
-                items = items[:first]
-            
-            has_previous_page = start_id > 0
-            start_cursor = str(items[0].id) if items else None
-            end_cursor = str(items[-1].id) if items else None
-            
+                    offset = 0
+                    items = list(qs[:first + 1])
+                    has_next_page = len(items) > first
+                    if has_next_page:
+                        items = items[:first]
+                    has_previous_page = False
+                    start_cursor = "0" if items else None
+                    end_cursor = str(len(items)) if items else None
+            else:
+                # For id-based sorting or first page, use cursor pagination
+                start_id = 0
+                if after and sort_by in [None, 'id']:
+                    try:
+                        start_id = int(after)
+                    except (ValueError, TypeError):
+                        start_id = 0
+
+                if sort_by in [None, 'id'] and sort_direction != 'desc':
+                    filtered_qs = qs.filter(id__gt=start_id)
+                else:
+                    # Use offset for other sorts
+                    offset = int(after) if after else 0
+                    filtered_qs = qs[offset:]
+
+                items = list(filtered_qs[:first + 1])
+
+                has_next_page = len(items) > first
+                if has_next_page:
+                    items = items[:first]
+
+                has_previous_page = start_id > 0 if sort_by in [None, 'id'] else int(after or 0) > 0
+
+                if sort_by in [None, 'id'] and sort_direction != 'desc':
+                    start_cursor = str(items[0].id) if items else None
+                    end_cursor = str(items[-1].id) if items else None
+                else:
+                    offset = int(after) if after else 0
+                    start_cursor = str(offset) if items else None
+                    end_cursor = str(offset + len(items)) if items else None
+
             return {
                 'items': items,
                 'total_count': total_count,
@@ -416,7 +570,7 @@ class Query:
             }
 
         result = await get_playlists_page()
-        
+
         return PlaylistsConnection(
             edges=[TrackedPlaylist.from_django(playlist) for playlist in result['items']],
             page_info=PageInfo(

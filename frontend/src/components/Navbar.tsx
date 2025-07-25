@@ -16,7 +16,7 @@ export const Navbar = () => {
 
   return (
     <nav className="bg-white border-b border-gray-300 px-6 py-3 shadow-sm sticky top-0 z-10">
-      <div className="flex items-center justify-between w-full max-w-5xl mx-auto">
+      <div className="flex items-center justify-between w-full mx-auto">
         <Link
           to="/"
           className={titleClasses}

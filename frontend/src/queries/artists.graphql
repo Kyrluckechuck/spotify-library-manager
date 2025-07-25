@@ -18,8 +18,8 @@ query GetArtists($tracked: Boolean, $first: Int = 20, $after: String, $sortBy: S
   }
 }
 
-query GetAlbums($artistId: Int, $first: Int = 20, $after: String) {
-  albums(artistId: $artistId, first: $first, after: $after) {
+query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
+  albums(artistId: $artistId, wanted: $wanted, downloaded: $downloaded, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
     totalCount
     pageInfo {
       hasNextPage
@@ -36,6 +36,7 @@ query GetAlbums($artistId: Int, $first: Int = 20, $after: String) {
       downloaded
       albumType
       albumGroup
+      artist
     }
   }
 }
@@ -64,8 +65,8 @@ query GetSongs($artistId: Int, $first: Int = 20, $after: String) {
   }
 }
 
-query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String) {
-  playlists(enabled: $enabled, first: $first, after: $after) {
+query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
+  playlists(enabled: $enabled, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
     totalCount
     pageInfo {
       hasNextPage
