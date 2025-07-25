@@ -1,7 +1,8 @@
 from typing import Optional, List, Any
+from datetime import datetime
 from django.db.models import Q
 
-from library_manager.models import DownloadHistory as DjangoDownloadHistory
+from src.library_manager.models import DownloadHistory as DjangoDownloadHistory
 
 from .base import BaseService
 from ..types.models import DownloadHistory, DownloadStatus
