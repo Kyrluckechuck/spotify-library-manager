@@ -102,12 +102,12 @@ function Albums() {
     });
   };
 
-  const handleWantedToggle = async (album: Album) => {
+  const handleWantedToggle = async (albumId: number, wanted: boolean) => {
     try {
       await setAlbumWanted({ 
         variables: { 
-          albumId: album.id, 
-          wanted: !album.wanted 
+          albumId, 
+          wanted 
         } 
       });
     } catch (error) {
@@ -195,7 +195,7 @@ function Albums() {
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}
-        onWantedToggle={handleWantedToggle}
+        onToggleWanted={handleWantedToggle}
         loading={loading}
       />
 

@@ -147,7 +147,11 @@ export type QueryPlaylistsArgs = {
 export type QuerySongsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   artistId?: InputMaybe<Scalars['Int']['input']>;
+  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
   first?: Scalars['Int']['input'];
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
+  unavailable?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type Song = {
@@ -210,8 +214,12 @@ export type GetAlbumsQuery = { albums: { totalCount: number, pageInfo: { hasNext
 
 export type GetSongsQueryVariables = Exact<{
   artistId?: InputMaybe<Scalars['Int']['input']>;
+  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
+  unavailable?: InputMaybe<Scalars['Boolean']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -394,8 +402,16 @@ export type GetAlbumsLazyQueryHookResult = ReturnType<typeof useGetAlbumsLazyQue
 export type GetAlbumsSuspenseQueryHookResult = ReturnType<typeof useGetAlbumsSuspenseQuery>;
 export type GetAlbumsQueryResult = Apollo.QueryResult<GetAlbumsQuery, GetAlbumsQueryVariables>;
 export const GetSongsDocument = gql`
-    query GetSongs($artistId: Int, $first: Int = 20, $after: String) {
-  songs(artistId: $artistId, first: $first, after: $after) {
+    query GetSongs($artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
+  songs(
+    artistId: $artistId
+    downloaded: $downloaded
+    unavailable: $unavailable
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -432,8 +448,12 @@ export const GetSongsDocument = gql`
  * const { data, loading, error } = useGetSongsQuery({
  *   variables: {
  *      artistId: // value for 'artistId'
+ *      downloaded: // value for 'downloaded'
+ *      unavailable: // value for 'unavailable'
  *      first: // value for 'first'
  *      after: // value for 'after'
+ *      sortBy: // value for 'sortBy'
+ *      sortDirection: // value for 'sortDirection'
  *   },
  * });
  */

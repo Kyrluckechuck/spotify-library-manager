@@ -41,8 +41,8 @@ query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: 
   }
 }
 
-query GetSongs($artistId: Int, $first: Int = 20, $after: String) {
-  songs(artistId: $artistId, first: $first, after: $after) {
+query GetSongs($artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
+  songs(artistId: $artistId, downloaded: $downloaded, unavailable: $unavailable, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
     totalCount
     pageInfo {
       hasNextPage

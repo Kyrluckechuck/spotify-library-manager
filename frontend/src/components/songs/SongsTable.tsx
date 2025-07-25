@@ -1,31 +1,28 @@
-import type { Album } from '../../types/generated/graphql';
+import type { Song } from '../../types/generated/graphql';
 import { SortableTableHeader } from '../ui/SortableTableHeader';
-import { Link } from '@tanstack/react-router';
 
-export type AlbumSortField = 'name' | 'artist' | 'downloaded' | 'wanted' | 'total_tracks' | 'created_at' | null;
+export type SongSortField = 'name' | 'downloaded' | 'unavailable' | 'created_at' | null;
 
-interface AlbumsTableProps {
-  albums: Album[];
-  sortField: AlbumSortField;
+interface SongsTableProps {
+  songs: Song[];
+  sortField: SongSortField;
   sortDirection: 'asc' | 'desc';
-  onSort: (field: AlbumSortField) => void;
-  onToggleWanted: (albumId: number, wanted: boolean) => void;
+  onSort: (field: SongSortField) => void;
   loading?: boolean;
 }
 
-export function AlbumsTable({
-  albums,
+export function SongsTable({
+  songs,
   sortField,
   sortDirection,
   onSort,
-  onToggleWanted,
   loading = false
-}: AlbumsTableProps) {
-  if (albums.length === 0) {
+}: SongsTableProps) {
+  if (songs.length === 0) {
     return (
       <div className="bg-white rounded shadow overflow-hidden">
         <div className="p-6 text-center text-gray-500">
-          {loading ? 'Loading albums...' : 'No albums found.'}
+          {loading ? 'Loading songs...' : 'No songs found.'}
         </div>
       </div>
     );
@@ -43,23 +40,7 @@ export function AlbumsTable({
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               >
-                Album
-              </SortableTableHeader>
-              <SortableTableHeader
-                field="artist"
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
-                Artist
-              </SortableTableHeader>
-              <SortableTableHeader
-                field="total_tracks"
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
-                Tracks
+                Song
               </SortableTableHeader>
               <SortableTableHeader
                 field="downloaded"
@@ -67,15 +48,15 @@ export function AlbumsTable({
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               >
-                Downloaded
+                Status
               </SortableTableHeader>
               <SortableTableHeader
-                field="wanted"
+                field="unavailable"
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               >
-                Wanted
+                Availability
               </SortableTableHeader>
               <SortableTableHeader
                 field="created_at"
@@ -96,64 +77,53 @@ export function AlbumsTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {albums.map((album) => (
-              <tr key={album.id} className="hover:bg-gray-50">
+            {songs.map((song) => (
+              <tr key={song.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
-                    {album.name}
+                    {song.name}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {album.albumType} • {album.albumGroup}
+                    ID: {song.gid}
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {album.artist || 'Unknown Artist'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {album.totalTracks}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    album.downloaded
+                    song.downloaded
                       ? 'bg-green-100 text-green-800'
+                      : song.unavailable
+                      ? 'bg-red-100 text-red-800'
                       : 'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {album.downloaded ? 'Yes' : 'No'}
+                    {song.downloaded ? 'Downloaded' : song.unavailable ? 'Unavailable' : 'Pending'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <button
-                    onClick={() => onToggleWanted(album.id, !album.wanted)}
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-                      album.wanted
-                        ? 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    {album.wanted ? 'Yes' : 'No'}
-                  </button>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    song.unavailable
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {song.unavailable ? 'Unavailable' : 'Available'}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {album.spotifyGid}
+                  {new Date(song.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <a 
-                    href={album.spotifyUri}
+                    href={song.spotifyUri}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-indigo-600 hover:text-indigo-900 underline"
                   >
                     Open Spotify
                   </a>
-                  <Link
-                    to="/songs"
-                    search={{ artistId: undefined }}
-                    className="text-green-600 hover:text-green-900 underline"
-                  >
-                    View Songs
-                  </Link>
+                  {song.filePath && (
+                    <button className="text-green-600 hover:text-green-900 underline">
+                      Play Local
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

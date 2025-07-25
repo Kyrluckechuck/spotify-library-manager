@@ -418,36 +418,99 @@ class Query:
     @strawberry.field
     async def songs(
         self, 
-        artist_id: Optional[int] = None, 
+        artist_id: Optional[int] = None,
+        downloaded: Optional[bool] = None,
+        unavailable: Optional[bool] = None,
         first: int = 20,
-        after: Optional[str] = None
+        after: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: Optional[str] = None
     ) -> SongsConnection:
         @sync_to_async
         def get_songs_page():
-            qs = DjangoSong.objects.all().order_by('id')
+            # Build base queryset
+            qs = DjangoSong.objects.all()
             if artist_id:
                 qs = qs.filter(primary_artist_id=artist_id)
-            
+            if downloaded is not None:
+                qs = qs.filter(downloaded=downloaded)
+            if unavailable is not None:
+                qs = qs.filter(unavailable=unavailable)
+
+            # Apply sorting
+            sort_field = 'id'  # default
+            if sort_by == 'name':
+                sort_field = 'name'
+            elif sort_by == 'downloaded':
+                sort_field = 'downloaded'
+            elif sort_by == 'unavailable':
+                sort_field = 'unavailable'
+            elif sort_by == 'created_at':
+                sort_field = 'created_at'
+
+            # Apply sort direction
+            if sort_direction == 'desc':
+                sort_field = f'-{sort_field}'
+
+            qs = qs.order_by(sort_field, 'id')  # Always include id for consistent pagination
+
+            # Get total count
             total_count = qs.count()
-            
-            start_id = 0
-            if after:
+
+            # Handle cursor pagination
+            if after and sort_by != 'id':
+                # For non-id sorting, use offset-based pagination
                 try:
-                    start_id = int(after)
+                    offset = int(after)
+                    items = list(qs[offset:offset + first + 1])
+                    has_next_page = len(items) > first
+                    if has_next_page:
+                        items = items[:first]
+
+                    has_previous_page = offset > 0
+                    start_cursor = str(offset) if items else None
+                    end_cursor = str(offset + len(items)) if items else None
                 except (ValueError, TypeError):
-                    start_id = 0
-            
-            filtered_qs = qs.filter(id__gt=start_id)
-            items = list(filtered_qs[:first + 1])
-            
-            has_next_page = len(items) > first
-            if has_next_page:
-                items = items[:first]
-            
-            has_previous_page = start_id > 0
-            start_cursor = str(items[0].id) if items else None
-            end_cursor = str(items[-1].id) if items else None
-            
+                    offset = 0
+                    items = list(qs[:first + 1])
+                    has_next_page = len(items) > first
+                    if has_next_page:
+                        items = items[:first]
+                    has_previous_page = False
+                    start_cursor = "0" if items else None
+                    end_cursor = str(len(items)) if items else None
+            else:
+                # For id-based sorting or first page, use cursor pagination
+                start_id = 0
+                if after and sort_by in [None, 'id']:
+                    try:
+                        start_id = int(after)
+                    except (ValueError, TypeError):
+                        start_id = 0
+
+                if sort_by in [None, 'id'] and sort_direction != 'desc':
+                    filtered_qs = qs.filter(id__gt=start_id)
+                else:
+                    # Use offset for other sorts
+                    offset = int(after) if after else 0
+                    filtered_qs = qs[offset:]
+
+                items = list(filtered_qs[:first + 1])
+
+                has_next_page = len(items) > first
+                if has_next_page:
+                    items = items[:first]
+
+                has_previous_page = start_id > 0 if sort_by in [None, 'id'] else int(after or 0) > 0
+
+                if sort_by in [None, 'id'] and sort_direction != 'desc':
+                    start_cursor = str(items[0].id) if items else None
+                    end_cursor = str(items[-1].id) if items else None
+                else:
+                    offset = int(after) if after else 0
+                    start_cursor = str(offset) if items else None
+                    end_cursor = str(offset + len(items)) if items else None
+
             return {
                 'items': items,
                 'total_count': total_count,
@@ -458,7 +521,7 @@ class Query:
             }
 
         result = await get_songs_page()
-        
+
         return SongsConnection(
             edges=[Song.from_django(song) for song in result['items']],
             page_info=PageInfo(
