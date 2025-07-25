@@ -1,0 +1,15 @@
+overwrite: true
+schema: "src/types/generated/schema.graphql"
+documents: "src/**/*.{ts,tsx}"
+generates:
+  src/types/generated/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      withComponent: false
+      withHOC: false
+      skipTypename: true
+      enumsAsTypes: true 
