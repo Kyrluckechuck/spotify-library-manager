@@ -1,6 +1,4 @@
-from typing import Optional, List, Any
-from datetime import datetime
-from django.db.models import Q
+from typing import Optional, List
 
 from library_manager.models import DownloadHistory as DjangoDownloadHistory
 
@@ -48,7 +46,7 @@ class DownloadHistoryService(BaseService[DownloadHistory]):
 
         return [self._to_graphql_type(item) for item in items], has_next_page, total_count
 
-    def _to_graphql_type(self, django_history: Any) -> DownloadHistory:
+    def _to_graphql_type(self, django_history: DjangoDownloadHistory) -> DownloadHistory:
         # Extract entity type and ID from URL
         url_parts = django_history.url.split(':')
         entity_type = url_parts[1].upper() if len(url_parts) > 1 else "UNKNOWN"

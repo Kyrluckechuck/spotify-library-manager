@@ -89,13 +89,17 @@ class TaskHistoryService(BaseService[TaskHistory]):
             'ARTIST': EntityType.ARTIST,
             'ALBUM': EntityType.ALBUM,
             'PLAYLIST': EntityType.PLAYLIST,
-            'TRACK': EntityType.TRACK,
         }
         
         # Extract log messages
         log_messages = []
         if django_task.log_messages:
-            log_messages = [log['message'] for log in django_task.log_messages]
+            # Handle both string and dict formats for backward compatibility
+            for log in django_task.log_messages:
+                if isinstance(log, dict) and 'message' in log:
+                    log_messages.append(log['message'])
+                elif isinstance(log, str):
+                    log_messages.append(log)
         
         return TaskHistory(
             id=str(django_task.id),
@@ -106,7 +110,6 @@ class TaskHistoryService(BaseService[TaskHistory]):
             status=status_mapping.get(django_task.status, TaskStatus.PENDING),
             started_at=django_task.started_at,
             completed_at=django_task.completed_at,
-            error_message=django_task.error_message,
             duration_seconds=django_task.duration_seconds,
             progress_percentage=django_task.progress_percentage,
             log_messages=log_messages
@@ -130,7 +133,6 @@ class TaskHistoryService(BaseService[TaskHistory]):
             EntityType.ARTIST: 'ARTIST',
             EntityType.ALBUM: 'ALBUM',
             EntityType.PLAYLIST: 'PLAYLIST',
-            EntityType.TRACK: 'TRACK',
         }
         
         task = DjangoTaskHistory(

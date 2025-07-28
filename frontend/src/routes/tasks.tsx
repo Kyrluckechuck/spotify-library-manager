@@ -1,10 +1,11 @@
+import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { SearchInput } from '../components/ui/SearchInput';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
-import { GetTaskHistoryDocument, GetActiveTasksDocument, type GetTaskHistoryQuery, type GetActiveTasksQuery, type TaskHistory } from '../types/generated/graphql';
+import { GetTaskHistoryDocument, GetActiveTasksDocument, type TaskHistory } from '../types/generated/graphql';
 import { useMutation, gql } from '@apollo/client';
 
 type TaskStatus = 'running' | 'completed' | 'failed' | 'pending' | 'all';
@@ -24,7 +25,7 @@ function Tasks() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Query for real active tasks from the database
-  const { data: activeTasksData, loading: activeTasksLoading, error: activeTasksError } = useQuery(GetActiveTasksDocument, {
+  const { data: activeTasksData } = useQuery(GetActiveTasksDocument, {
     variables: {
       first: 50, // Get more active tasks
     },

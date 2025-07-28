@@ -6,18 +6,18 @@ dev:
 
 # Individual service development commands
 dev-api:
-	PYTHONPATH=api python run.py
+	PYTHONPATH=api python api/run.py
 
 dev-frontend:
-	yarn dev
+	cd frontend && yarn dev
 
 dev-worker:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python manage.py run_huey
+	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py run_huey
 
 # Installation and setup
 setup:
 	# Install API dependencies
-	$(shell which python) setup_simple.py
+	pip install -r requirements.txt
 	# Install frontend dependencies
 	yarn install
 
@@ -25,28 +25,52 @@ install-api:
 	pip install -r requirements.txt
 
 install-frontend:
-	yarn install
+	cd frontend && yarn install
 
 install: install-api install-frontend
 
 # Database management
 migrate:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python manage.py migrate
+	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py migrate
 
 createsuperuser:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python manage.py createsuperuser
+	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py createsuperuser
 
 # Testing
 test: test-api test-frontend
 
 test-api:
-	PYTHONPATH=api python -m pytest test_api.py
+	PYTHONPATH=api python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing
+
+test-api-unit:
+	PYTHONPATH=api python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
+
+test-api-integration:
+	PYTHONPATH=api python -m pytest api/tests/integration/test_simple_integration.py -v
+
+test-api-integration-full:
+	PYTHONPATH=api python -m pytest api/tests/integration/ -v -m integration
+
+test-api-integration-isolated:
+	PYTHONPATH=api python -m pytest api/tests/integration/test_isolated_integration.py -v
+
+test-api-coverage:
+	PYTHONPATH=api python -m pytest api/tests/ api/src/tests/ --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
 
 test-frontend:
-	yarn test
+	cd frontend && yarn test:run
+
+test-frontend-watch:
+	cd frontend && yarn test
+
+test-frontend-coverage:
+	cd frontend && yarn test:coverage
+
+test-frontend-ui:
+	cd frontend && yarn test:ui
 
 test-migrations:
-	python test_migrations.py
+	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py showmigrations
 
 # Linting
 lint: lint-api lint-frontend
@@ -55,13 +79,13 @@ lint-api:
 	cd api && python -m flake8
 
 lint-frontend:
-	yarn lint
+	cd frontend && yarn lint
 
 # Building
 build: build-frontend
 
 build-frontend:
-	yarn build
+	cd frontend && yarn build
 
 # Docker commands
 docker-build:

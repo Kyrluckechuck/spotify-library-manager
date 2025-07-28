@@ -1,5 +1,4 @@
-from typing import Optional, TypeVar, Generic, List
-from datetime import datetime
+from typing import Optional, TypeVar, Generic, List, Union
 
 T = TypeVar('T')
 
@@ -29,7 +28,7 @@ class BaseService(Generic[T]):
             return str(item.id)
         raise NotImplementedError
 
-    def decode_cursor(self, cursor: str) -> any:
+    def decode_cursor(self, cursor: str) -> Union[int, str]:
         """
         Decodes a cursor into a value that can be used for filtering
         """

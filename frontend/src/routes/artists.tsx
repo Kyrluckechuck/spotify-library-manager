@@ -158,7 +158,7 @@ function Artists() {
     });
   }, [queryVariables, client]);
 
-  const handleTrackToggle = async (artist: any) => {
+  const handleTrackToggle = async (artist: { id: number; tracked: boolean }) => {
     try {
       if (artist.tracked) {
         await untrackArtist({ variables: { artistId: artist.id } });

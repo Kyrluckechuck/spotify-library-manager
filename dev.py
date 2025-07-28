@@ -27,7 +27,7 @@ def run_api():
     env["PYTHONPATH"] = "api"
     
     process = subprocess.Popen(
-        ["python", "run.py"],
+        ["python", "api/run.py"],
         cwd=Path("."),
         env=env,
         stdout=subprocess.PIPE,
@@ -40,7 +40,7 @@ def run_api():
 def run_frontend():
     process = subprocess.Popen(
         ["yarn", "dev"],
-        cwd=Path("."),
+        cwd=Path("frontend"),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -55,7 +55,7 @@ def run_huey_worker():
     env["DJANGO_SETTINGS_MODULE"] = "settings"
     
     process = subprocess.Popen(
-        ["python", "manage.py", "run_huey"],
+        ["python", "api/manage.py", "run_huey"],
         cwd=Path("."),
         env=env,
         stdout=subprocess.PIPE,
@@ -75,7 +75,7 @@ def run_migrations():
     
     # Run migrations (Django handles database creation automatically)
     migrate_process = subprocess.run(
-        ["python", "manage.py", "migrate"],
+        ["python", "api/manage.py", "migrate"],
         cwd=Path("."),
         env=env,
         capture_output=True,

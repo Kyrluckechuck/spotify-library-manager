@@ -1,6 +1,5 @@
-from typing import Optional, List, Any
+from typing import Optional, List
 from django.db.models import Q
-from datetime import datetime
 
 from library_manager.models import TrackedPlaylist as DjangoPlaylist
 from library_manager.tasks import sync_tracked_playlist, sync_tracked_playlist_artists
@@ -98,7 +97,7 @@ class PlaylistService(BaseService[Playlist]):
         sync_tracked_playlist(django_playlist)
         return self._to_graphql_type(django_playlist)
 
-    def _to_graphql_type(self, django_playlist: Any) -> Playlist:
+    def _to_graphql_type(self, django_playlist: DjangoPlaylist) -> Playlist:
         # Extract playlist ID from URL
         playlist_id = django_playlist.url.split('/')[-1]
         

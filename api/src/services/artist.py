@@ -1,5 +1,4 @@
-from typing import Optional, List, Any
-from datetime import datetime
+from typing import Optional, List
 from django.db.models import Q
 
 from library_manager.models import Artist as DjangoArtist
@@ -91,7 +90,7 @@ class ArtistService(BaseService[Artist]):
         fetch_all_albums_for_artist(django_artist.id)
         return self._to_graphql_type(django_artist)
 
-    def _to_graphql_type(self, django_artist: Any) -> Artist:
+    def _to_graphql_type(self, django_artist: DjangoArtist) -> Artist:
         return Artist(
             id=django_artist.gid,
             name=django_artist.name,

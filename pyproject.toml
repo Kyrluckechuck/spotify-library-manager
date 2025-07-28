@@ -17,3 +17,40 @@ exclude_lines = [
     "pass",
     "raise ImportError",
 ] 
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spotify-library-manager"
+version = "1.0.0"
+description = "Spotify Library Manager"
+requires-python = ">=3.8"
+dependencies = [
+    "django>=4.0",
+    "strawberry-graphql>=0.200",
+    "asgiref>=3.7",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "django.*",
+    "library_manager.*",
+]
+ignore_missing_imports = true 

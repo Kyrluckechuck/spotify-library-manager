@@ -1,5 +1,4 @@
-from typing import Optional, List, Any
-from datetime import datetime
+from typing import Optional, List
 from django.db.models import Q
 
 from library_manager.models import Album as DjangoAlbum
@@ -86,7 +85,7 @@ class AlbumService(BaseService[Album]):
         download_missing_albums_for_artist(django_album.artist.id)
         return self._to_graphql_type(django_album)
 
-    def _to_graphql_type(self, django_album: Any) -> Album:
+    def _to_graphql_type(self, django_album: DjangoAlbum) -> Album:
         status = None
         if django_album.downloaded:
             status = DownloadStatus.COMPLETED

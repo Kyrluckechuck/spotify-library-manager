@@ -66,34 +66,132 @@ An example docker-compose file is included in this repo that can be dropped into
    - Save it as `cookies.txt`
 2. // TODO - Execute docker container, mapping /config to the local directory with your cookies.txt, device.wvd, and settings.yml
 
-## Running From Source (not recommended unless developing)
-> [!WARNING]
-> While this is not recommended unless you are developing, this _should_ work just fine.
+## Running From Source (Development)
 
 > [!NOTE]
-> This is currently only configured for running on Unix-based systems due to the default configuration folder, but if anyone wants to update this doc with the correct configuration I'd welcome the upload!
->
-> If developing on Windows, using WSL should work just fine, installing python via `apt`
+> This setup is optimized for development with proper async processing and background task handling.
 
+### Prerequisites
 1. Install Python 3.13 or higher
-2. Place your cookies in `/config/` as `cookies.txt`
-    * You can export your cookies by using this Google Chrome extension on Spotify website: https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc. Make sure to be logged in.
+2. Install Node.js and Yarn
+3. Place your cookies in `/config/` as `cookies.txt`
+   * You can export your cookies by using this Google Chrome extension on Spotify website: https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc. Make sure to be logged in.
 
+### Quick Start
+1. **Setup dependencies:**
+   ```bash
+   make setup
+   ```
 
-5. (Optional) I personally like setting huey into instant-run mode so as to not have a separate worker, but if you are using this for non-development I would advise against this due to degraded performance!
-This should be placed in `/config/` as `settings.yaml`
-```yaml
-default:
-  final_path: "/mnt/h/music_spotify"
-  HUEY: {
-    immediate: true,
-    immediate_use_memory: true,
-  }
+2. **Start the development environment:**
+   ```bash
+   make dev
+   ```
+   
+   This starts all three services:
+   - **API Server** (http://localhost:5000/graphql)
+   - **Frontend Server** (http://localhost:3000) 
+   - **Huey Worker** (background task processing)
+
+3. **Test the setup:**
+   ```bash
+   python test_dev_setup.py
+   ```
+
+### Development Commands (All Run From Root)
+
+All commands can be run from the root directory without any `cd` commands. All configuration and dependency files have been moved to the root for a cleaner structure:
+
+**Main Development:**
+- `make dev` - Start all services (API, Frontend, Worker)
+- `make dev-api` - Start only the API server
+- `make dev-frontend` - Start only the frontend dev server
+- `make dev-worker` - Start only the Huey worker
+
+**Installation:**
+- `make install` - Install both API and frontend dependencies
+- `make install-api` - Install only API dependencies
+- `make install-frontend` - Install only frontend dependencies
+
+**Testing & Quality:**
+- `make test` - Run tests for both API and frontend
+- `make lint` - Run linting for both API and frontend
+- `make build` - Build the frontend
+
+**Database:**
+- `make migrate` - Run Django migrations
+- `make createsuperuser` - Create Django superuser
+
+**Docker:**
+- `make docker-build` - Build Docker image
+- `make docker-run` - Run with docker-compose
+- `make docker-stop` - Stop docker-compose
+
+**Utilities:**
+- `make clean` - Clean build artifacts
+- `make setup` - Original setup command
+
+### Development Features
+
+#### ✅ **Optimized Async Processing**
+- Background tasks are properly queued and processed
+- Non-blocking UI operations
+- Real-time task progress updates
+- Multiple worker threads for parallel processing
+
+#### ✅ **Enhanced Monitoring**
+- Color-coded service logs: `[API]`, `[FRONTEND]`, `[HUEY]`
+- Service health checks and validation
+- Background task indicators in the UI
+- Graceful error handling and recovery
+
+#### ✅ **Performance Optimizations**
+- 2 Huey workers for parallel task processing
+- Thread-based workers for I/O bound operations
+- Faster polling and reduced latency
+- Higher concurrency limits for the API server
+
+### Configuration
+
+For development, you can customize the Huey settings in `api/settings.py`:
+
+```python
+HUEY = {
+    'workers': 2,  # Number of worker threads
+    'worker_type': 'thread',  # Thread-based workers
+    'immediate': False,  # Keep False for proper async behavior
+    'results': True,  # Enable result storage
+    'blocking': False,  # Non-blocking mode
+}
 ```
-7. Execute it using
-```bash
-bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:5000"
-```
+
+### Troubleshooting
+
+If you encounter issues:
+
+1. **Check service status:**
+   ```bash
+   python test_dev_setup.py
+   ```
+
+2. **Verify Huey worker is running:**
+   - Look for `[HUEY]` logs in the output
+   - Check if `huey.db` exists and has recent activity
+
+3. **Reset the environment:**
+   ```bash
+   make setup
+   make dev
+   ```
+
+### Development Notes
+
+- The system now properly handles async operations with real background task processing
+- Tasks like artist sync, playlist downloads, and album fetching are processed asynchronously
+- The UI remains responsive during background operations
+- All services are monitored and will restart automatically if they fail
+
+For more details on the optimizations, see [DEVELOPMENT_OPTIMIZATIONS.md](DEVELOPMENT_OPTIMIZATIONS.md).
 
 ## Configuration (IGNORE, Half-updated and docker is the intended use)
 > [!CAUTION]

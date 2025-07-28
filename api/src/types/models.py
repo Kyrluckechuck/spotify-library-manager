@@ -98,7 +98,6 @@ class TaskHistory:
     status: TaskStatus
     started_at: datetime
     completed_at: Optional[datetime]
-    error_message: Optional[str]
     duration_seconds: Optional[int]
     progress_percentage: Optional[float]
     log_messages: List[str]
@@ -165,7 +164,6 @@ class TaskHistoryEdge:
     node: TaskHistory
     cursor: str
 
-# Input types for mutations
 @strawberry.input
 class TrackArtistInput:
     artist_id: str

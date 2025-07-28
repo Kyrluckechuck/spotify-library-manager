@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface SearchInputProps {
   placeholder?: string;
@@ -20,7 +20,7 @@ export function SearchInput({
   // Debounce search to avoid too many API calls
   const debouncedSearch = useCallback(
     (() => {
-      let timeoutId: NodeJS.Timeout;
+      let timeoutId: ReturnType<typeof setTimeout>;
       return (query: string) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {

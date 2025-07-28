@@ -1,0 +1,51 @@
+Eventually:
+- ✅ Move startup commands from `api` and `frontend` to root so it's always executed from the same place
+  - All dependency and config files moved to root (package.json, requirements.txt, manage.py, vite.config.ts, etc.)
+  - All commands run from root without any `cd` commands
+  - Vite configured to work from root with frontend/ as root directory
+  - API commands use proper environment variables (PYTHONPATH, DJANGO_SETTINGS_MODULE)
+  - All commands accessible via `make` from root directory
+  - Clean directory structure with only source code in subdirectories
+- ✅ Fix typing in backend
+  - Removed all `Any` type usage from service layer
+  - Added proper Django model type definitions
+  - Improved base service typing with `Union[int, str]`
+  - Added comprehensive mypy configuration
+  - Created proper type checking infrastructure
+- ✅ Improve frontend typing
+  - Fixed `any` usage in artists.tsx with proper type annotation
+  - Added ESLint rule against using `any` type
+  - Fixed NodeJS.Timeout issue in SearchInput component
+  - Frontend typing was already good, now with additional safeguards
+- ✅ Clean up old system and temporary files
+  - Removed entire `spotify_library_sync/` directory (old system)
+  - Removed all temporary scripts and test files
+  - Removed deprecated documentation files
+  - Updated configuration references
+  - Verified all functionality preserved in new system
+- ✅ Fix testing in frontend and backend. Get model to add those and update those as it works.
+  - **Backend Testing Improvements:**
+    - Added comprehensive pytest configuration with Django integration
+    - Created unit tests for all service layers (ArtistService, AlbumService, PlaylistService, DownloadHistoryService)
+    - Added integration tests for GraphQL mutations and queries
+    - Fixed Django settings configuration for testing
+    - Added test fixtures for consistent test data
+    - Implemented coverage reporting with HTML output
+    - Added test markers for unit, integration, and GraphQL tests
+  - **Frontend Testing Improvements:**
+    - Set up Vitest testing framework with React Testing Library
+    - Added comprehensive test dependencies (@testing-library/react, @testing-library/jest-dom, etc.)
+    - Created component tests for UI components (SearchInput, Navbar, ArtistsTable)
+    - Added test setup with proper mocking for Apollo Client and TanStack Router
+    - Implemented test coverage reporting
+    - Added test scripts for different testing modes (run, watch, coverage, UI)
+  - **Testing Commands:**
+    - `make test-api` - Run all backend tests with coverage
+    - `make test-api-unit` - Run only unit tests
+    - `make test-api-integration` - Run only integration tests
+    - `make test-frontend` - Run frontend tests
+    - `make test-frontend-coverage` - Run frontend tests with coverage
+    - `make test-frontend-ui` - Run frontend tests with UI
+- Re-dockerize / confirm it's still working
+    - Update local development to use docker container with configs, such as using `/config` for your configs to pass into it
+    - Have dev environment sync files to/from docker, with hot reloading working when in dev mode
