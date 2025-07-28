@@ -23,13 +23,12 @@ def stream_output(process, prefix):
         pass
 
 def run_api():
-    api_dir = Path("api")
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(api_dir.absolute())
+    env["PYTHONPATH"] = "api"
     
     process = subprocess.Popen(
         ["python", "run.py"],
-        cwd=api_dir,
+        cwd=Path("."),
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -39,10 +38,9 @@ def run_api():
     return process
 
 def run_frontend():
-    frontend_dir = Path("frontend")
     process = subprocess.Popen(
         ["yarn", "dev"],
-        cwd=frontend_dir,
+        cwd=Path("."),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -52,13 +50,13 @@ def run_frontend():
 
 def run_huey_worker():
     """Run the Huey worker for background task processing"""
-    api_dir = Path("api")
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(api_dir.absolute())
+    env["PYTHONPATH"] = "api"
+    env["DJANGO_SETTINGS_MODULE"] = "settings"
     
     process = subprocess.Popen(
         ["python", "manage.py", "run_huey"],
-        cwd=api_dir,
+        cwd=Path("."),
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -69,16 +67,16 @@ def run_huey_worker():
 
 def run_migrations():
     """Run Django migrations"""
-    api_dir = Path("api")
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(api_dir.absolute())
+    env["PYTHONPATH"] = "api"
+    env["DJANGO_SETTINGS_MODULE"] = "settings"
     
     print_with_prefix("MIGRATIONS", "Running migrations...")
     
     # Run migrations (Django handles database creation automatically)
     migrate_process = subprocess.run(
         ["python", "manage.py", "migrate"],
-        cwd=api_dir,
+        cwd=Path("."),
         env=env,
         capture_output=True,
         text=True

@@ -1,6 +1,34 @@
+# Python
 __pycache__
 *.exe
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Node.js
+node_modules/
+dist/
+dist-ssr/
+*.local
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor
 .vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # User Configs
 client*.bin
@@ -9,6 +37,9 @@ urls*.txt
 *.pem
 *.wvd
 
+# Project specific
 db/
 Spotify/
 temp/
+*.sqlite3
+*.db

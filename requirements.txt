@@ -1,19 +1,46 @@
+# Django and related packages
+django==5.0.2
+django-stubs[compatible-mypy]==4.2.7
+django-stubs-ext==4.2.7
+django-huey-monitor==0.10.1
+huey>=2.4.5,<3.0.0
+bx_django_utils
+
+# GraphQL API (updated for Python 3.13 compatibility)
+strawberry-graphql>=0.278.0
+strawberry-graphql-django>=0.65.0
+
+# FastAPI and related (exactly matching spotdl 4.2.11)
+fastapi>=0.103.0,<0.104.0
+uvicorn>=0.23.2,<0.24.0
+uvicorn[standard]>=0.23.2,<0.24.0  # Includes httptools and websockets
+python-dotenv==1.0.1
+rich>=13.9.4,<14.0.0
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Test dependencies
+pytest==8.0.2
+pytest-asyncio==0.23.5
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-django==4.8.0
+
+# Essential dependencies from root requirements.txt
 click
-django
 django-debug-toolbar
 django-extensions
-django-huey-monitor
-django-stubs[compatible-mypy]
-django-stubs-ext
 dynaconf
-huey
 jinja2
 pybase62
 pylint-django
 pymediainfo
 pyyaml
-# spotdl
-git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl
 Werkzeug[watchdog]
 whitenoise[brotli]
-yt-dlp==2025.06.30
+
+# Critical: spotdl and yt-dlp (exactly as specified in root requirements)
+git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl
+yt-dlp==2025.06.30 

@@ -18,6 +18,6 @@ RUN spotdl --download-ffmpeg
 # Cleanup any APT leftovers
 RUN apt clean && rm -rf /var/cache/apt/archives /var/cache/apt/lists
 
-COPY ./spotify_library_sync/ /code/
+COPY ./api/ /code/
 
 RUN cd /code/ && python manage.py collectstatic

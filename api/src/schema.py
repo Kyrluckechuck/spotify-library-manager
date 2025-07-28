@@ -6,6 +6,7 @@ from library_manager.models import Album as DjangoAlbum
 from library_manager.models import Song as DjangoSong
 from library_manager.models import TrackedPlaylist as DjangoTrackedPlaylist
 from library_manager.models import TaskHistory as DjangoTaskHistory
+from library_manager.validation import validate_spotify_url
 
 @strawberry.type
 class Artist:
@@ -997,6 +998,14 @@ class Mutation:
         @sync_to_async
         def download_url_sync():
             try:
+                # Validate Spotify URL
+                is_valid, error_message = validate_spotify_url(url)
+                if not is_valid:
+                    return TaskResult(
+                        success=False,
+                        message=error_message
+                    )
+                
                 # Import the task here to avoid circular imports
                 from library_manager.tasks import download_playlist
                 task = download_playlist(url, tracked=auto_track_artists)
@@ -1018,6 +1027,14 @@ class Mutation:
         @sync_to_async
         def create_playlist_sync():
             try:
+                # Validate Spotify URL
+                is_valid, error_message = validate_spotify_url(url)
+                if not is_valid:
+                    return MutationResult(
+                        success=False,
+                        message=error_message
+                    )
+                
                 # Import the task here to avoid circular imports
                 from library_manager.tasks import download_playlist
                 
@@ -1118,5 +1135,85 @@ class Mutation:
                 )
         
         return await toggle_playlist_sync()
+
+    @strawberry.mutation
+    async def retry_all_missing_known_songs(self) -> TaskResult:
+        @sync_to_async
+        def retry_all_missing_known_songs_sync():
+            try:
+                from library_manager.tasks import retry_all_missing_known_songs
+                task = retry_all_missing_known_songs()
+                return TaskResult(
+                    success=True,
+                    message="Started retry of all missing known songs",
+                    task_id=str(task.id) if task else None
+                )
+            except Exception as e:
+                return TaskResult(
+                    success=False,
+                    message=f"Failed to start retry: {str(e)}"
+                )
+        
+        return await retry_all_missing_known_songs_sync()
+
+    @strawberry.mutation
+    async def validate_undownloaded_songs(self) -> TaskResult:
+        @sync_to_async
+        def validate_undownloaded_songs_sync():
+            try:
+                from library_manager.tasks import validate_undownloaded_songs
+                task = validate_undownloaded_songs()
+                return TaskResult(
+                    success=True,
+                    message="Started validation of undownloaded songs",
+                    task_id=str(task.id) if task else None
+                )
+            except Exception as e:
+                return TaskResult(
+                    success=False,
+                    message=f"Failed to start validation: {str(e)}"
+                )
+        
+        return await validate_undownloaded_songs_sync()
+
+    @strawberry.mutation
+    async def download_all_for_tracked_artists(self) -> TaskResult:
+        @sync_to_async
+        def download_all_for_tracked_artists_sync():
+            try:
+                from library_manager.tasks import download_missing_tracked_artists
+                task = download_missing_tracked_artists()
+                return TaskResult(
+                    success=True,
+                    message="Started download for all tracked artists",
+                    task_id=str(task.id) if task else None
+                )
+            except Exception as e:
+                return TaskResult(
+                    success=False,
+                    message=f"Failed to start download: {str(e)}"
+                )
+        
+        return await download_all_for_tracked_artists_sync()
+
+    @strawberry.mutation
+    async def fetch_all_for_tracked_artists(self) -> TaskResult:
+        @sync_to_async
+        def fetch_all_for_tracked_artists_sync():
+            try:
+                from library_manager.tasks import update_tracked_artists
+                task = update_tracked_artists()
+                return TaskResult(
+                    success=True,
+                    message="Started fetch for all tracked artists",
+                    task_id=str(task.id) if task else None
+                )
+            except Exception as e:
+                return TaskResult(
+                    success=False,
+                    message=f"Failed to start fetch: {str(e)}"
+                )
+        
+        return await fetch_all_for_tracked_artists_sync()
 
 schema = strawberry.Schema(query=Query, mutation=Mutation) 
