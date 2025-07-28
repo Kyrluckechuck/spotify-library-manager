@@ -13,6 +13,7 @@ strawberry-graphql-django>=0.65.0
 # FastAPI and related (exactly matching spotdl 4.2.11)
 fastapi>=0.103.0,<0.104.0
 uvicorn>=0.23.2,<0.24.0
+uvicorn[standard]>=0.23.2,<0.24.0  # Includes httptools and websockets
 python-dotenv==1.0.1
 rich>=13.9.4,<14.0.0
 

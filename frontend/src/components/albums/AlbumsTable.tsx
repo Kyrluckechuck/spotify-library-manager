@@ -2,7 +2,7 @@ import type { Album } from '../../types/generated/graphql';
 import { SortableTableHeader } from '../ui/SortableTableHeader';
 import { Link } from '@tanstack/react-router';
 
-export type AlbumSortField = 'name' | 'artist' | 'downloaded' | 'wanted' | 'total_tracks' | 'created_at' | null;
+export type AlbumSortField = 'name' | 'artist' | 'downloaded' | 'wanted' | 'total_tracks' | 'created_at' | 'album_type' | 'album_group' | null;
 
 interface AlbumsTableProps {
   albums: Album[];
@@ -11,6 +11,16 @@ interface AlbumsTableProps {
   onSort: (field: AlbumSortField) => void;
   onToggleWanted: (albumId: number, wanted: boolean) => void;
   loading?: boolean;
+}
+
+// Helper function to format album type/group values
+function formatAlbumValue(value: string | null | undefined): string {
+  if (!value) return 'Album';
+  
+  return value
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 export function AlbumsTable({
@@ -52,6 +62,22 @@ export function AlbumsTable({
                 onSort={onSort}
               >
                 Artist
+              </SortableTableHeader>
+              <SortableTableHeader
+                field="album_type"
+                currentSortField={sortField}
+                currentSortDirection={sortDirection}
+                onSort={onSort}
+              >
+                Type
+              </SortableTableHeader>
+              <SortableTableHeader
+                field="album_group"
+                currentSortField={sortField}
+                currentSortDirection={sortDirection}
+                onSort={onSort}
+              >
+                Group
               </SortableTableHeader>
               <SortableTableHeader
                 field="total_tracks"
@@ -102,13 +128,30 @@ export function AlbumsTable({
                   <div className="text-sm font-medium text-gray-900">
                     {album.name}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {album.albumType} • {album.albumGroup}
-                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {album.artist || 'Unknown Artist'}
+                    {album.artist && album.artistId ? (
+                      <Link
+                        to="/albums"
+                        search={{ artistId: album.artistId }}
+                        className="text-indigo-600 hover:text-indigo-900 hover:underline font-medium"
+                      >
+                        {album.artist}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-500">{album.artist || 'Unknown Artist'}</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">
+                    {formatAlbumValue(album.albumType)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">
+                    {formatAlbumValue(album.albumGroup)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -129,7 +172,7 @@ export function AlbumsTable({
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
                       album.wanted
                         ? 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        : 'bg-red-100 text-red-800 hover:bg-red-200'
                     }`}
                   >
                     {album.wanted ? 'Yes' : 'No'}
@@ -147,9 +190,18 @@ export function AlbumsTable({
                   >
                     Open Spotify
                   </a>
+                  {album.artistId && (
+                    <Link
+                      to="/albums"
+                      search={{ artistId: album.artistId }}
+                      className="text-blue-600 hover:text-blue-900 underline"
+                    >
+                      View Artist
+                    </Link>
+                  )}
                   <Link
                     to="/songs"
-                    search={{ artistId: undefined }}
+                    search={{ artistId: album.artistId || undefined }}
                     className="text-green-600 hover:text-green-900 underline"
                   >
                     View Songs

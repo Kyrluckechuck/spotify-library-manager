@@ -1,11 +1,13 @@
 interface PlaylistFiltersProps {
   currentEnabledFilter: 'all' | 'enabled' | 'disabled';
   onEnabledFilterChange: (filter: 'all' | 'enabled' | 'disabled') => void;
+  onFilterHover?: (filter: 'all' | 'enabled' | 'disabled') => void;
 }
 
 export function PlaylistFilters({ 
   currentEnabledFilter, 
-  onEnabledFilterChange 
+  onEnabledFilterChange,
+  onFilterHover
 }: PlaylistFiltersProps) {
   return (
     <div className="mb-6">
@@ -13,6 +15,7 @@ export function PlaylistFilters({
       <div className="flex gap-4">
         <button 
           onClick={() => onEnabledFilterChange('all')}
+          onMouseEnter={() => onFilterHover?.('all')}
           className={`px-4 py-2 rounded transition-colors font-medium border ${
             currentEnabledFilter === 'all' 
               ? 'bg-indigo-700 border-indigo-700 shadow-md ring-2 ring-indigo-300' 
@@ -27,6 +30,7 @@ export function PlaylistFilters({
         </button>
         <button 
           onClick={() => onEnabledFilterChange('enabled')}
+          onMouseEnter={() => onFilterHover?.('enabled')}
           className={`px-4 py-2 rounded transition-colors font-medium border ${
             currentEnabledFilter === 'enabled' 
               ? 'bg-green-700 border-green-700 shadow-md ring-2 ring-green-300' 
@@ -41,6 +45,7 @@ export function PlaylistFilters({
         </button>
         <button 
           onClick={() => onEnabledFilterChange('disabled')}
+          onMouseEnter={() => onFilterHover?.('disabled')}
           className={`px-4 py-2 rounded transition-colors font-medium border ${
             currentEnabledFilter === 'disabled' 
               ? 'bg-gray-700 border-gray-700 shadow-md ring-2 ring-gray-300' 

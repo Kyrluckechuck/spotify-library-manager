@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SongsRouteImport } from './routes/songs'
 import { Route as PlaylistsRouteImport } from './routes/playlists'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -16,6 +17,11 @@ import { Route as ArtistsRouteImport } from './routes/artists'
 import { Route as AlbumsRouteImport } from './routes/albums'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SongsRoute = SongsRouteImport.update({
   id: '/songs',
   path: '/songs',
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/playlists': typeof PlaylistsRoute
   '/songs': typeof SongsRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/playlists': typeof PlaylistsRoute
   '/songs': typeof SongsRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +79,27 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/playlists': typeof PlaylistsRoute
   '/songs': typeof SongsRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/albums' | '/artists' | '/history' | '/playlists' | '/songs'
+  fullPaths:
+    | '/'
+    | '/albums'
+    | '/artists'
+    | '/history'
+    | '/playlists'
+    | '/songs'
+    | '/tasks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/albums' | '/artists' | '/history' | '/playlists' | '/songs'
+  to:
+    | '/'
+    | '/albums'
+    | '/artists'
+    | '/history'
+    | '/playlists'
+    | '/songs'
+    | '/tasks'
   id:
     | '__root__'
     | '/'
@@ -85,6 +108,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/playlists'
     | '/songs'
+    | '/tasks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,10 +118,18 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   PlaylistsRoute: typeof PlaylistsRoute
   SongsRoute: typeof SongsRoute
+  TasksRoute: typeof TasksRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/songs': {
       id: '/songs'
       path: '/songs'
@@ -150,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   PlaylistsRoute: PlaylistsRoute,
   SongsRoute: SongsRoute,
+  TasksRoute: TasksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

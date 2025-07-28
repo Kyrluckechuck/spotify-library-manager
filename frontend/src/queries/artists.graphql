@@ -1,5 +1,16 @@
-query GetArtists($tracked: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
-  artists(tracked: $tracked, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
+query GetArtist($id: Int!) {
+  artist(id: $id) {
+    id
+    name
+    gid
+    tracked
+    addedAt
+    lastSyncedAt
+  }
+}
+
+query GetArtists($tracked: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
+  artists(tracked: $tracked, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
     totalCount
     pageInfo {
       hasNextPage
@@ -18,8 +29,8 @@ query GetArtists($tracked: Boolean, $first: Int = 20, $after: String, $sortBy: S
   }
 }
 
-query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
-  albums(artistId: $artistId, wanted: $wanted, downloaded: $downloaded, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
+query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
+  albums(artistId: $artistId, wanted: $wanted, downloaded: $downloaded, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
     totalCount
     pageInfo {
       hasNextPage
@@ -37,12 +48,13 @@ query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: 
       albumType
       albumGroup
       artist
+      artistId
     }
   }
 }
 
-query GetSongs($artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
-  songs(artistId: $artistId, downloaded: $downloaded, unavailable: $unavailable, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
+query GetSongs($artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
+  songs(artistId: $artistId, downloaded: $downloaded, unavailable: $unavailable, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
     totalCount
     pageInfo {
       hasNextPage
@@ -61,12 +73,13 @@ query GetSongs($artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $fir
       filePath
       downloaded
       spotifyUri
+      artist
     }
   }
 }
 
-query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String) {
-  playlists(enabled: $enabled, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection) {
+query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
+  playlists(enabled: $enabled, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
     totalCount
     pageInfo {
       hasNextPage
@@ -82,6 +95,22 @@ query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String, $sortBy:
       autoTrackArtists
       lastSyncedAt
     }
+  }
+}
+
+mutation SyncArtist($artistId: Int!) {
+  syncArtist(artistId: $artistId) {
+    success
+    message
+    taskId
+  }
+}
+
+mutation SyncPlaylist($playlistId: Int!) {
+  syncPlaylist(playlistId: $playlistId) {
+    success
+    message
+    taskId
   }
 }
 

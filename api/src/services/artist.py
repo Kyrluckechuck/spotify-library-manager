@@ -2,8 +2,8 @@ from typing import Optional, List, Any
 from datetime import datetime
 from django.db.models import Q
 
-from src.library_manager.models import Artist as DjangoArtist
-from src.library_manager.tasks import fetch_all_albums_for_artist, download_missing_albums_for_artist
+from library_manager.models import Artist as DjangoArtist
+from library_manager.tasks import fetch_all_albums_for_artist, download_missing_albums_for_artist
 
 from .base import BaseService
 from ..types.models import Artist

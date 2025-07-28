@@ -1,8 +1,8 @@
 from typing import List, Optional
 import strawberry
 from ..types.models import (
-    Artist, Album, Playlist, DownloadHistory,
-    ArtistConnection, AlbumConnection, PlaylistConnection, HistoryConnection,
+    Artist, Album, Playlist, DownloadHistory, TaskHistory,
+    ArtistConnection, AlbumConnection, PlaylistConnection, HistoryConnection, TaskHistoryConnection,
     PageInfo
 )
 from ..services import services
@@ -160,6 +160,45 @@ class Query:
         )
         
         return HistoryConnection(
+            edges=edges,
+            page_info=page_info,
+            total_count=total_count
+        )
+
+    @strawberry.field
+    async def task_history(
+        self,
+        first: Optional[int] = 20,
+        after: Optional[str] = None,
+        status: Optional[str] = None,
+        type: Optional[str] = None,
+        entity_type: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> TaskHistoryConnection:
+        items, has_next_page, total_count = await services.task_history.get_connection(
+            first=first,
+            after=after,
+            status=status,
+            type=type,
+            entity_type=entity_type,
+            search=search
+        )
+        
+        edges = [
+            strawberry.type("TaskHistoryEdge")(
+                node=item,
+                cursor=services.task_history.create_cursor(item)
+            ) for item in items
+        ]
+        
+        page_info = PageInfo(
+            has_next_page=has_next_page,
+            has_previous_page=after is not None,
+            start_cursor=edges[0].cursor if edges else None,
+            end_cursor=edges[-1].cursor if edges else None
+        )
+        
+        return TaskHistoryConnection(
             edges=edges,
             page_info=page_info,
             total_count=total_count

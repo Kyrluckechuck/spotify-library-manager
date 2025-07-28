@@ -5,6 +5,7 @@ from .artist import ArtistService
 from .album import AlbumService
 from .playlist import PlaylistService
 from .history import DownloadHistoryService
+from .task_history import TaskHistoryService
 
 class ServiceRegistry:
     _instance: Optional['ServiceRegistry'] = None
@@ -29,5 +30,9 @@ class ServiceRegistry:
     @cached_property
     def history(self) -> DownloadHistoryService:
         return DownloadHistoryService()
+
+    @cached_property
+    def task_history(self) -> TaskHistoryService:
+        return TaskHistoryService()
 
 services = ServiceRegistry() 

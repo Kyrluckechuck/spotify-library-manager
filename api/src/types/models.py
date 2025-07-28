@@ -11,6 +11,25 @@ class DownloadStatus(Enum):
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
 
+@strawberry.enum
+class TaskStatus(Enum):
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    PENDING = "PENDING"
+
+@strawberry.enum
+class TaskType(Enum):
+    SYNC = "SYNC"
+    DOWNLOAD = "DOWNLOAD"
+    FETCH = "FETCH"
+
+@strawberry.enum
+class EntityType(Enum):
+    ARTIST = "ARTIST"
+    ALBUM = "ALBUM"
+    PLAYLIST = "PLAYLIST"
+
 @strawberry.type
 class Artist:
     id: str
@@ -70,6 +89,21 @@ class DownloadHistory:
     error_message: Optional[str]
 
 @strawberry.type
+class TaskHistory:
+    id: str
+    task_id: str
+    type: TaskType
+    entity_id: str
+    entity_type: EntityType
+    status: TaskStatus
+    started_at: datetime
+    completed_at: Optional[datetime]
+    error_message: Optional[str]
+    duration_seconds: Optional[int]
+    progress_percentage: Optional[float]
+    log_messages: List[str]
+
+@strawberry.type
 class PageInfo:
     has_next_page: bool
     has_previous_page: bool
@@ -118,6 +152,17 @@ class HistoryConnection:
 @strawberry.type
 class HistoryEdge:
     node: DownloadHistory
+    cursor: str
+
+@strawberry.type
+class TaskHistoryConnection:
+    edges: List["TaskHistoryEdge"]
+    page_info: PageInfo
+    total_count: int
+
+@strawberry.type
+class TaskHistoryEdge:
+    node: TaskHistory
     cursor: str
 
 # Input types for mutations

@@ -9,6 +9,8 @@ interface PlaylistsTableProps {
   sortDirection: 'asc' | 'desc';
   onSort: (field: PlaylistSortField) => void;
   onToggleEnabled: (playlist: TrackedPlaylist) => void;
+  onSyncPlaylist: (playlistId: number) => void;
+  onEditPlaylist?: (playlist: TrackedPlaylist) => void;
   loading?: boolean;
 }
 
@@ -18,6 +20,8 @@ export function PlaylistsTable({
   sortDirection,
   onSort,
   onToggleEnabled,
+  onSyncPlaylist,
+  onEditPlaylist,
   loading = false
 }: PlaylistsTableProps) {
   if (playlists.length === 0) {
@@ -100,7 +104,7 @@ export function PlaylistsTable({
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                   playlist.enabled
                     ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
+                    : 'bg-red-100 text-red-800'
                 }`}>
                   {playlist.enabled ? 'Enabled' : 'Disabled'}
                 </span>
@@ -109,7 +113,7 @@ export function PlaylistsTable({
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                   playlist.autoTrackArtists
                     ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800'
+                    : 'bg-orange-100 text-orange-800'
                 }`}>
                   {playlist.autoTrackArtists ? 'Yes' : 'No'}
                 </span>
@@ -121,25 +125,39 @@ export function PlaylistsTable({
                 }
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <a 
-                  href={playlist.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:text-indigo-900 underline"
-                >
-                  Open Spotify
-                </a>
-                <button 
-                  onClick={() => onToggleEnabled(playlist)}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                    playlist.enabled
-                      ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                      : 'bg-green-100 text-green-800 hover:bg-green-200'
-                  }`}
-                >
-                  {playlist.enabled ? 'Disable' : 'Enable'}
-                </button>
-              </td>
+                  <button
+                    onClick={() => onToggleEnabled(playlist)}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      playlist.enabled
+                        ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                        : 'bg-green-100 text-green-800 hover:bg-green-200'
+                    }`}
+                  >
+                    {playlist.enabled ? 'Disable' : 'Enable'}
+                  </button>
+                  <button
+                    onClick={() => onSyncPlaylist(playlist.id)}
+                    className="px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                  >
+                    Sync Now
+                  </button>
+                  {onEditPlaylist && (
+                    <button
+                      onClick={() => onEditPlaylist(playlist)}
+                      className="px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  <a 
+                    href={playlist.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:text-indigo-900 underline"
+                  >
+                    Open Spotify
+                  </a>
+                </td>
             </tr>
           ))}
         </tbody>

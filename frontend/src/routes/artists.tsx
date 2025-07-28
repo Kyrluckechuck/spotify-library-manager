@@ -1,14 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useQuery, useMutation } from '@apollo/client';
-import { GetArtistsDocument, TrackArtistDocument, UntrackArtistDocument } from '../types/generated/graphql';
-import type { Artist } from '../types/generated/graphql';
-import { useState } from 'react';
+import { useMutation, useQuery, useApolloClient } from '@apollo/client';
+import { GetArtistsDocument, TrackArtistDocument, UntrackArtistDocument, SyncArtistDocument, type GetArtistsQuery } from '../types/generated/graphql';
+import { useState, useMemo, useCallback } from 'react';
+
 
 // Components
 import { ArtistFilters } from '../components/artists/ArtistFilters';
 import { ArtistsTable } from '../components/artists/ArtistsTable';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
+import { SearchInput } from '../components/ui/SearchInput';
 import type { SortField } from '../components/artists/ArtistsTable';
 
 type SortDirection = 'asc' | 'desc';
@@ -18,42 +19,78 @@ function Artists() {
   const [pageSize, setPageSize] = useState(50);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [searchQuery, setSearchQuery] = useState('');
+
+
+  const client = useApolloClient();
   
-  const { data, loading, error, refetch, fetchMore } = useQuery(GetArtistsDocument, {
-    variables: { 
-      tracked: filter === 'all' ? undefined : filter === 'tracked',
-      first: pageSize,
-      sortBy: sortField,
-      sortDirection: sortDirection
-    },
+  // Memoize query variables to prevent unnecessary re-renders
+  const queryVariables = useMemo(() => ({
+    tracked: filter === 'all' ? undefined : filter === 'tracked',
+    first: pageSize,
+    sortBy: sortField,
+    sortDirection: sortDirection,
+    search: searchQuery || undefined
+  }), [filter, pageSize, sortField, sortDirection, searchQuery]);
+
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(GetArtistsDocument, {
+    variables: queryVariables,
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first',
     notifyOnNetworkStatusChange: true,
-    fetchPolicy: 'cache-and-network'
+    pollInterval: 0, // No polling needed since we're not tracking frontend tasks
+    errorPolicy: 'all',
+    // Keep previous data while loading new data
+    returnPartialData: true,
+    onCompleted: (data) => {
+      // Pre-fetch other filter combinations to eliminate future jitter
+      if (data && networkStatus !== 3) { // Not refetching
+        const baseVariables = {
+          first: pageSize,
+          sortBy: sortField,
+          sortDirection: sortDirection,
+          search: searchQuery || undefined
+        };
+        
+        // Pre-fetch tracked and untracked filters
+        ['tracked', 'untracked'].forEach(trackedFilter => {
+          const variables = {
+            ...baseVariables,
+            tracked: trackedFilter === 'tracked' ? true : false,
+          };
+          
+          client.query({
+            query: GetArtistsDocument,
+            variables,
+            fetchPolicy: 'cache-first',
+          }).catch(() => {
+            // Silently handle errors for pre-fetching
+          });
+        });
+      }
+    },
   });
 
-  const [trackArtist] = useMutation(TrackArtistDocument, {
-    onCompleted: (data) => {
-      if (data.trackArtist.success) {
-        refetch();
-      }
-    }
-  });
-
-  const [untrackArtist] = useMutation(UntrackArtistDocument, {
-    onCompleted: (data) => {
-      if (data.untrackArtist.success) {
-        refetch();
-      }
-    }
-  });
+  const [trackArtist] = useMutation(TrackArtistDocument);
+  const [untrackArtist] = useMutation(UntrackArtistDocument);
+  const [syncArtist] = useMutation(SyncArtistDocument);
 
   const handleFilterChange = (newFilter: 'all' | 'tracked' | 'untracked') => {
     setFilter(newFilter);
-    refetch({
+    
+    // Pre-fetch data for the new filter to eliminate jitter
+    const newVariables = {
+      ...queryVariables,
       tracked: newFilter === 'all' ? undefined : newFilter === 'tracked',
-      first: pageSize,
-      after: undefined,
-      sortBy: sortField,
-      sortDirection: sortDirection
+    };
+    
+    // Pre-fetch without blocking the UI
+    client.query({
+      query: GetArtistsDocument,
+      variables: newVariables,
+      fetchPolicy: 'cache-first',
+    }).catch(() => {
+      // Silently handle errors for pre-fetching
     });
   };
 
@@ -67,27 +104,61 @@ function Artists() {
     setSortField(field);
     setSortDirection(newDirection);
     
-    refetch({
-      tracked: filter === 'all' ? undefined : filter === 'tracked',
-      first: pageSize,
-      after: undefined,
+    // Pre-fetch data for the new sort to eliminate jitter
+    const newVariables = {
+      ...queryVariables,
       sortBy: field,
-      sortDirection: newDirection
+      sortDirection: newDirection,
+    };
+    
+    client.query({
+      query: GetArtistsDocument,
+      variables: newVariables,
+      fetchPolicy: 'cache-first',
+    }).catch(() => {
+      // Silently handle errors for pre-fetching
     });
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    refetch({
-      tracked: filter === 'all' ? undefined : filter === 'tracked',
+    
+    // Pre-fetch data for the new page size to eliminate jitter
+    const newVariables = {
+      ...queryVariables,
       first: newPageSize,
-      after: undefined,
-      sortBy: sortField,
-      sortDirection: sortDirection
+    };
+    
+    client.query({
+      query: GetArtistsDocument,
+      variables: newVariables,
+      fetchPolicy: 'cache-first',
+    }).catch(() => {
+      // Silently handle errors for pre-fetching
     });
   };
 
-  const handleTrackToggle = async (artist: Artist) => {
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const handleFilterHover = useCallback((hoverFilter: 'all' | 'tracked' | 'untracked') => {
+    // Pre-fetch data on hover to eliminate jitter
+    const newVariables = {
+      ...queryVariables,
+      tracked: hoverFilter === 'all' ? undefined : hoverFilter === 'tracked',
+    };
+    
+    client.query({
+      query: GetArtistsDocument,
+      variables: newVariables,
+      fetchPolicy: 'cache-first',
+    }).catch(() => {
+      // Silently handle errors for pre-fetching
+    });
+  }, [queryVariables, client]);
+
+  const handleTrackToggle = async (artist: any) => {
     try {
       if (artist.tracked) {
         await untrackArtist({ variables: { artistId: artist.id } });
@@ -99,13 +170,21 @@ function Artists() {
     }
   };
 
+  const handleSyncArtist = async (artistId: number) => {
+    try {
+      await syncArtist({ variables: { artistId } });
+    } catch (error) {
+      console.error('Error syncing artist:', error);
+    }
+  };
+
   const handleLoadMore = () => {
     if (data?.artists.pageInfo.hasNextPage) {
       fetchMore({
         variables: {
           after: data.artists.pageInfo.endCursor,
         },
-        updateQuery: (prevResult, { fetchMoreResult }) => {
+        updateQuery: (prevResult: GetArtistsQuery, { fetchMoreResult }: { fetchMoreResult?: GetArtistsQuery }) => {
           if (!fetchMoreResult) return prevResult;
           
           return {
@@ -122,7 +201,12 @@ function Artists() {
     }
   };
 
-  if (loading && !data) {
+  // Show subtle loading indicator for filter changes while keeping current data visible
+  const isRefetching = networkStatus === 3; // NetworkStatus.refetch
+  const isInitialLoading = networkStatus === 1; // NetworkStatus.loading (initial load)
+
+  // Only show loading state on initial load, not on filter changes
+  if (isInitialLoading && !data) {
     return (
       <section>
         <h1 className="text-2xl font-semibold mb-4">Artists</h1>
@@ -151,10 +235,23 @@ function Artists() {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">
-          Artists ({artists.length} of {totalCount})
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">
+            Artists ({artists.length} of {totalCount})
+          </h1>
+          {isRefetching && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              <span>Updating...</span>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-4">
+          <SearchInput
+            placeholder="Search artists..."
+            onSearch={handleSearch}
+            className="w-64"
+          />
           <PageSizeSelector 
             pageSize={pageSize}
             onPageSizeChange={handlePageSizeChange}
@@ -170,16 +267,28 @@ function Artists() {
       <ArtistFilters 
         currentFilter={filter}
         onFilterChange={handleFilterChange}
+        onFilterHover={handleFilterHover}
       />
 
-      <ArtistsTable
-        artists={artists}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-        onTrackToggle={handleTrackToggle}
-        loading={loading}
-      />
+      <div className="relative">
+        <ArtistsTable
+          artists={artists}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          onTrackToggle={handleTrackToggle}
+          onSyncArtist={handleSyncArtist}
+          loading={loading}
+        />
+        {isRefetching && (
+          <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center pointer-events-none">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              <span>Updating...</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       <LoadMoreButton
         hasNextPage={!!pageInfo?.hasNextPage}

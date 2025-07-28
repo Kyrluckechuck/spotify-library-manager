@@ -1,4 +1,4 @@
-.PHONY: build-and-publish dev setup
+.PHONY: build-and-publish dev setup migrate createsuperuser test-migrations
 
 build-and-publish:
 	sudo podman build -t test_build .
@@ -13,3 +13,12 @@ setup:
 
 dev:
 	python dev.py
+
+migrate:
+	cd api && python manage.py migrate
+
+createsuperuser:
+	cd api && python manage.py createsuperuser
+
+test-migrations:
+	python test_migrations.py

@@ -1,7 +1,7 @@
 import type { Song } from '../../types/generated/graphql';
 import { SortableTableHeader } from '../ui/SortableTableHeader';
 
-export type SongSortField = 'name' | 'downloaded' | 'unavailable' | 'created_at' | null;
+export type SongSortField = 'name' | 'artist' | 'downloaded' | 'unavailable' | 'created_at' | null;
 
 interface SongsTableProps {
   songs: Song[];
@@ -9,6 +9,7 @@ interface SongsTableProps {
   sortDirection: 'asc' | 'desc';
   onSort: (field: SongSortField) => void;
   loading?: boolean;
+  showArtist?: boolean; // Add prop to conditionally show artist column
 }
 
 export function SongsTable({
@@ -16,7 +17,8 @@ export function SongsTable({
   sortField,
   sortDirection,
   onSort,
-  loading = false
+  loading = false,
+  showArtist = false
 }: SongsTableProps) {
   if (songs.length === 0) {
     return (
@@ -42,6 +44,16 @@ export function SongsTable({
               >
                 Song
               </SortableTableHeader>
+              {showArtist && (
+                <SortableTableHeader
+                  field="artist"
+                  currentSortField={sortField}
+                  currentSortDirection={sortDirection}
+                  onSort={onSort}
+                >
+                  Artist
+                </SortableTableHeader>
+              )}
               <SortableTableHeader
                 field="downloaded"
                 currentSortField={sortField}
@@ -87,6 +99,11 @@ export function SongsTable({
                     ID: {song.gid}
                   </div>
                 </td>
+                {showArtist && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{song.artist}</div>
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     song.downloaded

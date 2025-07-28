@@ -1,14 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useQuery } from '@apollo/client';
-import { GetSongsDocument } from '../types/generated/graphql';
-import { useState } from 'react';
+import { useQuery, useApolloClient } from '@apollo/client';
+import { GetSongsDocument, GetArtistDocument, type GetSongsQuery } from '../types/generated/graphql';
+import { useState, useMemo, useCallback } from 'react';
+
 
 // Components
 import { SongFilters } from '../components/songs/SongFilters';
 import { SongsTable } from '../components/songs/SongsTable';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
+import { ArtistContext } from '../components/ui/ArtistContext';
 import type { SongSortField } from '../components/songs/SongsTable';
+import { SearchInput } from '../components/ui/SearchInput';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -18,37 +21,98 @@ function Songs() {
   const [pageSize, setPageSize] = useState(50);
   const [sortField, setSortField] = useState<SongSortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Convert filter to GraphQL parameters
-  const getFilterParams = () => {
-    const params: any = {};
+  const getFilterParams = (): Record<string, boolean | undefined> => {
+    const params: Record<string, boolean | undefined> = {};
     if (downloadFilter === 'downloaded') params.downloaded = true;
     else if (downloadFilter === 'pending') params.downloaded = false;
     else if (downloadFilter === 'unavailable') params.unavailable = true;
     return params;
   };
 
-  const { data, loading, error, refetch, fetchMore } = useQuery(GetSongsDocument, {
-    variables: {
-      artistId: artistId || undefined,
-      ...getFilterParams(),
-      first: pageSize,
-      sortBy: sortField,
-      sortDirection: sortDirection
-    },
+
+  const client = useApolloClient();
+  
+  // Memoize query variables to prevent unnecessary re-renders
+  const queryVariables = useMemo(() => ({
+    artistId: artistId || undefined,
+    ...getFilterParams(),
+    first: pageSize,
+    sortBy: sortField,
+    sortDirection: sortDirection,
+    search: searchQuery || undefined
+  }), [artistId, downloadFilter, pageSize, sortField, sortDirection, searchQuery]);
+
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(GetSongsDocument, {
+    variables: queryVariables,
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first',
     notifyOnNetworkStatusChange: true,
-    fetchPolicy: 'cache-and-network'
+    pollInterval: 0, // No polling needed since we're not tracking frontend tasks
+    errorPolicy: 'all',
+    // Keep previous data while loading new data
+    returnPartialData: true,
+    onCompleted: (data) => {
+      // Pre-fetch other filter combinations to eliminate future jitter
+      if (data && networkStatus !== 3) { // Not refetching
+        const baseVariables = {
+          artistId: artistId || undefined,
+          first: pageSize,
+          sortBy: sortField,
+          sortDirection: sortDirection,
+          search: searchQuery || undefined
+        };
+        
+        // Pre-fetch download filter combinations
+        ['downloaded', 'pending', 'unavailable'].forEach(downloadFilter => {
+          const variables = {
+            ...baseVariables,
+            ...(downloadFilter === 'downloaded' ? { downloaded: true } : {}),
+            ...(downloadFilter === 'pending' ? { downloaded: false } : {}),
+            ...(downloadFilter === 'unavailable' ? { unavailable: true } : {}),
+          };
+          
+          client.query({
+            query: GetSongsDocument,
+            variables,
+            fetchPolicy: 'cache-first',
+          }).catch(() => {
+            // Silently handle errors for pre-fetching
+          });
+        });
+      }
+    },
+  });
+
+  // Get artist information if filtering by artist
+  const { data: artistData } = useQuery(GetArtistDocument, {
+    variables: { id: artistId! },
+    skip: !artistId,
+    fetchPolicy: 'cache-first',
+    nextFetchPolicy: 'cache-first',
+    notifyOnNetworkStatusChange: false,
+    pollInterval: 0, // No polling for artist data
   });
 
   const handleDownloadFilterChange = (newFilter: 'all' | 'downloaded' | 'pending' | 'unavailable') => {
     setDownloadFilter(newFilter);
-    refetch({
-      artistId: artistId || undefined,
-      ...getFilterParams(),
-      first: pageSize,
-      after: undefined,
-      sortBy: sortField,
-      sortDirection: sortDirection
+    
+    // Pre-fetch data for the new filter to eliminate jitter
+    const newVariables = {
+      ...queryVariables,
+      ...(newFilter === 'downloaded' ? { downloaded: true } : {}),
+      ...(newFilter === 'pending' ? { downloaded: false } : {}),
+      ...(newFilter === 'unavailable' ? { unavailable: true } : {}),
+    };
+    
+    client.query({
+      query: GetSongsDocument,
+      variables: newVariables,
+      fetchPolicy: 'cache-first',
+    }).catch(() => {
+      // Silently handle errors for pre-fetching
     });
   };
 
@@ -61,28 +125,44 @@ function Songs() {
 
     setSortField(field);
     setSortDirection(newDirection);
-
-    refetch({
-      artistId: artistId || undefined,
-      ...getFilterParams(),
-      first: pageSize,
-      after: undefined,
+    
+    // Pre-fetch data for the new sort to eliminate jitter
+    const newVariables = {
+      ...queryVariables,
       sortBy: field,
-      sortDirection: newDirection
+      sortDirection: newDirection,
+    };
+    
+    client.query({
+      query: GetSongsDocument,
+      variables: newVariables,
+      fetchPolicy: 'cache-first',
+    }).catch(() => {
+      // Silently handle errors for pre-fetching
     });
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    refetch({
-      artistId: artistId || undefined,
-      ...getFilterParams(),
+    
+    // Pre-fetch data for the new page size to eliminate jitter
+    const newVariables = {
+      ...queryVariables,
       first: newPageSize,
-      after: undefined,
-      sortBy: sortField,
-      sortDirection: sortDirection
+    };
+    
+    client.query({
+      query: GetSongsDocument,
+      variables: newVariables,
+      fetchPolicy: 'cache-first',
+    }).catch(() => {
+      // Silently handle errors for pre-fetching
     });
   };
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
 
   const handleLoadMore = () => {
     if (data?.songs.pageInfo.hasNextPage) {
@@ -90,7 +170,7 @@ function Songs() {
         variables: {
           after: data.songs.pageInfo.endCursor,
         },
-        updateQuery: (prevResult, { fetchMoreResult }) => {
+        updateQuery: (prevResult: GetSongsQuery, { fetchMoreResult }: { fetchMoreResult?: GetSongsQuery }) => {
           if (!fetchMoreResult) return prevResult;
 
           return {
@@ -107,7 +187,12 @@ function Songs() {
     }
   };
 
-  if (loading && !data) {
+  // Show subtle loading indicator for filter changes while keeping current data visible
+  const isRefetching = networkStatus === 3; // NetworkStatus.refetch
+  const isInitialLoading = networkStatus === 1; // NetworkStatus.loading (initial load)
+
+  // Only show loading state on initial load, not on filter changes
+  if (isInitialLoading && !data) {
     return (
       <section>
         <h1 className="text-2xl font-semibold mb-4">Songs</h1>
@@ -139,11 +224,34 @@ function Songs() {
 
   return (
     <section>
+      {/* Show artist context when filtering by artist */}
+      {artistId && artistData?.artist && (
+        <ArtistContext
+          artistId={artistId}
+          artistName={artistData.artist.name}
+          contentType="songs"
+          totalCount={totalCount}
+        />
+      )}
+
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">
-          {title} ({songs.length} of {totalCount})
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">
+            {title} ({songs.length} of {totalCount})
+          </h1>
+          {isRefetching && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              <span>Updating...</span>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-4">
+          <SearchInput
+            placeholder="Search songs..."
+            onSearch={handleSearch}
+            className="w-64"
+          />
           <PageSizeSelector 
             pageSize={pageSize}
             onPageSizeChange={handlePageSizeChange}
@@ -161,13 +269,24 @@ function Songs() {
         onDownloadFilterChange={handleDownloadFilterChange}
       />
 
-      <SongsTable
-        songs={songs}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-        loading={loading}
-      />
+      <div className="relative">
+        <SongsTable
+          songs={songs}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          loading={loading}
+          showArtist={!artistId} // Show artist column when not filtered by artist
+        />
+        {isRefetching && (
+          <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center pointer-events-none">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              <span>Updating...</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       <LoadMoreButton
         hasNextPage={!!pageInfo?.hasNextPage}

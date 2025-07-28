@@ -10,6 +10,7 @@ interface ArtistsTableProps {
   sortDirection: 'asc' | 'desc';
   onSort: (field: SortField) => void;
   onTrackToggle: (artist: Artist) => void;
+  onSyncArtist: (artistId: number) => void;
   loading?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function ArtistsTable({
   sortDirection,
   onSort,
   onTrackToggle,
+  onSyncArtist,
   loading = false
 }: ArtistsTableProps) {
   if (artists.length === 0) {
@@ -86,7 +88,7 @@ export function ArtistsTable({
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     artist.tracked
                       ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                      : 'bg-red-100 text-red-800'
                   }`}>
                     {artist.tracked ? 'Tracked' : 'Not Tracked'}
                   </span>
@@ -98,14 +100,7 @@ export function ArtistsTable({
                   }
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                  <Link
-                    to="/albums"
-                    search={{ artistId: artist.id }}
-                    className="text-indigo-600 hover:text-indigo-900 underline"
-                  >
-                    View Albums
-                  </Link>
-                  <button 
+                  <button
                     onClick={() => onTrackToggle(artist)}
                     className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                       artist.tracked
@@ -115,6 +110,19 @@ export function ArtistsTable({
                   >
                     {artist.tracked ? 'Untrack' : 'Track'}
                   </button>
+                  <button
+                    onClick={() => onSyncArtist(artist.id)}
+                    className="px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                  >
+                    Sync Now
+                  </button>
+                  <Link
+                    to="/albums"
+                    search={{ artistId: artist.id }}
+                    className="text-indigo-600 hover:text-indigo-900 underline"
+                  >
+                    View Albums
+                  </Link>
                 </td>
               </tr>
             ))}

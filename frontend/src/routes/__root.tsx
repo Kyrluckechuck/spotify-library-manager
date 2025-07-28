@@ -2,6 +2,7 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { Navbar } from '../components/Navbar';
 
+
 function RootComponent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
@@ -11,6 +12,7 @@ function RootComponent() {
           <Outlet />
         </div>
       </main>
+
     </div>
   );
 }

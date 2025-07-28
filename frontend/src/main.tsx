@@ -5,6 +5,7 @@ import { ApolloProvider } from '@apollo/client'
 import './index.css'
 import { apolloClient } from './apolloClient'
 
+
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 

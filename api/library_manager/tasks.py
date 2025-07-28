@@ -2,7 +2,7 @@ import time
 
 from django.conf import settings
 
-from .models import Album, Artist, DownloadHistory, Song, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE
+from .models import Album, Artist, DownloadHistory, Song, TrackedPlaylist, ALBUM_TYPES_TO_DOWNLOAD, EXTRA_GROUPS_TO_IGNORE, TaskHistory
 from . import helpers
 from downloader.utils import sanitize_and_strip_url
 from downloader.spotdl_wrapper import SpotdlWrapper
@@ -19,59 +19,221 @@ from django.utils import timezone
 
 spotdl_wrapper = SpotdlWrapper(Config())
 
+def create_task_history(task: Task = None, task_type: str = None, entity_id: str = None, entity_type: str = None, task_name: str = None) -> TaskHistory:
+    """Create a task history record for tracking task execution"""
+    if task is not None:
+        # Use Huey task context
+        task_id = f"{task_type}-{entity_type.lower()}-{entity_id}"
+    else:
+        # Create task history without Huey context
+        import uuid
+        task_id = f"{task_name or 'unknown'}-{uuid.uuid4().hex[:8]}"
+    
+    # Check if task history already exists for this task
+    existing_task = TaskHistory.objects.filter(task_id=task_id).first()
+    if existing_task:
+        return existing_task
+    
+    # Create new task history record
+    task_history = TaskHistory(
+        task_id=task_id,
+        type=task_type or 'UNKNOWN',
+        entity_id=str(entity_id) if entity_id else 'unknown',
+        entity_type=entity_type or 'UNKNOWN',
+        status='PENDING'
+    )
+    task_history.save()
+    return task_history
+
+def update_task_progress(task_history: TaskHistory, progress: float, message: str = None):
+    """Update task progress, heartbeat, and add log message"""
+    task_history.status = 'RUNNING'
+    task_history.progress_percentage = progress
+    task_history.update_heartbeat()  # Update heartbeat on progress
+    if message:
+        task_history.add_log_message(message)
+    task_history.save()
+
+def update_task_heartbeat(task_history: TaskHistory):
+    """Update task heartbeat without progress change"""
+    task_history.update_heartbeat()
+    task_history.add_log_message("Heartbeat update")
+
+def complete_task(task_history: TaskHistory, success: bool = True, error_message: str = None):
+    """Mark task as completed or failed"""
+    if success:
+        task_history.mark_completed()
+    else:
+        task_history.mark_failed(error_message)
+
 @huey.task(context=True, priority=3)
 def fetch_all_albums_for_artist(artist_id: int, task: Task = None):
-    artist = Artist.objects.get(id=artist_id)
-    downloader_config = Config()
-    downloader_config.artist_to_fetch = artist.gid
-    downloader_config.urls = []
-    if task is not None:
-        process_info = ProcessInfo(task, desc=f"fetch all albums for artist (artist.id: {artist.id})")
-        downloader_config.process_info = process_info
-    spotdl_wrapper.execute(downloader_config)
+    task_history = None
+    try:
+        artist = Artist.objects.get(id=artist_id)
+        
+        # Create task history record (always create, even without Huey context)
+        task_history = create_task_history(
+            task=task, 
+            task_type='FETCH', 
+            entity_id=artist.id, 
+            entity_type='ARTIST',
+            task_name='fetch_all_albums_for_artist'
+        )
+        update_task_progress(task_history, 0.0, f"Starting fetch for artist {artist.name}")
+        # Mark as running
+        task_history.status = 'RUNNING'
+        task_history.save()
+        
+        downloader_config = Config()
+        downloader_config.artist_to_fetch = artist.gid
+        downloader_config.urls = []
+        
+        if task is not None:
+            process_info = ProcessInfo(task, desc=f"fetch all albums for artist (artist.id: {artist.id})")
+            downloader_config.process_info = process_info
+        update_task_progress(task_history, 25.0, "Fetching artist albums from Spotify")
+        
+        spotdl_wrapper.execute(downloader_config)
+        
+        complete_task(task_history, success=True)
+            
+    except Exception as e:
+        if task_history:
+            complete_task(task_history, success=False, error_message=str(e))
+        raise
 
 @huey.task(context=True, priority=1, retries=2, retry_delay=30)
 def download_missing_albums_for_artist(artist_id: int, task: Task = None, delay: int = 0):
-    # Add delay (if applicable) to reduce chance of flagging when backfilling library
-    time.sleep(delay)
+    task_history = None
+    try:
+        # Add delay (if applicable) to reduce chance of flagging when backfilling library
+        time.sleep(delay)
 
-    artist = Artist.objects.get(id=artist_id)
-    missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
-    print(f"missing albums search for artist {artist.id} found {missing_albums.count()}")
-    downloader_config = Config()
-    if task is not None:
-        process_info = ProcessInfo(task, desc=f"artist missing album download (artist.id: {artist.id})", total=1000)
-        downloader_config.process_info = process_info
-    downloader_config.urls = []  # This must be reset or it will persist between runs
-    if missing_albums.count() > 0:
-        for missing_album in missing_albums:
-            downloader_config.urls.append(missing_album.spotify_uri)
+        artist = Artist.objects.get(id=artist_id)
+        
+        # Create task history record
+        if task is not None:
+            task_history = create_task_history(task, 'DOWNLOAD', artist.id, 'ARTIST')
+            update_task_progress(task_history, 0.0, f"Starting download for artist {artist.name}")
+        
+        missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_type__in=ALBUM_TYPES_TO_DOWNLOAD).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
+        print(f"missing albums search for artist {artist.id} found {missing_albums.count()}")
+        
+        if task_history:
+            update_task_progress(task_history, 25.0, f"Found {missing_albums.count()} missing albums")
+        
+        downloader_config = Config()
+        if task is not None and task_history:
+            process_info = ProcessInfo(task, desc=f"artist missing album download (artist.id: {artist.id})", total=1000)
+            downloader_config.process_info = process_info
+            update_task_progress(task_history, 50.0, "Preparing download configuration")
+        
+        downloader_config.urls = []  # This must be reset or it will persist between runs
+        if missing_albums.count() > 0:
+            for missing_album in missing_albums:
+                downloader_config.urls.append(missing_album.spotify_uri)
 
-        print(f"missing albums search for artist {artist.id} kicking off {len(downloader_config.urls)}")
-        spotdl_wrapper.execute(downloader_config)
-    else:
-        print(f"missing albums search for artist {artist.id} is skipping since there are none missing")
-    artist.last_synced_at = Now()
-    artist.save()
+            print(f"missing albums search for artist {artist.id} kicking off {len(downloader_config.urls)}")
+            if task_history:
+                update_task_progress(task_history, 75.0, f"Downloading {len(downloader_config.urls)} albums")
+            spotdl_wrapper.execute(downloader_config)
+        else:
+            print(f"missing albums search for artist {artist.id} is skipping since there are none missing")
+            if task_history:
+                update_task_progress(task_history, 100.0, "No missing albums to download")
+        
+        artist.last_synced_at = Now()
+        artist.save()
+        
+        if task_history:
+            complete_task(task_history, success=True)
+            
+    except Exception as e:
+        import logging
+        logger = logging.getLogger('library_manager')
+        logger.error(f"Error in sync_tracked_playlist_internal: {e}", exc_info=True)
+        if task_history:
+            complete_task(task_history, success=False, error_message=str(e))
+        raise
+
+def _sync_tracked_playlist_internal(tracked_playlist: TrackedPlaylist, task: Task = None):
+    """Internal function that does the actual sync work"""
+    task_history = None
+    try:
+        # Create task history record for the sync operation
+        task_history = create_task_history(
+            task=task, 
+            task_type='SYNC', 
+            entity_id=str(tracked_playlist.id), 
+            entity_type='PLAYLIST',
+            task_name='sync_tracked_playlist'
+        )
+        update_task_progress(task_history, 0.0, f"Starting playlist sync: {tracked_playlist.name}")
+        # Mark as running
+        task_history.status = 'RUNNING'
+        task_history.save()
+        
+        # Enqueue the actual download task
+        priority = task.priority if task else 2
+        helpers.enqueue_playlists([tracked_playlist], priority=priority)
+        
+        # Mark as completed since the sync operation is done (download is queued separately)
+        complete_task(task_history, success=True)
+        
+        return task_history
+        
+    except Exception as e:
+        if task_history:
+            complete_task(task_history, success=False, error_message=str(e))
+        raise
 
 @huey.task(context=True, priority=2, retries=2, retry_delay=30)
 def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None):
-    helpers.enqueue_playlists([tracked_playlist], priority=task.priority)
+    """Huey task wrapper for sync_tracked_playlist"""
+    return _sync_tracked_playlist_internal(tracked_playlist, task)
 
 @huey.task(context=True, priority=2, retries=2, retry_delay=30)
 def download_playlist(playlist_url: str, tracked: bool = True, force_playlist_resync: bool = False, task: Task = None):
-    playlist_url = sanitize_and_strip_url(playlist_url)
+    task_history = None
+    try:
+        playlist_url = sanitize_and_strip_url(playlist_url)
+        
+        # Extract playlist ID from URL for task history
+        playlist_id = playlist_url.split(':')[-1] if ':' in playlist_url else playlist_url
+        
+        # Create task history record (always create, even without Huey context)
+        task_history = create_task_history(
+            task=task, 
+            task_type='DOWNLOAD', 
+            entity_id=playlist_id, 
+            entity_type='PLAYLIST',
+            task_name='download_playlist'
+        )
+        update_task_progress(task_history, 0.0, f"Starting playlist download: {playlist_url}")
+        # Mark as running
+        task_history.status = 'RUNNING'
+        task_history.save()
 
-    downloader_config = Config(
-        urls=[playlist_url],
-        track_artists = tracked,
-        force_playlist_resync = force_playlist_resync
-    )
+        downloader_config = Config(
+            urls=[playlist_url],
+            track_artists=tracked,
+            force_playlist_resync=force_playlist_resync
+        )
 
-    if task is not None:
-        process_info = ProcessInfo(task, desc='playlist download', total=1000)
-        downloader_config.process_info = process_info
-    spotdl_wrapper.execute(downloader_config)
+        if task is not None:
+            process_info = ProcessInfo(task, desc='playlist download', total=1000)
+            downloader_config.process_info = process_info
+        update_task_progress(task_history, 50.0, "Downloading playlist tracks")
+        
+        spotdl_wrapper.execute(downloader_config)
+        
+        complete_task(task_history, success=True)
+            
+    except Exception as e:
+        if task_history:
+            complete_task(task_history, success=False, error_message=str(e))
+        raise
 
 @huey.task(context=True, priority=0, retries=2, retry_delay=30)
 def retry_all_missing_known_songs(task: Task = None):
@@ -160,6 +322,14 @@ def sync_tracked_playlists(task: Task = None):
 @huey.periodic_task(crontab(minute='0', hour='6'), priority=10)
 def cleanup_huey_history():
     helpers.cleanup_huey_history()
+
+@huey.periodic_task(crontab(minute='*/5'), priority=5)  # Every 5 minutes
+def cleanup_stuck_tasks_periodic():
+    """Periodically clean up stuck tasks"""
+    from library_manager.models import TaskHistory
+    stuck_count = TaskHistory.cleanup_stuck_tasks()
+    if stuck_count > 0:
+        print(f"Cleaned up {stuck_count} stuck task(s)")
 
 @huey.task(context=True, priority=0, retries=2, retry_delay=30)
 def validate_undownloaded_songs(task: Task = None, ):

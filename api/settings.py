@@ -66,12 +66,14 @@ settings = dynaconf.DjangoDynaconf(
         }
     },
     
-    # Huey: use same configuration as monolith
+    # Huey: basic configuration for development
     HUEY={
         'huey_class': 'huey.SqliteHuey',
-        'name': 'spotify_library_sync',  # Same instance name
-        'filename': '/config/db/huey.sqlite3',  # Same file
+        'name': 'spotify_library_sync',
+        'filename': '/config/db/huey.sqlite3',
         'immediate': False,
+        'results': True,
+        'store_none': False,
     }
 )
 
@@ -92,4 +94,62 @@ po_token = None
 log_level = "INFO"
 no_lrc = False
 overwrite = False
-print_exceptions = True 
+print_exceptions = True
+
+# Logging configuration to reduce verbosity
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'huey': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'library_manager': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+} 
