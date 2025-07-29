@@ -13,7 +13,7 @@ describe('Navbar', () => {
   it('renders all navigation links', () => {
     render(<Navbar />)
     
-    const expectedLinks = ['Home', 'Artists', 'Albums', 'Playlists', 'Tasks', 'History']
+    const expectedLinks = ['Home', 'Artists', 'Albums', 'Playlists', 'Tasks']
     
     expectedLinks.forEach(linkText => {
       expect(screen.getByText(linkText)).toBeInTheDocument()
@@ -28,7 +28,7 @@ describe('Navbar', () => {
     
     // Check that all links are anchor elements (mocked as <a> tags)
     const links = screen.getAllByRole('link')
-    expect(links).toHaveLength(6) // Title + 5 nav links
+    expect(links).toHaveLength(6) // Title + 5 nav links (Home, Artists, Albums, Playlists, Tasks)
   })
 
   it('applies correct CSS classes', () => {

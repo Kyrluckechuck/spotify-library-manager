@@ -141,18 +141,31 @@ class TaskHistory(models.Model):
     
     class Meta(TypedModelMeta):
         ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['status', '-started_at']),
+            models.Index(fields=['type', '-started_at']),
+            models.Index(fields=['entity_type', '-started_at']),
+            models.Index(fields=['completed_at']),
+        ]
         
     def __str__(self):
         return f"{self.type} - {self.entity_type} {self.entity_id} ({self.status})"
         
-    def add_log_message(self, message: str):
-        """Add a log message to the task history"""
+    def add_log_message(self, message: str, max_logs: int = 50):
+        """Add a log message to the task history with automatic truncation"""
         if not self.log_messages:
             self.log_messages = []
+        
+        # Add new log message
         self.log_messages.append({
             'timestamp': timezone.now().isoformat(),
             'message': message
         })
+        
+        # Truncate if we exceed max_logs
+        if len(self.log_messages) > max_logs:
+            self.log_messages = self.log_messages[-max_logs:]
+        
         self.save(update_fields=['log_messages'])
         
     def mark_completed(self, duration_seconds: int = None):
@@ -180,7 +193,7 @@ class TaskHistory(models.Model):
         self.save(update_fields=['progress_percentage'])
 
     def update_heartbeat(self):
-        """Update the last heartbeat timestamp"""
+        """Update the last heartbeat timestamp (no log message added)"""
         self.save(update_fields=['last_heartbeat'])
 
     def get_expected_duration_minutes(self) -> int:
@@ -262,6 +275,44 @@ class TaskHistory(models.Model):
                 stuck_count += 1
         
         return stuck_count
+
+    @classmethod
+    def cleanup_old_tasks(cls, days_to_keep: int = 30):
+        """Remove completed/failed tasks older than specified days"""
+        from datetime import timedelta
+        
+        cutoff_date = timezone.now() - timedelta(days=days_to_keep)
+        deleted_count = cls.objects.filter(
+            status__in=['COMPLETED', 'FAILED'],
+            started_at__lt=cutoff_date
+        ).delete()[0]
+        return deleted_count
+
+    @classmethod
+    def get_storage_stats(cls):
+        """Get storage statistics for TaskHistory"""
+        total_tasks = cls.objects.count()
+        completed_tasks = cls.objects.filter(status='COMPLETED').count()
+        failed_tasks = cls.objects.filter(status='FAILED').count()
+        running_tasks = cls.objects.filter(status='RUNNING').count()
+        pending_tasks = cls.objects.filter(status='PENDING').count()
+        
+        # Calculate average log messages per task
+        tasks_with_logs = cls.objects.filter(log_messages__isnull=False).exclude(log_messages=[])
+        avg_logs = 0
+        if tasks_with_logs.exists():
+            total_logs = sum(len(task.log_messages) for task in tasks_with_logs)
+            avg_logs = total_logs / tasks_with_logs.count()
+        
+        return {
+            'total_tasks': total_tasks,
+            'completed_tasks': completed_tasks,
+            'failed_tasks': failed_tasks,
+            'running_tasks': running_tasks,
+            'pending_tasks': pending_tasks,
+            'average_logs_per_task': round(avg_logs, 2),
+            'tasks_with_logs': tasks_with_logs.count(),
+        }
 
 class Album(models.Model):
     spotify_gid = models.CharField(max_length=2048, unique=True)

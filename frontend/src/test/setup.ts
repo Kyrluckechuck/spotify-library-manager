@@ -14,7 +14,7 @@ vi.mock('@apollo/client', () => ({
 // Mock TanStack Router
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(),
-  Link: ({ children, ...props }: any) => React.createElement('a', props, children),
+  Link: ({ children, ...props }: any) => React.createElement('a', { ...props, role: 'link' }, children),
   useNavigate: vi.fn(() => vi.fn()),
   useParams: vi.fn(() => ({})),
 }))

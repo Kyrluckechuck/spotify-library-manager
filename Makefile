@@ -14,6 +14,10 @@ dev-frontend:
 dev-worker:
 	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py run_huey
 
+# Huey queue management
+clear-huey-queue:
+	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py shell -c "from huey.contrib.djhuey import HUEY; HUEY.flush(); print('Huey queue cleared')"
+
 # Installation and setup
 setup:
 	# Install API dependencies

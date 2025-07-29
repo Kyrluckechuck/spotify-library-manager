@@ -13,20 +13,20 @@ describe('SearchInput', () => {
 
   it('calls onSearch when user types', async () => {
     const mockOnSearch = vi.fn()
-    render(<SearchInput onSearch={mockOnSearch} placeholder="Search..." />)
+    render(<SearchInput onSearch={mockOnSearch} placeholder="Search..." debounceMs={100} />)
     
     const input = screen.getByPlaceholderText('Search...')
     fireEvent.change(input, { target: { value: 'test query' } })
     
     // Wait for debounce
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await new Promise(resolve => setTimeout(resolve, 150))
     
     expect(mockOnSearch).toHaveBeenCalledWith('test query')
   })
 
   it('debounces search calls', async () => {
     const mockOnSearch = vi.fn()
-    render(<SearchInput onSearch={mockOnSearch} placeholder="Search..." />)
+    render(<SearchInput onSearch={mockOnSearch} placeholder="Search..." debounceMs={100} />)
     
     const input = screen.getByPlaceholderText('Search...')
     
@@ -37,7 +37,7 @@ describe('SearchInput', () => {
     fireEvent.change(input, { target: { value: 'test' } })
     
     // Wait for debounce
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await new Promise(resolve => setTimeout(resolve, 150))
     
     // Should only call once with final value
     expect(mockOnSearch).toHaveBeenCalledTimes(1)

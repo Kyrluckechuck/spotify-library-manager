@@ -66,7 +66,10 @@ export type LogMessage = {
 export type Mutation = {
   cleanupStuckTasks: CleanupResult;
   createPlaylist: MutationResult;
+  downloadAllForTrackedArtists: TaskResult;
   downloadUrl: TaskResult;
+  fetchAllForTrackedArtists: TaskResult;
+  retryAllMissingKnownSongs: TaskResult;
   setAlbumWanted: MutationResult;
   syncArtist: TaskResult;
   syncPlaylist: TaskResult;
@@ -74,6 +77,7 @@ export type Mutation = {
   trackArtist: MutationResult;
   untrackArtist: MutationResult;
   updatePlaylist: MutationResult;
+  validateUndownloadedSongs: TaskResult;
 };
 
 

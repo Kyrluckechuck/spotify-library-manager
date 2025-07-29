@@ -55,9 +55,8 @@ def update_task_progress(task_history: TaskHistory, progress: float, message: st
     task_history.save()
 
 def update_task_heartbeat(task_history: TaskHistory):
-    """Update task heartbeat without progress change"""
+    """Update task heartbeat (no log message)"""
     task_history.update_heartbeat()
-    task_history.add_log_message("Heartbeat update")
 
 def complete_task(task_history: TaskHistory, success: bool = True, error_message: str = None):
     """Mark task as completed or failed"""
@@ -70,7 +69,12 @@ def complete_task(task_history: TaskHistory, success: bool = True, error_message
 def fetch_all_albums_for_artist(artist_id: int, task: Task = None):
     task_history = None
     try:
-        artist = Artist.objects.get(id=artist_id)
+        # Check if artist exists before proceeding
+        try:
+            artist = Artist.objects.get(id=artist_id)
+        except Artist.DoesNotExist:
+            print(f"Artist with ID {artist_id} does not exist. Skipping task.")
+            return
         
         # Create task history record (always create, even without Huey context)
         task_history = create_task_history(
@@ -110,7 +114,12 @@ def download_missing_albums_for_artist(artist_id: int, task: Task = None, delay:
         # Add delay (if applicable) to reduce chance of flagging when backfilling library
         time.sleep(delay)
 
-        artist = Artist.objects.get(id=artist_id)
+        # Check if artist exists before proceeding
+        try:
+            artist = Artist.objects.get(id=artist_id)
+        except Artist.DoesNotExist:
+            print(f"Artist with ID {artist_id} does not exist. Skipping task.")
+            return
         
         # Create task history record
         if task is not None:
@@ -264,7 +273,12 @@ def retry_all_missing_known_songs(task: Task = None):
 
 @huey.task(context=True, priority=3, retries=2, retry_delay=30)
 def download_extra_album_types_for_artist(artist_id: int, task: Task = None):
-    artist = Artist.objects.get(id=artist_id)
+    # Check if artist exists before proceeding
+    try:
+        artist = Artist.objects.get(id=artist_id)
+    except Artist.DoesNotExist:
+        print(f"Artist with ID {artist_id} does not exist. Skipping task.")
+        return
     missing_albums = Album.objects.filter(artist=artist, downloaded=False, wanted=True, album_group__in=EXTRA_GROUPS_TO_IGNORE)
     print(f"extra album missing albums search for artist {artist.id} found {missing_albums.count()}")
     downloader_config = Config()
@@ -325,11 +339,30 @@ def cleanup_huey_history():
 
 @huey.periodic_task(crontab(minute='*/5'), priority=5)  # Every 5 minutes
 def cleanup_stuck_tasks_periodic():
-    """Periodically clean up stuck tasks"""
+    """Periodically clean up stuck tasks and stale artist references"""
     from library_manager.models import TaskHistory
     stuck_count = TaskHistory.cleanup_stuck_tasks()
     if stuck_count > 0:
         print(f"Cleaned up {stuck_count} stuck task(s)")
+    
+    # Clean up stale artist references in Huey queue
+    from huey.contrib.djhuey import HUEY
+    from library_manager.models import Artist
+    
+    pending_tasks = HUEY.pending()
+    stale_tasks = []
+    
+    for task in pending_tasks:
+        if task.name in ['fetch_all_albums_for_artist', 'download_missing_albums_for_artist', 'download_extra_album_types_for_artist']:
+            if task.args and len(task.args) > 0:
+                artist_id = task.args[0]
+                if not Artist.objects.filter(id=artist_id).exists():
+                    stale_tasks.append(task)
+    
+    if stale_tasks:
+        print(f"Found {len(stale_tasks)} stale tasks for non-existent artists")
+        # Note: We can't easily remove individual tasks from Huey queue
+        # The queue will be cleared when the worker restarts or manually flushed
 
 @huey.task(context=True, priority=0, retries=2, retry_delay=30)
 def validate_undownloaded_songs(task: Task = None, ):
