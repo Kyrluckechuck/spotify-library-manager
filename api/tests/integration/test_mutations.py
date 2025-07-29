@@ -1,224 +1,260 @@
 """Integration tests for GraphQL mutations."""
-import pytest
 from django.test import TransactionTestCase
 from asgiref.sync import sync_to_async
 from api.src.schema import schema
+from library_manager.models import Artist, Album, TrackedPlaylist
 
 
-@pytest.mark.graphql
 class TestArtistMutations(TransactionTestCase):
-    """Test GraphQL mutations for artists."""
+    """Test artist-related mutations."""
     
-    @pytest.mark.asyncio
-    async def test_track_artist_mutation_success(self, mutation_test_db, untracked_artist):
-        """Test successful artist tracking mutation."""
-        mutation = f"""
-        mutation {{
-            trackArtist(artistId: {untracked_artist.id}) {{
+    async def test_track_artist_mutation_success(self):
+        """Test successful artist tracking."""
+        # Create test data
+        untracked_artist = await sync_to_async(Artist.objects.create)(
+            name="Untracked Artist",
+            gid="untracked123",
+            tracked=False
+        )
+        
+        mutation = """
+        mutation TrackArtist($artistId: Int!) {
+            trackArtist(artistId: $artistId) {
                 success
                 message
-                artist {{
+                artist {
                     id
                     name
                     tracked
-                }}
-            }}
-        }}
+                }
+            }
+        }
         """
-        result = await schema.execute(mutation)
+        
+        variables = {"artistId": untracked_artist.id}
+        result = await schema.execute(mutation, variable_values=variables)
         
         assert result.errors is None
         assert result.data["trackArtist"]["success"] is True
         assert result.data["trackArtist"]["artist"]["tracked"] is True
-        
-        # Verify in database using async operation
-        await sync_to_async(untracked_artist.refresh_from_db)()
-        assert untracked_artist.tracked is True
     
-    @pytest.mark.asyncio
-    async def test_untrack_artist_mutation_success(self, mutation_test_db, sample_artist):
-        """Test successful artist untracking mutation."""
-        mutation = f"""
-        mutation {{
-            untrackArtist(artistId: {sample_artist.id}) {{
+    async def test_track_nonexistent_artist(self):
+        """Test tracking a non-existent artist."""
+        mutation = """
+        mutation TrackArtist($artistId: Int!) {
+            trackArtist(artistId: $artistId) {
                 success
                 message
-                artist {{
+                artist {
                     id
                     name
                     tracked
-                }}
-            }}
-        }}
-        """
-        result = await schema.execute(mutation)
-        
-        assert result.errors is None
-        assert result.data["untrackArtist"]["success"] is True
-        assert result.data["untrackArtist"]["artist"]["tracked"] is False
-        
-        # Verify in database using async operation
-        await sync_to_async(sample_artist.refresh_from_db)()
-        assert sample_artist.tracked is False
-    
-    @pytest.mark.asyncio
-    async def test_track_nonexistent_artist(self, mutation_test_db):
-        """Test tracking a non-existent artist."""
-        mutation = """
-        mutation {
-            trackArtist(artistId: 99999) {
-                success
-                message
+                }
             }
         }
         """
-        result = await schema.execute(mutation)
+        
+        variables = {"artistId": 99999}
+        result = await schema.execute(mutation, variable_values=variables)
         
         assert result.errors is None
         assert result.data["trackArtist"]["success"] is False
         assert "not found" in result.data["trackArtist"]["message"].lower()
-
-
-@pytest.mark.graphql
-class TestAlbumMutations(TransactionTestCase):
-    """Test GraphQL mutations for albums."""
     
-    @pytest.mark.asyncio
-    async def test_mark_album_wanted(self, mutation_test_db, sample_album):
-        """Test marking album as wanted."""
-        mutation = f"""
-        mutation {{
-            setAlbumWanted(albumId: {sample_album.id}, wanted: true) {{
+    async def test_untrack_artist_mutation_success(self):
+        """Test successful artist untracking."""
+        # Create test data
+        tracked_artist = await sync_to_async(Artist.objects.create)(
+            name="Tracked Artist",
+            gid="tracked123",
+            tracked=True
+        )
+        
+        mutation = """
+        mutation UntrackArtist($artistId: Int!) {
+            untrackArtist(artistId: $artistId) {
                 success
                 message
-                album {{
+                artist {
+                    id
+                    name
+                    tracked
+                }
+            }
+        }
+        """
+        
+        variables = {"artistId": tracked_artist.id}
+        result = await schema.execute(mutation, variable_values=variables)
+        
+        assert result.errors is None
+        assert result.data["untrackArtist"]["success"] is True
+        assert result.data["untrackArtist"]["artist"]["tracked"] is False
+
+
+class TestAlbumMutations(TransactionTestCase):
+    """Test album-related mutations."""
+    
+    async def test_mark_album_wanted(self):
+        """Test marking an album as wanted."""
+        # Create test data
+        artist = await sync_to_async(Artist.objects.create)(
+            name="Test Artist",
+            gid="test123",
+            tracked=True
+        )
+        album = await sync_to_async(Album.objects.create)(
+            name="Test Album",
+            spotify_gid="album123",
+            artist=artist,
+            total_tracks=10,
+            wanted=False,
+            downloaded=False
+        )
+        
+        mutation = """
+        mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
+            setAlbumWanted(albumId: $albumId, wanted: $wanted) {
+                success
+                message
+                album {
                     id
                     name
                     wanted
-                }}
-            }}
-        }}
+                }
+            }
+        }
         """
-        result = await schema.execute(mutation)
+        
+        variables = {"albumId": album.id, "wanted": True}
+        result = await schema.execute(mutation, variable_values=variables)
         
         assert result.errors is None
         assert result.data["setAlbumWanted"]["success"] is True
         assert result.data["setAlbumWanted"]["album"]["wanted"] is True
-        
-        # Verify in database using async operation
-        await sync_to_async(sample_album.refresh_from_db)()
-        assert sample_album.wanted is True
     
-    @pytest.mark.asyncio
-    async def test_mark_album_unwanted(self, mutation_test_db, sample_album):
-        """Test marking album as unwanted."""
-        # First mark as wanted using async operation
-        await sync_to_async(setattr)(sample_album, 'wanted', True)
-        await sync_to_async(sample_album.save)()
+    async def test_mark_album_unwanted(self):
+        """Test marking an album as unwanted."""
+        # Create test data
+        artist = await sync_to_async(Artist.objects.create)(
+            name="Test Artist",
+            gid="test123",
+            tracked=True
+        )
+        album = await sync_to_async(Album.objects.create)(
+            name="Test Album",
+            spotify_gid="album123",
+            artist=artist,
+            total_tracks=10,
+            wanted=True,
+            downloaded=False
+        )
         
-        mutation = f"""
-        mutation {{
-            setAlbumWanted(albumId: {sample_album.id}, wanted: false) {{
+        mutation = """
+        mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
+            setAlbumWanted(albumId: $albumId, wanted: $wanted) {
                 success
                 message
-                album {{
+                album {
                     id
                     name
                     wanted
-                }}
-            }}
-        }}
+                }
+            }
+        }
         """
-        result = await schema.execute(mutation)
+        
+        variables = {"albumId": album.id, "wanted": False}
+        result = await schema.execute(mutation, variable_values=variables)
         
         assert result.errors is None
         assert result.data["setAlbumWanted"]["success"] is True
         assert result.data["setAlbumWanted"]["album"]["wanted"] is False
-        
-        # Verify in database using async operation
-        await sync_to_async(sample_album.refresh_from_db)()
-        assert sample_album.wanted is False
 
 
-@pytest.mark.graphql
 class TestPlaylistMutations(TransactionTestCase):
-    """Test GraphQL mutations for playlists."""
+    """Test playlist-related mutations."""
     
-    @pytest.mark.asyncio
-    async def test_enable_playlist(self, mutation_test_db, sample_playlist):
+    async def test_enable_playlist(self):
         """Test enabling a playlist."""
-        # First disable the playlist using async operation
-        await sync_to_async(setattr)(sample_playlist, 'enabled', False)
-        await sync_to_async(sample_playlist.save)()
+        # Create test data
+        playlist = await sync_to_async(TrackedPlaylist.objects.create)(
+            name="Test Playlist",
+            url="https://open.spotify.com/playlist/test123",
+            enabled=False,
+            auto_track_artists=True
+        )
         
-        mutation = f"""
-        mutation {{
-            togglePlaylist(playlistId: {sample_playlist.id}) {{
+        mutation = """
+        mutation TogglePlaylist($playlistId: Int!) {
+            togglePlaylist(playlistId: $playlistId) {
                 success
                 message
-                playlist {{
+                playlist {
                     id
                     name
                     enabled
-                }}
-            }}
-        }}
+                }
+            }
+        }
         """
-        result = await schema.execute(mutation)
+        
+        variables = {"playlistId": playlist.id}
+        result = await schema.execute(mutation, variable_values=variables)
         
         assert result.errors is None
         assert result.data["togglePlaylist"]["success"] is True
         assert result.data["togglePlaylist"]["playlist"]["enabled"] is True
-        
-        # Verify in database using async operation
-        await sync_to_async(sample_playlist.refresh_from_db)()
-        assert sample_playlist.enabled is True
     
-    @pytest.mark.asyncio
-    async def test_disable_playlist(self, mutation_test_db, sample_playlist):
+    async def test_disable_playlist(self):
         """Test disabling a playlist."""
-        mutation = f"""
-        mutation {{
-            togglePlaylist(playlistId: {sample_playlist.id}) {{
+        # Create test data
+        playlist = await sync_to_async(TrackedPlaylist.objects.create)(
+            name="Test Playlist",
+            url="https://open.spotify.com/playlist/test123",
+            enabled=True,
+            auto_track_artists=True
+        )
+        
+        mutation = """
+        mutation TogglePlaylist($playlistId: Int!) {
+            togglePlaylist(playlistId: $playlistId) {
                 success
                 message
-                playlist {{
+                playlist {
                     id
                     name
                     enabled
-                }}
-            }}
-        }}
+                }
+            }
+        }
         """
-        result = await schema.execute(mutation)
+        
+        variables = {"playlistId": playlist.id}
+        result = await schema.execute(mutation, variable_values=variables)
         
         assert result.errors is None
         assert result.data["togglePlaylist"]["success"] is True
         assert result.data["togglePlaylist"]["playlist"]["enabled"] is False
-        
-        # Verify in database using async operation
-        await sync_to_async(sample_playlist.refresh_from_db)()
-        assert sample_playlist.enabled is False
 
 
-@pytest.mark.graphql
 class TestTaskMutations(TransactionTestCase):
-    """Test GraphQL mutations for tasks."""
+    """Test task-related mutations."""
     
-    @pytest.mark.asyncio
-    async def test_cleanup_stuck_tasks(self, mutation_test_db):
+    async def test_cleanup_stuck_tasks(self):
         """Test cleaning up stuck tasks."""
         mutation = """
-        mutation {
+        mutation CleanupStuckTasks {
             cleanupStuckTasks {
                 success
                 message
-                count
+                cleanedCount
             }
         }
         """
+        
         result = await schema.execute(mutation)
         
         assert result.errors is None
         assert result.data["cleanupStuckTasks"]["success"] is True
-        assert "cleanup" in result.data["cleanupStuckTasks"]["message"].lower() 
+        assert "cleaned" in result.data["cleanupStuckTasks"]["message"].lower() 

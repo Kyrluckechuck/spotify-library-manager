@@ -79,6 +79,14 @@ class Playlist:
     last_synced: Optional[datetime]
 
 @strawberry.type
+class DownloadProgress:
+    entity_id: str
+    entity_type: str
+    progress: float
+    status: DownloadStatus
+    message: Optional[str]
+
+@strawberry.type
 class DownloadHistory:
     id: str
     entity_id: str

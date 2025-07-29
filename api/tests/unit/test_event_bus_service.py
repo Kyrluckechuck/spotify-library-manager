@@ -6,6 +6,8 @@ from api.src.services.event_bus import EventBus
 
 @pytest.fixture
 def event_bus():
+    """Create a fresh event bus instance for each test."""
+    EventBus.reset()
     return EventBus()
 
 
@@ -16,8 +18,8 @@ class TestEventBus:
         """Test EventBus can be initialized."""
         assert event_bus is not None
         assert hasattr(event_bus, 'subscribe')
-        assert hasattr(event_bus, 'publish')
         assert hasattr(event_bus, 'unsubscribe')
+        assert hasattr(event_bus, 'publish')
     
     def test_subscribe_to_event(self, event_bus):
         """Test subscribing to an event."""
@@ -99,8 +101,8 @@ class TestEventBus:
         
         event_bus.subscribe('test_event', failing_handler)
         
-        # Should not raise an exception, should handle gracefully
-        await event_bus.publish('test_event', {'message': 'test'})
+        # Should not raise an exception
+        await event_bus.publish('test_event', {'test': 'data'})
     
     def test_subscribe_same_handler_twice(self, event_bus):
         """Test subscribing the same handler twice."""
@@ -124,7 +126,9 @@ class TestEventBus:
     
     def test_event_bus_isolation(self):
         """Test that different event bus instances are isolated."""
+        EventBus.reset()
         event_bus1 = EventBus()
+        EventBus.reset()
         event_bus2 = EventBus()
         mock_handler = Mock()
         
