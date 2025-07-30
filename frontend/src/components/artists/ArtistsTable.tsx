@@ -2,7 +2,12 @@ import type { Artist } from '../../types/generated/graphql';
 import { SortableTableHeader } from '../ui/SortableTableHeader';
 import { Link } from '@tanstack/react-router';
 
-export type SortField = 'name' | 'tracked' | 'added_at' | 'last_synced_at' | null;
+export type SortField =
+  | 'name'
+  | 'tracked'
+  | 'added_at'
+  | 'last_synced_at'
+  | null;
 
 interface ArtistsTableProps {
   artists: Artist[];
@@ -21,12 +26,12 @@ export function ArtistsTable({
   onSort,
   onTrackToggle,
   onSyncArtist,
-  loading = false
+  loading = false,
 }: ArtistsTableProps) {
   if (artists.length === 0) {
     return (
-      <div className="bg-white rounded shadow overflow-hidden">
-        <div className="p-6 text-center text-gray-500">
+      <div className='bg-white rounded shadow overflow-hidden'>
+        <div className='p-6 text-center text-gray-500'>
           {loading ? 'Loading artists...' : 'No artists found.'}
         </div>
       </div>
@@ -34,13 +39,13 @@ export function ArtistsTable({
   }
 
   return (
-    <div className="bg-white rounded shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+    <div className='bg-white rounded shadow overflow-hidden'>
+      <div className='overflow-x-auto'>
+        <table className='min-w-full divide-y divide-gray-200'>
+          <thead className='bg-gray-50'>
             <tr>
               <SortableTableHeader
-                field="name"
+                field='name'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -48,7 +53,7 @@ export function ArtistsTable({
                 Artist
               </SortableTableHeader>
               <SortableTableHeader
-                field="tracked"
+                field='tracked'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -56,7 +61,7 @@ export function ArtistsTable({
                 Status
               </SortableTableHeader>
               <SortableTableHeader
-                field="last_synced_at"
+                field='last_synced_at'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -73,33 +78,32 @@ export function ArtistsTable({
               </SortableTableHeader>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {artists.map((artist) => (
-              <tr key={artist.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+          <tbody className='bg-white divide-y divide-gray-200'>
+            {artists.map(artist => (
+              <tr key={artist.id} className='hover:bg-gray-50'>
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <div className='text-sm font-medium text-gray-900'>
                     {artist.name}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    ID: {artist.gid}
-                  </div>
+                  <div className='text-sm text-gray-500'>ID: {artist.gid}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    artist.tracked
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      artist.tracked
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
                     {artist.tracked ? 'Tracked' : 'Not Tracked'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                   {artist.lastSyncedAt
                     ? new Date(artist.lastSyncedAt).toLocaleString()
-                    : 'Never'
-                  }
+                    : 'Never'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
                   <button
                     onClick={() => onTrackToggle(artist)}
                     className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
@@ -112,14 +116,14 @@ export function ArtistsTable({
                   </button>
                   <button
                     onClick={() => onSyncArtist(artist.id)}
-                    className="px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                    className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors'
                   >
                     Sync Now
                   </button>
                   <Link
-                    to="/albums"
+                    to='/albums'
                     search={{ artistId: artist.id }}
-                    className="text-indigo-600 hover:text-indigo-900 underline"
+                    className='text-indigo-600 hover:text-indigo-900 underline'
                   >
                     View Albums
                   </Link>
@@ -131,4 +135,4 @@ export function ArtistsTable({
       </div>
     </div>
   );
-} 
+}

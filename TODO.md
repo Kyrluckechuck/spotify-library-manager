@@ -49,3 +49,5 @@ Eventually:
 - Re-dockerize / confirm it's still working
     - Update local development to use docker container with configs, such as using `/config` for your configs to pass into it
     - Have dev environment sync files to/from docker, with hot reloading working when in dev mode
+- Remove all useless comments again
+- Add newline at end of file rule for repo somehow

@@ -1,7 +1,13 @@
 import type { Song } from '../../types/generated/graphql';
 import { SortableTableHeader } from '../ui/SortableTableHeader';
 
-export type SongSortField = 'name' | 'artist' | 'downloaded' | 'unavailable' | 'created_at' | null;
+export type SongSortField =
+  | 'name'
+  | 'artist'
+  | 'downloaded'
+  | 'unavailable'
+  | 'created_at'
+  | null;
 
 interface SongsTableProps {
   songs: Song[];
@@ -18,12 +24,12 @@ export function SongsTable({
   sortDirection,
   onSort,
   loading = false,
-  showArtist = false
+  showArtist = false,
 }: SongsTableProps) {
   if (songs.length === 0) {
     return (
-      <div className="bg-white rounded shadow overflow-hidden">
-        <div className="p-6 text-center text-gray-500">
+      <div className='bg-white rounded shadow overflow-hidden'>
+        <div className='p-6 text-center text-gray-500'>
           {loading ? 'Loading songs...' : 'No songs found.'}
         </div>
       </div>
@@ -31,13 +37,13 @@ export function SongsTable({
   }
 
   return (
-    <div className="bg-white rounded shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+    <div className='bg-white rounded shadow overflow-hidden'>
+      <div className='overflow-x-auto'>
+        <table className='min-w-full divide-y divide-gray-200'>
+          <thead className='bg-gray-50'>
             <tr>
               <SortableTableHeader
-                field="name"
+                field='name'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -46,7 +52,7 @@ export function SongsTable({
               </SortableTableHeader>
               {showArtist && (
                 <SortableTableHeader
-                  field="artist"
+                  field='artist'
                   currentSortField={sortField}
                   currentSortDirection={sortDirection}
                   onSort={onSort}
@@ -55,7 +61,7 @@ export function SongsTable({
                 </SortableTableHeader>
               )}
               <SortableTableHeader
-                field="downloaded"
+                field='downloaded'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -63,7 +69,7 @@ export function SongsTable({
                 Status
               </SortableTableHeader>
               <SortableTableHeader
-                field="unavailable"
+                field='unavailable'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -71,7 +77,7 @@ export function SongsTable({
                 Availability
               </SortableTableHeader>
               <SortableTableHeader
-                field="created_at"
+                field='created_at'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -88,56 +94,62 @@ export function SongsTable({
               </SortableTableHeader>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {songs.map((song) => (
-              <tr key={song.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+          <tbody className='bg-white divide-y divide-gray-200'>
+            {songs.map(song => (
+              <tr key={song.id} className='hover:bg-gray-50'>
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <div className='text-sm font-medium text-gray-900'>
                     {song.name}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    ID: {song.gid}
-                  </div>
+                  <div className='text-sm text-gray-500'>ID: {song.gid}</div>
                 </td>
                 {showArtist && (
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{song.artist}</div>
+                  <td className='px-6 py-4 whitespace-nowrap'>
+                    <div className='text-sm text-gray-900'>{song.artist}</div>
                   </td>
                 )}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    song.downloaded
-                      ? 'bg-green-100 text-green-800'
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      song.downloaded
+                        ? 'bg-green-100 text-green-800'
+                        : song.unavailable
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {song.downloaded
+                      ? 'Downloaded'
                       : song.unavailable
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {song.downloaded ? 'Downloaded' : song.unavailable ? 'Unavailable' : 'Pending'}
+                        ? 'Unavailable'
+                        : 'Pending'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    song.unavailable
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}>
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      song.unavailable
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}
+                  >
                     {song.unavailable ? 'Unavailable' : 'Available'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                   {new Date(song.createdAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                  <a 
+                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
+                  <a
                     href={song.spotifyUri}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:text-indigo-900 underline"
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-indigo-600 hover:text-indigo-900 underline'
                   >
                     Open Spotify
                   </a>
                   {song.filePath && (
-                    <button className="text-green-600 hover:text-green-900 underline">
+                    <button className='text-green-600 hover:text-green-900 underline'>
                       Play Local
                     </button>
                   )}
@@ -149,4 +161,4 @@ export function SongsTable({
       </div>
     </div>
   );
-} 
+}

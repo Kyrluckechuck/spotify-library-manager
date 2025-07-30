@@ -9,8 +9,22 @@ query GetArtist($id: Int!) {
   }
 }
 
-query GetArtists($tracked: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
-  artists(tracked: $tracked, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
+query GetArtists(
+  $tracked: Boolean
+  $first: Int = 20
+  $after: String
+  $sortBy: String
+  $sortDirection: String
+  $search: String
+) {
+  artists(
+    tracked: $tracked
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -29,8 +43,26 @@ query GetArtists($tracked: Boolean, $first: Int = 20, $after: String, $sortBy: S
   }
 }
 
-query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
-  albums(artistId: $artistId, wanted: $wanted, downloaded: $downloaded, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
+query GetAlbums(
+  $artistId: Int
+  $wanted: Boolean
+  $downloaded: Boolean
+  $first: Int = 20
+  $after: String
+  $sortBy: String
+  $sortDirection: String
+  $search: String
+) {
+  albums(
+    artistId: $artistId
+    wanted: $wanted
+    downloaded: $downloaded
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -53,8 +85,26 @@ query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: 
   }
 }
 
-query GetSongs($artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
-  songs(artistId: $artistId, downloaded: $downloaded, unavailable: $unavailable, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
+query GetSongs(
+  $artistId: Int
+  $downloaded: Boolean
+  $unavailable: Boolean
+  $first: Int = 20
+  $after: String
+  $sortBy: String
+  $sortDirection: String
+  $search: String
+) {
+  songs(
+    artistId: $artistId
+    downloaded: $downloaded
+    unavailable: $unavailable
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -78,8 +128,22 @@ query GetSongs($artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $fir
   }
 }
 
-query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
-  playlists(enabled: $enabled, first: $first, after: $after, sortBy: $sortBy, sortDirection: $sortDirection, search: $search) {
+query GetPlaylists(
+  $enabled: Boolean
+  $first: Int = 20
+  $after: String
+  $sortBy: String
+  $sortDirection: String
+  $search: String
+) {
+  playlists(
+    enabled: $enabled
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -160,4 +224,4 @@ mutation TogglePlaylist($playlistId: Int!) {
       enabled
     }
   }
-} 
+}

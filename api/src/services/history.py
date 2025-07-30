@@ -1,9 +1,10 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from library_manager.models import DownloadHistory as DjangoDownloadHistory
 
+from ..graphql_types.models import DownloadHistory, DownloadStatus
 from .base import BaseService
-from ..types.models import DownloadHistory, DownloadStatus
+
 
 class DownloadHistoryService(BaseService[DownloadHistory]):
     def __init__(self):
@@ -14,14 +15,14 @@ class DownloadHistoryService(BaseService[DownloadHistory]):
         first: int = 20,
         after: Optional[str] = None,
         entity_type: Optional[str] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
     ) -> tuple[List[DownloadHistory], bool, int]:
         queryset = self.model.objects.all()
 
         # Apply filters
         if entity_type:
             queryset = queryset.filter(url__contains=entity_type)
-        
+
         if status:
             if status == "COMPLETED":
                 queryset = queryset.filter(completed_at__isnull=False)
@@ -39,16 +40,22 @@ class DownloadHistoryService(BaseService[DownloadHistory]):
         total_count = await queryset.acount()
 
         # Get one extra item to determine if there are more pages
-        items = await queryset.order_by('-added_at')[:first + 1].all()
-        
+        items = await queryset.order_by("-added_at")[: first + 1].all()
+
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
 
-        return [self._to_graphql_type(item) for item in items], has_next_page, total_count
+        return (
+            [self._to_graphql_type(item) for item in items],
+            has_next_page,
+            total_count,
+        )
 
-    def _to_graphql_type(self, django_history: DjangoDownloadHistory) -> DownloadHistory:
+    def _to_graphql_type(
+        self, django_history: DjangoDownloadHistory
+    ) -> DownloadHistory:
         # Extract entity type and ID from URL
-        url_parts = django_history.url.split(':')
+        url_parts = django_history.url.split(":")
         entity_type = url_parts[1].upper() if len(url_parts) > 1 else "UNKNOWN"
         entity_id = url_parts[2] if len(url_parts) > 2 else django_history.url
 
@@ -67,5 +74,5 @@ class DownloadHistoryService(BaseService[DownloadHistory]):
             status=status,
             started_at=django_history.added_at,
             completed_at=django_history.completed_at,
-            error_message=None  # TODO: Add error message support
-        ) 
+            error_message=None,  # TODO: Add error message support
+        )

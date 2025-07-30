@@ -1,22 +1,23 @@
 """Integration tests for GraphQL mutations."""
+
 from django.test import TransactionTestCase
+
 from asgiref.sync import sync_to_async
+
 from api.src.schema import schema
-from library_manager.models import Artist, Album, TrackedPlaylist
+from library_manager.models import Album, Artist, TrackedPlaylist
 
 
 class TestArtistMutations(TransactionTestCase):
     """Test artist-related mutations."""
-    
+
     async def test_track_artist_mutation_success(self):
         """Test successful artist tracking."""
         # Create test data
         untracked_artist = await sync_to_async(Artist.objects.create)(
-            name="Untracked Artist",
-            gid="untracked123",
-            tracked=False
+            name="Untracked Artist", gid="untracked123", tracked=False
         )
-        
+
         mutation = """
         mutation TrackArtist($artistId: Int!) {
             trackArtist(artistId: $artistId) {
@@ -30,14 +31,14 @@ class TestArtistMutations(TransactionTestCase):
             }
         }
         """
-        
+
         variables = {"artistId": untracked_artist.id}
         result = await schema.execute(mutation, variable_values=variables)
-        
+
         assert result.errors is None
         assert result.data["trackArtist"]["success"] is True
         assert result.data["trackArtist"]["artist"]["tracked"] is True
-    
+
     async def test_track_nonexistent_artist(self):
         """Test tracking a non-existent artist."""
         mutation = """
@@ -53,23 +54,21 @@ class TestArtistMutations(TransactionTestCase):
             }
         }
         """
-        
+
         variables = {"artistId": 99999}
         result = await schema.execute(mutation, variable_values=variables)
-        
+
         assert result.errors is None
         assert result.data["trackArtist"]["success"] is False
         assert "not found" in result.data["trackArtist"]["message"].lower()
-    
+
     async def test_untrack_artist_mutation_success(self):
         """Test successful artist untracking."""
         # Create test data
         tracked_artist = await sync_to_async(Artist.objects.create)(
-            name="Tracked Artist",
-            gid="tracked123",
-            tracked=True
+            name="Tracked Artist", gid="tracked123", tracked=True
         )
-        
+
         mutation = """
         mutation UntrackArtist($artistId: Int!) {
             untrackArtist(artistId: $artistId) {
@@ -83,10 +82,10 @@ class TestArtistMutations(TransactionTestCase):
             }
         }
         """
-        
+
         variables = {"artistId": tracked_artist.id}
         result = await schema.execute(mutation, variable_values=variables)
-        
+
         assert result.errors is None
         assert result.data["untrackArtist"]["success"] is True
         assert result.data["untrackArtist"]["artist"]["tracked"] is False
@@ -94,14 +93,12 @@ class TestArtistMutations(TransactionTestCase):
 
 class TestAlbumMutations(TransactionTestCase):
     """Test album-related mutations."""
-    
+
     async def test_mark_album_wanted(self):
         """Test marking an album as wanted."""
         # Create test data
         artist = await sync_to_async(Artist.objects.create)(
-            name="Test Artist",
-            gid="test123",
-            tracked=True
+            name="Test Artist", gid="test123", tracked=True
         )
         album = await sync_to_async(Album.objects.create)(
             name="Test Album",
@@ -109,9 +106,9 @@ class TestAlbumMutations(TransactionTestCase):
             artist=artist,
             total_tracks=10,
             wanted=False,
-            downloaded=False
+            downloaded=False,
         )
-        
+
         mutation = """
         mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
             setAlbumWanted(albumId: $albumId, wanted: $wanted) {
@@ -125,21 +122,19 @@ class TestAlbumMutations(TransactionTestCase):
             }
         }
         """
-        
+
         variables = {"albumId": album.id, "wanted": True}
         result = await schema.execute(mutation, variable_values=variables)
-        
+
         assert result.errors is None
         assert result.data["setAlbumWanted"]["success"] is True
         assert result.data["setAlbumWanted"]["album"]["wanted"] is True
-    
+
     async def test_mark_album_unwanted(self):
         """Test marking an album as unwanted."""
         # Create test data
         artist = await sync_to_async(Artist.objects.create)(
-            name="Test Artist",
-            gid="test123",
-            tracked=True
+            name="Test Artist", gid="test123", tracked=True
         )
         album = await sync_to_async(Album.objects.create)(
             name="Test Album",
@@ -147,9 +142,9 @@ class TestAlbumMutations(TransactionTestCase):
             artist=artist,
             total_tracks=10,
             wanted=True,
-            downloaded=False
+            downloaded=False,
         )
-        
+
         mutation = """
         mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
             setAlbumWanted(albumId: $albumId, wanted: $wanted) {
@@ -163,10 +158,10 @@ class TestAlbumMutations(TransactionTestCase):
             }
         }
         """
-        
+
         variables = {"albumId": album.id, "wanted": False}
         result = await schema.execute(mutation, variable_values=variables)
-        
+
         assert result.errors is None
         assert result.data["setAlbumWanted"]["success"] is True
         assert result.data["setAlbumWanted"]["album"]["wanted"] is False
@@ -174,7 +169,7 @@ class TestAlbumMutations(TransactionTestCase):
 
 class TestPlaylistMutations(TransactionTestCase):
     """Test playlist-related mutations."""
-    
+
     async def test_enable_playlist(self):
         """Test enabling a playlist."""
         # Create test data
@@ -182,9 +177,9 @@ class TestPlaylistMutations(TransactionTestCase):
             name="Test Playlist",
             url="https://open.spotify.com/playlist/test123",
             enabled=False,
-            auto_track_artists=True
+            auto_track_artists=True,
         )
-        
+
         mutation = """
         mutation TogglePlaylist($playlistId: Int!) {
             togglePlaylist(playlistId: $playlistId) {
@@ -198,14 +193,14 @@ class TestPlaylistMutations(TransactionTestCase):
             }
         }
         """
-        
+
         variables = {"playlistId": playlist.id}
         result = await schema.execute(mutation, variable_values=variables)
-        
+
         assert result.errors is None
         assert result.data["togglePlaylist"]["success"] is True
         assert result.data["togglePlaylist"]["playlist"]["enabled"] is True
-    
+
     async def test_disable_playlist(self):
         """Test disabling a playlist."""
         # Create test data
@@ -213,9 +208,9 @@ class TestPlaylistMutations(TransactionTestCase):
             name="Test Playlist",
             url="https://open.spotify.com/playlist/test123",
             enabled=True,
-            auto_track_artists=True
+            auto_track_artists=True,
         )
-        
+
         mutation = """
         mutation TogglePlaylist($playlistId: Int!) {
             togglePlaylist(playlistId: $playlistId) {
@@ -229,10 +224,10 @@ class TestPlaylistMutations(TransactionTestCase):
             }
         }
         """
-        
+
         variables = {"playlistId": playlist.id}
         result = await schema.execute(mutation, variable_values=variables)
-        
+
         assert result.errors is None
         assert result.data["togglePlaylist"]["success"] is True
         assert result.data["togglePlaylist"]["playlist"]["enabled"] is False
@@ -240,7 +235,7 @@ class TestPlaylistMutations(TransactionTestCase):
 
 class TestTaskMutations(TransactionTestCase):
     """Test task-related mutations."""
-    
+
     async def test_cleanup_stuck_tasks(self):
         """Test cleaning up stuck tasks."""
         mutation = """
@@ -252,9 +247,9 @@ class TestTaskMutations(TransactionTestCase):
             }
         }
         """
-        
+
         result = await schema.execute(mutation)
-        
+
         assert result.errors is None
         assert result.data["cleanupStuckTasks"]["success"] is True
-        assert "cleaned" in result.data["cleanupStuckTasks"]["message"].lower() 
+        assert "cleaned" in result.data["cleanupStuckTasks"]["message"].lower()

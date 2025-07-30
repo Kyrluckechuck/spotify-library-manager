@@ -1,8 +1,17 @@
 from django.contrib import admin
 
+from .models import (
+    Album,
+    Artist,
+    ContributingArtist,
+    DownloadHistory,
+    Song,
+    TaskHistory,
+    TrackedPlaylist,
+)
+
 # Register your models here.
 
-from .models import Artist, ContributingArtist, DownloadHistory, Song, Album, TrackedPlaylist, TaskHistory
 
 admin.site.register(Artist)
 admin.site.register(ContributingArtist)

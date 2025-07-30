@@ -1,11 +1,16 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from django.db.models import Q
 
 from library_manager.models import Artist as DjangoArtist
-from library_manager.tasks import fetch_all_albums_for_artist, download_missing_albums_for_artist
+from library_manager.tasks import (
+    download_missing_albums_for_artist,
+    fetch_all_albums_for_artist,
+)
 
+from ..graphql_types.models import Artist
 from .base import BaseService
-from ..types.models import Artist
+
 
 class ArtistService(BaseService[Artist]):
     def __init__(self):
@@ -23,14 +28,14 @@ class ArtistService(BaseService[Artist]):
         first: int = 20,
         after: Optional[str] = None,
         is_tracked: Optional[bool] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> tuple[List[Artist], bool, int]:
         queryset = self.model.objects.all()
 
         # Apply filters
         if is_tracked is not None:
             queryset = queryset.filter(tracked=is_tracked)
-        
+
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) | Q(gid__icontains=search)
@@ -45,12 +50,16 @@ class ArtistService(BaseService[Artist]):
         total_count = await queryset.acount()
 
         # Get one extra item to determine if there are more pages
-        items = await queryset.order_by('id')[:first + 1].all()
-        
+        items = await queryset.order_by("id")[: first + 1].all()
+
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
 
-        return [self._to_graphql_type(item) for item in items], has_next_page, total_count
+        return (
+            [self._to_graphql_type(item) for item in items],
+            has_next_page,
+            total_count,
+        )
 
     async def track_artist(self, artist_id: str, auto_download: bool = False) -> Artist:
         django_artist = await self.model.objects.aget(gid=artist_id)
@@ -68,16 +77,16 @@ class ArtistService(BaseService[Artist]):
         self,
         artist_id: str,
         is_tracked: Optional[bool] = None,
-        auto_download: Optional[bool] = None
+        auto_download: Optional[bool] = None,
     ) -> Artist:
         django_artist = await self.model.objects.aget(gid=artist_id)
-        
+
         if is_tracked is not None:
             django_artist.tracked = is_tracked
-            
+
         if auto_download and not django_artist.tracked:
             django_artist.tracked = True
-            
+
         await django_artist.asave()
 
         if auto_download:
@@ -98,5 +107,5 @@ class ArtistService(BaseService[Artist]):
             image_url=None,  # TODO: Add image URL support
             is_tracked=django_artist.tracked,
             last_synced=django_artist.last_synced_at,
-            auto_download=False  # TODO: Add auto_download support to model
-        ) 
+            auto_download=False,  # TODO: Add auto_download support to model
+        )

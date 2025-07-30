@@ -76,14 +76,54 @@ test-frontend-ui:
 test-migrations:
 	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py showmigrations
 
-# Linting
+# Linting and Code Quality
 lint: lint-api lint-frontend
+lint-all: lint format-check
+format-check: format-check-api format-check-frontend
+format-check-api: format-check-api-black format-check-api-isort
+format-check-api-black:
+	cd api && python -m black --check --diff .
+format-check-api-isort:
+	cd api && python -m isort --check-only --diff .
+format-check-frontend:
+	cd frontend && yarn format:check
 
-lint-api:
-	cd api && python -m flake8
+lint-api: lint-api-flake8 lint-api-black lint-api-isort lint-api-mypy lint-api-bandit lint-api-pylint
+
+lint-api-flake8:
+	cd api && python -m flake8 --config=../.flake8
+
+lint-api-black:
+	cd api && python -m black --check --diff .
+
+lint-api-isort:
+	cd api && python -m isort --check-only --diff .
+
+lint-api-mypy:
+	cd api && python -m mypy src/ library_manager/ --config-file ../pyproject.toml
+
+lint-api-bandit:
+	cd api && python -m bandit -r src/ library_manager/ -f json -o bandit-report.json || true
+
+lint-api-pylint:
+	cd api && python -m pylint src/ library_manager/ --rcfile ../pyproject.toml
 
 lint-frontend:
 	cd frontend && yarn lint
+
+# Code formatting
+format: format-api format-frontend
+
+format-api: format-api-black format-api-isort
+
+format-api-black:
+	cd api && python -m black .
+
+format-api-isort:
+	cd api && python -m isort .
+
+format-frontend:
+	cd frontend && yarn format
 
 # Building
 build: build-frontend

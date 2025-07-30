@@ -1,16 +1,17 @@
-from typing import Optional
 from functools import cached_property
+from typing import Optional
 
-from .artist import ArtistService
 from .album import AlbumService
-from .playlist import PlaylistService
+from .artist import ArtistService
 from .history import DownloadHistoryService
+from .playlist import PlaylistService
 from .task_history import TaskHistoryService
 
-class ServiceRegistry:
-    _instance: Optional['ServiceRegistry'] = None
 
-    def __new__(cls):
+class ServiceRegistry:
+    _instance: Optional["ServiceRegistry"] = None
+
+    def __new__(cls) -> "ServiceRegistry":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -35,4 +36,5 @@ class ServiceRegistry:
     def task_history(self) -> TaskHistoryService:
         return TaskHistoryService()
 
-services = ServiceRegistry() 
+
+services = ServiceRegistry()

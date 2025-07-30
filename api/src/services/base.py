@@ -1,20 +1,18 @@
-from typing import Optional, TypeVar, Generic, List, Union
+from typing import Any, Generic, List, Optional, TypeVar, Union, Tuple
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class BaseService(Generic[T]):
-    def __init__(self):
-        self.model = None
+    def __init__(self) -> None:
+        self.model: Optional[type] = None
 
     async def get_by_id(self, id: str) -> Optional[T]:
         raise NotImplementedError
 
     async def get_connection(
-        self,
-        first: int = 20,
-        after: Optional[str] = None,
-        **filters
-    ) -> tuple[List[T], bool, int]:
+        self, first: int = 20, after: Optional[str] = None, **filters: Any
+    ) -> Tuple[List[T], bool, int]:
         """
         Returns a tuple of (items, has_next_page, total_count)
         """
@@ -24,7 +22,7 @@ class BaseService(Generic[T]):
         """
         Creates a cursor for pagination based on the item
         """
-        if hasattr(item, 'id'):
+        if hasattr(item, "id"):
             return str(item.id)
         raise NotImplementedError
 
@@ -35,4 +33,4 @@ class BaseService(Generic[T]):
         try:
             return int(cursor)
         except ValueError:
-            return cursor 
+            return cursor

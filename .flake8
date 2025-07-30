@@ -1,0 +1,16 @@
+[flake8]
+max-line-length = 88
+extend-ignore = E203,W503,W504,E501
+exclude = 
+    .git,
+    __pycache__,
+    build,
+    dist,
+    *.egg-info,
+    .venv,
+    venv,
+    node_modules,
+    migrations,
+    frontend,
+per-file-ignores = 
+    __init__.py:F401 

@@ -1,23 +1,21 @@
 import pytest
-from library_manager.models import Artist, Album, Song, TrackedPlaylist
+
+from library_manager.models import Album, Artist, Song, TrackedPlaylist
+
 
 @pytest.fixture
 def sample_artist():
     """Create a sample artist for testing."""
-    return Artist.objects.create(
-        name="Test Artist",
-        gid="test123",
-        tracked=True
-    )
+    return Artist.objects.create(name="Test Artist", gid="test123", tracked=True)
+
 
 @pytest.fixture
 def untracked_artist():
     """Create an untracked artist for testing."""
     return Artist.objects.create(
-        name="Untracked Artist", 
-        gid="untracked123",
-        tracked=False
+        name="Untracked Artist", gid="untracked123", tracked=False
     )
+
 
 @pytest.fixture
 def multiple_artists():
@@ -27,10 +25,11 @@ def multiple_artists():
         artist = Artist.objects.create(
             name=f"Artist {i}",
             gid=f"artist{i}",
-            tracked=i % 2 == 0  # Alternate tracked/untracked
+            tracked=i % 2 == 0,  # Alternate tracked/untracked
         )
         artists.append(artist)
     return artists
+
 
 @pytest.fixture
 def sample_album(sample_artist):
@@ -41,8 +40,9 @@ def sample_album(sample_artist):
         artist=sample_artist,
         total_tracks=10,
         wanted=True,
-        downloaded=False
+        downloaded=False,
     )
+
 
 @pytest.fixture
 def sample_song(sample_artist, sample_album):
@@ -53,8 +53,9 @@ def sample_song(sample_artist, sample_album):
         primary_artist=sample_artist,
         album=sample_album,
         downloaded=False,
-        unavailable=False
+        unavailable=False,
     )
+
 
 @pytest.fixture
 def sample_playlist():
@@ -63,5 +64,5 @@ def sample_playlist():
         name="Test Playlist",
         url="https://open.spotify.com/playlist/test123",
         enabled=True,
-        auto_track_artists=True
-    ) 
+        auto_track_artists=True,
+    )

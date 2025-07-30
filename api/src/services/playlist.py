@@ -1,11 +1,13 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from django.db.models import Q
 
 from library_manager.models import TrackedPlaylist as DjangoPlaylist
 from library_manager.tasks import sync_tracked_playlist, sync_tracked_playlist_artists
 
+from ..graphql_types.models import Playlist
 from .base import BaseService
-from ..types.models import Playlist
+
 
 class PlaylistService(BaseService[Playlist]):
     def __init__(self):
@@ -23,14 +25,14 @@ class PlaylistService(BaseService[Playlist]):
         first: int = 20,
         after: Optional[str] = None,
         is_tracked: Optional[bool] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> tuple[List[Playlist], bool, int]:
         queryset = self.model.objects.all()
 
         # Apply filters
         if is_tracked is not None:
             queryset = queryset.filter(enabled=is_tracked)
-        
+
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) | Q(url__icontains=search)
@@ -45,17 +47,19 @@ class PlaylistService(BaseService[Playlist]):
         total_count = await queryset.acount()
 
         # Get one extra item to determine if there are more pages
-        items = await queryset.order_by('id')[:first + 1].all()
-        
+        items = await queryset.order_by("id")[: first + 1].all()
+
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
 
-        return [self._to_graphql_type(item) for item in items], has_next_page, total_count
+        return (
+            [self._to_graphql_type(item) for item in items],
+            has_next_page,
+            total_count,
+        )
 
     async def track_playlist(
-        self,
-        playlist_id: str,
-        auto_track_artists: bool = False
+        self, playlist_id: str, auto_track_artists: bool = False
     ) -> Playlist:
         django_playlist = await self.model.objects.aget(url__contains=playlist_id)
         django_playlist.enabled = True
@@ -73,16 +77,16 @@ class PlaylistService(BaseService[Playlist]):
         self,
         playlist_id: str,
         is_tracked: Optional[bool] = None,
-        auto_track_artists: Optional[bool] = None
+        auto_track_artists: Optional[bool] = None,
     ) -> Playlist:
         django_playlist = await self.model.objects.aget(url__contains=playlist_id)
-        
+
         if is_tracked is not None:
             django_playlist.enabled = is_tracked
-            
+
         if auto_track_artists is not None:
             django_playlist.auto_track_artists = auto_track_artists
-            
+
         await django_playlist.asave()
 
         if is_tracked:
@@ -99,8 +103,8 @@ class PlaylistService(BaseService[Playlist]):
 
     def _to_graphql_type(self, django_playlist: DjangoPlaylist) -> Playlist:
         # Extract playlist ID from URL
-        playlist_id = django_playlist.url.split('/')[-1]
-        
+        playlist_id = django_playlist.url.split("/")[-1]
+
         return Playlist(
             id=playlist_id,
             name=django_playlist.name,
@@ -110,5 +114,5 @@ class PlaylistService(BaseService[Playlist]):
             track_count=0,  # TODO: Add track_count support
             is_tracked=django_playlist.enabled,
             auto_track_artists=django_playlist.auto_track_artists,
-            last_synced=django_playlist.last_synced_at
-        ) 
+            last_synced=django_playlist.last_synced_at,
+        )

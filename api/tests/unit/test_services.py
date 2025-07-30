@@ -1,58 +1,65 @@
 """Unit tests for service layer."""
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
+
 from datetime import datetime
-from api.src.services.artist import ArtistService
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+
 from api.src.services.album import AlbumService
-from api.src.services.playlist import PlaylistService
+from api.src.services.artist import ArtistService
 from api.src.services.history import DownloadHistoryService
+from api.src.services.playlist import PlaylistService
 
 
 @pytest.mark.django_db
 class TestArtistService:
     """Test cases for ArtistService."""
-    
+
     @pytest.fixture
     def artist_service(self):
         return ArtistService()
-    
+
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, artist_service):
         """Test successful artist retrieval by ID."""
-        with patch('library_manager.models.Artist.objects.aget', new_callable=AsyncMock) as mock_aget:
+        with patch(
+            "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
             mock_artist = Mock()
             mock_artist.gid = "test123"
             mock_artist.name = "Test Artist"
             mock_artist.tracked = True
             mock_artist.last_synced_at = datetime.now()
             mock_aget.return_value = mock_artist
-            
+
             result = await artist_service.get_by_id("test123")
-            
+
             assert result is not None
             assert result.id == "test123"
             assert result.name == "Test Artist"
             assert result.is_tracked is True
-    
+
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, artist_service):
         """Test artist retrieval when not found."""
-        with patch('library_manager.models.Artist.objects.aget', new_callable=AsyncMock) as mock_aget:
+        with patch(
+            "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
             mock_aget.side_effect = artist_service.model.DoesNotExist
-            
+
             result = await artist_service.get_by_id("not_found")
-            
+
             assert result is None
-    
+
     @pytest.mark.asyncio
     async def test_get_connection_with_filters(self, artist_service):
         """Test getting artist connection with filters."""
-        with patch('library_manager.models.Artist.objects.all') as mock_all:
+        with patch("library_manager.models.Artist.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
             mock_queryset.acount = AsyncMock(return_value=5)
             mock_queryset.order_by.return_value = mock_queryset
-            
+
             # Create proper mock artists with attributes
             mock_artists = []
             for i in range(4):  # Return 4 items when first=3 to test has_next logic
@@ -61,19 +68,17 @@ class TestArtistService:
                 mock_artist.name = f"Artist {i}"
                 mock_artist.tracked = True
                 mock_artists.append(mock_artist)
-            
+
             # Mock the slicing behavior
             mock_slice = Mock()
             mock_slice.all = AsyncMock(return_value=mock_artists)
             mock_queryset.__getitem__ = Mock(return_value=mock_slice)
             mock_all.return_value = mock_queryset
-            
+
             items, has_next, total = await artist_service.get_connection(
-                first=3,
-                is_tracked=True,
-                search="Artist"
+                first=3, is_tracked=True, search="Artist"
             )
-            
+
             assert len(items) == 3
             assert total == 5
             assert has_next is True
@@ -82,15 +87,17 @@ class TestArtistService:
 @pytest.mark.django_db
 class TestAlbumService:
     """Test cases for AlbumService."""
-    
+
     @pytest.fixture
     def album_service(self):
         return AlbumService()
-    
+
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, album_service):
         """Test successful album retrieval by ID."""
-        with patch('library_manager.models.Album.objects.aget', new_callable=AsyncMock) as mock_aget:
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
             mock_album = Mock()
             mock_album.spotify_gid = "album123"
             mock_album.name = "Test Album"
@@ -102,9 +109,9 @@ class TestAlbumService:
             mock_album.artist = Mock()
             mock_album.artist.gid = "artist123"
             mock_aget.return_value = mock_album
-            
+
             result = await album_service.get_by_id("album123")
-            
+
             assert result is not None
             assert result.id == "album123"
             assert result.name == "Test Album"
@@ -116,15 +123,18 @@ class TestAlbumService:
 @pytest.mark.django_db
 class TestPlaylistService:
     """Test cases for PlaylistService."""
-    
+
     @pytest.fixture
     def playlist_service(self):
         return PlaylistService()
-    
+
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, playlist_service):
         """Test successful playlist retrieval by ID."""
-        with patch('library_manager.models.TrackedPlaylist.objects.aget', new_callable=AsyncMock) as mock_aget:
+        with patch(
+            "library_manager.models.TrackedPlaylist.objects.aget",
+            new_callable=AsyncMock,
+        ) as mock_aget:
             mock_playlist = Mock()
             mock_playlist.id = 1
             mock_playlist.name = "Test Playlist"
@@ -133,9 +143,9 @@ class TestPlaylistService:
             mock_playlist.auto_track_artists = True
             mock_playlist.last_synced_at = None
             mock_aget.return_value = mock_playlist
-            
+
             result = await playlist_service.get_by_id("test123")
-            
+
             assert result is not None
             assert result.id == "test123"  # Extracted from URL
             assert result.name == "Test Playlist"
@@ -147,20 +157,20 @@ class TestPlaylistService:
 @pytest.mark.django_db
 class TestDownloadHistoryService:
     """Test cases for DownloadHistoryService."""
-    
+
     @pytest.fixture
     def history_service(self):
         return DownloadHistoryService()
-    
+
     @pytest.mark.asyncio
     async def test_get_connection_with_pagination(self, history_service):
         """Test getting download history with pagination."""
-        with patch('library_manager.models.DownloadHistory.objects.all') as mock_all:
+        with patch("library_manager.models.DownloadHistory.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
             mock_queryset.acount = AsyncMock(return_value=20)
             mock_queryset.order_by.return_value = mock_queryset
-            
+
             # Create proper mock histories with attributes
             mock_histories = []
             for i in range(11):  # Return 11 items when first=10 to test has_next logic
@@ -171,18 +181,17 @@ class TestDownloadHistoryService:
                 mock_history.completed_at = datetime.now() if i % 2 == 0 else None
                 mock_history.progress = 100 if i % 2 == 0 else 0
                 mock_histories.append(mock_history)
-            
+
             # Mock the slicing behavior
             mock_slice = Mock()
             mock_slice.all = AsyncMock(return_value=mock_histories)
             mock_queryset.__getitem__ = Mock(return_value=mock_slice)
             mock_all.return_value = mock_queryset
-            
+
             items, has_next, total = await history_service.get_connection(
-                first=10,
-                entity_type="SONG"
+                first=10, entity_type="SONG"
             )
-            
+
             assert len(items) == 10
             assert total == 20
-            assert has_next is True 
+            assert has_next is True

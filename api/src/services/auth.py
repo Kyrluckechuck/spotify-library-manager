@@ -1,6 +1,7 @@
-from typing import Optional
-import strawberry
 from datetime import datetime, timedelta
+from typing import Optional
+
+import strawberry
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -12,23 +13,27 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 @strawberry.type
 class AuthToken:
     access_token: str
     token_type: str = "bearer"
+
 
 @strawberry.input
 class LoginInput:
     username: str
     password: str
 
+
 class User(BaseModel):
     username: str
     hashed_password: str
     disabled: bool = False
 
+
 class AuthService:
-    def __init__(self):
+    def __init__(self) -> None:
         # TODO: Replace with proper user storage
         self.users = {
             "admin": User(
@@ -51,7 +56,9 @@ class AuthService:
             return None
         return user
 
-    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    def create_access_token(
+        self, data: dict, expires_delta: Optional[timedelta] = None
+    ) -> str:
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
@@ -71,4 +78,5 @@ class AuthService:
         except JWTError:
             return None
 
-auth_service = AuthService() 
+
+auth_service = AuthService()

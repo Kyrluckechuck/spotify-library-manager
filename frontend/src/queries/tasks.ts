@@ -1,8 +1,22 @@
 import { gql } from '@apollo/client';
 
 export const GetTaskHistoryDocument = gql`
-  query GetTaskHistory($first: Int = 20, $after: String, $status: String, $type: String, $entityType: String, $search: String) {
-    taskHistory(first: $first, after: $after, status: $status, type: $type, entityType: $entityType, search: $search) {
+  query GetTaskHistory(
+    $first: Int = 20
+    $after: String
+    $status: String
+    $type: String
+    $entityType: String
+    $search: String
+  ) {
+    taskHistory(
+      first: $first
+      after: $after
+      status: $status
+      type: $type
+      entityType: $entityType
+      search: $search
+    ) {
       totalCount
       pageInfo {
         hasNextPage
@@ -70,4 +84,4 @@ export const CleanupStuckTasksDocument = gql`
       cleanedCount
     }
   }
-`; 
+`;

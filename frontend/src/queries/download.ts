@@ -11,8 +11,16 @@ export const DownloadUrlDocument = gql`
 `;
 
 export const CreatePlaylistDocument = gql`
-  mutation CreatePlaylist($url: String!, $name: String!, $autoTrackArtists: Boolean!) {
-    createPlaylist(url: $url, name: $name, autoTrackArtists: $autoTrackArtists) {
+  mutation CreatePlaylist(
+    $url: String!
+    $name: String!
+    $autoTrackArtists: Boolean!
+  ) {
+    createPlaylist(
+      url: $url
+      name: $name
+      autoTrackArtists: $autoTrackArtists
+    ) {
       success
       message
       playlist {
@@ -28,8 +36,16 @@ export const CreatePlaylistDocument = gql`
 `;
 
 export const UpdatePlaylistDocument = gql`
-  mutation UpdatePlaylist($playlistId: Int!, $name: String!, $autoTrackArtists: Boolean!) {
-    updatePlaylist(playlistId: $playlistId, name: $name, autoTrackArtists: $autoTrackArtists) {
+  mutation UpdatePlaylist(
+    $playlistId: Int!
+    $name: String!
+    $autoTrackArtists: Boolean!
+  ) {
+    updatePlaylist(
+      playlistId: $playlistId
+      name: $name
+      autoTrackArtists: $autoTrackArtists
+    ) {
       success
       message
       playlist {
@@ -42,4 +58,4 @@ export const UpdatePlaylistDocument = gql`
       }
     }
   }
-`; 
+`;

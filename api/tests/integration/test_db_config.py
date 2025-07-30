@@ -1,9 +1,12 @@
 """Database configuration for integration tests with proper SQLite isolation."""
-import pytest
-from django.test import override_settings
-from django.db import connection, connections
-from asgiref.sync import sync_to_async
+
 from contextlib import asynccontextmanager
+
+from django.db import connection, connections
+from django.test import override_settings
+
+import pytest
+from asgiref.sync import sync_to_async
 
 
 @pytest.fixture(scope="session")
@@ -11,14 +14,14 @@ def django_db_setup_override():
     """Override database settings for better test isolation."""
     with override_settings(
         DATABASES={
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': ':memory:',
-                'OPTIONS': {
-                    'timeout': 60,  # Increased timeout
-                    'check_same_thread': False,
-                    'isolation_level': None,  # Autocommit mode
-                }
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": ":memory:",
+                "OPTIONS": {
+                    "timeout": 60,  # Increased timeout
+                    "check_same_thread": False,
+                    "isolation_level": None,  # Autocommit mode
+                },
             }
         }
     ):
@@ -32,12 +35,12 @@ def integration_db(django_db_setup_override, django_db_blocker):
         # Ensure clean state
         connection.close()
         connection.connect()
-        
+
         # Start transaction
         connection.begin()
-        
+
         yield
-        
+
         # Rollback to clean state
         connection.rollback()
         connection.close()
@@ -50,15 +53,15 @@ def isolated_integration_db(django_db_setup_override, django_db_blocker):
         # Close all connections
         for conn in connections.all():
             conn.close()
-        
+
         # Create fresh connection
         connection.connect()
-        
+
         # Start transaction
         connection.begin()
-        
+
         yield
-        
+
         # Clean up
         connection.rollback()
         connection.close()
@@ -71,12 +74,12 @@ async def async_integration_db(django_db_setup_override, django_db_blocker):
         # Ensure clean connection
         await sync_to_async(connection.close)()
         await sync_to_async(connection.connect)()
-        
+
         # Start transaction
         await sync_to_async(connection.begin)()
-        
+
         yield
-        
+
         # Clean up
         await sync_to_async(connection.rollback)()
         await sync_to_async(connection.close)()
@@ -87,7 +90,7 @@ async def async_db_transaction():
     """Context manager for async database transactions."""
     # Start transaction
     await sync_to_async(connection.begin)()
-    
+
     try:
         yield
     finally:
@@ -102,12 +105,12 @@ def graphql_test_db(django_db_setup_override, django_db_blocker):
         # Use in-memory database with proper settings
         connection.close()
         connection.connect()
-        
+
         # Start transaction
         connection.begin()
-        
+
         yield
-        
+
         # Clean up
         connection.rollback()
         connection.close()
@@ -120,12 +123,12 @@ def mutation_test_db(django_db_setup_override, django_db_blocker):
         # Ensure clean state
         connection.close()
         connection.connect()
-        
+
         # Start transaction
         connection.begin()
-        
+
         yield
-        
+
         # Clean up
         connection.rollback()
         connection.close()
@@ -155,4 +158,4 @@ def cleanup_database():
 async def async_cleanup_database():
     """Clean up the database after a test (async version)."""
     await sync_to_async(connection.rollback)()
-    await sync_to_async(connection.close)() 
+    await sync_to_async(connection.close)()

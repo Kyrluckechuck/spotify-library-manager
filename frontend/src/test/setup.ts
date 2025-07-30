@@ -1,6 +1,6 @@
-import '@testing-library/jest-dom'
-import { vi } from 'vitest'
-import React from 'react'
+import '@testing-library/jest-dom';
+import { vi } from 'vitest';
+import React from 'react';
 
 // Mock Apollo Client
 vi.mock('@apollo/client', () => ({
@@ -9,15 +9,21 @@ vi.mock('@apollo/client', () => ({
   useApolloClient: vi.fn(),
   gql: vi.fn(),
   ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
-}))
+}));
 
 // Mock TanStack Router
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(),
-  Link: ({ children, ...props }: any) => React.createElement('a', { ...props, role: 'link' }, children),
+  Link: ({
+    children,
+    ...props
+  }: {
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => React.createElement('a', { ...props, role: 'link' }, children),
   useNavigate: vi.fn(() => vi.fn()),
   useParams: vi.fn(() => ({})),
-}))
+}));
 
 // Mock GraphQL types
 vi.mock('./types/generated/graphql', () => ({
@@ -29,16 +35,16 @@ vi.mock('./types/generated/graphql', () => ({
   GetActiveTasksDocument: 'GetActiveTasksDocument',
   TrackArtistDocument: 'TrackArtistDocument',
   UntrackArtistDocument: 'UntrackArtistDocument',
-}))
+}));
 
 // Global test utilities
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}))
+}));
 
-global.matchMedia = vi.fn().mockImplementation((query) => ({
+global.matchMedia = vi.fn().mockImplementation(query => ({
   matches: false,
   media: query,
   onchange: null,
@@ -47,4 +53,4 @@ global.matchMedia = vi.fn().mockImplementation((query) => ({
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
   dispatchEvent: vi.fn(),
-})) 
+}));

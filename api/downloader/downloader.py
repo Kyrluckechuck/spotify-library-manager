@@ -1,16 +1,21 @@
 import re
-import os
-
-from library_manager.models import Album, Artist, ContributingArtist, DownloadHistory, Song, TrackedPlaylist
-from . import utils
+from typing import Any, Dict, List
 
 from spotdl.utils.spotify import SpotifyClient
+
+from library_manager.models import (
+    Album,
+    Artist,
+)
+
+from . import utils
+
 
 class Downloader:
     def __init__(self, spotipy_client: SpotifyClient):
         self.spotipy_client = spotipy_client
 
-    def get_artist_albums(self, artist_gid: str) -> list[Album]:
+    def get_artist_albums(self, artist_gid: str) -> List[Album]:
         """Get all albums (including EPs and Singles) for this artist
 
         Args:
@@ -20,53 +25,53 @@ class Downloader:
             list[str]: an array of urls to each album for the artist
         """
         artist = Artist.objects.get(gid=artist_gid)
-        albums_to_create_or_update: list[dict] = []
+        albums_to_create_or_update: List[Dict] = []
         artist_uri = utils.gid_to_uri(artist_gid)
 
         album_iterator = self.spotipy_client.artist_albums(artist_uri, limit=50)
 
         while album_iterator is not None:
-            for album in album_iterator['items']:
+            for album in album_iterator["items"]:
                 new_or_updated_album_data: dict = {
-                    'spotify_gid': album['id'],
-                    'artist': artist,
-                    'spotify_uri': album['uri'],
-                    'total_tracks': album['total_tracks'],
-                    'name': album['name'],
-                    'album_type': album['album_type'],
-                    'album_group': album['album_group']
+                    "spotify_gid": album["id"],
+                    "artist": artist,
+                    "spotify_uri": album["uri"],
+                    "total_tracks": album["total_tracks"],
+                    "name": album["name"],
+                    "album_type": album["album_type"],
+                    "album_group": album["album_group"],
                 }
 
                 albums_to_create_or_update.append(new_or_updated_album_data)
-            
+
             album_iterator = self.spotipy_client.next(album_iterator)
 
         if len(albums_to_create_or_update) == 0:
             return []
 
-        albums: list[Artist] = Album.objects.bulk_create(
+        albums: List[Album] = Album.objects.bulk_create(
             [Album(**album) for album in albums_to_create_or_update],
             update_conflicts=True,
             unique_fields=["spotify_gid"],
             update_fields=albums_to_create_or_update[0].keys(),
         )
         return albums
-    
-    def get_track(self, track_id: str) -> dict:
+
+    def get_track(self, track_id: str) -> Any:
         return self.spotipy_client.track(track_id)
 
     def create_album(self, album_id: str, artist: Artist) -> Album:
         album_details = self.get_album(album_id)
         album = Album.objects.create(
-            spotify_gid=album_details['id'],
+            spotify_gid=album_details["id"],
             artist=artist,
-            spotify_uri=album_details['uri'],
-            total_tracks=album_details['total_tracks'],
-            name=album_details['name'],
+            spotify_uri=album_details["uri"],
+            total_tracks=album_details["total_tracks"],
+            name=album_details["name"],
         )
         return album
 
-    def get_album(self, album_id: str) -> dict:
+    def get_album(self, album_id: str) -> Any:
         album = self.spotipy_client.album(album_id)
         album_track_iterator = self.spotipy_client.next(album["tracks"])
 
@@ -74,8 +79,8 @@ class Downloader:
             album["tracks"]["items"].extend(album_track_iterator["items"])
             album_track_iterator = self.spotipy_client.next(album_track_iterator)
         return album
-    
-    def get_playlist(self, playlist_id: str) -> dict:
+
+    def get_playlist(self, playlist_id: str) -> Any:
         playlist = self.spotipy_client.playlist(playlist_id)
         playlist_iterator = self.spotipy_client.next(playlist["tracks"])
 
@@ -83,9 +88,12 @@ class Downloader:
             playlist["tracks"]["items"].extend(playlist_iterator["items"])
             playlist_iterator = self.spotipy_client.next(playlist_iterator)
         return playlist
-    
-    def get_download_queue(self, url: str) -> list[dict]:
-        uri = re.search(r"(\w{22})", url).group(1)
+
+    def get_download_queue(self, url: str) -> List[Dict[str, Any]]:
+        match = re.search(r"(\w{22})", url)
+        if match is None:
+            raise ValueError("Invalid Spotify URL format")
+        uri = match.group(1)
         download_queue = []
         if "album" in url:
             download_queue.extend(self.get_album(uri)["tracks"]["items"])
@@ -94,16 +102,14 @@ class Downloader:
         elif "playlist" in url:
             raw_playlist = self.get_playlist(uri)["tracks"]["items"]
             for i in raw_playlist:
-                i['track']['added_at'] = i['added_at']
-            download_queue.extend(
-                [i["track"] for i in raw_playlist]
-            )
+                i["track"]["added_at"] = i["added_at"]
+            download_queue.extend([i["track"] for i in raw_playlist])
         else:
             raise Exception("Not a valid Spotify URL")
         return download_queue
-    
-    def get_song_core_info(self, metadata: dict) -> str:
+
+    def get_song_core_info(self, metadata: Dict[str, Any]) -> Dict[str, str]:
         return {
-            'song_gid': utils.uri_to_gid(metadata['id']),
-            'song_name': metadata['name'],
+            "song_gid": utils.uri_to_gid(metadata["id"]),
+            "song_name": metadata["name"],
         }

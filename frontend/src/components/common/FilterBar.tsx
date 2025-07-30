@@ -23,33 +23,33 @@ export function FilterBar({
   currentCount,
   children,
   searchPlaceholder = 'Search...',
-  className = ''
+  className = '',
 }: FilterBarProps) {
   return (
     <div className={`flex items-center justify-between ${className}`}>
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">
+      <div className='flex items-center gap-3'>
+        <h1 className='text-2xl font-semibold'>
           {totalCount > 0 ? `${currentCount} of ${totalCount}` : '0'}
         </h1>
         {children}
       </div>
-      <div className="flex items-center gap-4">
+      <div className='flex items-center gap-4'>
         <SearchInput
           placeholder={searchPlaceholder}
           onSearch={onSearchChange}
           initialValue={searchQuery}
-          className="w-64"
+          className='w-64'
         />
-        <PageSizeSelector 
+        <PageSizeSelector
           pageSize={pageSize}
           onPageSizeChange={onPageSizeChange}
         />
         {totalCount > currentCount && (
-          <span className="text-sm text-gray-500">
+          <span className='text-sm text-gray-500'>
             Showing first {currentCount} items
           </span>
         )}
       </div>
     </div>
   );
-} 
+}

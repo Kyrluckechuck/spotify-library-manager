@@ -5,10 +5,9 @@ interface PageContainerProps {
   className?: string;
 }
 
-export function PageContainer({ children, className = '' }: PageContainerProps) {
-  return (
-    <div className={`space-y-8 ${className}`}>
-      {children}
-    </div>
-  );
-} 
+export function PageContainer({
+  children,
+  className = '',
+}: PageContainerProps) {
+  return <div className={`space-y-8 ${className}`}>{children}</div>;
+}

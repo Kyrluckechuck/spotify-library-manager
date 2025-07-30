@@ -204,7 +204,7 @@ export interface TableColumn<T> {
   label: string;
   sortable?: boolean;
   width?: string;
-  render?: (value: any, item: T) => ReactNode;
+  render?: (value: unknown, item: T) => ReactNode;
 }
 
 export interface PaginationProps {
@@ -239,13 +239,13 @@ export interface UseMutationResult<T, V> {
 }
 
 // Event handler types
-export type ClickHandler<T = any> = (item: T) => void;
-export type ChangeHandler<T = any> = (value: T) => void;
-export type SubmitHandler<T = any> = (data: T) => void;
+export type ClickHandler<T = unknown> = (item: T) => void;
+export type ChangeHandler<T = unknown> = (value: T) => void;
+export type SubmitHandler<T = unknown> = (data: T) => void;
 
 // Utility types
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type MakeRequired<T, K extends keyof T> = T & Required<Pick<T, K>>;
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-}; 
+};

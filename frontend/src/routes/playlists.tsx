@@ -1,6 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
-import { GetPlaylistsDocument, TogglePlaylistDocument, SyncPlaylistDocument, type GetPlaylistsQuery } from '../types/generated/graphql';
+import {
+  GetPlaylistsDocument,
+  TogglePlaylistDocument,
+  SyncPlaylistDocument,
+  type GetPlaylistsQuery,
+} from '../types/generated/graphql';
 import type { TrackedPlaylist } from '../types/generated/graphql';
 import { useState, useMemo, useCallback } from 'react';
 
@@ -23,147 +28,169 @@ function Playlists() {
   const [sortField, setSortField] = useState<PlaylistSortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Modal states
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
-  const [editingPlaylist, setEditingPlaylist] = useState<TrackedPlaylist | null>(null);
-
+  const [editingPlaylist, setEditingPlaylist] =
+    useState<TrackedPlaylist | null>(null);
 
   const client = useApolloClient();
-  
-  // Memoize query variables to prevent unnecessary re-renders
-  const queryVariables = useMemo(() => ({
-    enabled: filter === 'all' ? undefined : filter === 'enabled',
-    first: pageSize,
-    sortBy: sortField,
-    sortDirection: sortDirection,
-    search: searchQuery || undefined
-  }), [filter, pageSize, sortField, sortDirection, searchQuery]);
 
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(GetPlaylistsDocument, {
-    variables: queryVariables,
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-first',
-    notifyOnNetworkStatusChange: true,
-    pollInterval: 0, // No polling needed since we're not tracking frontend tasks
-    errorPolicy: 'all',
-    // Keep previous data while loading new data
-    returnPartialData: true,
-    onCompleted: (data) => {
-      // Pre-fetch other filter combinations to eliminate future jitter
-      if (data && networkStatus !== 3) { // Not refetching
-        const baseVariables = {
-          first: pageSize,
-          sortBy: sortField,
-          sortDirection: sortDirection,
-          search: searchQuery || undefined
-        };
-        
-        // Pre-fetch enabled and disabled filters
-        ['enabled', 'disabled'].forEach(enabledFilter => {
-          const variables = {
-            ...baseVariables,
-            enabled: enabledFilter === 'enabled' ? true : false,
+  // Memoize query variables to prevent unnecessary re-renders
+  const queryVariables = useMemo(
+    () => ({
+      enabled: filter === 'all' ? undefined : filter === 'enabled',
+      first: pageSize,
+      sortBy: sortField,
+      sortDirection: sortDirection,
+      search: searchQuery || undefined,
+    }),
+    [filter, pageSize, sortField, sortDirection, searchQuery]
+  );
+
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(
+    GetPlaylistsDocument,
+    {
+      variables: queryVariables,
+      fetchPolicy: 'cache-and-network',
+      nextFetchPolicy: 'cache-first',
+      notifyOnNetworkStatusChange: true,
+      pollInterval: 0, // No polling needed since we're not tracking frontend tasks
+      errorPolicy: 'all',
+      // Keep previous data while loading new data
+      returnPartialData: true,
+      onCompleted: data => {
+        // Pre-fetch other filter combinations to eliminate future jitter
+        if (data && networkStatus !== 3) {
+          // Not refetching
+          const baseVariables = {
+            first: pageSize,
+            sortBy: sortField,
+            sortDirection: sortDirection,
+            search: searchQuery || undefined,
           };
-          
-          client.query({
-            query: GetPlaylistsDocument,
-            variables,
-            fetchPolicy: 'cache-first',
-          }).catch(() => {
-            // Silently handle errors for pre-fetching
+
+          // Pre-fetch enabled and disabled filters
+          ['enabled', 'disabled'].forEach(enabledFilter => {
+            const variables = {
+              ...baseVariables,
+              enabled: enabledFilter === 'enabled' ? true : false,
+            };
+
+            client
+              .query({
+                query: GetPlaylistsDocument,
+                variables,
+                fetchPolicy: 'cache-first',
+              })
+              .catch(() => {
+                // Silently handle errors for pre-fetching
+              });
           });
-        });
-      }
-    },
-  });
+        }
+      },
+    }
+  );
 
   const [togglePlaylist] = useMutation(TogglePlaylistDocument);
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
 
-  const handleEnabledFilterChange = (newFilter: 'all' | 'enabled' | 'disabled') => {
+  const handleEnabledFilterChange = (
+    newFilter: 'all' | 'enabled' | 'disabled'
+  ) => {
     setFilter(newFilter);
-    
+
     // Pre-fetch data for the new filter to eliminate jitter
     const newVariables = {
       ...queryVariables,
       enabled: newFilter === 'all' ? undefined : newFilter === 'enabled',
     };
-    
+
     // Pre-fetch without blocking the UI
-    client.query({
-      query: GetPlaylistsDocument,
-      variables: newVariables,
-      fetchPolicy: 'cache-first',
-    }).catch(() => {
-      // Silently handle errors for pre-fetching
-    });
+    client
+      .query({
+        query: GetPlaylistsDocument,
+        variables: newVariables,
+        fetchPolicy: 'cache-first',
+      })
+      .catch(() => {
+        // Silently handle errors for pre-fetching
+      });
   };
 
   const handleSort = (field: PlaylistSortField) => {
     let newDirection: SortDirection = 'asc';
-    
+
     if (sortField === field && sortDirection === 'asc') {
       newDirection = 'desc';
     }
-    
+
     setSortField(field);
     setSortDirection(newDirection);
-    
+
     // Pre-fetch data for the new sort to eliminate jitter
     const newVariables = {
       ...queryVariables,
       sortBy: field,
       sortDirection: newDirection,
     };
-    
-    client.query({
-      query: GetPlaylistsDocument,
-      variables: newVariables,
-      fetchPolicy: 'cache-first',
-    }).catch(() => {
-      // Silently handle errors for pre-fetching
-    });
+
+    client
+      .query({
+        query: GetPlaylistsDocument,
+        variables: newVariables,
+        fetchPolicy: 'cache-first',
+      })
+      .catch(() => {
+        // Silently handle errors for pre-fetching
+      });
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    
+
     // Pre-fetch data for the new page size to eliminate jitter
     const newVariables = {
       ...queryVariables,
       first: newPageSize,
     };
-    
-    client.query({
-      query: GetPlaylistsDocument,
-      variables: newVariables,
-      fetchPolicy: 'cache-first',
-    }).catch(() => {
-      // Silently handle errors for pre-fetching
-    });
+
+    client
+      .query({
+        query: GetPlaylistsDocument,
+        variables: newVariables,
+        fetchPolicy: 'cache-first',
+      })
+      .catch(() => {
+        // Silently handle errors for pre-fetching
+      });
   };
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
   }, []);
 
-  const handleFilterHover = useCallback((hoverFilter: 'all' | 'enabled' | 'disabled') => {
-    // Pre-fetch data on hover to eliminate jitter
-    const newVariables = {
-      ...queryVariables,
-      enabled: hoverFilter === 'all' ? undefined : hoverFilter === 'enabled',
-    };
-    
-    client.query({
-      query: GetPlaylistsDocument,
-      variables: newVariables,
-      fetchPolicy: 'cache-first',
-    }).catch(() => {
-      // Silently handle errors for pre-fetching
-    });
-  }, [queryVariables, client]);
+  const handleFilterHover = useCallback(
+    (hoverFilter: 'all' | 'enabled' | 'disabled') => {
+      // Pre-fetch data on hover to eliminate jitter
+      const newVariables = {
+        ...queryVariables,
+        enabled: hoverFilter === 'all' ? undefined : hoverFilter === 'enabled',
+      };
+
+      client
+        .query({
+          query: GetPlaylistsDocument,
+          variables: newVariables,
+          fetchPolicy: 'cache-first',
+        })
+        .catch(() => {
+          // Silently handle errors for pre-fetching
+        });
+    },
+    [queryVariables, client]
+  );
 
   const handleTogglePlaylist = async (playlist: TrackedPlaylist) => {
     try {
@@ -202,7 +229,10 @@ function Playlists() {
         variables: {
           after: data.playlists.pageInfo.endCursor,
         },
-        updateQuery: (prevResult: GetPlaylistsQuery, { fetchMoreResult }: { fetchMoreResult?: GetPlaylistsQuery }) => {
+        updateQuery: (
+          prevResult: GetPlaylistsQuery,
+          { fetchMoreResult }: { fetchMoreResult?: GetPlaylistsQuery }
+        ) => {
           if (!fetchMoreResult) return prevResult;
 
           return {
@@ -227,8 +257,8 @@ function Playlists() {
   if (isInitialLoading && !data) {
     return (
       <section>
-        <h1 className="text-2xl font-semibold mb-4">Playlists</h1>
-        <div className="bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400">
+        <h1 className='text-2xl font-semibold mb-4'>Playlists</h1>
+        <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400'>
           Loading playlists...
         </div>
       </section>
@@ -238,8 +268,8 @@ function Playlists() {
   if (error) {
     return (
       <section>
-        <h1 className="text-2xl font-semibold mb-4">Playlists</h1>
-        <div className="bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-red-500">
+        <h1 className='text-2xl font-semibold mb-4'>Playlists</h1>
+        <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-red-500'>
           Error loading playlists: {error.message}
         </div>
       </section>
@@ -252,55 +282,55 @@ function Playlists() {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">
+      <div className='flex items-center justify-between mb-4'>
+        <div className='flex items-center gap-3'>
+          <h1 className='text-2xl font-semibold'>
             Playlists ({playlists.length} of {totalCount})
           </h1>
           {isRefetching && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className='flex items-center gap-2 text-sm text-gray-500'>
+              <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
               <span>Updating...</span>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className='flex items-center gap-4'>
           <button
             onClick={() => setShowDownloadModal(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className='px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
           >
             Download URL
           </button>
           <button
             onClick={handleCreatePlaylist}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
           >
             Create Playlist
           </button>
           <SearchInput
-            placeholder="Search playlists..."
+            placeholder='Search playlists...'
             onSearch={handleSearch}
-            className="w-64"
+            className='w-64'
           />
-          <PageSizeSelector 
+          <PageSizeSelector
             pageSize={pageSize}
             onPageSizeChange={handlePageSizeChange}
           />
           {totalCount > playlists.length && (
-            <span className="text-sm text-gray-500">
+            <span className='text-sm text-gray-500'>
               Showing first {playlists.length} playlists
             </span>
           )}
         </div>
       </div>
 
-      <PlaylistFilters 
+      <PlaylistFilters
         currentEnabledFilter={filter}
         onEnabledFilterChange={handleEnabledFilterChange}
         onFilterHover={handleFilterHover}
       />
 
-      <div className="relative">
+      <div className='relative'>
         <PlaylistsTable
           playlists={playlists}
           sortField={sortField}
@@ -312,9 +342,9 @@ function Playlists() {
           loading={loading}
         />
         {isRefetching && (
-          <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center pointer-events-none">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+          <div className='absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center pointer-events-none'>
+            <div className='flex items-center gap-2 text-sm text-gray-600'>
+              <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
               <span>Updating...</span>
             </div>
           </div>
@@ -333,7 +363,7 @@ function Playlists() {
         isOpen={showDownloadModal}
         onClose={() => setShowDownloadModal(false)}
       />
-      
+
       <PlaylistModal
         isOpen={showPlaylistModal}
         onClose={handleClosePlaylistModal}
@@ -346,4 +376,4 @@ function Playlists() {
 
 export const Route = createFileRoute('/playlists')({
   component: Playlists,
-}); 
+});

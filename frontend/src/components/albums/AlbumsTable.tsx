@@ -2,7 +2,16 @@ import type { Album } from '../../types/generated/graphql';
 import { SortableTableHeader } from '../ui/SortableTableHeader';
 import { Link } from '@tanstack/react-router';
 
-export type AlbumSortField = 'name' | 'artist' | 'downloaded' | 'wanted' | 'total_tracks' | 'created_at' | 'album_type' | 'album_group' | null;
+export type AlbumSortField =
+  | 'name'
+  | 'artist'
+  | 'downloaded'
+  | 'wanted'
+  | 'total_tracks'
+  | 'created_at'
+  | 'album_type'
+  | 'album_group'
+  | null;
 
 interface AlbumsTableProps {
   albums: Album[];
@@ -16,7 +25,7 @@ interface AlbumsTableProps {
 // Helper function to format album type/group values
 function formatAlbumValue(value: string | null | undefined): string {
   if (!value) return 'Album';
-  
+
   return value
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -29,12 +38,12 @@ export function AlbumsTable({
   sortDirection,
   onSort,
   onToggleWanted,
-  loading = false
+  loading = false,
 }: AlbumsTableProps) {
   if (albums.length === 0) {
     return (
-      <div className="bg-white rounded shadow overflow-hidden">
-        <div className="p-6 text-center text-gray-500">
+      <div className='bg-white rounded shadow overflow-hidden'>
+        <div className='p-6 text-center text-gray-500'>
           {loading ? 'Loading albums...' : 'No albums found.'}
         </div>
       </div>
@@ -42,13 +51,13 @@ export function AlbumsTable({
   }
 
   return (
-    <div className="bg-white rounded shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+    <div className='bg-white rounded shadow overflow-hidden'>
+      <div className='overflow-x-auto'>
+        <table className='min-w-full divide-y divide-gray-200'>
+          <thead className='bg-gray-50'>
             <tr>
               <SortableTableHeader
-                field="name"
+                field='name'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -56,7 +65,7 @@ export function AlbumsTable({
                 Album
               </SortableTableHeader>
               <SortableTableHeader
-                field="artist"
+                field='artist'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -64,7 +73,7 @@ export function AlbumsTable({
                 Artist
               </SortableTableHeader>
               <SortableTableHeader
-                field="album_type"
+                field='album_type'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -72,7 +81,7 @@ export function AlbumsTable({
                 Type
               </SortableTableHeader>
               <SortableTableHeader
-                field="album_group"
+                field='album_group'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -80,7 +89,7 @@ export function AlbumsTable({
                 Group
               </SortableTableHeader>
               <SortableTableHeader
-                field="total_tracks"
+                field='total_tracks'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -88,7 +97,7 @@ export function AlbumsTable({
                 Tracks
               </SortableTableHeader>
               <SortableTableHeader
-                field="downloaded"
+                field='downloaded'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -96,7 +105,7 @@ export function AlbumsTable({
                 Downloaded
               </SortableTableHeader>
               <SortableTableHeader
-                field="wanted"
+                field='wanted'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -104,7 +113,7 @@ export function AlbumsTable({
                 Wanted
               </SortableTableHeader>
               <SortableTableHeader
-                field="created_at"
+                field='created_at'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -121,52 +130,56 @@ export function AlbumsTable({
               </SortableTableHeader>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {albums.map((album) => (
-              <tr key={album.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+          <tbody className='bg-white divide-y divide-gray-200'>
+            {albums.map(album => (
+              <tr key={album.id} className='hover:bg-gray-50'>
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <div className='text-sm font-medium text-gray-900'>
                     {album.name}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <div className='text-sm text-gray-900'>
                     {album.artist && album.artistId ? (
                       <Link
-                        to="/albums"
+                        to='/albums'
                         search={{ artistId: album.artistId }}
-                        className="text-indigo-600 hover:text-indigo-900 hover:underline font-medium"
+                        className='text-indigo-600 hover:text-indigo-900 hover:underline font-medium'
                       >
                         {album.artist}
                       </Link>
                     ) : (
-                      <span className="text-gray-500">{album.artist || 'Unknown Artist'}</span>
+                      <span className='text-gray-500'>
+                        {album.artist || 'Unknown Artist'}
+                      </span>
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <div className='text-sm text-gray-500'>
                     {formatAlbumValue(album.albumType)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <div className='text-sm text-gray-500'>
                     {formatAlbumValue(album.albumGroup)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                   {album.totalTracks}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    album.downloaded
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
+                <td className='px-6 py-4 whitespace-nowrap'>
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      album.downloaded
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
                     {album.downloaded ? 'Yes' : 'No'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className='px-6 py-4 whitespace-nowrap'>
                   <button
                     onClick={() => onToggleWanted(album.id, !album.wanted)}
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
@@ -178,31 +191,31 @@ export function AlbumsTable({
                     {album.wanted ? 'Yes' : 'No'}
                   </button>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                   {album.spotifyGid}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                  <a 
+                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
+                  <a
                     href={album.spotifyUri}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:text-indigo-900 underline"
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-indigo-600 hover:text-indigo-900 underline'
                   >
                     Open Spotify
                   </a>
                   {album.artistId && (
                     <Link
-                      to="/albums"
+                      to='/albums'
                       search={{ artistId: album.artistId }}
-                      className="text-blue-600 hover:text-blue-900 underline"
+                      className='text-blue-600 hover:text-blue-900 underline'
                     >
                       View Artist
                     </Link>
                   )}
                   <Link
-                    to="/songs"
+                    to='/songs'
                     search={{ artistId: album.artistId || undefined }}
-                    className="text-green-600 hover:text-green-900 underline"
+                    className='text-green-600 hover:text-green-900 underline'
                   >
                     View Songs
                   </Link>
@@ -214,4 +227,4 @@ export function AlbumsTable({
       </div>
     </div>
   );
-} 
+}

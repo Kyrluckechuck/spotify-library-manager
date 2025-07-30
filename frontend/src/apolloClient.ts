@@ -16,7 +16,7 @@ export const apolloClient = new ApolloClient({
               // Handle pagination merging
               if (!existing) return incoming;
               if (!args?.after) return incoming;
-              
+
               return {
                 ...incoming,
                 edges: [...existing.edges, ...incoming.edges],
@@ -28,7 +28,7 @@ export const apolloClient = new ApolloClient({
             merge(existing, incoming, { args }) {
               if (!existing) return incoming;
               if (!args?.after) return incoming;
-              
+
               return {
                 ...incoming,
                 edges: [...existing.edges, ...incoming.edges],
@@ -40,7 +40,7 @@ export const apolloClient = new ApolloClient({
             merge(existing, incoming, { args }) {
               if (!existing) return incoming;
               if (!args?.after) return incoming;
-              
+
               return {
                 ...incoming,
                 edges: [...existing.edges, ...incoming.edges],
@@ -52,7 +52,7 @@ export const apolloClient = new ApolloClient({
             merge(existing, incoming, { args }) {
               if (!existing) return incoming;
               if (!args?.after) return incoming;
-              
+
               return {
                 ...incoming,
                 edges: [...existing.edges, ...incoming.edges],
@@ -74,4 +74,4 @@ export const apolloClient = new ApolloClient({
       fetchPolicy: 'cache-first',
     },
   },
-}); 
+});

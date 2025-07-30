@@ -1,17 +1,17 @@
 import asyncio
 from pathlib import Path
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
-from spotdl._version import __version__
 from spotdl.download.downloader import Downloader
 from spotdl.types.options import DownloaderOptionalOptions, DownloaderOptions
 from spotdl.types.song import Song
 from spotdl.utils.spotify import SpotifyClient
 
+
 # Class SpotDl
 # Monkeypatch The Spotdl class to only init SpotifyClient if it doesn't already exist
 def __init__(
-    self,
+    self: "Downloader",
     client_id: str,
     client_secret: str,
     user_auth: bool = False,
@@ -22,7 +22,7 @@ def __init__(
         Union[DownloaderOptionalOptions, DownloaderOptions]
     ] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
-):
+) -> None:
     """
     Initialize the Spotdl class
 
@@ -41,7 +41,7 @@ def __init__(
         downloader_settings = {}
 
     # Initialize spotify client
-    if (SpotifyClient._instance is None):
+    if SpotifyClient._instance is None:
         SpotifyClient.init(
             client_id=client_id,
             client_secret=client_secret,
@@ -57,9 +57,10 @@ def __init__(
         loop=loop,
     )
 
+
 # Class Spotdl.download.downloader.Downloader
 # Monkeypatch to handle asyncio event loops not correctly assigning
-def download_song(self, song: Song) -> Tuple[Song, Optional[Path]]:
+def download_song(self: "Downloader", song: Song) -> Tuple[Song, Optional[Path]]:
     """
     Download a single song.
 
@@ -78,4 +79,6 @@ def download_song(self, song: Song) -> Tuple[Song, Optional[Path]]:
 
     results = self.download_multiple_songs([song])
 
-    return results[0]
+    # Type cast to match expected return type
+    result = results[0]
+    return result  # type: ignore

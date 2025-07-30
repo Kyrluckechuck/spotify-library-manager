@@ -1,11 +1,20 @@
-from typing import List, Optional
+from typing import Optional
+
 import strawberry
-from ..types.models import (
-    Artist, Album, Playlist, DownloadHistory, TaskHistory,
-    ArtistConnection, AlbumConnection, PlaylistConnection, HistoryConnection, TaskHistoryConnection,
-    PageInfo
+
+from ..graphql_types.models import (
+    Album,
+    AlbumConnection,
+    Artist,
+    ArtistConnection,
+    HistoryConnection,
+    PageInfo,
+    Playlist,
+    PlaylistConnection,
+    TaskHistoryConnection,
 )
 from ..services import services
+
 
 @strawberry.type
 class Query:
@@ -15,33 +24,28 @@ class Query:
         first: Optional[int] = 20,
         after: Optional[str] = None,
         is_tracked: Optional[bool] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> ArtistConnection:
         items, has_next_page, total_count = await services.artist.get_connection(
-            first=first,
-            after=after,
-            is_tracked=is_tracked,
-            search=search
+            first=first, after=after, is_tracked=is_tracked, search=search
         )
-        
+
         edges = [
             strawberry.type("ArtistEdge")(
-                node=item,
-                cursor=services.artist.create_cursor(item)
-            ) for item in items
+                node=item, cursor=services.artist.create_cursor(item)
+            )
+            for item in items
         ]
-        
+
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
             start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None
+            end_cursor=edges[-1].cursor if edges else None,
         )
-        
+
         return ArtistConnection(
-            edges=edges,
-            page_info=page_info,
-            total_count=total_count
+            edges=edges, page_info=page_info, total_count=total_count
         )
 
     @strawberry.field
@@ -56,7 +60,7 @@ class Query:
         artist_id: Optional[str] = None,
         is_downloaded: Optional[bool] = None,
         is_wanted: Optional[bool] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> AlbumConnection:
         items, has_next_page, total_count = await services.album.get_connection(
             first=first,
@@ -64,27 +68,25 @@ class Query:
             artist_id=artist_id,
             is_downloaded=is_downloaded,
             is_wanted=is_wanted,
-            search=search
+            search=search,
         )
-        
+
         edges = [
             strawberry.type("AlbumEdge")(
-                node=item,
-                cursor=services.album.create_cursor(item)
-            ) for item in items
+                node=item, cursor=services.album.create_cursor(item)
+            )
+            for item in items
         ]
-        
+
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
             start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None
+            end_cursor=edges[-1].cursor if edges else None,
         )
-        
+
         return AlbumConnection(
-            edges=edges,
-            page_info=page_info,
-            total_count=total_count
+            edges=edges, page_info=page_info, total_count=total_count
         )
 
     @strawberry.field
@@ -97,33 +99,28 @@ class Query:
         first: Optional[int] = 20,
         after: Optional[str] = None,
         is_tracked: Optional[bool] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> PlaylistConnection:
         items, has_next_page, total_count = await services.playlist.get_connection(
-            first=first,
-            after=after,
-            is_tracked=is_tracked,
-            search=search
+            first=first, after=after, is_tracked=is_tracked, search=search
         )
-        
+
         edges = [
             strawberry.type("PlaylistEdge")(
-                node=item,
-                cursor=services.playlist.create_cursor(item)
-            ) for item in items
+                node=item, cursor=services.playlist.create_cursor(item)
+            )
+            for item in items
         ]
-        
+
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
             start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None
+            end_cursor=edges[-1].cursor if edges else None,
         )
-        
+
         return PlaylistConnection(
-            edges=edges,
-            page_info=page_info,
-            total_count=total_count
+            edges=edges, page_info=page_info, total_count=total_count
         )
 
     @strawberry.field
@@ -136,33 +133,28 @@ class Query:
         first: Optional[int] = 20,
         after: Optional[str] = None,
         entity_type: Optional[str] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
     ) -> HistoryConnection:
         items, has_next_page, total_count = await services.history.get_connection(
-            first=first,
-            after=after,
-            entity_type=entity_type,
-            status=status
+            first=first, after=after, entity_type=entity_type, status=status
         )
-        
+
         edges = [
             strawberry.type("HistoryEdge")(
-                node=item,
-                cursor=services.history.create_cursor(item)
-            ) for item in items
+                node=item, cursor=services.history.create_cursor(item)
+            )
+            for item in items
         ]
-        
+
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
             start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None
+            end_cursor=edges[-1].cursor if edges else None,
         )
-        
+
         return HistoryConnection(
-            edges=edges,
-            page_info=page_info,
-            total_count=total_count
+            edges=edges, page_info=page_info, total_count=total_count
         )
 
     @strawberry.field
@@ -173,7 +165,7 @@ class Query:
         status: Optional[str] = None,
         type: Optional[str] = None,
         entity_type: Optional[str] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> TaskHistoryConnection:
         items, has_next_page, total_count = await services.task_history.get_connection(
             first=first,
@@ -181,25 +173,23 @@ class Query:
             status=status,
             type=type,
             entity_type=entity_type,
-            search=search
+            search=search,
         )
-        
+
         edges = [
             strawberry.type("TaskHistoryEdge")(
-                node=item,
-                cursor=services.task_history.create_cursor(item)
-            ) for item in items
+                node=item, cursor=services.task_history.create_cursor(item)
+            )
+            for item in items
         ]
-        
+
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
             start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None
+            end_cursor=edges[-1].cursor if edges else None,
         )
-        
+
         return TaskHistoryConnection(
-            edges=edges,
-            page_info=page_info,
-            total_count=total_count
-        ) 
+            edges=edges, page_info=page_info, total_count=total_count
+        )

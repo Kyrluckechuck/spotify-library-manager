@@ -1,7 +1,10 @@
 from typing import AsyncGenerator
+
 import strawberry
-from ..types.models import DownloadStatus
+
+from ..graphql_types.models import DownloadStatus
 from ..services.event_bus import event_bus
+
 
 @strawberry.type
 class DownloadProgress:
@@ -11,12 +14,12 @@ class DownloadProgress:
     status: DownloadStatus
     message: str
 
+
 @strawberry.type
 class Subscription:
     @strawberry.subscription
     async def download_progress(
-        self,
-        entity_id: str
+        self, entity_id: str
     ) -> AsyncGenerator[DownloadProgress, None]:
         async for progress in event_bus.subscribe_to_download_progress(entity_id):
             yield progress
@@ -24,4 +27,4 @@ class Subscription:
     @strawberry.subscription
     async def all_download_progress(self) -> AsyncGenerator[DownloadProgress, None]:
         async for progress in event_bus.subscribe_to_download_progress():
-            yield progress 
+            yield progress

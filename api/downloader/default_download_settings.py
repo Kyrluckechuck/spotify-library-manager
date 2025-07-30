@@ -8,14 +8,8 @@ DEFAULT_DOWNLOAD_SETTINGS = {
     "no_cache": True,
     "max_retries": 3,
     "use_cache_file": False,
-    "audio_providers": [
-        "youtube-music"
-    ],
-    "lyrics_providers": [
-        "genius",
-        "azlyrics",
-        "musixmatch"
-    ],
+    "audio_providers": ["youtube-music"],
+    "lyrics_providers": ["genius", "azlyrics", "musixmatch"],
     "genius_token": "alXXDbPZtK1m2RrZ8I4k2Hn8Ahsd0Gh_o076HYvcdlBvmc0ULL1H8Z8xRlew5qaG",
     "playlist_numbering": False,
     "playlist_retain_track_cover": False,
@@ -74,5 +68,5 @@ DEFAULT_DOWNLOAD_SETTINGS = {
     "keep_sessions": False,
     "force_update_gui": False,
     "web_gui_repo": None,
-    "web_gui_location": None
+    "web_gui_location": None,
 }

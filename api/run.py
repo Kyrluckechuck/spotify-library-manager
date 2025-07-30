@@ -17,4 +17,4 @@ if __name__ == "__main__":
         limit_max_requests=10000,  # More requests per worker
         timeout_keep_alive=30,  # Keep connections alive longer
         timeout_graceful_shutdown=30,  # Graceful shutdown timeout
-    ) 
+    )

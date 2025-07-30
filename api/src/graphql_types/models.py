@@ -1,7 +1,9 @@
-from typing import List, Optional
 from datetime import datetime
-import strawberry
 from enum import Enum
+from typing import List, Optional
+
+import strawberry
+
 
 @strawberry.enum
 class DownloadStatus(Enum):
@@ -11,6 +13,7 @@ class DownloadStatus(Enum):
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
 
+
 @strawberry.enum
 class TaskStatus(Enum):
     RUNNING = "RUNNING"
@@ -18,17 +21,20 @@ class TaskStatus(Enum):
     FAILED = "FAILED"
     PENDING = "PENDING"
 
+
 @strawberry.enum
 class TaskType(Enum):
     SYNC = "SYNC"
     DOWNLOAD = "DOWNLOAD"
     FETCH = "FETCH"
 
+
 @strawberry.enum
 class EntityType(Enum):
     ARTIST = "ARTIST"
     ALBUM = "ALBUM"
     PLAYLIST = "PLAYLIST"
+
 
 @strawberry.type
 class Artist:
@@ -39,6 +45,7 @@ class Artist:
     is_tracked: bool
     last_synced: Optional[datetime]
     auto_download: bool = False
+
 
 @strawberry.type
 class Album:
@@ -53,6 +60,7 @@ class Album:
     download_status: Optional[DownloadStatus]
     track_count: int
 
+
 @strawberry.type
 class Track:
     id: str
@@ -66,6 +74,7 @@ class Track:
     is_downloaded: bool
     download_status: Optional[DownloadStatus]
 
+
 @strawberry.type
 class Playlist:
     id: str
@@ -78,6 +87,7 @@ class Playlist:
     auto_track_artists: bool
     last_synced: Optional[datetime]
 
+
 @strawberry.type
 class DownloadProgress:
     entity_id: str
@@ -85,6 +95,7 @@ class DownloadProgress:
     progress: float
     status: DownloadStatus
     message: Optional[str]
+
 
 @strawberry.type
 class DownloadHistory:
@@ -95,6 +106,7 @@ class DownloadHistory:
     started_at: datetime
     completed_at: Optional[datetime]
     error_message: Optional[str]
+
 
 @strawberry.type
 class TaskHistory:
@@ -110,6 +122,7 @@ class TaskHistory:
     progress_percentage: Optional[float]
     log_messages: List[str]
 
+
 @strawberry.type
 class PageInfo:
     has_next_page: bool
@@ -117,16 +130,19 @@ class PageInfo:
     start_cursor: Optional[str]
     end_cursor: Optional[str]
 
+
 @strawberry.type
 class ArtistConnection:
     edges: List["ArtistEdge"]
     page_info: PageInfo
     total_count: int
 
+
 @strawberry.type
 class ArtistEdge:
     node: Artist
     cursor: str
+
 
 @strawberry.type
 class AlbumConnection:
@@ -134,10 +150,12 @@ class AlbumConnection:
     page_info: PageInfo
     total_count: int
 
+
 @strawberry.type
 class AlbumEdge:
     node: Album
     cursor: str
+
 
 @strawberry.type
 class PlaylistConnection:
@@ -145,10 +163,12 @@ class PlaylistConnection:
     page_info: PageInfo
     total_count: int
 
+
 @strawberry.type
 class PlaylistEdge:
     node: Playlist
     cursor: str
+
 
 @strawberry.type
 class HistoryConnection:
@@ -156,10 +176,12 @@ class HistoryConnection:
     page_info: PageInfo
     total_count: int
 
+
 @strawberry.type
 class HistoryEdge:
     node: DownloadHistory
     cursor: str
+
 
 @strawberry.type
 class TaskHistoryConnection:
@@ -167,20 +189,24 @@ class TaskHistoryConnection:
     page_info: PageInfo
     total_count: int
 
+
 @strawberry.type
 class TaskHistoryEdge:
     node: TaskHistory
     cursor: str
+
 
 @strawberry.input
 class TrackArtistInput:
     artist_id: str
     auto_download: bool = False
 
+
 @strawberry.input
 class TrackPlaylistInput:
     playlist_id: str
     auto_track_artists: bool = False
+
 
 @strawberry.input
 class UpdateArtistInput:
@@ -188,13 +214,15 @@ class UpdateArtistInput:
     is_tracked: Optional[bool] = None
     auto_download: Optional[bool] = None
 
+
 @strawberry.input
 class UpdateAlbumInput:
     album_id: str
     is_wanted: Optional[bool] = None
 
+
 @strawberry.input
 class UpdatePlaylistInput:
     playlist_id: str
     is_tracked: Optional[bool] = None
-    auto_track_artists: Optional[bool] = None 
+    auto_track_artists: Optional[bool] = None

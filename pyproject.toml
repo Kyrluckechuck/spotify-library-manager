@@ -52,5 +52,100 @@ strict_equality = true
 module = [
     "django.*",
     "library_manager.*",
+    "spotdl.*",
+    "spotipy.*",
+    "huey.*",
+    "huey_monitor.*",
+    "base62.*",
 ]
-ignore_missing_imports = true 
+ignore_missing_imports = true
+
+# Django model field type annotations are handled by Django's ORM
+[[tool.mypy.overrides]]
+module = [
+    "api.library_manager.models",
+]
+disable_error_code = ["var-annotated", "attr-defined"]
+
+# Django management commands and signals
+[[tool.mypy.overrides]]
+module = [
+    "api.library_manager.management.commands.*",
+    "api.library_manager.signals",
+]
+disable_error_code = ["no-untyped-def"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["api", "library_manager", "src"]
+known_django = ["django"]
+sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip = ["migrations", "venv", ".venv", "node_modules"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503", "W504", "E501"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "venv",
+    "node_modules",
+    "migrations",
+]
+per-file-ignores = [
+    "__init__.py:F401",
+    "migrations/*:E501",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "test", "migrations"]
+skips = ["B101", "B601"]
+
+[tool.pylint.messages_control]
+disable = [
+    "C0114",  # missing-module-docstring
+    "C0115",  # missing-class-docstring
+    "C0116",  # missing-function-docstring
+    "R0903",  # too-few-public-methods
+    "R0913",  # too-many-arguments
+    "R0914",  # too-many-locals
+    "R0915",  # too-many-statements
+    "W0621",  # redefined-outer-name
+    "W0622",  # redefined-builtin
+    "W0703",  # broad-except
+    "W0612",  # unused-variable
+    "W0611",  # unused-import
+]
+
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.pylint.basic]
+good-names = ["i", "j", "k", "ex", "Run", "_", "id", "db"]
+
+[tool.pylint.django]
+load-plugins = ["pylint_django"] 

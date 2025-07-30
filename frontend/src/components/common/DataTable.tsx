@@ -20,17 +20,16 @@ export function DataTable<T>({
   loading,
   error,
   totalCount,
-  pageSize,
   hasNextPage,
   onLoadMore,
   children,
   emptyMessage = 'No data found',
   loadingMessage = 'Loading...',
-  errorMessage = 'Error loading data'
+  errorMessage = 'Error loading data',
 }: DataTableProps<T>) {
   if (loading && data.length === 0) {
     return (
-      <div className="bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400">
+      <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400'>
         {loadingMessage}
       </div>
     );
@@ -38,7 +37,7 @@ export function DataTable<T>({
 
   if (error) {
     return (
-      <div className="bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-red-500">
+      <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-red-500'>
         {errorMessage}: {error.message}
       </div>
     );
@@ -46,18 +45,16 @@ export function DataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400">
+      <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400'>
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded shadow overflow-hidden">
-        {children}
-      </div>
-      
+    <div className='space-y-4'>
+      <div className='bg-white rounded shadow overflow-hidden'>{children}</div>
+
       <LoadMoreButton
         hasNextPage={hasNextPage}
         loading={loading}
@@ -66,4 +63,4 @@ export function DataTable<T>({
       />
     </div>
   );
-} 
+}

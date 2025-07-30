@@ -1,6 +1,8 @@
 """Integration test configuration and fixtures with proper SQLite isolation."""
-import pytest
+
 from django.test import override_settings
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -8,14 +10,14 @@ def django_db_setup_override():
     """Override database settings for better test isolation."""
     with override_settings(
         DATABASES={
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': ':memory:',
-                'OPTIONS': {
-                    'timeout': 120,  # Increased timeout
-                    'check_same_thread': False,
-                    'isolation_level': None,  # Autocommit mode
-                }
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": ":memory:",
+                "OPTIONS": {
+                    "timeout": 120,  # Increased timeout
+                    "check_same_thread": False,
+                    "isolation_level": None,  # Autocommit mode
+                },
             }
         }
     ):
@@ -47,4 +49,4 @@ def integration_db(django_db_setup_override, django_db_blocker):
 async def async_integration_db(django_db_setup_override, django_db_blocker):
     """Async database fixture for integration tests."""
     with django_db_blocker.unblock():
-        yield 
+        yield

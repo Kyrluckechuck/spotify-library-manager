@@ -13,7 +13,7 @@ export function SortableTableHeader<T>({
   currentSortDirection,
   onSort,
   children,
-  className = ""
+  className = '',
 }: SortableTableHeaderProps<T>) {
   const getSortIcon = () => {
     if (currentSortField !== field) {
@@ -22,17 +22,18 @@ export function SortableTableHeader<T>({
     return currentSortDirection === 'asc' ? '↑' : '↓';
   };
 
-  const baseClasses = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
-  const interactiveClasses = field ? "cursor-pointer hover:bg-gray-100" : "";
+  const baseClasses =
+    'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+  const interactiveClasses = field ? 'cursor-pointer hover:bg-gray-100' : '';
 
   return (
-    <th 
+    <th
       className={`${baseClasses} ${interactiveClasses} ${className}`}
       onClick={field ? () => onSort(field) : undefined}
     >
-      <div className="flex items-center gap-1">
+      <div className='flex items-center gap-1'>
         {children} {field && getSortIcon()}
       </div>
     </th>
   );
-} 
+}

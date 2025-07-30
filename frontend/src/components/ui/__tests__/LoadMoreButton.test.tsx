@@ -1,14 +1,14 @@
-import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { LoadMoreButton } from '../LoadMoreButton'
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { LoadMoreButton } from '../LoadMoreButton';
 
 describe('LoadMoreButton', () => {
-  const mockOnLoadMore = vi.fn()
+  const mockOnLoadMore = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it('renders button when hasNextPage is true', () => {
     render(
@@ -18,11 +18,11 @@ describe('LoadMoreButton', () => {
         remainingCount={10}
         onLoadMore={mockOnLoadMore}
       />
-    )
+    );
 
-    expect(screen.getByRole('button')).toBeInTheDocument()
-    expect(screen.getByText('Load More (10 remaining)')).toBeInTheDocument()
-  })
+    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(screen.getByText('Load More (10 remaining)')).toBeInTheDocument();
+  });
 
   it('does not render when hasNextPage is false', () => {
     render(
@@ -32,10 +32,10 @@ describe('LoadMoreButton', () => {
         remainingCount={10}
         onLoadMore={mockOnLoadMore}
       />
-    )
+    );
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
-  })
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
 
   it('shows loading state when loading is true', () => {
     render(
@@ -45,13 +45,13 @@ describe('LoadMoreButton', () => {
         remainingCount={5}
         onLoadMore={mockOnLoadMore}
       />
-    )
+    );
 
-    const button = screen.getByRole('button')
-    expect(button).toBeInTheDocument()
-    expect(button).toBeDisabled()
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
-  })
+    const button = screen.getByRole('button');
+    expect(button).toBeInTheDocument();
+    expect(button).toBeDisabled();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
 
   it('calls onLoadMore when clicked and not loading', () => {
     render(
@@ -61,13 +61,13 @@ describe('LoadMoreButton', () => {
         remainingCount={15}
         onLoadMore={mockOnLoadMore}
       />
-    )
+    );
 
-    const button = screen.getByRole('button')
-    fireEvent.click(button)
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
 
-    expect(mockOnLoadMore).toHaveBeenCalledTimes(1)
-  })
+    expect(mockOnLoadMore).toHaveBeenCalledTimes(1);
+  });
 
   it('does not call onLoadMore when clicked while loading', () => {
     render(
@@ -77,13 +77,13 @@ describe('LoadMoreButton', () => {
         remainingCount={15}
         onLoadMore={mockOnLoadMore}
       />
-    )
+    );
 
-    const button = screen.getByRole('button')
-    fireEvent.click(button)
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
 
-    expect(mockOnLoadMore).not.toHaveBeenCalled()
-  })
+    expect(mockOnLoadMore).not.toHaveBeenCalled();
+  });
 
   it('displays correct remaining count', () => {
     render(
@@ -93,10 +93,10 @@ describe('LoadMoreButton', () => {
         remainingCount={42}
         onLoadMore={mockOnLoadMore}
       />
-    )
+    );
 
-    expect(screen.getByText('Load More (42 remaining)')).toBeInTheDocument()
-  })
+    expect(screen.getByText('Load More (42 remaining)')).toBeInTheDocument();
+  });
 
   it('has correct styling classes', () => {
     render(
@@ -106,9 +106,14 @@ describe('LoadMoreButton', () => {
         remainingCount={10}
         onLoadMore={mockOnLoadMore}
       />
-    )
+    );
 
-    const container = screen.getByRole('button').parentElement
-    expect(container).toHaveClass('p-4', 'text-center', 'border-t', 'border-gray-200')
-  })
-}) 
+    const container = screen.getByRole('button').parentElement;
+    expect(container).toHaveClass(
+      'p-4',
+      'text-center',
+      'border-t',
+      'border-gray-200'
+    );
+  });
+});

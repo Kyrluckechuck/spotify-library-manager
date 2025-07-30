@@ -1,6 +1,8 @@
-from typing import AsyncGenerator, Optional, Dict, List, Callable, Any
 import asyncio
-from ..types.models import DownloadProgress, DownloadStatus
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
+
+from ..graphql_types.models import DownloadProgress, DownloadStatus
+
 
 # Mock ProcessInfo class since django-huey-monitor might not be available
 class ProcessInfo:
@@ -9,8 +11,9 @@ class ProcessInfo:
         self.desc = desc
         self.percentage = percentage
 
+
 class EventBus:
-    _instance: Optional['EventBus'] = None
+    _instance: Optional["EventBus"] = None
     _subscribers: Dict[str, List[Callable]] = {}
     _download_subscribers: Dict[int, asyncio.Queue] = {}
 
@@ -66,7 +69,7 @@ class EventBus:
         desc = process_info.desc or ""
         entity_type = "UNKNOWN"
         entity_id = "unknown"
-        
+
         if "artist.id:" in desc:
             entity_type = "ARTIST"
             entity_id = desc.split("artist.id:")[-1].strip().strip(")")
@@ -81,8 +84,12 @@ class EventBus:
             entity_id=entity_id,
             entity_type=entity_type,
             progress=process_info.percentage / 100.0,
-            status=DownloadStatus.IN_PROGRESS if process_info.percentage < 100 else DownloadStatus.COMPLETED,
-            message=desc
+            status=(
+                DownloadStatus.IN_PROGRESS
+                if process_info.percentage < 100
+                else DownloadStatus.COMPLETED
+            ),
+            message=desc,
         )
 
         # Notify subscribers
@@ -90,8 +97,7 @@ class EventBus:
             queue.put_nowait(progress)
 
     async def subscribe_to_download_progress(
-        self,
-        entity_id: Optional[str] = None
+        self, entity_id: Optional[str] = None
     ) -> AsyncGenerator[DownloadProgress, None]:
         queue = asyncio.Queue()
         subscriber_id = id(queue)
@@ -105,4 +111,5 @@ class EventBus:
         finally:
             del self._download_subscribers[subscriber_id]
 
-event_bus = EventBus() 
+
+event_bus = EventBus()

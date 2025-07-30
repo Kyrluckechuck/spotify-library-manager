@@ -38,4 +38,4 @@ export function useDebouncedSearch(
     handleSearchChange,
     clearSearch,
   };
-} 
+}

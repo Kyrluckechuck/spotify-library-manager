@@ -1,7 +1,12 @@
 import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
-import { GetArtistsDocument, TrackArtistDocument, UntrackArtistDocument, SyncArtistDocument, type GetArtistsQuery } from '../types/generated/graphql';
+import {
+  GetArtistsDocument,
+  TrackArtistDocument,
+  UntrackArtistDocument,
+  SyncArtistDocument,
+} from '../types/generated/graphql';
 import { useState, useMemo } from 'react';
 
 // Shared Components
@@ -9,7 +14,6 @@ import { PageContainer } from '../components/layout/PageContainer';
 import { PageHeader } from '../components/layout/PageHeader';
 import { DataTable } from '../components/common/DataTable';
 import { FilterBar } from '../components/common/FilterBar';
-import { LoadingCard } from '../components/common/LoadingStates';
 
 // Specific Components
 import { ArtistFilters } from '../components/artists/ArtistFilters';
@@ -21,7 +25,7 @@ import type { SortField } from '../components/artists/ArtistsTable';
 
 function Artists() {
   const client = useApolloClient();
-  
+
   // Use custom hook for data table state management
   const {
     pageSize,
@@ -31,55 +35,63 @@ function Artists() {
     setPageSize,
     setSearchQuery,
     queryVariables,
-    handleSort
+    handleSort,
   } = useDataTable<SortField>({
     initialPageSize: 50,
     initialSortField: null,
     initialSortDirection: 'asc',
-    initialSearchQuery: ''
+    initialSearchQuery: '',
   });
 
   const [filter, setFilter] = useState<'all' | 'tracked' | 'untracked'>('all');
 
   // Memoize query variables to prevent unnecessary re-renders
-  const queryVariablesWithFilter = useMemo(() => ({
-    ...queryVariables,
-    tracked: filter === 'all' ? undefined : filter === 'tracked',
-  }), [queryVariables, filter]);
+  const queryVariablesWithFilter = useMemo(
+    () => ({
+      ...queryVariables,
+      tracked: filter === 'all' ? undefined : filter === 'tracked',
+    }),
+    [queryVariables, filter]
+  );
 
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(GetArtistsDocument, {
-    variables: queryVariablesWithFilter,
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-first',
-    notifyOnNetworkStatusChange: true,
-    pollInterval: 0,
-    errorPolicy: 'all',
-    returnPartialData: true,
-    onCompleted: (data) => {
-      // Pre-fetch other filter combinations to eliminate future jitter
-      if (data && networkStatus !== 3) {
-        const baseVariables = {
-          ...queryVariables,
-        };
-        
-        // Pre-fetch tracked and untracked filters
-        ['tracked', 'untracked'].forEach(trackedFilter => {
-          const variables = {
-            ...baseVariables,
-            tracked: trackedFilter === 'tracked' ? true : false,
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(
+    GetArtistsDocument,
+    {
+      variables: queryVariablesWithFilter,
+      fetchPolicy: 'cache-and-network',
+      nextFetchPolicy: 'cache-first',
+      notifyOnNetworkStatusChange: true,
+      pollInterval: 0,
+      errorPolicy: 'all',
+      returnPartialData: true,
+      onCompleted: data => {
+        // Pre-fetch other filter combinations to eliminate future jitter
+        if (data && networkStatus !== 3) {
+          const baseVariables = {
+            ...queryVariables,
           };
-          
-          client.query({
-            query: GetArtistsDocument,
-            variables,
-            fetchPolicy: 'cache-first',
-          }).catch(() => {
-            // Silently handle errors for pre-fetching
+
+          // Pre-fetch tracked and untracked filters
+          ['tracked', 'untracked'].forEach(trackedFilter => {
+            const variables = {
+              ...baseVariables,
+              tracked: trackedFilter === 'tracked' ? true : false,
+            };
+
+            client
+              .query({
+                query: GetArtistsDocument,
+                variables,
+                fetchPolicy: 'cache-first',
+              })
+              .catch(() => {
+                // Silently handle errors for pre-fetching
+              });
           });
-        });
-      }
-    },
-  });
+        }
+      },
+    }
+  );
 
   const [trackArtist] = useMutation(TrackArtistDocument);
   const [untrackArtist] = useMutation(UntrackArtistDocument);
@@ -87,24 +99,29 @@ function Artists() {
 
   const handleFilterChange = (newFilter: 'all' | 'tracked' | 'untracked') => {
     setFilter(newFilter);
-    
+
     // Pre-fetch data for the new filter to eliminate jitter
     const newVariables = {
       ...queryVariablesWithFilter,
       tracked: newFilter === 'all' ? undefined : newFilter === 'tracked',
     };
-    
+
     // Pre-fetch without blocking the UI
-    client.query({
-      query: GetArtistsDocument,
-      variables: newVariables,
-      fetchPolicy: 'cache-first',
-    }).catch(() => {
-      // Silently handle errors for pre-fetching
-    });
+    client
+      .query({
+        query: GetArtistsDocument,
+        variables: newVariables,
+        fetchPolicy: 'cache-first',
+      })
+      .catch(() => {
+        // Silently handle errors for pre-fetching
+      });
   };
 
-  const handleTrackToggle = async (artist: { id: number; tracked: boolean }) => {
+  const handleTrackToggle = async (artist: {
+    id: number;
+    tracked: boolean;
+  }) => {
     try {
       if (artist.tracked) {
         await untrackArtist({ variables: { artistId: artist.id } });
@@ -142,13 +159,13 @@ function Artists() {
 
   return (
     <PageContainer>
-      <PageHeader 
-        title="Artists"
-        subtitle="Manage and track your favorite artists"
+      <PageHeader
+        title='Artists'
+        subtitle='Manage and track your favorite artists'
       >
         {isRefetching && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+          <div className='flex items-center gap-2 text-sm text-gray-500'>
+            <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
             <span>Updating...</span>
           </div>
         )}
@@ -161,10 +178,10 @@ function Artists() {
         onPageSizeChange={setPageSize}
         totalCount={totalCount}
         currentCount={artists.length}
-        searchPlaceholder="Search artists..."
+        searchPlaceholder='Search artists...'
       />
 
-      <ArtistFilters 
+      <ArtistFilters
         currentFilter={filter}
         onFilterChange={handleFilterChange}
       />
@@ -177,9 +194,9 @@ function Artists() {
         pageSize={pageSize}
         hasNextPage={!!pageInfo?.hasNextPage}
         onLoadMore={handleLoadMore}
-        emptyMessage="No artists found"
-        loadingMessage="Loading artists..."
-        errorMessage="Error loading artists"
+        emptyMessage='No artists found'
+        loadingMessage='Loading artists...'
+        errorMessage='Error loading artists'
       >
         <ArtistsTable
           artists={artists}
@@ -197,4 +214,4 @@ function Artists() {
 
 export const Route = createFileRoute('/artists')({
   component: Artists,
-}); 
+});

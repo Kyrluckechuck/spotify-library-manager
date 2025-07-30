@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import subprocess
-import os
 from pathlib import Path
+
 
 def main():
     # Ensure the output directory exists
@@ -11,17 +11,20 @@ def main():
 
     # Generate the GraphQL schema
     schema_path = output_dir / "schema.graphql"
-    subprocess.run([
-        "strawberry", "export-schema",
-        "src.main:schema",
-        "--output", str(schema_path)
-    ], cwd="api")
+    subprocess.run(
+        [
+            "strawberry",
+            "export-schema",
+            "src.main:schema",
+            "--output",
+            str(schema_path),
+        ],
+        cwd="api",
+    )
 
     # Generate TypeScript types
-    subprocess.run([
-        "graphql-codegen",
-        "--config", "codegen.yml"
-    ], cwd="../frontend")
+    subprocess.run(["graphql-codegen", "--config", "codegen.yml"], cwd="../frontend")
+
 
 if __name__ == "__main__":
-    main() 
+    main()
