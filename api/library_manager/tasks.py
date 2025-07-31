@@ -410,7 +410,11 @@ def update_tracked_artists(task: Task = None) -> None:
     existing_tasks = helpers.get_all_tasks_with_name("fetch_all_albums_for_artist")
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     # Convert to List[int] since artist IDs are integers
-    artist_ids = [int(id) for id in already_enqueued_artists] if isinstance(already_enqueued_artists, list) else []
+    artist_ids = (
+        [int(id) for id in already_enqueued_artists]
+        if isinstance(already_enqueued_artists, list)
+        else []
+    )
     helpers.update_tracked_artists_albums(
         artist_ids, list(all_tracked_artists), priority=task.priority
     )
@@ -427,6 +431,7 @@ def download_missing_tracked_artists(task: Task = None) -> None:
         return
 
     from datetime import timedelta
+
     twelve_hours_ago = timezone.now() - timedelta(hours=12)
     recently_downloaded_songs = DownloadHistory.objects.filter(
         added_at__gte=twelve_hours_ago
@@ -453,7 +458,11 @@ def download_missing_tracked_artists(task: Task = None) -> None:
     )
     already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
     # Convert to List[int] since artist IDs are integers
-    artist_ids = [int(id) for id in already_enqueued_artists] if isinstance(already_enqueued_artists, list) else []
+    artist_ids = (
+        [int(id) for id in already_enqueued_artists]
+        if isinstance(already_enqueued_artists, list)
+        else []
+    )
     helpers.download_missing_tracked_artists(
         artist_ids, list(all_tracked_artists), priority=task.priority
     )

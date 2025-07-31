@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from django.db.models import Q
+
 from asgiref.sync import sync_to_async
 
 from library_manager.models import Artist as DjangoArtist
@@ -74,19 +75,15 @@ class ArtistService(BaseService[Artist]):
             return MutationResult(
                 success=True,
                 message="Artist tracked successfully",
-                artist=self._to_graphql_type(django_artist)
+                artist=self._to_graphql_type(django_artist),
             )
         except self.model.DoesNotExist:
             return MutationResult(
-                success=False,
-                message="Artist not found",
-                artist=None
+                success=False, message="Artist not found", artist=None
             )
         except Exception as e:
             return MutationResult(
-                success=False,
-                message=f"Error tracking artist: {str(e)}",
-                artist=None
+                success=False, message=f"Error tracking artist: {str(e)}", artist=None
             )
 
     async def untrack_artist(self, artist_id: int) -> MutationResult:
@@ -98,19 +95,15 @@ class ArtistService(BaseService[Artist]):
             return MutationResult(
                 success=True,
                 message="Artist untracked successfully",
-                artist=self._to_graphql_type(django_artist)
+                artist=self._to_graphql_type(django_artist),
             )
         except self.model.DoesNotExist:
             return MutationResult(
-                success=False,
-                message="Artist not found",
-                artist=None
+                success=False, message="Artist not found", artist=None
             )
         except Exception as e:
             return MutationResult(
-                success=False,
-                message=f"Error untracking artist: {str(e)}",
-                artist=None
+                success=False, message=f"Error untracking artist: {str(e)}", artist=None
             )
 
     async def update_artist(
@@ -146,5 +139,7 @@ class ArtistService(BaseService[Artist]):
             gid=django_artist.gid,
             is_tracked=django_artist.tracked,
             last_synced=django_artist.last_synced_at,
-            added_at=django_artist.added_at if hasattr(django_artist, 'added_at') else None,
+            added_at=(
+                django_artist.added_at if hasattr(django_artist, "added_at") else None
+            ),
         )

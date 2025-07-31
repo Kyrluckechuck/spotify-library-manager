@@ -1,12 +1,13 @@
 from typing import List, Optional
 
 from django.db.models import Q
+
 from asgiref.sync import sync_to_async
 
 from library_manager.models import TrackedPlaylist as DjangoPlaylist
 from library_manager.tasks import sync_tracked_playlist, sync_tracked_playlist_artists
 
-from ..graphql_types.models import Playlist, MutationResult
+from ..graphql_types.models import MutationResult, Playlist
 from .base import BaseService
 
 
@@ -16,7 +17,9 @@ class PlaylistService(BaseService[Playlist]):
 
     async def get_by_id(self, id: str) -> Optional[Playlist]:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(url__contains=id)
+            django_playlist = await sync_to_async(self.model.objects.get)(
+                url__contains=id
+            )
             return self._to_graphql_type(django_playlist)
         except self.model.DoesNotExist:
             return None
@@ -62,7 +65,9 @@ class PlaylistService(BaseService[Playlist]):
     async def track_playlist(
         self, playlist_id: str, auto_track_artists: bool = False
     ) -> Playlist:
-        django_playlist = await sync_to_async(self.model.objects.get)(url__contains=playlist_id)
+        django_playlist = await sync_to_async(self.model.objects.get)(
+            url__contains=playlist_id
+        )
         django_playlist.enabled = True
         django_playlist.auto_track_artists = auto_track_artists
         await sync_to_async(django_playlist.save)()
@@ -74,7 +79,9 @@ class PlaylistService(BaseService[Playlist]):
 
         return self._to_graphql_type(django_playlist)
 
-    async def create_playlist(self, name: str, url: str, auto_track_artists: bool = False) -> Playlist:
+    async def create_playlist(
+        self, name: str, url: str, auto_track_artists: bool = False
+    ) -> Playlist:
         """Create a new playlist."""
         django_playlist = self.model(
             name=name,
@@ -98,79 +105,80 @@ class PlaylistService(BaseService[Playlist]):
         auto_track_artists: bool,
     ) -> MutationResult:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(id=playlist_id)
-            
+            django_playlist = await sync_to_async(self.model.objects.get)(
+                id=playlist_id
+            )
+
             django_playlist.name = name
             django_playlist.auto_track_artists = auto_track_artists
-            
+
             await sync_to_async(django_playlist.save)()
 
             return MutationResult(
                 success=True,
                 message="Playlist updated successfully",
-                playlist=self._to_graphql_type(django_playlist)
+                playlist=self._to_graphql_type(django_playlist),
             )
         except self.model.DoesNotExist:
             return MutationResult(
-                success=False,
-                message="Playlist not found",
-                playlist=None
+                success=False, message="Playlist not found", playlist=None
             )
         except Exception as e:
             return MutationResult(
                 success=False,
                 message=f"Error updating playlist: {str(e)}",
-                playlist=None
+                playlist=None,
             )
 
     async def sync_playlist(self, playlist_id: int) -> MutationResult:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(id=playlist_id)
-            
+            django_playlist = await sync_to_async(self.model.objects.get)(
+                id=playlist_id
+            )
+
             # Trigger sync task
             from library_manager.tasks import sync_tracked_playlist
+
             await sync_to_async(sync_tracked_playlist)(django_playlist)
-            
+
             return MutationResult(
                 success=True,
                 message="Playlist sync started successfully",
-                playlist=self._to_graphql_type(django_playlist)
+                playlist=self._to_graphql_type(django_playlist),
             )
         except self.model.DoesNotExist:
             return MutationResult(
-                success=False,
-                message="Playlist not found",
-                playlist=None
+                success=False, message="Playlist not found", playlist=None
             )
         except Exception as e:
             return MutationResult(
                 success=False,
                 message=f"Error syncing playlist: {str(e)}",
-                playlist=None
+                playlist=None,
             )
 
     async def toggle_playlist(self, playlist_id: int) -> MutationResult:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(id=playlist_id)
+            django_playlist = await sync_to_async(self.model.objects.get)(
+                id=playlist_id
+            )
             django_playlist.enabled = not django_playlist.enabled
             await sync_to_async(django_playlist.save)()
 
             return MutationResult(
                 success=True,
                 message="Playlist toggled successfully",
-                playlist=self._to_graphql_type(django_playlist)
+                playlist=self._to_graphql_type(django_playlist),
             )
         except self.model.DoesNotExist:
             return MutationResult(
-                success=False,
-                message="Playlist not found",
-                playlist=None
+                success=False, message="Playlist not found", playlist=None
             )
         except Exception as e:
             return MutationResult(
                 success=False,
                 message=f"Error toggling playlist: {str(e)}",
-                playlist=None
+                playlist=None,
             )
 
     def _to_graphql_type(self, django_playlist: DjangoPlaylist) -> Playlist:

@@ -3,11 +3,11 @@ import strawberry
 from ..graphql_types.models import (
     Album,
     Artist,
+    MutationResult,
     Playlist,
     TrackPlaylistInput,
-    UpdateArtistInput,
     UpdateAlbumInput,
-    MutationResult,
+    UpdateArtistInput,
 )
 from ..services import services
 
@@ -52,10 +52,7 @@ class Mutation:
 
     @strawberry.mutation
     async def update_playlist(
-        self, 
-        playlist_id: int, 
-        name: str, 
-        auto_track_artists: bool
+        self, playlist_id: int, name: str, auto_track_artists: bool
     ) -> "MutationResult":
         return await services.playlist.update_playlist(
             playlist_id=playlist_id,
@@ -76,9 +73,17 @@ class Mutation:
         return await services.album.download_album(album_id)
 
     @strawberry.mutation
-    async def download_url(self, url: str, auto_track_artists: bool = False) -> "MutationResult":
-        return await services.downloader.download_url(url=url, auto_track_artists=auto_track_artists)
+    async def download_url(
+        self, url: str, auto_track_artists: bool = False
+    ) -> "MutationResult":
+        return await services.downloader.download_url(
+            url=url, auto_track_artists=auto_track_artists
+        )
 
     @strawberry.mutation
-    async def create_playlist(self, name: str, url: str, auto_track_artists: bool = False) -> Playlist:
-        return await services.playlist.create_playlist(name=name, url=url, auto_track_artists=auto_track_artists)
+    async def create_playlist(
+        self, name: str, url: str, auto_track_artists: bool = False
+    ) -> Playlist:
+        return await services.playlist.create_playlist(
+            name=name, url=url, auto_track_artists=auto_track_artists
+        )

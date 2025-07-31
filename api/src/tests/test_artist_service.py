@@ -23,7 +23,9 @@ def mock_django_artist() -> Mock:
 
 
 @pytest.mark.asyncio
-async def test_get_by_id(artist_service: ArtistService, mock_django_artist: Mock) -> None:
+async def test_get_by_id(
+    artist_service: ArtistService, mock_django_artist: Mock
+) -> None:
     with patch(
         "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
     ) as mock_aget:
@@ -47,7 +49,9 @@ async def test_get_by_id_not_found(artist_service: ArtistService) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_connection(artist_service: ArtistService, mock_django_artist: Mock) -> None:
+async def test_get_connection(
+    artist_service: ArtistService, mock_django_artist: Mock
+) -> None:
     with patch("library_manager.models.Artist.objects.all") as mock_all:
         mock_queryset = Mock()
         mock_queryset.filter.return_value = mock_queryset

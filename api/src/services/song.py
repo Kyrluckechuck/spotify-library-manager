@@ -1,8 +1,12 @@
 from typing import List, Optional, Tuple
+
 from django.db.models import Q
+
 from asgiref.sync import sync_to_async
-from ..graphql_types.models import Song
+
 from library_manager.models import Song as DjangoSong
+
+from ..graphql_types.models import Song
 from .base import BaseService
 
 
@@ -27,17 +31,16 @@ class SongService(BaseService):
         # Apply filters
         if artist_id is not None:
             queryset = queryset.filter(primary_artist_id=artist_id)
-        
+
         if downloaded is not None:
             queryset = queryset.filter(downloaded=downloaded)
-        
+
         if unavailable is not None:
             queryset = queryset.filter(unavailable=unavailable)
-        
+
         if search:
             queryset = queryset.filter(
-                Q(name__icontains=search) | 
-                Q(primary_artist__name__icontains=search)
+                Q(name__icontains=search) | Q(primary_artist__name__icontains=search)
             )
 
         # Apply cursor-based pagination
@@ -91,4 +94,4 @@ class SongService(BaseService):
             file_path=django_song.file_path,
             downloaded=django_song.downloaded,
             spotify_uri=django_song.spotify_uri,
-        ) 
+        )

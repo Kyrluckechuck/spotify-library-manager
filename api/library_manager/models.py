@@ -1,8 +1,9 @@
+from typing import Optional
+
 import django.core.validators
 from django.db import models
-from django.db.models import Sum, QuerySet
+from django.db.models import QuerySet, Sum
 from django.utils import timezone
-from typing import Optional
 
 from django_stubs_ext.db.models import TypedModelMeta
 
@@ -373,7 +374,9 @@ class Album(models.Model):
         )
 
     def __str__(self) -> str:
-        return f"name: {self.name} | artist: {self.artist} | downloaded: {self.downloaded}"
+        return (
+            f"name: {self.name} | artist: {self.artist} | downloaded: {self.downloaded}"
+        )
 
     class Meta(TypedModelMeta):
         pass

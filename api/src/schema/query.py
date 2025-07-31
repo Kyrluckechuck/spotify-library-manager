@@ -117,9 +117,7 @@ class Query:
             end_cursor=None,
         )
 
-        return SongConnection(
-            edges=edges, page_info=page_info, total_count=total_count
-        )
+        return SongConnection(edges=edges, page_info=page_info, total_count=total_count)
 
     @strawberry.field
     async def song(self, id: str) -> Optional[Song]:

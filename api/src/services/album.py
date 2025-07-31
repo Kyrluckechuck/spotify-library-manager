@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from django.db.models import Q
+
 from asgiref.sync import sync_to_async
 
 from library_manager.models import Album as DjangoAlbum
@@ -97,7 +98,9 @@ class AlbumService(BaseService[Album]):
     async def set_album_wanted(self, album_id: int, wanted: bool) -> MutationResult:
         def update_album():
             try:
-                django_album = self.model.objects.select_related('artist').get(id=album_id)
+                django_album = self.model.objects.select_related("artist").get(
+                    id=album_id
+                )
                 django_album.wanted = wanted
                 django_album.save()
                 return django_album
@@ -108,24 +111,20 @@ class AlbumService(BaseService[Album]):
 
         try:
             django_album = await sync_to_async(update_album)()
-            
+
             if django_album is None:
                 return MutationResult(
-                    success=False,
-                    message="Album not found",
-                    album=None
+                    success=False, message="Album not found", album=None
                 )
 
             return MutationResult(
                 success=True,
                 message="Album wanted status updated successfully",
-                album=self._to_graphql_type(django_album)
+                album=self._to_graphql_type(django_album),
             )
         except Exception as e:
             return MutationResult(
-                success=False,
-                message=f"Error updating album: {str(e)}",
-                album=None
+                success=False, message=f"Error updating album: {str(e)}", album=None
             )
 
     def _to_graphql_type(self, django_album: DjangoAlbum) -> Album:

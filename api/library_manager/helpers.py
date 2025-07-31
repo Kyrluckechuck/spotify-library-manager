@@ -21,7 +21,9 @@ def get_all_tasks_with_name(task_name: str) -> List[Task]:
     return found_tasks
 
 
-def convert_first_task_args_to_list(pending_tasks: List[Task]) -> Union[List[int], List[str]]:
+def convert_first_task_args_to_list(
+    pending_tasks: List[Task],
+) -> Union[List[int], List[str]]:
     pending_args: Union[List[int], List[str]] = []
 
     for pending_task in pending_tasks:
@@ -81,11 +83,17 @@ def download_non_enqueued_playlists(
         )
 
 
-def enqueue_playlists(playlists_to_enqueue: List[TrackedPlaylist], priority: Optional[int] = None) -> None:
+def enqueue_playlists(
+    playlists_to_enqueue: List[TrackedPlaylist], priority: Optional[int] = None
+) -> None:
     existing_tasks = get_all_tasks_with_name("download_playlist")
     already_enqueued_playlists = convert_first_task_args_to_list(existing_tasks)
     # Convert to List[str] since playlist URLs are strings
-    playlist_urls = [str(url) for url in already_enqueued_playlists] if isinstance(already_enqueued_playlists, list) else []
+    playlist_urls = (
+        [str(url) for url in already_enqueued_playlists]
+        if isinstance(already_enqueued_playlists, list)
+        else []
+    )
     download_non_enqueued_playlists(
         playlist_urls, playlists_to_enqueue, priority=priority
     )
