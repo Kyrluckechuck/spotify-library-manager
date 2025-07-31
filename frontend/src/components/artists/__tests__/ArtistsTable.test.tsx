@@ -10,15 +10,15 @@ describe('ArtistsTable', () => {
       id: 1,
       gid: 'artist1',
       name: 'Artist 1',
-      tracked: true,
-      lastSyncedAt: '2024-01-01T00:00:00Z',
+      isTracked: true,
+      lastSynced: '2024-01-01T00:00:00Z',
     },
     {
       id: 2,
       gid: 'artist2',
       name: 'Artist 2',
-      tracked: false,
-      lastSyncedAt: null,
+      isTracked: false,
+      lastSynced: null,
     },
   ];
 

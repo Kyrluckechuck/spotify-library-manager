@@ -11,6 +11,8 @@ from ..graphql_types.models import (
     PageInfo,
     Playlist,
     PlaylistConnection,
+    Song,
+    SongConnection,
     TaskHistoryConnection,
 )
 from ..services import services
@@ -30,18 +32,13 @@ class Query:
             first=first, after=after, is_tracked=is_tracked, search=search
         )
 
-        edges = [
-            strawberry.type("ArtistEdge")(
-                node=item, cursor=services.artist.create_cursor(item)
-            )
-            for item in items
-        ]
+        edges = items
 
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
-            start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None,
+            start_cursor=None,
+            end_cursor=None,
         )
 
         return ArtistConnection(
@@ -57,32 +54,29 @@ class Query:
         self,
         first: Optional[int] = 20,
         after: Optional[str] = None,
-        artist_id: Optional[str] = None,
-        is_downloaded: Optional[bool] = None,
-        is_wanted: Optional[bool] = None,
+        artist_id: Optional[int] = None,
+        downloaded: Optional[bool] = None,
+        wanted: Optional[bool] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: Optional[str] = None,
         search: Optional[str] = None,
     ) -> AlbumConnection:
         items, has_next_page, total_count = await services.album.get_connection(
             first=first,
             after=after,
             artist_id=artist_id,
-            is_downloaded=is_downloaded,
-            is_wanted=is_wanted,
+            downloaded=downloaded,
+            wanted=wanted,
             search=search,
         )
 
-        edges = [
-            strawberry.type("AlbumEdge")(
-                node=item, cursor=services.album.create_cursor(item)
-            )
-            for item in items
-        ]
+        edges = items
 
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
-            start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None,
+            start_cursor=None,
+            end_cursor=None,
         )
 
         return AlbumConnection(
@@ -94,29 +88,64 @@ class Query:
         return await services.album.get_by_id(id)
 
     @strawberry.field
-    async def playlists(
+    async def songs(
         self,
         first: Optional[int] = 20,
         after: Optional[str] = None,
-        is_tracked: Optional[bool] = None,
+        artist_id: Optional[int] = None,
+        downloaded: Optional[bool] = None,
+        unavailable: Optional[bool] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: Optional[str] = None,
         search: Optional[str] = None,
-    ) -> PlaylistConnection:
-        items, has_next_page, total_count = await services.playlist.get_connection(
-            first=first, after=after, is_tracked=is_tracked, search=search
+    ) -> SongConnection:
+        items, has_next_page, total_count = await services.song.get_connection(
+            first=first,
+            after=after,
+            artist_id=artist_id,
+            downloaded=downloaded,
+            unavailable=unavailable,
+            search=search,
         )
 
-        edges = [
-            strawberry.type("PlaylistEdge")(
-                node=item, cursor=services.playlist.create_cursor(item)
-            )
-            for item in items
-        ]
+        edges = items
 
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
-            start_cursor=edges[0].cursor if edges else None,
-            end_cursor=edges[-1].cursor if edges else None,
+            start_cursor=None,
+            end_cursor=None,
+        )
+
+        return SongConnection(
+            edges=edges, page_info=page_info, total_count=total_count
+        )
+
+    @strawberry.field
+    async def song(self, id: str) -> Optional[Song]:
+        return await services.song.get_by_id(id)
+
+    @strawberry.field
+    async def playlists(
+        self,
+        first: Optional[int] = 20,
+        after: Optional[str] = None,
+        enabled: Optional[bool] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> PlaylistConnection:
+        items, has_next_page, total_count = await services.playlist.get_connection(
+            first=first, after=after, enabled=enabled, search=search
+        )
+
+        edges = items
+
+        page_info = PageInfo(
+            has_next_page=has_next_page,
+            has_previous_page=after is not None,
+            start_cursor=None,
+            end_cursor=None,
         )
 
         return PlaylistConnection(

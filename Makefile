@@ -150,3 +150,17 @@ build-and-publish:
 # Cleanup
 clean:
 	rm -rf frontend/node_modules frontend/dist api/__pycache__ api/*.pyc
+
+# Newline checking and fixing
+check-newlines:
+	python scripts/check-repo-newlines.py check
+
+fix-newlines:
+	python scripts/check-repo-newlines.py fix
+
+# Frontend-specific newline commands
+check-newlines-frontend:
+	cd frontend && npm run check-newlines
+
+fix-newlines-frontend:
+	cd frontend && npm run fix-newlines

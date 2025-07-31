@@ -1,17 +1,35 @@
-import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
+import {
+  ApolloClient,
+  InMemoryCache,
+  createHttpLink,
+  from,
+} from '@apollo/client';
+import { onError } from '@apollo/client/link/error';
 
 const httpLink = createHttpLink({
   uri: 'http://localhost:5000/graphql',
 });
 
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (graphQLErrors)
+    graphQLErrors.forEach(({ message, locations, path }) =>
+      console.error(
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+      )
+    );
+  if (networkError) console.error(`[Network error]: ${networkError}`);
+});
+
+const link = from([errorLink, httpLink]);
+
 export const apolloClient = new ApolloClient({
-  link: httpLink,
+  link: link,
   cache: new InMemoryCache({
     typePolicies: {
       Query: {
         fields: {
           artists: {
-            keyArgs: ['tracked', 'search'],
+            keyArgs: ['isTracked', 'search'],
             merge(existing, incoming, { args }) {
               // Handle pagination merging
               if (!existing) return incoming;

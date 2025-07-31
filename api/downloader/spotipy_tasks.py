@@ -23,7 +23,7 @@ class SpotifyClient:
 
 
 def track_artists_in_playlist(playlist_url: str, task: Task) -> None:
-    # TODO
+    # TODO: Implement artist tracking from playlist
     spotipy_client = SpotifyClient()
     downloader = Downloader(spotipy_client.sp)
     playlist = downloader.get_playlist(playlist_url)

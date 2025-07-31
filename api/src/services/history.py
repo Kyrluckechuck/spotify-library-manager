@@ -40,7 +40,7 @@ class DownloadHistoryService(BaseService[DownloadHistory]):
         total_count = await queryset.acount()
 
         # Get one extra item to determine if there are more pages
-        items = await queryset.order_by("-added_at")[: first + 1].all()
+        items = list(await queryset.order_by("-added_at")[: first + 1].all())
 
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item

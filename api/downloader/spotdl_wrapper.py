@@ -1,4 +1,4 @@
-# TODO -- this will be a wrapper around spotdl
+# TODO: Implement spotdl wrapper
 # spotdl --config
 # Provide --cookie-file /something/cookies.txt, if it exists
 # Come up with system to:

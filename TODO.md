@@ -1,53 +1,129 @@
-Eventually:
-- ✅ Move startup commands from `api` and `frontend` to root so it's always executed from the same place
-  - All dependency and config files moved to root (package.json, requirements.txt, manage.py, vite.config.ts, etc.)
-  - All commands run from root without any `cd` commands
-  - Vite configured to work from root with frontend/ as root directory
-  - API commands use proper environment variables (PYTHONPATH, DJANGO_SETTINGS_MODULE)
-  - All commands accessible via `make` from root directory
-  - Clean directory structure with only source code in subdirectories
-- ✅ Fix typing in backend
-  - Removed all `Any` type usage from service layer
-  - Added proper Django model type definitions
-  - Improved base service typing with `Union[int, str]`
-  - Added comprehensive mypy configuration
-  - Created proper type checking infrastructure
-- ✅ Improve frontend typing
-  - Fixed `any` usage in artists.tsx with proper type annotation
-  - Added ESLint rule against using `any` type
-  - Fixed NodeJS.Timeout issue in SearchInput component
-  - Frontend typing was already good, now with additional safeguards
-- ✅ Clean up old system and temporary files
-  - Removed entire `spotify_library_sync/` directory (old system)
-  - Removed all temporary scripts and test files
-  - Removed deprecated documentation files
-  - Updated configuration references
-  - Verified all functionality preserved in new system
-- ✅ Fix testing in frontend and backend. Get model to add those and update those as it works.
-  - **Backend Testing Improvements:**
-    - Added comprehensive pytest configuration with Django integration
-    - Created unit tests for all service layers (ArtistService, AlbumService, PlaylistService, DownloadHistoryService)
-    - Added integration tests for GraphQL mutations and queries
-    - Fixed Django settings configuration for testing
-    - Added test fixtures for consistent test data
-    - Implemented coverage reporting with HTML output
-    - Added test markers for unit, integration, and GraphQL tests
-  - **Frontend Testing Improvements:**
-    - Set up Vitest testing framework with React Testing Library
-    - Added comprehensive test dependencies (@testing-library/react, @testing-library/jest-dom, etc.)
-    - Created component tests for UI components (SearchInput, Navbar, ArtistsTable)
-    - Added test setup with proper mocking for Apollo Client and TanStack Router
-    - Implemented test coverage reporting
-    - Added test scripts for different testing modes (run, watch, coverage, UI)
-  - **Testing Commands:**
-    - `make test-api` - Run all backend tests with coverage
-    - `make test-api-unit` - Run only unit tests
-    - `make test-api-integration` - Run only integration tests
-    - `make test-frontend` - Run frontend tests
-    - `make test-frontend-coverage` - Run frontend tests with coverage
-    - `make test-frontend-ui` - Run frontend tests with UI
-- Re-dockerize / confirm it's still working
-    - Update local development to use docker container with configs, such as using `/config` for your configs to pass into it
-    - Have dev environment sync files to/from docker, with hot reloading working when in dev mode
-- Remove all useless comments again
-- Add newline at end of file rule for repo somehow
+# TODO
+
+## GraphQL Schema Management
+
+### Completed ✅
+- [x] Fixed GraphQL schema mismatches between frontend and backend
+- [x] Updated field names to match schema (`tracked` → `isTracked`, `lastSyncedAt` → `lastSynced`)
+- [x] Fixed parameter names (`sortBy`, `sortDirection` instead of `sort_by`, `sort_direction`)
+- [x] Removed non-existent mutations (`downloadUrl`, `createPlaylist`, `cleanupStuckTasks`)
+- [x] Fixed task history structure (`logMessages` as string array, not object array)
+- [x] Regenerated GraphQL types successfully
+- [x] Updated frontend components to use correct field names
+
+### Infrastructure Improvements
+- [ ] **Create automated GraphQL schema validation**
+  - [ ] Add pre-commit hook to validate schema consistency
+  - [ ] Create schema introspection script to detect mismatches
+  - [ ] Set up CI/CD pipeline for schema testing
+  - [ ] Implement schema versioning and migration tools
+
+### Development Workflow
+- [ ] **Add schema validation to development workflow**
+  - [ ] Create schema validation script that runs on file changes
+  - [ ] Add GraphQL schema testing to npm scripts
+  - [ ] Implement schema debugging tools
+  - [ ] Add schema documentation generation
+
+### Testing and Validation
+- [ ] **Create comprehensive GraphQL schema tests**
+  - [ ] Test all queries, mutations, and subscriptions
+  - [ ] Validate type safety across frontend-backend boundary
+  - [ ] Test error handling and edge cases
+  - [ ] Test pagination and filtering functionality
+
+### Documentation
+- [ ] **Document GraphQL schema and API**
+  - [ ] Document all GraphQL types and their relationships
+  - [ ] Create API usage examples
+  - [ ] Document error codes and handling
+  - [ ] Create troubleshooting guide for schema issues
+
+### Important and should be prioritized
+- [x] Remove all useless comments again
+- [x] Add newline at end of file rule for repo somehow
+
+### Completed Infrastructure
+- [x] **Repo-wide newline enforcement**
+  - [x] Created repo-wide pre-commit hook (`.git/hooks/pre-commit`)
+  - [x] Added Python script for checking/fixing newlines (`scripts/check-repo-newlines.py`)
+  - [x] Added Makefile commands (`make check-newlines`, `make fix-newlines`)
+  - [x] Fixed 15 files that were missing trailing newlines
+  - [x] Integrated with existing frontend newline checking
+  - [x] Added Python linting to pre-commit checks
+
+- [x] **Fixed GraphQL field name mismatches**
+  - [x] Updated artists route to use `isTracked` instead of `tracked`
+  - [x] Updated ArtistsTable component to use `isTracked` and `lastSynced`
+  - [x] Updated test files to use correct field names
+  - [x] Regenerated GraphQL types
+  - [x] Fixed blank page issues on `/artists` and `/` routes
+  - [x] Removed non-existent mutations (`DownloadUrlDocument`, `CreatePlaylistDocument`, `GetActiveTasksDocument`)
+  - [x] Updated PlaylistModal to only handle editing (create functionality removed)
+  - [x] Fixed TaskHistory log messages structure (now simple array of strings)
+  - [x] Removed `/songs` route and components (not in schema)
+  - [x] Fixed field name issues (`spotifyUri` → `spotifyGid`)
+  - [x] Updated all components to use correct GraphQL types (`Playlist` instead of `TrackedPlaylist`)
+
+### Backend TODOs
+- [ ] **Configuration Management**
+  - [ ] Make album types configurable (allow "appears_on" to be optional, or others to be deselected)
+  - [ ] Move SECRET_KEY to environment variable in auth service
+  - [ ] Replace in-memory user storage with proper user storage in auth service
+
+- [ ] **Downloader Integration**
+  - [ ] Re-add spotdl integration once all dependencies are resolved
+  - [ ] Implement artist tracking from playlist functionality
+  - [ ] Implement spotdl wrapper
+
+- [ ] **Error Handling**
+  - [ ] Add error message support to history service
+
+- [ ] **Event Bus Improvements**
+  - [ ] Extract playlist ID from task args in event bus
+  - [ ] Extract album ID from task args in event bus
+
+## Improtant things
+I'd also love to add the ability to search for a specific song, artist, or playlist, so essentially spotify search, to the "app". If you're still working on stuff, just add this to the TODO file for now.
+
+## Backend Improvements
+
+### Async/Await Standardization
+- [ ] Review all Django ORM operations for async compatibility
+- [ ] Standardize sync_to_async usage patterns
+- [ ] Add comprehensive error handling for async operations
+- [ ] Test performance under load
+
+### API Enhancements
+- [ ] Add missing mutations that were removed (if needed)
+- [ ] Implement proper error handling for all GraphQL operations
+- [ ] Add input validation for all mutations
+- [ ] Implement proper pagination for all list queries
+
+## Frontend Improvements
+
+### Component Updates
+- [ ] Update all components to use correct field names
+- [ ] Add proper error handling for GraphQL operations
+- [ ] Implement loading states for all async operations
+- [ ] Add optimistic updates for mutations
+
+### User Experience
+- [ ] Add proper error messages for GraphQL failures
+- [ ] Implement retry logic for failed operations
+- [ ] Add offline support for critical operations
+- [ ] Improve loading and error states
+
+## Monitoring and Debugging
+
+### Development Tools
+- [ ] Add GraphQL query logging in development
+- [ ] Create schema introspection tools
+- [ ] Add performance monitoring for GraphQL operations
+- [ ] Implement query complexity analysis
+
+### Production Monitoring
+- [ ] Add GraphQL operation monitoring
+- [ ] Implement query performance tracking
+- [ ] Add error tracking for GraphQL failures
+- [ ] Create alerts for schema mismatches

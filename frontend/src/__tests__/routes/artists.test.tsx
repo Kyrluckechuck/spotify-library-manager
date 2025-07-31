@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { useQuery, useMutation, ApolloError } from '@apollo/client';
 
 // Define proper types for test data
@@ -34,8 +35,8 @@ vi.mock('@apollo/client', () => ({
   useMutation: vi.fn(),
 }));
 
-const mockUseQuery = useQuery as vi.MockedFunction<typeof useQuery>;
-const mockUseMutation = useMutation as vi.MockedFunction<typeof useMutation>;
+const mockUseQuery = useQuery as MockedFunction<typeof useQuery>;
+const mockUseMutation = useMutation as MockedFunction<typeof useMutation>;
 
 // Mock the TanStack Router
 vi.mock('@tanstack/react-router', () => ({

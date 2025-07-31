@@ -1,0 +1,60 @@
+query GetSongs(
+  $first: Int
+  $after: String
+  $artistId: Int
+  $downloaded: Boolean
+  $unavailable: Boolean
+  $sortBy: String
+  $sortDirection: String
+  $search: String
+) {
+  songs(
+    first: $first
+    after: $after
+    artistId: $artistId
+    downloaded: $downloaded
+    unavailable: $unavailable
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
+  ) {
+    edges {
+      id
+      name
+      gid
+      primaryArtist
+      primaryArtistId
+      createdAt
+      failedCount
+      bitrate
+      unavailable
+      filePath
+      downloaded
+      spotifyUri
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query GetSong($id: String!) {
+  song(id: $id) {
+    id
+    name
+    gid
+    primaryArtist
+    primaryArtistId
+    createdAt
+    failedCount
+    bitrate
+    unavailable
+    filePath
+    downloaded
+    spotifyUri
+  }
+} 

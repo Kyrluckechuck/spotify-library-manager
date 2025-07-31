@@ -1,4 +1,4 @@
-import type { TrackedPlaylist } from '../../types/generated/graphql';
+import type { Playlist } from '../../types/generated/graphql';
 import { SortableTableHeader } from '../ui/SortableTableHeader';
 
 export type PlaylistSortField =
@@ -9,13 +9,13 @@ export type PlaylistSortField =
   | null;
 
 interface PlaylistsTableProps {
-  playlists: TrackedPlaylist[];
+  playlists: Playlist[];
   sortField: PlaylistSortField;
   sortDirection: 'asc' | 'desc';
   onSort: (field: PlaylistSortField) => void;
-  onToggleEnabled: (playlist: TrackedPlaylist) => void;
+  onToggleEnabled: (playlist: Playlist) => void;
   onSyncPlaylist: (playlistId: number) => void;
-  onEditPlaylist?: (playlist: TrackedPlaylist) => void;
+  onEditPlaylist?: (playlist: Playlist) => void;
   loading?: boolean;
 }
 

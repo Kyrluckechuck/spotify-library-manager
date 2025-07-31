@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useMutation } from '@apollo/client';
 import {
-  CreatePlaylistDocument,
   UpdatePlaylistDocument,
-  type CreatePlaylistMutation,
-  type CreatePlaylistMutationVariables,
   type UpdatePlaylistMutation,
   type UpdatePlaylistMutationVariables,
 } from '../../types/generated/graphql';
+import { CREATE_PLAYLIST } from '../../queries/download';
 
-import type { TrackedPlaylist } from '../../types/generated/graphql';
+import type { Playlist } from '../../types/generated/graphql';
 
 interface PlaylistModalProps {
   isOpen: boolean;
   onClose: () => void;
-  playlist?: TrackedPlaylist | null;
+  playlist?: Playlist | null;
   mode: 'create' | 'edit';
 }
 
@@ -24,29 +22,24 @@ export function PlaylistModal({
   playlist,
   mode,
 }: PlaylistModalProps) {
-  const [url, setUrl] = useState('');
   const [name, setName] = useState('');
   const [autoTrackArtists, setAutoTrackArtists] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [createPlaylist] = useMutation<
-    CreatePlaylistMutation,
-    CreatePlaylistMutationVariables
-  >(CreatePlaylistDocument);
   const [updatePlaylist] = useMutation<
     UpdatePlaylistMutation,
     UpdatePlaylistMutationVariables
   >(UpdatePlaylistDocument);
 
+  const [createPlaylist] = useMutation(CREATE_PLAYLIST);
+
   // Initialize form when editing
   useEffect(() => {
     if (playlist && mode === 'edit') {
-      setUrl(playlist.url);
       setName(playlist.name);
       setAutoTrackArtists(playlist.autoTrackArtists);
     } else {
-      setUrl('');
       setName('');
       setAutoTrackArtists(false);
     }
@@ -55,11 +48,6 @@ export function PlaylistModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!url.trim()) {
-      setError('Please enter a Spotify URL');
-      return;
-    }
 
     if (!name.trim()) {
       setError('Please enter a playlist name');
@@ -73,21 +61,18 @@ export function PlaylistModal({
       if (mode === 'create') {
         const result = await createPlaylist({
           variables: {
-            url: url.trim(),
             name: name.trim(),
+            url: `https://open.spotify.com/playlist/${name.toLowerCase().replace(/\s+/g, '-')}`,
             autoTrackArtists,
           },
         });
 
-        if (result.data?.createPlaylist?.success) {
-          setUrl('');
+        if (result.data?.createPlaylist) {
           setName('');
           setAutoTrackArtists(false);
           onClose();
         } else {
-          setError(
-            result.data?.createPlaylist?.message || 'Failed to create playlist'
-          );
+          setError('Failed to create playlist');
         }
       } else {
         const result = await updatePlaylist({
@@ -99,7 +84,6 @@ export function PlaylistModal({
         });
 
         if (result.data?.updatePlaylist?.success) {
-          setUrl('');
           setName('');
           setAutoTrackArtists(false);
           onClose();
@@ -118,7 +102,6 @@ export function PlaylistModal({
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setUrl('');
       setName('');
       setAutoTrackArtists(false);
       setError(null);
@@ -128,7 +111,7 @@ export function PlaylistModal({
 
   if (!isOpen) return null;
 
-  const title = mode === 'create' ? 'Create New Playlist' : 'Edit Playlist';
+  const title = mode === 'create' ? 'Create Playlist' : 'Edit Playlist';
   const submitText = mode === 'create' ? 'Create Playlist' : 'Update Playlist';
 
   return (
@@ -137,36 +120,11 @@ export function PlaylistModal({
         <div className='px-6 py-4 border-b border-gray-200'>
           <h3 className='text-lg font-semibold text-gray-900'>{title}</h3>
           <p className='text-sm text-gray-600 mt-1'>
-            {mode === 'create'
-              ? 'Create a new playlist and start downloading its tracks'
-              : 'Update playlist settings and auto-track artists preference'}
+            Update playlist settings and auto-track artists preference
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className='px-6 py-4'>
-          <div className='mb-4'>
-            <label
-              htmlFor='url'
-              className='block text-sm font-medium text-gray-700 mb-2'
-            >
-              Spotify Playlist URL
-            </label>
-            <input
-              type='text'
-              id='url'
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              placeholder='https://open.spotify.com/playlist/...'
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
-              disabled={isSubmitting || mode === 'edit'}
-            />
-            {mode === 'edit' && (
-              <p className='text-xs text-gray-500 mt-1'>
-                URL cannot be changed after creation
-              </p>
-            )}
-          </div>
-
           <div className='mb-4'>
             <label
               htmlFor='name'
@@ -221,12 +179,10 @@ export function PlaylistModal({
             </button>
             <button
               type='submit'
-              disabled={isSubmitting || !url.trim() || !name.trim()}
+              disabled={isSubmitting || !name.trim()}
               className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50'
             >
-              {isSubmitting
-                ? `${mode === 'create' ? 'Creating' : 'Updating'}...`
-                : submitText}
+              {isSubmitting ? 'Updating...' : submitText}
             </button>
           </div>
         </form>

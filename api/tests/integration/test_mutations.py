@@ -13,7 +13,6 @@ class TestArtistMutations(TransactionTestCase):
 
     async def test_track_artist_mutation_success(self):
         """Test successful artist tracking."""
-        # Create test data
         untracked_artist = await sync_to_async(Artist.objects.create)(
             name="Untracked Artist", gid="untracked123", tracked=False
         )
@@ -64,7 +63,6 @@ class TestArtistMutations(TransactionTestCase):
 
     async def test_untrack_artist_mutation_success(self):
         """Test successful artist untracking."""
-        # Create test data
         tracked_artist = await sync_to_async(Artist.objects.create)(
             name="Tracked Artist", gid="tracked123", tracked=True
         )
@@ -96,7 +94,6 @@ class TestAlbumMutations(TransactionTestCase):
 
     async def test_mark_album_wanted(self):
         """Test marking an album as wanted."""
-        # Create test data
         artist = await sync_to_async(Artist.objects.create)(
             name="Test Artist", gid="test123", tracked=True
         )
@@ -132,7 +129,6 @@ class TestAlbumMutations(TransactionTestCase):
 
     async def test_mark_album_unwanted(self):
         """Test marking an album as unwanted."""
-        # Create test data
         artist = await sync_to_async(Artist.objects.create)(
             name="Test Artist", gid="test123", tracked=True
         )
@@ -172,7 +168,6 @@ class TestPlaylistMutations(TransactionTestCase):
 
     async def test_enable_playlist(self):
         """Test enabling a playlist."""
-        # Create test data
         playlist = await sync_to_async(TrackedPlaylist.objects.create)(
             name="Test Playlist",
             url="https://open.spotify.com/playlist/test123",

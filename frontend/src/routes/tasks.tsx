@@ -7,10 +7,8 @@ import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import {
   GetTaskHistoryDocument,
-  GetActiveTasksDocument,
   type TaskHistory,
 } from '../types/generated/graphql';
-import { useMutation, gql } from '@apollo/client';
 
 type TaskStatus = 'running' | 'completed' | 'failed' | 'pending' | 'all';
 type TaskType = 'sync' | 'download' | 'fetch' | 'all';
@@ -30,17 +28,30 @@ function Tasks() {
   const [pageSize, setPageSize] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Query for real active tasks from the database
-  const { data: activeTasksData } = useQuery(GetActiveTasksDocument, {
+  const {
+    data: historyData,
+    loading: historyLoading,
+    error: historyError,
+    fetchMore,
+  } = useQuery(GetTaskHistoryDocument, {
     variables: {
-      first: 50, // Get more active tasks
+      status: historyFilter === 'all' ? undefined : historyFilter,
+      type: historyTypeFilter === 'all' ? undefined : historyTypeFilter,
+      entityType:
+        historyEntityFilter === 'all' ? undefined : historyEntityFilter,
+      search: searchQuery || undefined,
+      first: pageSize,
     },
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 5000, // Poll every 5 seconds for active tasks
+    fetchPolicy: 'cache-first',
+    notifyOnNetworkStatusChange: false,
+    pollInterval: 8000, // Poll every 8 seconds for task history updates
   });
 
-  // Get real active tasks from the database
-  const realActiveTasks = activeTasksData?.activeTasks?.edges || [];
+  // Get active tasks from the task history
+  const realActiveTasks =
+    historyData?.taskHistory?.edges?.filter(
+      (task: TaskHistory) => task.status === 'RUNNING'
+    ) || [];
 
   // Filter active tasks
   const filteredActiveTasks = realActiveTasks.filter((task: TaskHistory) => {
@@ -67,36 +78,6 @@ function Tasks() {
     (task: TaskHistory) => task.status === 'FAILED'
   );
 
-  // Cleanup stuck tasks mutation
-  const [cleanupStuckTasks] = useMutation(gql`
-    mutation CleanupStuckTasks {
-      cleanupStuckTasks {
-        success
-        message
-        cleanedCount
-      }
-    }
-  `);
-
-  const {
-    data: historyData,
-    loading: historyLoading,
-    error: historyError,
-    fetchMore,
-  } = useQuery(GetTaskHistoryDocument, {
-    variables: {
-      status: historyFilter === 'all' ? undefined : historyFilter,
-      type: historyTypeFilter === 'all' ? undefined : historyTypeFilter,
-      entityType:
-        historyEntityFilter === 'all' ? undefined : historyEntityFilter,
-      search: searchQuery || undefined,
-      first: pageSize,
-    },
-    fetchPolicy: 'cache-first',
-    notifyOnNetworkStatusChange: false,
-    pollInterval: 8000, // Poll every 8 seconds for task history updates
-  });
-
   return (
     <div className='space-y-8'>
       {/* Page Header */}
@@ -117,38 +98,12 @@ function Tasks() {
           </div>
           <button
             onClick={() => {
-              // Refetch active tasks and history
-              if (activeTasksData) {
-                window.location.reload();
-              }
+              // Refetch task history
+              window.location.reload();
             }}
-            className='px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm mr-2'
+            className='px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm'
           >
             Refresh
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                const result = await cleanupStuckTasks();
-                if (result.data?.cleanupStuckTasks?.success) {
-                  alert(
-                    `Cleanup completed: ${result.data.cleanupStuckTasks.message}`
-                  );
-                  window.location.reload();
-                } else {
-                  alert(
-                    'Cleanup failed: ' +
-                      (result.data?.cleanupStuckTasks?.message ||
-                        'Unknown error')
-                  );
-                }
-              } catch (error) {
-                alert('Error running cleanup: ' + error);
-              }
-            }}
-            className='px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 text-sm'
-          >
-            Cleanup Stuck Tasks
           </button>
         </div>
       </div>
@@ -411,11 +366,6 @@ function Tasks() {
                         {task.completedAt &&
                           ` • Completed ${new Date(task.completedAt).toLocaleString()}`}
                       </div>
-                      {task.errorMessage && (
-                        <div className='text-sm text-red-600 mt-1'>
-                          Error: {task.errorMessage}
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className='flex items-center gap-2'>
@@ -432,7 +382,7 @@ function Tasks() {
                     >
                       {task.status}
                     </span>
-                    {task.progressPercentage !== null && (
+                    {task.progressPercentage && (
                       <span className='text-sm text-gray-500'>
                         {Math.round(task.progressPercentage)}%
                       </span>
@@ -520,17 +470,12 @@ function Tasks() {
                           Log Messages:
                         </h4>
                         <div className='space-y-1 max-h-32 overflow-y-auto'>
-                          {task.logMessages.map(log => (
+                          {task.logMessages.map((log, index) => (
                             <div
-                              key={`${log.timestamp}-${log.message.slice(0, 20)}`}
+                              key={`${task.id}-log-${index}`}
                               className='text-xs font-mono bg-white p-2 rounded border'
                             >
-                              <span className='text-gray-500'>
-                                {new Date(log.timestamp).toLocaleTimeString()}
-                              </span>
-                              <span className='ml-2 text-gray-700'>
-                                {log.message}
-                              </span>
+                              <span className='text-gray-700'>{log}</span>
                             </div>
                           ))}
                         </div>
@@ -539,17 +484,6 @@ function Tasks() {
                       <p className='text-sm text-gray-500 italic'>
                         No log messages available
                       </p>
-                    )}
-
-                    {task.errorMessage && (
-                      <div className='mt-3 p-3 bg-red-50 border border-red-200 rounded'>
-                        <h4 className='text-sm font-medium text-red-700 mb-1'>
-                          Error:
-                        </h4>
-                        <p className='text-sm text-red-600'>
-                          {task.errorMessage}
-                        </p>
-                      </div>
                     )}
                   </div>
                 ))}

@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check for files without trailing newlines
+echo "🔍 Checking for files without trailing newlines..."
+npm run check-newlines
+
+# If newline check fails, the commit will be blocked
+if [ $? -ne 0 ]; then
+  echo "❌ Some files are missing trailing newlines. Please run 'npm run fix-newlines' to fix them."
+  exit 1
+fi
+
+# Validate GraphQL schema before commit
+echo "🔍 Validating GraphQL schema..."
+npm run validate-schema
+
+# If validation fails, the commit will be blocked
+if [ $? -ne 0 ]; then
+  echo "❌ GraphQL schema validation failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "✅ All checks passed!" 

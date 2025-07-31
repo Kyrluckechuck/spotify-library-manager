@@ -25,63 +25,21 @@ export const GetTaskHistoryDocument = gql`
         endCursor
       }
       edges {
-        id
-        taskId
-        type
-        entityId
-        entityType
-        status
-        startedAt
-        completedAt
-        errorMessage
-        durationSeconds
-        progressPercentage
-        logMessages {
-          timestamp
-          message
+        node {
+          id
+          taskId
+          type
+          entityId
+          entityType
+          status
+          startedAt
+          completedAt
+          durationSeconds
+          progressPercentage
+          logMessages
         }
+        cursor
       }
-    }
-  }
-`;
-
-export const GetActiveTasksDocument = gql`
-  query GetActiveTasks($first: Int = 20, $after: String) {
-    activeTasks(first: $first, after: $after) {
-      totalCount
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-      edges {
-        id
-        taskId
-        type
-        entityId
-        entityType
-        status
-        startedAt
-        completedAt
-        errorMessage
-        durationSeconds
-        progressPercentage
-        logMessages {
-          timestamp
-          message
-        }
-      }
-    }
-  }
-`;
-
-export const CleanupStuckTasksDocument = gql`
-  mutation CleanupStuckTasks {
-    cleanupStuckTasks {
-      success
-      message
-      cleanedCount
     }
   }
 `;

@@ -1,86 +1,94 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
-import {
-  DownloadUrlDocument,
-  type DownloadUrlMutation,
-  type DownloadUrlMutationVariables,
-} from '../../types/generated/graphql';
+import { DOWNLOAD_URL } from '../../queries/download';
 
 interface DownloadUrlModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function DownloadUrlModal({ isOpen, onClose }: DownloadUrlModalProps) {
+export const DownloadUrlModal: React.FC<DownloadUrlModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
   const [url, setUrl] = useState('');
   const [autoTrackArtists, setAutoTrackArtists] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [downloadUrl] = useMutation<
-    DownloadUrlMutation,
-    DownloadUrlMutationVariables
-  >(DownloadUrlDocument);
+  const [downloadUrl, { loading }] = useMutation(DOWNLOAD_URL, {
+    onCompleted: data => {
+      if (data.downloadUrl.success) {
+        setError(null);
+        setUrl('');
+        onClose();
+        onSuccess?.();
+      } else {
+        setError(data.downloadUrl.message);
+      }
+    },
+    onError: error => {
+      setError(error.message);
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (!url.trim()) {
       setError('Please enter a Spotify URL or URI');
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-
     try {
-      const result = await downloadUrl({
+      await downloadUrl({
         variables: {
           url: url.trim(),
           autoTrackArtists,
         },
       });
-
-      if (result.data?.downloadUrl.success) {
-        setUrl('');
-        setAutoTrackArtists(false);
-        onClose();
-      } else {
-        setError(
-          result.data?.downloadUrl.message || 'Failed to start download'
-        );
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      // Error is handled in onError callback
     }
   };
 
   const handleClose = () => {
-    if (!isSubmitting) {
-      setUrl('');
-      setAutoTrackArtists(false);
-      setError(null);
-      onClose();
-    }
+    setUrl('');
+    setError(null);
+    setAutoTrackArtists(false);
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
     <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-      <div className='bg-white rounded-lg shadow-xl max-w-md w-full mx-4'>
-        <div className='px-6 py-4 border-b border-gray-200'>
-          <h3 className='text-lg font-semibold text-gray-900'>
-            Download Spotify URL/URI
-          </h3>
-          <p className='text-sm text-gray-600 mt-1'>
-            Enter a Spotify URL or URI to download tracks, albums, or playlists
-          </p>
+      <div className='bg-white rounded-lg p-6 w-full max-w-md mx-4'>
+        <div className='flex justify-between items-center mb-4'>
+          <h2 className='text-xl font-semibold'>Download Spotify URL</h2>
+          <button
+            onClick={handleClose}
+            className='text-gray-400 hover:text-gray-600'
+          >
+            <svg
+              className='w-6 h-6'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M6 18L18 6M6 6l12 12'
+              />
+            </svg>
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className='px-6 py-4'>
+        <form onSubmit={handleSubmit}>
           <div className='mb-4'>
             <label
               htmlFor='url'
@@ -94,55 +102,51 @@ export function DownloadUrlModal({ isOpen, onClose }: DownloadUrlModalProps) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder='https://open.spotify.com/playlist/... or spotify:playlist:...'
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
-              disabled={isSubmitting}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              disabled={loading}
             />
           </div>
 
-          <div className='mb-6'>
+          <div className='mb-4'>
             <label className='flex items-center'>
               <input
                 type='checkbox'
                 checked={autoTrackArtists}
                 onChange={e => setAutoTrackArtists(e.target.checked)}
-                className='h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded'
-                disabled={isSubmitting}
+                className='mr-2'
+                disabled={loading}
               />
-              <span className='ml-2 text-sm text-gray-700'>
-                Auto-track artists from this download
+              <span className='text-sm text-gray-700'>
+                Auto-track artists from this content
               </span>
             </label>
-            <p className='text-xs text-gray-500 mt-1'>
-              When enabled, all artists from the downloaded content will be
-              automatically tracked for future releases
-            </p>
           </div>
 
           {error && (
-            <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md'>
-              <p className='text-sm text-red-600'>{error}</p>
+            <div className='mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded'>
+              {error}
             </div>
           )}
 
-          <div className='flex justify-end gap-3'>
+          <div className='flex justify-end gap-2'>
             <button
               type='button'
               onClick={handleClose}
-              disabled={isSubmitting}
-              className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50'
+              className='px-4 py-2 text-gray-600 hover:text-gray-800'
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type='submit'
-              disabled={isSubmitting || !url.trim()}
-              className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50'
+              disabled={loading || !url.trim()}
+              className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
             >
-              {isSubmitting ? 'Starting Download...' : 'Start Download'}
+              {loading ? 'Downloading...' : 'Download'}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-}
+};

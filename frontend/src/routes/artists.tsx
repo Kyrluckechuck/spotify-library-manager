@@ -49,7 +49,7 @@ function Artists() {
   const queryVariablesWithFilter = useMemo(
     () => ({
       ...queryVariables,
-      tracked: filter === 'all' ? undefined : filter === 'tracked',
+      isTracked: filter === 'all' ? undefined : filter === 'tracked',
     }),
     [queryVariables, filter]
   );
@@ -75,7 +75,7 @@ function Artists() {
           ['tracked', 'untracked'].forEach(trackedFilter => {
             const variables = {
               ...baseVariables,
-              tracked: trackedFilter === 'tracked' ? true : false,
+              isTracked: trackedFilter === 'tracked' ? true : false,
             };
 
             client
@@ -103,7 +103,7 @@ function Artists() {
     // Pre-fetch data for the new filter to eliminate jitter
     const newVariables = {
       ...queryVariablesWithFilter,
-      tracked: newFilter === 'all' ? undefined : newFilter === 'tracked',
+      isTracked: newFilter === 'all' ? undefined : newFilter === 'tracked',
     };
 
     // Pre-fetch without blocking the UI
@@ -120,10 +120,10 @@ function Artists() {
 
   const handleTrackToggle = async (artist: {
     id: number;
-    tracked: boolean;
+    isTracked: boolean;
   }) => {
     try {
-      if (artist.tracked) {
+      if (artist.isTracked) {
         await untrackArtist({ variables: { artistId: artist.id } });
       } else {
         await trackArtist({ variables: { artistId: artist.id } });
@@ -135,7 +135,7 @@ function Artists() {
 
   const handleSyncArtist = async (artistId: number) => {
     try {
-      await syncArtist({ variables: { artistId } });
+      await syncArtist({ variables: { artistId: artistId.toString() } });
     } catch (error) {
       console.error('Error syncing artist:', error);
     }

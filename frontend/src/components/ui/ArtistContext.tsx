@@ -34,7 +34,7 @@ export function ArtistContext({
             ← Back to Artists
           </Link>
           <Link
-            to={contentType === 'songs' ? '/albums' : '/songs'}
+            to='/albums'
             search={{ artistId }}
             className='text-sm text-indigo-600 hover:text-indigo-800 underline'
           >

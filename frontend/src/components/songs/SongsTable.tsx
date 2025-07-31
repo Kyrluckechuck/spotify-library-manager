@@ -1,164 +1,194 @@
-import type { Song } from '../../types/generated/graphql';
-import { SortableTableHeader } from '../ui/SortableTableHeader';
+import React from 'react';
+import { Link } from '@tanstack/react-router';
 
-export type SongSortField =
+export type SortField =
   | 'name'
-  | 'artist'
+  | 'primaryArtist'
+  | 'createdAt'
   | 'downloaded'
-  | 'unavailable'
-  | 'created_at'
+  | 'failedCount'
   | null;
+
+interface Song {
+  id: number;
+  name: string;
+  gid: string;
+  primaryArtist: string;
+  primaryArtistId: number;
+  createdAt: string;
+  failedCount: number;
+  bitrate: number;
+  unavailable: boolean;
+  filePath: string | null;
+  downloaded: boolean;
+  spotifyUri: string;
+}
 
 interface SongsTableProps {
   songs: Song[];
-  sortField: SongSortField;
+  sortField: SortField;
   sortDirection: 'asc' | 'desc';
-  onSort: (field: SongSortField) => void;
+  onSort: (field: SortField) => void;
   loading?: boolean;
-  showArtist?: boolean; // Add prop to conditionally show artist column
 }
 
-export function SongsTable({
+export const SongsTable: React.FC<SongsTableProps> = ({
   songs,
   sortField,
   sortDirection,
   onSort,
   loading = false,
-  showArtist = false,
-}: SongsTableProps) {
+}) => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatBitrate = (bitrate: number) => {
+    if (bitrate === 0) return 'N/A';
+    return `${Math.round(bitrate / 1000)} kbps`;
+  };
+
+  const getStatusIcon = (song: Song) => {
+    if (song.unavailable) {
+      return (
+        <span className='text-red-500' title='Unavailable'>
+          ⚠️
+        </span>
+      );
+    }
+    if (song.downloaded) {
+      return (
+        <span className='text-green-500' title='Downloaded'>
+          ✓
+        </span>
+      );
+    }
+    if (song.failedCount > 0) {
+      return (
+        <span
+          className='text-yellow-500'
+          title={`Failed ${song.failedCount} times`}
+        >
+          ⚠️
+        </span>
+      );
+    }
+    return (
+      <span className='text-gray-400' title='Not downloaded'>
+        ○
+      </span>
+    );
+  };
+
+  const SortableTableHeader: React.FC<{
+    field: SortField;
+    children: React.ReactNode;
+    className?: string;
+  }> = ({ field, children, className = '' }) => (
+    <th
+      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50 ${className}`}
+      onClick={() => onSort(field)}
+    >
+      <div className='flex items-center gap-1'>
+        {children}
+        {sortField === field && (
+          <span className='text-gray-400'>
+            {sortDirection === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+  );
+
+  if (loading && songs.length === 0) {
+    return (
+      <div className='bg-white shadow overflow-hidden sm:rounded-md'>
+        <div className='px-6 py-4 text-center text-gray-500'>
+          Loading songs...
+        </div>
+      </div>
+    );
+  }
+
   if (songs.length === 0) {
     return (
-      <div className='bg-white rounded shadow overflow-hidden'>
-        <div className='p-6 text-center text-gray-500'>
-          {loading ? 'Loading songs...' : 'No songs found.'}
+      <div className='bg-white shadow overflow-hidden sm:rounded-md'>
+        <div className='px-6 py-4 text-center text-gray-500'>
+          No songs found.
         </div>
       </div>
     );
   }
 
   return (
-    <div className='bg-white rounded shadow overflow-hidden'>
-      <div className='overflow-x-auto'>
-        <table className='min-w-full divide-y divide-gray-200'>
-          <thead className='bg-gray-50'>
-            <tr>
-              <SortableTableHeader
-                field='name'
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
-                Song
-              </SortableTableHeader>
-              {showArtist && (
-                <SortableTableHeader
-                  field='artist'
-                  currentSortField={sortField}
-                  currentSortDirection={sortDirection}
-                  onSort={onSort}
+    <div className='bg-white shadow overflow-hidden sm:rounded-md'>
+      <table className='min-w-full divide-y divide-gray-200'>
+        <thead className='bg-gray-50'>
+          <tr>
+            <SortableTableHeader field='downloaded' className='w-12'>
+              Status
+            </SortableTableHeader>
+            <SortableTableHeader field='name'>Song Name</SortableTableHeader>
+            <SortableTableHeader field='primaryArtist'>
+              Artist
+            </SortableTableHeader>
+            <SortableTableHeader field='createdAt'>Added</SortableTableHeader>
+            <SortableTableHeader field='failedCount'>
+              Failed
+            </SortableTableHeader>
+            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+              Bitrate
+            </th>
+            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+              File Path
+            </th>
+          </tr>
+        </thead>
+        <tbody className='bg-white divide-y divide-gray-200'>
+          {songs.map(song => (
+            <tr key={song.id} className='hover:bg-gray-50'>
+              <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
+                {getStatusIcon(song)}
+              </td>
+              <td className='px-6 py-4 whitespace-nowrap'>
+                <div className='text-sm font-medium text-gray-900'>
+                  {song.name}
+                </div>
+                <div className='text-sm text-gray-500'>{song.gid}</div>
+              </td>
+              <td className='px-6 py-4 whitespace-nowrap'>
+                <Link
+                  to='/artists'
+                  className='text-sm font-medium text-blue-600 hover:text-blue-900'
                 >
-                  Artist
-                </SortableTableHeader>
-              )}
-              <SortableTableHeader
-                field='downloaded'
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
-                Status
-              </SortableTableHeader>
-              <SortableTableHeader
-                field='unavailable'
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
-                Availability
-              </SortableTableHeader>
-              <SortableTableHeader
-                field='created_at'
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
-                Added
-              </SortableTableHeader>
-              <SortableTableHeader
-                field={null}
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
-                Actions
-              </SortableTableHeader>
-            </tr>
-          </thead>
-          <tbody className='bg-white divide-y divide-gray-200'>
-            {songs.map(song => (
-              <tr key={song.id} className='hover:bg-gray-50'>
-                <td className='px-6 py-4 whitespace-nowrap'>
-                  <div className='text-sm font-medium text-gray-900'>
-                    {song.name}
-                  </div>
-                  <div className='text-sm text-gray-500'>ID: {song.gid}</div>
-                </td>
-                {showArtist && (
-                  <td className='px-6 py-4 whitespace-nowrap'>
-                    <div className='text-sm text-gray-900'>{song.artist}</div>
-                  </td>
+                  {song.primaryArtist}
+                </Link>
+              </td>
+              <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                {formatDate(song.createdAt)}
+              </td>
+              <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                {song.failedCount > 0 ? song.failedCount : '-'}
+              </td>
+              <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                {formatBitrate(song.bitrate)}
+              </td>
+              <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                {song.filePath ? (
+                  <span
+                    className='truncate max-w-xs block'
+                    title={song.filePath}
+                  >
+                    {song.filePath}
+                  </span>
+                ) : (
+                  '-'
                 )}
-                <td className='px-6 py-4 whitespace-nowrap'>
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      song.downloaded
-                        ? 'bg-green-100 text-green-800'
-                        : song.unavailable
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                  >
-                    {song.downloaded
-                      ? 'Downloaded'
-                      : song.unavailable
-                        ? 'Unavailable'
-                        : 'Pending'}
-                  </span>
-                </td>
-                <td className='px-6 py-4 whitespace-nowrap'>
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      song.unavailable
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}
-                  >
-                    {song.unavailable ? 'Unavailable' : 'Available'}
-                  </span>
-                </td>
-                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                  {new Date(song.createdAt).toLocaleDateString()}
-                </td>
-                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
-                  <a
-                    href={song.spotifyUri}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='text-indigo-600 hover:text-indigo-900 underline'
-                  >
-                    Open Spotify
-                  </a>
-                  {song.filePath && (
-                    <button className='text-green-600 hover:text-green-900 underline'>
-                      Play Local
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
-}
+};

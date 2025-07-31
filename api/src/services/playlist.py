@@ -1,11 +1,12 @@
 from typing import List, Optional
 
 from django.db.models import Q
+from asgiref.sync import sync_to_async
 
 from library_manager.models import TrackedPlaylist as DjangoPlaylist
 from library_manager.tasks import sync_tracked_playlist, sync_tracked_playlist_artists
 
-from ..graphql_types.models import Playlist
+from ..graphql_types.models import Playlist, MutationResult
 from .base import BaseService
 
 
@@ -15,7 +16,7 @@ class PlaylistService(BaseService[Playlist]):
 
     async def get_by_id(self, id: str) -> Optional[Playlist]:
         try:
-            django_playlist = await self.model.objects.aget(url__contains=id)
+            django_playlist = await sync_to_async(self.model.objects.get)(url__contains=id)
             return self._to_graphql_type(django_playlist)
         except self.model.DoesNotExist:
             return None
@@ -24,14 +25,14 @@ class PlaylistService(BaseService[Playlist]):
         self,
         first: int = 20,
         after: Optional[str] = None,
-        is_tracked: Optional[bool] = None,
+        enabled: Optional[bool] = None,
         search: Optional[str] = None,
     ) -> tuple[List[Playlist], bool, int]:
         queryset = self.model.objects.all()
 
         # Apply filters
-        if is_tracked is not None:
-            queryset = queryset.filter(enabled=is_tracked)
+        if enabled is not None:
+            queryset = queryset.filter(enabled=enabled)
 
         if search:
             queryset = queryset.filter(
@@ -44,10 +45,10 @@ class PlaylistService(BaseService[Playlist]):
             queryset = queryset.filter(id__gt=id_after)
 
         # Get total count before slicing
-        total_count = await queryset.acount()
+        total_count = await sync_to_async(queryset.count)()
 
         # Get one extra item to determine if there are more pages
-        items = await queryset.order_by("id")[: first + 1].all()
+        items = await sync_to_async(list)(queryset.order_by("id")[: first + 1])
 
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
@@ -61,10 +62,27 @@ class PlaylistService(BaseService[Playlist]):
     async def track_playlist(
         self, playlist_id: str, auto_track_artists: bool = False
     ) -> Playlist:
-        django_playlist = await self.model.objects.aget(url__contains=playlist_id)
+        django_playlist = await sync_to_async(self.model.objects.get)(url__contains=playlist_id)
         django_playlist.enabled = True
         django_playlist.auto_track_artists = auto_track_artists
-        await django_playlist.asave()
+        await sync_to_async(django_playlist.save)()
+
+        # Queue tasks
+        sync_tracked_playlist(django_playlist)
+        if auto_track_artists:
+            sync_tracked_playlist_artists(django_playlist)
+
+        return self._to_graphql_type(django_playlist)
+
+    async def create_playlist(self, name: str, url: str, auto_track_artists: bool = False) -> Playlist:
+        """Create a new playlist."""
+        django_playlist = self.model(
+            name=name,
+            url=url,
+            enabled=True,
+            auto_track_artists=auto_track_artists,
+        )
+        await sync_to_async(django_playlist.save)()
 
         # Queue tasks
         sync_tracked_playlist(django_playlist)
@@ -75,44 +93,92 @@ class PlaylistService(BaseService[Playlist]):
 
     async def update_playlist(
         self,
-        playlist_id: str,
-        is_tracked: Optional[bool] = None,
-        auto_track_artists: Optional[bool] = None,
-    ) -> Playlist:
-        django_playlist = await self.model.objects.aget(url__contains=playlist_id)
-
-        if is_tracked is not None:
-            django_playlist.enabled = is_tracked
-
-        if auto_track_artists is not None:
+        playlist_id: int,
+        name: str,
+        auto_track_artists: bool,
+    ) -> MutationResult:
+        try:
+            django_playlist = await sync_to_async(self.model.objects.get)(id=playlist_id)
+            
+            django_playlist.name = name
             django_playlist.auto_track_artists = auto_track_artists
+            
+            await sync_to_async(django_playlist.save)()
 
-        await django_playlist.asave()
+            return MutationResult(
+                success=True,
+                message="Playlist updated successfully",
+                playlist=self._to_graphql_type(django_playlist)
+            )
+        except self.model.DoesNotExist:
+            return MutationResult(
+                success=False,
+                message="Playlist not found",
+                playlist=None
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False,
+                message=f"Error updating playlist: {str(e)}",
+                playlist=None
+            )
 
-        if is_tracked:
-            sync_tracked_playlist(django_playlist)
-        if auto_track_artists:
-            sync_tracked_playlist_artists(django_playlist)
+    async def sync_playlist(self, playlist_id: int) -> MutationResult:
+        try:
+            django_playlist = await sync_to_async(self.model.objects.get)(id=playlist_id)
+            
+            # Trigger sync task
+            from library_manager.tasks import sync_tracked_playlist
+            await sync_to_async(sync_tracked_playlist)(django_playlist)
+            
+            return MutationResult(
+                success=True,
+                message="Playlist sync started successfully",
+                playlist=self._to_graphql_type(django_playlist)
+            )
+        except self.model.DoesNotExist:
+            return MutationResult(
+                success=False,
+                message="Playlist not found",
+                playlist=None
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False,
+                message=f"Error syncing playlist: {str(e)}",
+                playlist=None
+            )
 
-        return self._to_graphql_type(django_playlist)
+    async def toggle_playlist(self, playlist_id: int) -> MutationResult:
+        try:
+            django_playlist = await sync_to_async(self.model.objects.get)(id=playlist_id)
+            django_playlist.enabled = not django_playlist.enabled
+            await sync_to_async(django_playlist.save)()
 
-    async def sync_playlist(self, playlist_id: str) -> Playlist:
-        django_playlist = await self.model.objects.aget(url__contains=playlist_id)
-        sync_tracked_playlist(django_playlist)
-        return self._to_graphql_type(django_playlist)
+            return MutationResult(
+                success=True,
+                message="Playlist toggled successfully",
+                playlist=self._to_graphql_type(django_playlist)
+            )
+        except self.model.DoesNotExist:
+            return MutationResult(
+                success=False,
+                message="Playlist not found",
+                playlist=None
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False,
+                message=f"Error toggling playlist: {str(e)}",
+                playlist=None
+            )
 
     def _to_graphql_type(self, django_playlist: DjangoPlaylist) -> Playlist:
-        # Extract playlist ID from URL
-        playlist_id = django_playlist.url.split("/")[-1]
-
         return Playlist(
-            id=playlist_id,
+            id=django_playlist.id,
             name=django_playlist.name,
-            owner_id="",  # TODO: Add owner_id support to model
-            spotify_url=django_playlist.url,
-            image_url=None,  # TODO: Add image_url support
-            track_count=0,  # TODO: Add track_count support
-            is_tracked=django_playlist.enabled,
+            url=django_playlist.url,
+            enabled=django_playlist.enabled,
             auto_track_artists=django_playlist.auto_track_artists,
-            last_synced=django_playlist.last_synced_at,
+            last_synced_at=django_playlist.last_synced_at,
         )

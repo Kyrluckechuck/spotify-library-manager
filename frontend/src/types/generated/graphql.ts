@@ -2,32 +2,20 @@ import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
-export type Exact<T extends { [key: string]: unknown }> = {
-  [K in keyof T]: T[K];
-};
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
-  [SubKey in K]?: Maybe<T[SubKey]>;
-};
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
-  [SubKey in K]: Maybe<T[SubKey]>;
-};
-export type MakeEmpty<
-  T extends { [key: string]: unknown },
-  K extends keyof T,
-> = { [_ in K]?: never };
-export type Incremental<T> =
-  | T
-  | {
-      [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never;
-    };
+export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
+export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string };
-  String: { input: string; output: string };
-  Boolean: { input: boolean; output: boolean };
-  Int: { input: number; output: number };
-  Float: { input: number; output: number };
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
+  DateTime: { input: any; output: any; }
 };
 
 export type Album = {
@@ -39,59 +27,89 @@ export type Album = {
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   spotifyGid: Scalars['String']['output'];
-  spotifyUri: Scalars['String']['output'];
   totalTracks: Scalars['Int']['output'];
   wanted: Scalars['Boolean']['output'];
 };
 
-export type AlbumsConnection = {
+export type AlbumConnection = {
   edges: Array<Album>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
 
 export type Artist = {
-  addedAt?: Maybe<Scalars['String']['output']>;
+  addedAt?: Maybe<Scalars['DateTime']['output']>;
   gid: Scalars['String']['output'];
   id: Scalars['Int']['output'];
-  lastSyncedAt?: Maybe<Scalars['String']['output']>;
+  isTracked: Scalars['Boolean']['output'];
+  lastSynced?: Maybe<Scalars['DateTime']['output']>;
   name: Scalars['String']['output'];
-  tracked: Scalars['Boolean']['output'];
 };
 
-export type ArtistsConnection = {
+export type ArtistConnection = {
   edges: Array<Artist>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
 
-export type CleanupResult = {
-  cleanedCount: Scalars['Int']['output'];
-  message: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
+export type DownloadHistory = {
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
+  entityId: Scalars['String']['output'];
+  entityType: Scalars['String']['output'];
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  startedAt: Scalars['DateTime']['output'];
+  status: DownloadStatus;
 };
 
-export type LogMessage = {
+export type DownloadProgress = {
+  entityId: Scalars['String']['output'];
+  entityType: Scalars['String']['output'];
   message: Scalars['String']['output'];
-  timestamp: Scalars['String']['output'];
+  progress: Scalars['Float']['output'];
+  status: DownloadStatus;
+};
+
+export type DownloadStatus =
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'IN_PROGRESS'
+  | 'PENDING'
+  | 'SKIPPED';
+
+export type EntityType =
+  | 'ALBUM'
+  | 'ARTIST'
+  | 'PLAYLIST'
+  | 'TRACK';
+
+export type HistoryConnection = {
+  edges: Array<HistoryEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type HistoryEdge = {
+  cursor: Scalars['String']['output'];
+  node: DownloadHistory;
 };
 
 export type Mutation = {
-  cleanupStuckTasks: CleanupResult;
-  createPlaylist: MutationResult;
-  downloadAllForTrackedArtists: TaskResult;
-  downloadUrl: TaskResult;
-  fetchAllForTrackedArtists: TaskResult;
-  retryAllMissingKnownSongs: TaskResult;
+  createPlaylist: Playlist;
+  downloadAlbum: Album;
+  downloadUrl: MutationResult;
   setAlbumWanted: MutationResult;
-  syncArtist: TaskResult;
-  syncPlaylist: TaskResult;
+  syncArtist: Artist;
+  syncPlaylist: MutationResult;
   togglePlaylist: MutationResult;
   trackArtist: MutationResult;
+  trackPlaylist: Playlist;
   untrackArtist: MutationResult;
+  updateAlbum: Album;
+  updateArtist: Artist;
   updatePlaylist: MutationResult;
-  validateUndownloadedSongs: TaskResult;
 };
+
 
 export type MutationCreatePlaylistArgs = {
   autoTrackArtists?: Scalars['Boolean']['input'];
@@ -99,35 +117,63 @@ export type MutationCreatePlaylistArgs = {
   url: Scalars['String']['input'];
 };
 
+
+export type MutationDownloadAlbumArgs = {
+  albumId: Scalars['String']['input'];
+};
+
+
 export type MutationDownloadUrlArgs = {
   autoTrackArtists?: Scalars['Boolean']['input'];
   url: Scalars['String']['input'];
 };
+
 
 export type MutationSetAlbumWantedArgs = {
   albumId: Scalars['Int']['input'];
   wanted: Scalars['Boolean']['input'];
 };
 
+
 export type MutationSyncArtistArgs = {
-  artistId: Scalars['Int']['input'];
+  artistId: Scalars['String']['input'];
 };
+
 
 export type MutationSyncPlaylistArgs = {
   playlistId: Scalars['Int']['input'];
 };
 
+
 export type MutationTogglePlaylistArgs = {
   playlistId: Scalars['Int']['input'];
 };
+
 
 export type MutationTrackArtistArgs = {
   artistId: Scalars['Int']['input'];
 };
 
+
+export type MutationTrackPlaylistArgs = {
+  input: TrackPlaylistInput;
+};
+
+
 export type MutationUntrackArtistArgs = {
   artistId: Scalars['Int']['input'];
 };
+
+
+export type MutationUpdateAlbumArgs = {
+  input: UpdateAlbumInput;
+};
+
+
+export type MutationUpdateArtistArgs = {
+  input: UpdateArtistInput;
+};
+
 
 export type MutationUpdatePlaylistArgs = {
   autoTrackArtists: Scalars['Boolean']['input'];
@@ -139,7 +185,7 @@ export type MutationResult = {
   album?: Maybe<Album>;
   artist?: Maybe<Artist>;
   message: Scalars['String']['output'];
-  playlist?: Maybe<TrackedPlaylist>;
+  playlist?: Maybe<Playlist>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -150,180 +196,213 @@ export type PageInfo = {
   startCursor?: Maybe<Scalars['String']['output']>;
 };
 
-export type PlaylistsConnection = {
-  edges: Array<TrackedPlaylist>;
+export type Playlist = {
+  autoTrackArtists: Scalars['Boolean']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['Int']['output'];
+  lastSyncedAt?: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
+export type PlaylistConnection = {
+  edges: Array<Playlist>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
 
 export type Query = {
-  activeTasks: TaskHistoryConnection;
-  albums: AlbumsConnection;
+  album?: Maybe<Album>;
+  albums: AlbumConnection;
   artist?: Maybe<Artist>;
-  artists: ArtistsConnection;
-  hello: Scalars['String']['output'];
-  playlists: PlaylistsConnection;
-  songs: SongsConnection;
+  artists: ArtistConnection;
+  downloadHistory: HistoryConnection;
+  playlist?: Maybe<Playlist>;
+  playlists: PlaylistConnection;
+  song?: Maybe<Song>;
+  songs: SongConnection;
   taskHistory: TaskHistoryConnection;
 };
 
-export type QueryActiveTasksArgs = {
-  after?: InputMaybe<Scalars['String']['input']>;
-  first?: Scalars['Int']['input'];
+
+export type QueryAlbumArgs = {
+  id: Scalars['String']['input'];
 };
+
 
 export type QueryAlbumsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   artistId?: InputMaybe<Scalars['Int']['input']>;
   downloaded?: InputMaybe<Scalars['Boolean']['input']>;
-  first?: Scalars['Int']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sortBy?: InputMaybe<Scalars['String']['input']>;
   sortDirection?: InputMaybe<Scalars['String']['input']>;
   wanted?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+
 export type QueryArtistArgs = {
-  id: Scalars['Int']['input'];
+  id: Scalars['String']['input'];
 };
+
 
 export type QueryArtistsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
-  first?: Scalars['Int']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
+  isTracked?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
-  sortBy?: InputMaybe<Scalars['String']['input']>;
-  sortDirection?: InputMaybe<Scalars['String']['input']>;
-  tracked?: InputMaybe<Scalars['Boolean']['input']>;
 };
+
+
+export type QueryDownloadHistoryArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  entityType?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryPlaylistArgs = {
+  id: Scalars['String']['input'];
+};
+
 
 export type QueryPlaylistsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
-  first?: Scalars['Int']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sortBy?: InputMaybe<Scalars['String']['input']>;
   sortDirection?: InputMaybe<Scalars['String']['input']>;
 };
+
+
+export type QuerySongArgs = {
+  id: Scalars['String']['input'];
+};
+
 
 export type QuerySongsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   artistId?: InputMaybe<Scalars['Int']['input']>;
   downloaded?: InputMaybe<Scalars['Boolean']['input']>;
-  first?: Scalars['Int']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sortBy?: InputMaybe<Scalars['String']['input']>;
   sortDirection?: InputMaybe<Scalars['String']['input']>;
   unavailable?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+
 export type QueryTaskHistoryArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   entityType?: InputMaybe<Scalars['String']['input']>;
-  first?: Scalars['Int']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
   type?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Song = {
-  artist?: Maybe<Scalars['String']['output']>;
-  bitrate?: Maybe<Scalars['Int']['output']>;
-  createdAt: Scalars['String']['output'];
+  bitrate: Scalars['Int']['output'];
+  createdAt: Scalars['DateTime']['output'];
   downloaded: Scalars['Boolean']['output'];
   failedCount: Scalars['Int']['output'];
   filePath?: Maybe<Scalars['String']['output']>;
   gid: Scalars['String']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+  primaryArtist: Scalars['String']['output'];
+  primaryArtistId: Scalars['Int']['output'];
   spotifyUri: Scalars['String']['output'];
   unavailable: Scalars['Boolean']['output'];
 };
 
-export type SongsConnection = {
+export type SongConnection = {
   edges: Array<Song>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
 
+export type Subscription = {
+  allDownloadProgress: DownloadProgress;
+  downloadProgress: DownloadProgress;
+};
+
+
+export type SubscriptionDownloadProgressArgs = {
+  entityId: Scalars['String']['input'];
+};
+
 export type TaskHistory = {
-  completedAt?: Maybe<Scalars['String']['output']>;
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
   durationSeconds?: Maybe<Scalars['Int']['output']>;
   entityId: Scalars['String']['output'];
-  entityType: Scalars['String']['output'];
-  errorMessage?: Maybe<Scalars['String']['output']>;
+  entityType: EntityType;
   id: Scalars['String']['output'];
-  logMessages: Array<LogMessage>;
-  progressPercentage: Scalars['Float']['output'];
-  startedAt: Scalars['String']['output'];
-  status: Scalars['String']['output'];
+  logMessages: Array<Scalars['String']['output']>;
+  progressPercentage?: Maybe<Scalars['Float']['output']>;
+  startedAt: Scalars['DateTime']['output'];
+  status: TaskStatus;
   taskId: Scalars['String']['output'];
-  type: Scalars['String']['output'];
+  type: TaskType;
 };
 
 export type TaskHistoryConnection = {
-  edges: Array<TaskHistory>;
+  edges: Array<TaskHistoryEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
 
-export type TaskResult = {
-  message: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
-  taskId?: Maybe<Scalars['String']['output']>;
+export type TaskHistoryEdge = {
+  cursor: Scalars['String']['output'];
+  node: TaskHistory;
 };
 
-export type TrackedPlaylist = {
-  autoTrackArtists: Scalars['Boolean']['output'];
-  enabled: Scalars['Boolean']['output'];
-  id: Scalars['Int']['output'];
-  lastSyncedAt?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-  url: Scalars['String']['output'];
+export type TaskStatus =
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'PENDING'
+  | 'RUNNING';
+
+export type TaskType =
+  | 'DOWNLOAD'
+  | 'FETCH'
+  | 'SYNC';
+
+export type TrackPlaylistInput = {
+  autoTrackArtists?: Scalars['Boolean']['input'];
+  playlistId: Scalars['String']['input'];
+};
+
+export type UpdateAlbumInput = {
+  albumId: Scalars['String']['input'];
+  isWanted?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type UpdateArtistInput = {
+  artistId: Scalars['String']['input'];
+  autoDownload?: InputMaybe<Scalars['Boolean']['input']>;
+  isTracked?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type GetArtistQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: Scalars['String']['input'];
 }>;
 
-export type GetArtistQuery = {
-  artist?: {
-    id: number;
-    name: string;
-    gid: string;
-    tracked: boolean;
-    addedAt?: string | null;
-    lastSyncedAt?: string | null;
-  } | null;
-};
+
+export type GetArtistQuery = { artist?: { id: number, name: string, gid: string, isTracked: boolean, addedAt?: any | null, lastSynced?: any | null } | null };
 
 export type GetArtistsQueryVariables = Exact<{
-  tracked?: InputMaybe<Scalars['Boolean']['input']>;
+  isTracked?: InputMaybe<Scalars['Boolean']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
-  sortBy?: InputMaybe<Scalars['String']['input']>;
-  sortDirection?: InputMaybe<Scalars['String']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
 
-export type GetArtistsQuery = {
-  artists: {
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-      startCursor?: string | null;
-      endCursor?: string | null;
-    };
-    edges: Array<{
-      id: number;
-      name: string;
-      gid: string;
-      tracked: boolean;
-      addedAt?: string | null;
-      lastSyncedAt?: string | null;
-    }>;
-  };
-};
+
+export type GetArtistsQuery = { artists: { totalCount: number, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ id: number, name: string, gid: string, isTracked: boolean, addedAt?: any | null, lastSynced?: any | null }> } };
 
 export type GetAlbumsQueryVariables = Exact<{
   artistId?: InputMaybe<Scalars['Int']['input']>;
@@ -336,65 +415,8 @@ export type GetAlbumsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
 
-export type GetAlbumsQuery = {
-  albums: {
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-      startCursor?: string | null;
-      endCursor?: string | null;
-    };
-    edges: Array<{
-      id: number;
-      name: string;
-      spotifyGid: string;
-      totalTracks: number;
-      wanted: boolean;
-      downloaded: boolean;
-      albumType?: string | null;
-      albumGroup?: string | null;
-      artist?: string | null;
-      artistId?: number | null;
-    }>;
-  };
-};
 
-export type GetSongsQueryVariables = Exact<{
-  artistId?: InputMaybe<Scalars['Int']['input']>;
-  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
-  unavailable?: InputMaybe<Scalars['Boolean']['input']>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  after?: InputMaybe<Scalars['String']['input']>;
-  sortBy?: InputMaybe<Scalars['String']['input']>;
-  sortDirection?: InputMaybe<Scalars['String']['input']>;
-  search?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-export type GetSongsQuery = {
-  songs: {
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-      startCursor?: string | null;
-      endCursor?: string | null;
-    };
-    edges: Array<{
-      id: number;
-      name: string;
-      gid: string;
-      createdAt: string;
-      failedCount: number;
-      bitrate?: number | null;
-      unavailable: boolean;
-      filePath?: string | null;
-      downloaded: boolean;
-      spotifyUri: string;
-      artist?: string | null;
-    }>;
-  };
-};
+export type GetAlbumsQuery = { albums: { totalCount: number, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ id: number, name: string, spotifyGid: string, totalTracks: number, wanted: boolean, downloaded: boolean, albumType?: string | null, albumGroup?: string | null, artist?: string | null, artistId?: number | null }> } };
 
 export type GetPlaylistsQueryVariables = Exact<{
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
@@ -405,120 +427,68 @@ export type GetPlaylistsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
 
-export type GetPlaylistsQuery = {
-  playlists: {
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-      startCursor?: string | null;
-      endCursor?: string | null;
-    };
-    edges: Array<{
-      id: number;
-      name: string;
-      url: string;
-      enabled: boolean;
-      autoTrackArtists: boolean;
-      lastSyncedAt?: string | null;
-    }>;
-  };
-};
+
+export type GetPlaylistsQuery = { playlists: { totalCount: number, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ id: number, name: string, url: string, enabled: boolean, autoTrackArtists: boolean, lastSyncedAt?: any | null }> } };
 
 export type SyncArtistMutationVariables = Exact<{
-  artistId: Scalars['Int']['input'];
+  artistId: Scalars['String']['input'];
 }>;
 
-export type SyncArtistMutation = {
-  syncArtist: { success: boolean; message: string; taskId?: string | null };
-};
+
+export type SyncArtistMutation = { syncArtist: { id: number, name: string, gid: string, isTracked: boolean, addedAt?: any | null, lastSynced?: any | null } };
 
 export type SyncPlaylistMutationVariables = Exact<{
   playlistId: Scalars['Int']['input'];
 }>;
 
-export type SyncPlaylistMutation = {
-  syncPlaylist: { success: boolean; message: string; taskId?: string | null };
-};
+
+export type SyncPlaylistMutation = { syncPlaylist: { success: boolean, message: string } };
 
 export type TrackArtistMutationVariables = Exact<{
   artistId: Scalars['Int']['input'];
 }>;
 
-export type TrackArtistMutation = {
-  trackArtist: {
-    success: boolean;
-    message: string;
-    artist?: { id: number; name: string; tracked: boolean } | null;
-  };
-};
+
+export type TrackArtistMutation = { trackArtist: { success: boolean, message: string, artist?: { id: number, name: string, isTracked: boolean } | null } };
 
 export type UntrackArtistMutationVariables = Exact<{
   artistId: Scalars['Int']['input'];
 }>;
 
-export type UntrackArtistMutation = {
-  untrackArtist: {
-    success: boolean;
-    message: string;
-    artist?: { id: number; name: string; tracked: boolean } | null;
-  };
-};
+
+export type UntrackArtistMutation = { untrackArtist: { success: boolean, message: string, artist?: { id: number, name: string, isTracked: boolean } | null } };
 
 export type SetAlbumWantedMutationVariables = Exact<{
   albumId: Scalars['Int']['input'];
   wanted: Scalars['Boolean']['input'];
 }>;
 
-export type SetAlbumWantedMutation = {
-  setAlbumWanted: {
-    success: boolean;
-    message: string;
-    album?: { id: number; name: string; wanted: boolean } | null;
-  };
-};
+
+export type SetAlbumWantedMutation = { setAlbumWanted: { success: boolean, message: string, album?: { id: number, name: string, wanted: boolean } | null } };
 
 export type TogglePlaylistMutationVariables = Exact<{
   playlistId: Scalars['Int']['input'];
 }>;
 
-export type TogglePlaylistMutation = {
-  togglePlaylist: {
-    success: boolean;
-    message: string;
-    playlist?: { id: number; name: string; enabled: boolean } | null;
-  };
-};
+
+export type TogglePlaylistMutation = { togglePlaylist: { success: boolean, message: string, playlist?: { id: number, name: string, enabled: boolean } | null } };
 
 export type DownloadUrlMutationVariables = Exact<{
   url: Scalars['String']['input'];
-  autoTrackArtists: Scalars['Boolean']['input'];
+  autoTrackArtists?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
-export type DownloadUrlMutation = {
-  downloadUrl: { success: boolean; message: string; taskId?: string | null };
-};
+
+export type DownloadUrlMutation = { downloadUrl: { success: boolean, message: string, artist?: { id: number, name: string, gid: string, isTracked: boolean, addedAt?: any | null, lastSynced?: any | null } | null, album?: { id: number, name: string, spotifyGid: string, totalTracks: number, wanted: boolean, downloaded: boolean, albumType?: string | null, albumGroup?: string | null, artist?: string | null, artistId?: number | null } | null, playlist?: { id: number, name: string, url: string, enabled: boolean, autoTrackArtists: boolean, lastSyncedAt?: any | null } | null } };
 
 export type CreatePlaylistMutationVariables = Exact<{
-  url: Scalars['String']['input'];
   name: Scalars['String']['input'];
+  url: Scalars['String']['input'];
   autoTrackArtists: Scalars['Boolean']['input'];
 }>;
 
-export type CreatePlaylistMutation = {
-  createPlaylist: {
-    success: boolean;
-    message: string;
-    playlist?: {
-      id: number;
-      name: string;
-      url: string;
-      enabled: boolean;
-      autoTrackArtists: boolean;
-      lastSyncedAt?: string | null;
-    } | null;
-  };
-};
+
+export type CreatePlaylistMutation = { createPlaylist: { id: number, name: string, url: string, enabled: boolean, autoTrackArtists: boolean, lastSyncedAt?: any | null } };
 
 export type UpdatePlaylistMutationVariables = Exact<{
   playlistId: Scalars['Int']['input'];
@@ -526,20 +496,29 @@ export type UpdatePlaylistMutationVariables = Exact<{
   autoTrackArtists: Scalars['Boolean']['input'];
 }>;
 
-export type UpdatePlaylistMutation = {
-  updatePlaylist: {
-    success: boolean;
-    message: string;
-    playlist?: {
-      id: number;
-      name: string;
-      url: string;
-      enabled: boolean;
-      autoTrackArtists: boolean;
-      lastSyncedAt?: string | null;
-    } | null;
-  };
-};
+
+export type UpdatePlaylistMutation = { updatePlaylist: { success: boolean, message: string } };
+
+export type GetSongsQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  artistId?: InputMaybe<Scalars['Int']['input']>;
+  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
+  unavailable?: InputMaybe<Scalars['Boolean']['input']>;
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetSongsQuery = { songs: { totalCount: number, edges: Array<{ id: number, name: string, gid: string, primaryArtist: string, primaryArtistId: number, createdAt: any, failedCount: number, bitrate: number, unavailable: boolean, filePath?: string | null, downloaded: boolean, spotifyUri: string }>, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null } } };
+
+export type GetSongQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type GetSongQuery = { song?: { id: number, name: string, gid: string, primaryArtist: string, primaryArtistId: number, createdAt: any, failedCount: number, bitrate: number, unavailable: boolean, filePath?: string | null, downloaded: boolean, spotifyUri: string } | null };
 
 export type GetTaskHistoryQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -550,87 +529,22 @@ export type GetTaskHistoryQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
 
-export type GetTaskHistoryQuery = {
-  taskHistory: {
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-      startCursor?: string | null;
-      endCursor?: string | null;
-    };
-    edges: Array<{
-      id: string;
-      taskId: string;
-      type: string;
-      entityId: string;
-      entityType: string;
-      status: string;
-      startedAt: string;
-      completedAt?: string | null;
-      errorMessage?: string | null;
-      durationSeconds?: number | null;
-      progressPercentage: number;
-      logMessages: Array<{ timestamp: string; message: string }>;
-    }>;
-  };
-};
 
-export type GetActiveTasksQueryVariables = Exact<{
-  first?: InputMaybe<Scalars['Int']['input']>;
-  after?: InputMaybe<Scalars['String']['input']>;
-}>;
+export type GetTaskHistoryQuery = { taskHistory: { totalCount: number, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string | null, endCursor?: string | null }, edges: Array<{ cursor: string, node: { id: string, taskId: string, type: TaskType, entityId: string, entityType: EntityType, status: TaskStatus, startedAt: any, completedAt?: any | null, durationSeconds?: number | null, progressPercentage?: number | null, logMessages: Array<string> } }> } };
 
-export type GetActiveTasksQuery = {
-  activeTasks: {
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-      startCursor?: string | null;
-      endCursor?: string | null;
-    };
-    edges: Array<{
-      id: string;
-      taskId: string;
-      type: string;
-      entityId: string;
-      entityType: string;
-      status: string;
-      startedAt: string;
-      completedAt?: string | null;
-      errorMessage?: string | null;
-      durationSeconds?: number | null;
-      progressPercentage: number;
-      logMessages: Array<{ timestamp: string; message: string }>;
-    }>;
-  };
-};
-
-export type CleanupStuckTasksMutationVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type CleanupStuckTasksMutation = {
-  cleanupStuckTasks: {
-    success: boolean;
-    message: string;
-    cleanedCount: number;
-  };
-};
 
 export const GetArtistDocument = gql`
-  query GetArtist($id: Int!) {
-    artist(id: $id) {
-      id
-      name
-      gid
-      tracked
-      addedAt
-      lastSyncedAt
-    }
+    query GetArtist($id: String!) {
+  artist(id: $id) {
+    id
+    name
+    gid
+    isTracked
+    addedAt
+    lastSynced
   }
-`;
+}
+    `;
 
 /**
  * __useGetArtistQuery__
@@ -648,91 +562,43 @@ export const GetArtistDocument = gql`
  *   },
  * });
  */
-export function useGetArtistQuery(
-  baseOptions: Apollo.QueryHookOptions<
-    GetArtistQuery,
-    GetArtistQueryVariables
-  > &
-    ({ variables: GetArtistQueryVariables; skip?: boolean } | { skip: boolean })
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistQuery, GetArtistQueryVariables>(
-    GetArtistDocument,
-    options
-  );
-}
-export function useGetArtistLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    GetArtistQuery,
-    GetArtistQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistQuery, GetArtistQueryVariables>(
-    GetArtistDocument,
-    options
-  );
-}
-export function useGetArtistSuspenseQuery(
-  baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetArtistQuery, GetArtistQueryVariables>
-) {
-  const options =
-    baseOptions === Apollo.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetArtistQuery, GetArtistQueryVariables>(
-    GetArtistDocument,
-    options
-  );
-}
+export function useGetArtistQuery(baseOptions: Apollo.QueryHookOptions<GetArtistQuery, GetArtistQueryVariables> & ({ variables: GetArtistQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetArtistQuery, GetArtistQueryVariables>(GetArtistDocument, options);
+      }
+export function useGetArtistLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetArtistQuery, GetArtistQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetArtistQuery, GetArtistQueryVariables>(GetArtistDocument, options);
+        }
+export function useGetArtistSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetArtistQuery, GetArtistQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetArtistQuery, GetArtistQueryVariables>(GetArtistDocument, options);
+        }
 export type GetArtistQueryHookResult = ReturnType<typeof useGetArtistQuery>;
-export type GetArtistLazyQueryHookResult = ReturnType<
-  typeof useGetArtistLazyQuery
->;
-export type GetArtistSuspenseQueryHookResult = ReturnType<
-  typeof useGetArtistSuspenseQuery
->;
-export type GetArtistQueryResult = Apollo.QueryResult<
-  GetArtistQuery,
-  GetArtistQueryVariables
->;
+export type GetArtistLazyQueryHookResult = ReturnType<typeof useGetArtistLazyQuery>;
+export type GetArtistSuspenseQueryHookResult = ReturnType<typeof useGetArtistSuspenseQuery>;
+export type GetArtistQueryResult = Apollo.QueryResult<GetArtistQuery, GetArtistQueryVariables>;
 export const GetArtistsDocument = gql`
-  query GetArtists(
-    $tracked: Boolean
-    $first: Int = 20
-    $after: String
-    $sortBy: String
-    $sortDirection: String
-    $search: String
-  ) {
-    artists(
-      tracked: $tracked
-      first: $first
-      after: $after
-      sortBy: $sortBy
-      sortDirection: $sortDirection
-      search: $search
-    ) {
-      totalCount
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-      edges {
-        id
-        name
-        gid
-        tracked
-        addedAt
-        lastSyncedAt
-      }
+    query GetArtists($isTracked: Boolean, $first: Int = 20, $after: String, $search: String) {
+  artists(isTracked: $isTracked, first: $first, after: $after, search: $search) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      id
+      name
+      gid
+      isTracked
+      addedAt
+      lastSynced
     }
   }
-`;
+}
+    `;
 
 /**
  * __useGetArtistsQuery__
@@ -746,107 +612,63 @@ export const GetArtistsDocument = gql`
  * @example
  * const { data, loading, error } = useGetArtistsQuery({
  *   variables: {
- *      tracked: // value for 'tracked'
+ *      isTracked: // value for 'isTracked'
  *      first: // value for 'first'
  *      after: // value for 'after'
- *      sortBy: // value for 'sortBy'
- *      sortDirection: // value for 'sortDirection'
  *      search: // value for 'search'
  *   },
  * });
  */
-export function useGetArtistsQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    GetArtistsQuery,
-    GetArtistsQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistsQuery, GetArtistsQueryVariables>(
-    GetArtistsDocument,
-    options
-  );
-}
-export function useGetArtistsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    GetArtistsQuery,
-    GetArtistsQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistsQuery, GetArtistsQueryVariables>(
-    GetArtistsDocument,
-    options
-  );
-}
-export function useGetArtistsSuspenseQuery(
-  baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetArtistsQuery, GetArtistsQueryVariables>
-) {
-  const options =
-    baseOptions === Apollo.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetArtistsQuery, GetArtistsQueryVariables>(
-    GetArtistsDocument,
-    options
-  );
-}
+export function useGetArtistsQuery(baseOptions?: Apollo.QueryHookOptions<GetArtistsQuery, GetArtistsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetArtistsQuery, GetArtistsQueryVariables>(GetArtistsDocument, options);
+      }
+export function useGetArtistsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetArtistsQuery, GetArtistsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetArtistsQuery, GetArtistsQueryVariables>(GetArtistsDocument, options);
+        }
+export function useGetArtistsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetArtistsQuery, GetArtistsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetArtistsQuery, GetArtistsQueryVariables>(GetArtistsDocument, options);
+        }
 export type GetArtistsQueryHookResult = ReturnType<typeof useGetArtistsQuery>;
-export type GetArtistsLazyQueryHookResult = ReturnType<
-  typeof useGetArtistsLazyQuery
->;
-export type GetArtistsSuspenseQueryHookResult = ReturnType<
-  typeof useGetArtistsSuspenseQuery
->;
-export type GetArtistsQueryResult = Apollo.QueryResult<
-  GetArtistsQuery,
-  GetArtistsQueryVariables
->;
+export type GetArtistsLazyQueryHookResult = ReturnType<typeof useGetArtistsLazyQuery>;
+export type GetArtistsSuspenseQueryHookResult = ReturnType<typeof useGetArtistsSuspenseQuery>;
+export type GetArtistsQueryResult = Apollo.QueryResult<GetArtistsQuery, GetArtistsQueryVariables>;
 export const GetAlbumsDocument = gql`
-  query GetAlbums(
-    $artistId: Int
-    $wanted: Boolean
-    $downloaded: Boolean
-    $first: Int = 20
-    $after: String
-    $sortBy: String
-    $sortDirection: String
-    $search: String
+    query GetAlbums($artistId: Int, $wanted: Boolean, $downloaded: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
+  albums(
+    artistId: $artistId
+    wanted: $wanted
+    downloaded: $downloaded
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
   ) {
-    albums(
-      artistId: $artistId
-      wanted: $wanted
-      downloaded: $downloaded
-      first: $first
-      after: $after
-      sortBy: $sortBy
-      sortDirection: $sortDirection
-      search: $search
-    ) {
-      totalCount
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-      edges {
-        id
-        name
-        spotifyGid
-        totalTracks
-        wanted
-        downloaded
-        albumType
-        albumGroup
-        artist
-        artistId
-      }
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      id
+      name
+      spotifyGid
+      totalTracks
+      wanted
+      downloaded
+      albumType
+      albumGroup
+      artist
+      artistId
     }
   }
-`;
+}
+    `;
 
 /**
  * __useGetAlbumsQuery__
@@ -871,201 +693,50 @@ export const GetAlbumsDocument = gql`
  *   },
  * });
  */
-export function useGetAlbumsQuery(
-  baseOptions?: Apollo.QueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
-    GetAlbumsDocument,
-    options
-  );
-}
-export function useGetAlbumsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    GetAlbumsQuery,
-    GetAlbumsQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
-    GetAlbumsDocument,
-    options
-  );
-}
-export function useGetAlbumsSuspenseQuery(
-  baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>
-) {
-  const options =
-    baseOptions === Apollo.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
-    GetAlbumsDocument,
-    options
-  );
-}
+export function useGetAlbumsQuery(baseOptions?: Apollo.QueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(GetAlbumsDocument, options);
+      }
+export function useGetAlbumsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(GetAlbumsDocument, options);
+        }
+export function useGetAlbumsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(GetAlbumsDocument, options);
+        }
 export type GetAlbumsQueryHookResult = ReturnType<typeof useGetAlbumsQuery>;
-export type GetAlbumsLazyQueryHookResult = ReturnType<
-  typeof useGetAlbumsLazyQuery
->;
-export type GetAlbumsSuspenseQueryHookResult = ReturnType<
-  typeof useGetAlbumsSuspenseQuery
->;
-export type GetAlbumsQueryResult = Apollo.QueryResult<
-  GetAlbumsQuery,
-  GetAlbumsQueryVariables
->;
-export const GetSongsDocument = gql`
-  query GetSongs(
-    $artistId: Int
-    $downloaded: Boolean
-    $unavailable: Boolean
-    $first: Int = 20
-    $after: String
-    $sortBy: String
-    $sortDirection: String
-    $search: String
-  ) {
-    songs(
-      artistId: $artistId
-      downloaded: $downloaded
-      unavailable: $unavailable
-      first: $first
-      after: $after
-      sortBy: $sortBy
-      sortDirection: $sortDirection
-      search: $search
-    ) {
-      totalCount
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-      edges {
-        id
-        name
-        gid
-        createdAt
-        failedCount
-        bitrate
-        unavailable
-        filePath
-        downloaded
-        spotifyUri
-        artist
-      }
-    }
-  }
-`;
-
-/**
- * __useGetSongsQuery__
- *
- * To run a query within a React component, call `useGetSongsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetSongsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetSongsQuery({
- *   variables: {
- *      artistId: // value for 'artistId'
- *      downloaded: // value for 'downloaded'
- *      unavailable: // value for 'unavailable'
- *      first: // value for 'first'
- *      after: // value for 'after'
- *      sortBy: // value for 'sortBy'
- *      sortDirection: // value for 'sortDirection'
- *      search: // value for 'search'
- *   },
- * });
- */
-export function useGetSongsQuery(
-  baseOptions?: Apollo.QueryHookOptions<GetSongsQuery, GetSongsQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetSongsQuery, GetSongsQueryVariables>(
-    GetSongsDocument,
-    options
-  );
-}
-export function useGetSongsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    GetSongsQuery,
-    GetSongsQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetSongsQuery, GetSongsQueryVariables>(
-    GetSongsDocument,
-    options
-  );
-}
-export function useGetSongsSuspenseQuery(
-  baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetSongsQuery, GetSongsQueryVariables>
-) {
-  const options =
-    baseOptions === Apollo.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetSongsQuery, GetSongsQueryVariables>(
-    GetSongsDocument,
-    options
-  );
-}
-export type GetSongsQueryHookResult = ReturnType<typeof useGetSongsQuery>;
-export type GetSongsLazyQueryHookResult = ReturnType<
-  typeof useGetSongsLazyQuery
->;
-export type GetSongsSuspenseQueryHookResult = ReturnType<
-  typeof useGetSongsSuspenseQuery
->;
-export type GetSongsQueryResult = Apollo.QueryResult<
-  GetSongsQuery,
-  GetSongsQueryVariables
->;
+export type GetAlbumsLazyQueryHookResult = ReturnType<typeof useGetAlbumsLazyQuery>;
+export type GetAlbumsSuspenseQueryHookResult = ReturnType<typeof useGetAlbumsSuspenseQuery>;
+export type GetAlbumsQueryResult = Apollo.QueryResult<GetAlbumsQuery, GetAlbumsQueryVariables>;
 export const GetPlaylistsDocument = gql`
-  query GetPlaylists(
-    $enabled: Boolean
-    $first: Int = 20
-    $after: String
-    $sortBy: String
-    $sortDirection: String
-    $search: String
+    query GetPlaylists($enabled: Boolean, $first: Int = 20, $after: String, $sortBy: String, $sortDirection: String, $search: String) {
+  playlists(
+    enabled: $enabled
+    first: $first
+    after: $after
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
   ) {
-    playlists(
-      enabled: $enabled
-      first: $first
-      after: $after
-      sortBy: $sortBy
-      sortDirection: $sortDirection
-      search: $search
-    ) {
-      totalCount
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-      edges {
-        id
-        name
-        url
-        enabled
-        autoTrackArtists
-        lastSyncedAt
-      }
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      id
+      name
+      url
+      enabled
+      autoTrackArtists
+      lastSyncedAt
     }
   }
-`;
+}
+    `;
 
 /**
  * __useGetPlaylistsQuery__
@@ -1088,73 +759,35 @@ export const GetPlaylistsDocument = gql`
  *   },
  * });
  */
-export function useGetPlaylistsQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    GetPlaylistsQuery,
-    GetPlaylistsQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
-}
-export function useGetPlaylistsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    GetPlaylistsQuery,
-    GetPlaylistsQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
-}
-export function useGetPlaylistsSuspenseQuery(
-  baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
-        GetPlaylistsQuery,
-        GetPlaylistsQueryVariables
-      >
-) {
-  const options =
-    baseOptions === Apollo.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
-}
-export type GetPlaylistsQueryHookResult = ReturnType<
-  typeof useGetPlaylistsQuery
->;
-export type GetPlaylistsLazyQueryHookResult = ReturnType<
-  typeof useGetPlaylistsLazyQuery
->;
-export type GetPlaylistsSuspenseQueryHookResult = ReturnType<
-  typeof useGetPlaylistsSuspenseQuery
->;
-export type GetPlaylistsQueryResult = Apollo.QueryResult<
-  GetPlaylistsQuery,
-  GetPlaylistsQueryVariables
->;
+export function useGetPlaylistsQuery(baseOptions?: Apollo.QueryHookOptions<GetPlaylistsQuery, GetPlaylistsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(GetPlaylistsDocument, options);
+      }
+export function useGetPlaylistsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetPlaylistsQuery, GetPlaylistsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(GetPlaylistsDocument, options);
+        }
+export function useGetPlaylistsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetPlaylistsQuery, GetPlaylistsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(GetPlaylistsDocument, options);
+        }
+export type GetPlaylistsQueryHookResult = ReturnType<typeof useGetPlaylistsQuery>;
+export type GetPlaylistsLazyQueryHookResult = ReturnType<typeof useGetPlaylistsLazyQuery>;
+export type GetPlaylistsSuspenseQueryHookResult = ReturnType<typeof useGetPlaylistsSuspenseQuery>;
+export type GetPlaylistsQueryResult = Apollo.QueryResult<GetPlaylistsQuery, GetPlaylistsQueryVariables>;
 export const SyncArtistDocument = gql`
-  mutation SyncArtist($artistId: Int!) {
-    syncArtist(artistId: $artistId) {
-      success
-      message
-      taskId
-    }
+    mutation SyncArtist($artistId: String!) {
+  syncArtist(artistId: $artistId) {
+    id
+    name
+    gid
+    isTracked
+    addedAt
+    lastSynced
   }
-`;
-export type SyncArtistMutationFn = Apollo.MutationFunction<
-  SyncArtistMutation,
-  SyncArtistMutationVariables
->;
+}
+    `;
+export type SyncArtistMutationFn = Apollo.MutationFunction<SyncArtistMutation, SyncArtistMutationVariables>;
 
 /**
  * __useSyncArtistMutation__
@@ -1173,40 +806,22 @@ export type SyncArtistMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useSyncArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    SyncArtistMutation,
-    SyncArtistMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<SyncArtistMutation, SyncArtistMutationVariables>(
-    SyncArtistDocument,
-    options
-  );
-}
-export type SyncArtistMutationHookResult = ReturnType<
-  typeof useSyncArtistMutation
->;
-export type SyncArtistMutationResult =
-  Apollo.MutationResult<SyncArtistMutation>;
-export type SyncArtistMutationOptions = Apollo.BaseMutationOptions<
-  SyncArtistMutation,
-  SyncArtistMutationVariables
->;
+export function useSyncArtistMutation(baseOptions?: Apollo.MutationHookOptions<SyncArtistMutation, SyncArtistMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SyncArtistMutation, SyncArtistMutationVariables>(SyncArtistDocument, options);
+      }
+export type SyncArtistMutationHookResult = ReturnType<typeof useSyncArtistMutation>;
+export type SyncArtistMutationResult = Apollo.MutationResult<SyncArtistMutation>;
+export type SyncArtistMutationOptions = Apollo.BaseMutationOptions<SyncArtistMutation, SyncArtistMutationVariables>;
 export const SyncPlaylistDocument = gql`
-  mutation SyncPlaylist($playlistId: Int!) {
-    syncPlaylist(playlistId: $playlistId) {
-      success
-      message
-      taskId
-    }
+    mutation SyncPlaylist($playlistId: Int!) {
+  syncPlaylist(playlistId: $playlistId) {
+    success
+    message
   }
-`;
-export type SyncPlaylistMutationFn = Apollo.MutationFunction<
-  SyncPlaylistMutation,
-  SyncPlaylistMutationVariables
->;
+}
+    `;
+export type SyncPlaylistMutationFn = Apollo.MutationFunction<SyncPlaylistMutation, SyncPlaylistMutationVariables>;
 
 /**
  * __useSyncPlaylistMutation__
@@ -1225,44 +840,27 @@ export type SyncPlaylistMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useSyncPlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    SyncPlaylistMutation,
-    SyncPlaylistMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    SyncPlaylistMutation,
-    SyncPlaylistMutationVariables
-  >(SyncPlaylistDocument, options);
-}
-export type SyncPlaylistMutationHookResult = ReturnType<
-  typeof useSyncPlaylistMutation
->;
-export type SyncPlaylistMutationResult =
-  Apollo.MutationResult<SyncPlaylistMutation>;
-export type SyncPlaylistMutationOptions = Apollo.BaseMutationOptions<
-  SyncPlaylistMutation,
-  SyncPlaylistMutationVariables
->;
-export const TrackArtistDocument = gql`
-  mutation TrackArtist($artistId: Int!) {
-    trackArtist(artistId: $artistId) {
-      success
-      message
-      artist {
-        id
-        name
-        tracked
+export function useSyncPlaylistMutation(baseOptions?: Apollo.MutationHookOptions<SyncPlaylistMutation, SyncPlaylistMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SyncPlaylistMutation, SyncPlaylistMutationVariables>(SyncPlaylistDocument, options);
       }
+export type SyncPlaylistMutationHookResult = ReturnType<typeof useSyncPlaylistMutation>;
+export type SyncPlaylistMutationResult = Apollo.MutationResult<SyncPlaylistMutation>;
+export type SyncPlaylistMutationOptions = Apollo.BaseMutationOptions<SyncPlaylistMutation, SyncPlaylistMutationVariables>;
+export const TrackArtistDocument = gql`
+    mutation TrackArtist($artistId: Int!) {
+  trackArtist(artistId: $artistId) {
+    success
+    message
+    artist {
+      id
+      name
+      isTracked
     }
   }
-`;
-export type TrackArtistMutationFn = Apollo.MutationFunction<
-  TrackArtistMutation,
-  TrackArtistMutationVariables
->;
+}
+    `;
+export type TrackArtistMutationFn = Apollo.MutationFunction<TrackArtistMutation, TrackArtistMutationVariables>;
 
 /**
  * __useTrackArtistMutation__
@@ -1281,44 +879,27 @@ export type TrackArtistMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useTrackArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    TrackArtistMutation,
-    TrackArtistMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<TrackArtistMutation, TrackArtistMutationVariables>(
-    TrackArtistDocument,
-    options
-  );
-}
-export type TrackArtistMutationHookResult = ReturnType<
-  typeof useTrackArtistMutation
->;
-export type TrackArtistMutationResult =
-  Apollo.MutationResult<TrackArtistMutation>;
-export type TrackArtistMutationOptions = Apollo.BaseMutationOptions<
-  TrackArtistMutation,
-  TrackArtistMutationVariables
->;
-export const UntrackArtistDocument = gql`
-  mutation UntrackArtist($artistId: Int!) {
-    untrackArtist(artistId: $artistId) {
-      success
-      message
-      artist {
-        id
-        name
-        tracked
+export function useTrackArtistMutation(baseOptions?: Apollo.MutationHookOptions<TrackArtistMutation, TrackArtistMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<TrackArtistMutation, TrackArtistMutationVariables>(TrackArtistDocument, options);
       }
+export type TrackArtistMutationHookResult = ReturnType<typeof useTrackArtistMutation>;
+export type TrackArtistMutationResult = Apollo.MutationResult<TrackArtistMutation>;
+export type TrackArtistMutationOptions = Apollo.BaseMutationOptions<TrackArtistMutation, TrackArtistMutationVariables>;
+export const UntrackArtistDocument = gql`
+    mutation UntrackArtist($artistId: Int!) {
+  untrackArtist(artistId: $artistId) {
+    success
+    message
+    artist {
+      id
+      name
+      isTracked
     }
   }
-`;
-export type UntrackArtistMutationFn = Apollo.MutationFunction<
-  UntrackArtistMutation,
-  UntrackArtistMutationVariables
->;
+}
+    `;
+export type UntrackArtistMutationFn = Apollo.MutationFunction<UntrackArtistMutation, UntrackArtistMutationVariables>;
 
 /**
  * __useUntrackArtistMutation__
@@ -1337,44 +918,27 @@ export type UntrackArtistMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useUntrackArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    UntrackArtistMutation,
-    UntrackArtistMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    UntrackArtistMutation,
-    UntrackArtistMutationVariables
-  >(UntrackArtistDocument, options);
-}
-export type UntrackArtistMutationHookResult = ReturnType<
-  typeof useUntrackArtistMutation
->;
-export type UntrackArtistMutationResult =
-  Apollo.MutationResult<UntrackArtistMutation>;
-export type UntrackArtistMutationOptions = Apollo.BaseMutationOptions<
-  UntrackArtistMutation,
-  UntrackArtistMutationVariables
->;
-export const SetAlbumWantedDocument = gql`
-  mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
-    setAlbumWanted(albumId: $albumId, wanted: $wanted) {
-      success
-      message
-      album {
-        id
-        name
-        wanted
+export function useUntrackArtistMutation(baseOptions?: Apollo.MutationHookOptions<UntrackArtistMutation, UntrackArtistMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UntrackArtistMutation, UntrackArtistMutationVariables>(UntrackArtistDocument, options);
       }
+export type UntrackArtistMutationHookResult = ReturnType<typeof useUntrackArtistMutation>;
+export type UntrackArtistMutationResult = Apollo.MutationResult<UntrackArtistMutation>;
+export type UntrackArtistMutationOptions = Apollo.BaseMutationOptions<UntrackArtistMutation, UntrackArtistMutationVariables>;
+export const SetAlbumWantedDocument = gql`
+    mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
+  setAlbumWanted(albumId: $albumId, wanted: $wanted) {
+    success
+    message
+    album {
+      id
+      name
+      wanted
     }
   }
-`;
-export type SetAlbumWantedMutationFn = Apollo.MutationFunction<
-  SetAlbumWantedMutation,
-  SetAlbumWantedMutationVariables
->;
+}
+    `;
+export type SetAlbumWantedMutationFn = Apollo.MutationFunction<SetAlbumWantedMutation, SetAlbumWantedMutationVariables>;
 
 /**
  * __useSetAlbumWantedMutation__
@@ -1394,44 +958,27 @@ export type SetAlbumWantedMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useSetAlbumWantedMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    SetAlbumWantedMutation,
-    SetAlbumWantedMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    SetAlbumWantedMutation,
-    SetAlbumWantedMutationVariables
-  >(SetAlbumWantedDocument, options);
-}
-export type SetAlbumWantedMutationHookResult = ReturnType<
-  typeof useSetAlbumWantedMutation
->;
-export type SetAlbumWantedMutationResult =
-  Apollo.MutationResult<SetAlbumWantedMutation>;
-export type SetAlbumWantedMutationOptions = Apollo.BaseMutationOptions<
-  SetAlbumWantedMutation,
-  SetAlbumWantedMutationVariables
->;
-export const TogglePlaylistDocument = gql`
-  mutation TogglePlaylist($playlistId: Int!) {
-    togglePlaylist(playlistId: $playlistId) {
-      success
-      message
-      playlist {
-        id
-        name
-        enabled
+export function useSetAlbumWantedMutation(baseOptions?: Apollo.MutationHookOptions<SetAlbumWantedMutation, SetAlbumWantedMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SetAlbumWantedMutation, SetAlbumWantedMutationVariables>(SetAlbumWantedDocument, options);
       }
+export type SetAlbumWantedMutationHookResult = ReturnType<typeof useSetAlbumWantedMutation>;
+export type SetAlbumWantedMutationResult = Apollo.MutationResult<SetAlbumWantedMutation>;
+export type SetAlbumWantedMutationOptions = Apollo.BaseMutationOptions<SetAlbumWantedMutation, SetAlbumWantedMutationVariables>;
+export const TogglePlaylistDocument = gql`
+    mutation TogglePlaylist($playlistId: Int!) {
+  togglePlaylist(playlistId: $playlistId) {
+    success
+    message
+    playlist {
+      id
+      name
+      enabled
     }
   }
-`;
-export type TogglePlaylistMutationFn = Apollo.MutationFunction<
-  TogglePlaylistMutation,
-  TogglePlaylistMutationVariables
->;
+}
+    `;
+export type TogglePlaylistMutationFn = Apollo.MutationFunction<TogglePlaylistMutation, TogglePlaylistMutationVariables>;
 
 /**
  * __useTogglePlaylistMutation__
@@ -1450,40 +997,50 @@ export type TogglePlaylistMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useTogglePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    TogglePlaylistMutation,
-    TogglePlaylistMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    TogglePlaylistMutation,
-    TogglePlaylistMutationVariables
-  >(TogglePlaylistDocument, options);
-}
-export type TogglePlaylistMutationHookResult = ReturnType<
-  typeof useTogglePlaylistMutation
->;
-export type TogglePlaylistMutationResult =
-  Apollo.MutationResult<TogglePlaylistMutation>;
-export type TogglePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  TogglePlaylistMutation,
-  TogglePlaylistMutationVariables
->;
+export function useTogglePlaylistMutation(baseOptions?: Apollo.MutationHookOptions<TogglePlaylistMutation, TogglePlaylistMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<TogglePlaylistMutation, TogglePlaylistMutationVariables>(TogglePlaylistDocument, options);
+      }
+export type TogglePlaylistMutationHookResult = ReturnType<typeof useTogglePlaylistMutation>;
+export type TogglePlaylistMutationResult = Apollo.MutationResult<TogglePlaylistMutation>;
+export type TogglePlaylistMutationOptions = Apollo.BaseMutationOptions<TogglePlaylistMutation, TogglePlaylistMutationVariables>;
 export const DownloadUrlDocument = gql`
-  mutation DownloadUrl($url: String!, $autoTrackArtists: Boolean!) {
-    downloadUrl(url: $url, autoTrackArtists: $autoTrackArtists) {
-      success
-      message
-      taskId
+    mutation DownloadUrl($url: String!, $autoTrackArtists: Boolean) {
+  downloadUrl(url: $url, autoTrackArtists: $autoTrackArtists) {
+    success
+    message
+    artist {
+      id
+      name
+      gid
+      isTracked
+      addedAt
+      lastSynced
+    }
+    album {
+      id
+      name
+      spotifyGid
+      totalTracks
+      wanted
+      downloaded
+      albumType
+      albumGroup
+      artist
+      artistId
+    }
+    playlist {
+      id
+      name
+      url
+      enabled
+      autoTrackArtists
+      lastSyncedAt
     }
   }
-`;
-export type DownloadUrlMutationFn = Apollo.MutationFunction<
-  DownloadUrlMutation,
-  DownloadUrlMutationVariables
->;
+}
+    `;
+export type DownloadUrlMutationFn = Apollo.MutationFunction<DownloadUrlMutation, DownloadUrlMutationVariables>;
 
 /**
  * __useDownloadUrlMutation__
@@ -1503,55 +1060,26 @@ export type DownloadUrlMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useDownloadUrlMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    DownloadUrlMutation,
-    DownloadUrlMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<DownloadUrlMutation, DownloadUrlMutationVariables>(
-    DownloadUrlDocument,
-    options
-  );
-}
-export type DownloadUrlMutationHookResult = ReturnType<
-  typeof useDownloadUrlMutation
->;
-export type DownloadUrlMutationResult =
-  Apollo.MutationResult<DownloadUrlMutation>;
-export type DownloadUrlMutationOptions = Apollo.BaseMutationOptions<
-  DownloadUrlMutation,
-  DownloadUrlMutationVariables
->;
-export const CreatePlaylistDocument = gql`
-  mutation CreatePlaylist(
-    $url: String!
-    $name: String!
-    $autoTrackArtists: Boolean!
-  ) {
-    createPlaylist(
-      url: $url
-      name: $name
-      autoTrackArtists: $autoTrackArtists
-    ) {
-      success
-      message
-      playlist {
-        id
-        name
-        url
-        enabled
-        autoTrackArtists
-        lastSyncedAt
+export function useDownloadUrlMutation(baseOptions?: Apollo.MutationHookOptions<DownloadUrlMutation, DownloadUrlMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DownloadUrlMutation, DownloadUrlMutationVariables>(DownloadUrlDocument, options);
       }
-    }
+export type DownloadUrlMutationHookResult = ReturnType<typeof useDownloadUrlMutation>;
+export type DownloadUrlMutationResult = Apollo.MutationResult<DownloadUrlMutation>;
+export type DownloadUrlMutationOptions = Apollo.BaseMutationOptions<DownloadUrlMutation, DownloadUrlMutationVariables>;
+export const CreatePlaylistDocument = gql`
+    mutation CreatePlaylist($name: String!, $url: String!, $autoTrackArtists: Boolean!) {
+  createPlaylist(name: $name, url: $url, autoTrackArtists: $autoTrackArtists) {
+    id
+    name
+    url
+    enabled
+    autoTrackArtists
+    lastSyncedAt
   }
-`;
-export type CreatePlaylistMutationFn = Apollo.MutationFunction<
-  CreatePlaylistMutation,
-  CreatePlaylistMutationVariables
->;
+}
+    `;
+export type CreatePlaylistMutationFn = Apollo.MutationFunction<CreatePlaylistMutation, CreatePlaylistMutationVariables>;
 
 /**
  * __useCreatePlaylistMutation__
@@ -1566,61 +1094,32 @@ export type CreatePlaylistMutationFn = Apollo.MutationFunction<
  * @example
  * const [createPlaylistMutation, { data, loading, error }] = useCreatePlaylistMutation({
  *   variables: {
- *      url: // value for 'url'
  *      name: // value for 'name'
+ *      url: // value for 'url'
  *      autoTrackArtists: // value for 'autoTrackArtists'
  *   },
  * });
  */
-export function useCreatePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    CreatePlaylistMutation,
-    CreatePlaylistMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    CreatePlaylistMutation,
-    CreatePlaylistMutationVariables
-  >(CreatePlaylistDocument, options);
-}
-export type CreatePlaylistMutationHookResult = ReturnType<
-  typeof useCreatePlaylistMutation
->;
-export type CreatePlaylistMutationResult =
-  Apollo.MutationResult<CreatePlaylistMutation>;
-export type CreatePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  CreatePlaylistMutation,
-  CreatePlaylistMutationVariables
->;
-export const UpdatePlaylistDocument = gql`
-  mutation UpdatePlaylist(
-    $playlistId: Int!
-    $name: String!
-    $autoTrackArtists: Boolean!
-  ) {
-    updatePlaylist(
-      playlistId: $playlistId
-      name: $name
-      autoTrackArtists: $autoTrackArtists
-    ) {
-      success
-      message
-      playlist {
-        id
-        name
-        url
-        enabled
-        autoTrackArtists
-        lastSyncedAt
+export function useCreatePlaylistMutation(baseOptions?: Apollo.MutationHookOptions<CreatePlaylistMutation, CreatePlaylistMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreatePlaylistMutation, CreatePlaylistMutationVariables>(CreatePlaylistDocument, options);
       }
-    }
+export type CreatePlaylistMutationHookResult = ReturnType<typeof useCreatePlaylistMutation>;
+export type CreatePlaylistMutationResult = Apollo.MutationResult<CreatePlaylistMutation>;
+export type CreatePlaylistMutationOptions = Apollo.BaseMutationOptions<CreatePlaylistMutation, CreatePlaylistMutationVariables>;
+export const UpdatePlaylistDocument = gql`
+    mutation UpdatePlaylist($playlistId: Int!, $name: String!, $autoTrackArtists: Boolean!) {
+  updatePlaylist(
+    playlistId: $playlistId
+    name: $name
+    autoTrackArtists: $autoTrackArtists
+  ) {
+    success
+    message
   }
-`;
-export type UpdatePlaylistMutationFn = Apollo.MutationFunction<
-  UpdatePlaylistMutation,
-  UpdatePlaylistMutationVariables
->;
+}
+    `;
+export type UpdatePlaylistMutationFn = Apollo.MutationFunction<UpdatePlaylistMutation, UpdatePlaylistMutationVariables>;
 
 /**
  * __useUpdatePlaylistMutation__
@@ -1641,52 +1140,159 @@ export type UpdatePlaylistMutationFn = Apollo.MutationFunction<
  *   },
  * });
  */
-export function useUpdatePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    UpdatePlaylistMutation,
-    UpdatePlaylistMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    UpdatePlaylistMutation,
-    UpdatePlaylistMutationVariables
-  >(UpdatePlaylistDocument, options);
-}
-export type UpdatePlaylistMutationHookResult = ReturnType<
-  typeof useUpdatePlaylistMutation
->;
-export type UpdatePlaylistMutationResult =
-  Apollo.MutationResult<UpdatePlaylistMutation>;
-export type UpdatePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  UpdatePlaylistMutation,
-  UpdatePlaylistMutationVariables
->;
-export const GetTaskHistoryDocument = gql`
-  query GetTaskHistory(
-    $first: Int = 20
-    $after: String
-    $status: String
-    $type: String
-    $entityType: String
-    $search: String
-  ) {
-    taskHistory(
-      first: $first
-      after: $after
-      status: $status
-      type: $type
-      entityType: $entityType
-      search: $search
-    ) {
-      totalCount
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
+export function useUpdatePlaylistMutation(baseOptions?: Apollo.MutationHookOptions<UpdatePlaylistMutation, UpdatePlaylistMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdatePlaylistMutation, UpdatePlaylistMutationVariables>(UpdatePlaylistDocument, options);
       }
-      edges {
+export type UpdatePlaylistMutationHookResult = ReturnType<typeof useUpdatePlaylistMutation>;
+export type UpdatePlaylistMutationResult = Apollo.MutationResult<UpdatePlaylistMutation>;
+export type UpdatePlaylistMutationOptions = Apollo.BaseMutationOptions<UpdatePlaylistMutation, UpdatePlaylistMutationVariables>;
+export const GetSongsDocument = gql`
+    query GetSongs($first: Int, $after: String, $artistId: Int, $downloaded: Boolean, $unavailable: Boolean, $sortBy: String, $sortDirection: String, $search: String) {
+  songs(
+    first: $first
+    after: $after
+    artistId: $artistId
+    downloaded: $downloaded
+    unavailable: $unavailable
+    sortBy: $sortBy
+    sortDirection: $sortDirection
+    search: $search
+  ) {
+    edges {
+      id
+      name
+      gid
+      primaryArtist
+      primaryArtistId
+      createdAt
+      failedCount
+      bitrate
+      unavailable
+      filePath
+      downloaded
+      spotifyUri
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+    `;
+
+/**
+ * __useGetSongsQuery__
+ *
+ * To run a query within a React component, call `useGetSongsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSongsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSongsQuery({
+ *   variables: {
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *      artistId: // value for 'artistId'
+ *      downloaded: // value for 'downloaded'
+ *      unavailable: // value for 'unavailable'
+ *      sortBy: // value for 'sortBy'
+ *      sortDirection: // value for 'sortDirection'
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useGetSongsQuery(baseOptions?: Apollo.QueryHookOptions<GetSongsQuery, GetSongsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSongsQuery, GetSongsQueryVariables>(GetSongsDocument, options);
+      }
+export function useGetSongsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSongsQuery, GetSongsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSongsQuery, GetSongsQueryVariables>(GetSongsDocument, options);
+        }
+export function useGetSongsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSongsQuery, GetSongsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSongsQuery, GetSongsQueryVariables>(GetSongsDocument, options);
+        }
+export type GetSongsQueryHookResult = ReturnType<typeof useGetSongsQuery>;
+export type GetSongsLazyQueryHookResult = ReturnType<typeof useGetSongsLazyQuery>;
+export type GetSongsSuspenseQueryHookResult = ReturnType<typeof useGetSongsSuspenseQuery>;
+export type GetSongsQueryResult = Apollo.QueryResult<GetSongsQuery, GetSongsQueryVariables>;
+export const GetSongDocument = gql`
+    query GetSong($id: String!) {
+  song(id: $id) {
+    id
+    name
+    gid
+    primaryArtist
+    primaryArtistId
+    createdAt
+    failedCount
+    bitrate
+    unavailable
+    filePath
+    downloaded
+    spotifyUri
+  }
+}
+    `;
+
+/**
+ * __useGetSongQuery__
+ *
+ * To run a query within a React component, call `useGetSongQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSongQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSongQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetSongQuery(baseOptions: Apollo.QueryHookOptions<GetSongQuery, GetSongQueryVariables> & ({ variables: GetSongQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSongQuery, GetSongQueryVariables>(GetSongDocument, options);
+      }
+export function useGetSongLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSongQuery, GetSongQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSongQuery, GetSongQueryVariables>(GetSongDocument, options);
+        }
+export function useGetSongSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSongQuery, GetSongQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSongQuery, GetSongQueryVariables>(GetSongDocument, options);
+        }
+export type GetSongQueryHookResult = ReturnType<typeof useGetSongQuery>;
+export type GetSongLazyQueryHookResult = ReturnType<typeof useGetSongLazyQuery>;
+export type GetSongSuspenseQueryHookResult = ReturnType<typeof useGetSongSuspenseQuery>;
+export type GetSongQueryResult = Apollo.QueryResult<GetSongQuery, GetSongQueryVariables>;
+export const GetTaskHistoryDocument = gql`
+    query GetTaskHistory($first: Int = 20, $after: String, $status: String, $type: String, $entityType: String, $search: String) {
+  taskHistory(
+    first: $first
+    after: $after
+    status: $status
+    type: $type
+    entityType: $entityType
+    search: $search
+  ) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      node {
         id
         taskId
         type
@@ -1695,17 +1301,15 @@ export const GetTaskHistoryDocument = gql`
         status
         startedAt
         completedAt
-        errorMessage
         durationSeconds
         progressPercentage
-        logMessages {
-          timestamp
-          message
-        }
+        logMessages
       }
+      cursor
     }
   }
-`;
+}
+    `;
 
 /**
  * __useGetTaskHistoryQuery__
@@ -1728,210 +1332,19 @@ export const GetTaskHistoryDocument = gql`
  *   },
  * });
  */
-export function useGetTaskHistoryQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    GetTaskHistoryQuery,
-    GetTaskHistoryQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(
-    GetTaskHistoryDocument,
-    options
-  );
-}
-export function useGetTaskHistoryLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    GetTaskHistoryQuery,
-    GetTaskHistoryQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(
-    GetTaskHistoryDocument,
-    options
-  );
-}
-export function useGetTaskHistorySuspenseQuery(
-  baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
-        GetTaskHistoryQuery,
-        GetTaskHistoryQueryVariables
-      >
-) {
-  const options =
-    baseOptions === Apollo.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
-    GetTaskHistoryQuery,
-    GetTaskHistoryQueryVariables
-  >(GetTaskHistoryDocument, options);
-}
-export type GetTaskHistoryQueryHookResult = ReturnType<
-  typeof useGetTaskHistoryQuery
->;
-export type GetTaskHistoryLazyQueryHookResult = ReturnType<
-  typeof useGetTaskHistoryLazyQuery
->;
-export type GetTaskHistorySuspenseQueryHookResult = ReturnType<
-  typeof useGetTaskHistorySuspenseQuery
->;
-export type GetTaskHistoryQueryResult = Apollo.QueryResult<
-  GetTaskHistoryQuery,
-  GetTaskHistoryQueryVariables
->;
-export const GetActiveTasksDocument = gql`
-  query GetActiveTasks($first: Int = 20, $after: String) {
-    activeTasks(first: $first, after: $after) {
-      totalCount
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
+export function useGetTaskHistoryQuery(baseOptions?: Apollo.QueryHookOptions<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(GetTaskHistoryDocument, options);
       }
-      edges {
-        id
-        taskId
-        type
-        entityId
-        entityType
-        status
-        startedAt
-        completedAt
-        errorMessage
-        durationSeconds
-        progressPercentage
-        logMessages {
-          timestamp
-          message
+export function useGetTaskHistoryLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(GetTaskHistoryDocument, options);
         }
-      }
-    }
-  }
-`;
-
-/**
- * __useGetActiveTasksQuery__
- *
- * To run a query within a React component, call `useGetActiveTasksQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetActiveTasksQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetActiveTasksQuery({
- *   variables: {
- *      first: // value for 'first'
- *      after: // value for 'after'
- *   },
- * });
- */
-export function useGetActiveTasksQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    GetActiveTasksQuery,
-    GetActiveTasksQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetActiveTasksQuery, GetActiveTasksQueryVariables>(
-    GetActiveTasksDocument,
-    options
-  );
-}
-export function useGetActiveTasksLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    GetActiveTasksQuery,
-    GetActiveTasksQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetActiveTasksQuery, GetActiveTasksQueryVariables>(
-    GetActiveTasksDocument,
-    options
-  );
-}
-export function useGetActiveTasksSuspenseQuery(
-  baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
-        GetActiveTasksQuery,
-        GetActiveTasksQueryVariables
-      >
-) {
-  const options =
-    baseOptions === Apollo.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
-    GetActiveTasksQuery,
-    GetActiveTasksQueryVariables
-  >(GetActiveTasksDocument, options);
-}
-export type GetActiveTasksQueryHookResult = ReturnType<
-  typeof useGetActiveTasksQuery
->;
-export type GetActiveTasksLazyQueryHookResult = ReturnType<
-  typeof useGetActiveTasksLazyQuery
->;
-export type GetActiveTasksSuspenseQueryHookResult = ReturnType<
-  typeof useGetActiveTasksSuspenseQuery
->;
-export type GetActiveTasksQueryResult = Apollo.QueryResult<
-  GetActiveTasksQuery,
-  GetActiveTasksQueryVariables
->;
-export const CleanupStuckTasksDocument = gql`
-  mutation CleanupStuckTasks {
-    cleanupStuckTasks {
-      success
-      message
-      cleanedCount
-    }
-  }
-`;
-export type CleanupStuckTasksMutationFn = Apollo.MutationFunction<
-  CleanupStuckTasksMutation,
-  CleanupStuckTasksMutationVariables
->;
-
-/**
- * __useCleanupStuckTasksMutation__
- *
- * To run a mutation, you first call `useCleanupStuckTasksMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCleanupStuckTasksMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [cleanupStuckTasksMutation, { data, loading, error }] = useCleanupStuckTasksMutation({
- *   variables: {
- *   },
- * });
- */
-export function useCleanupStuckTasksMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    CleanupStuckTasksMutation,
-    CleanupStuckTasksMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    CleanupStuckTasksMutation,
-    CleanupStuckTasksMutationVariables
-  >(CleanupStuckTasksDocument, options);
-}
-export type CleanupStuckTasksMutationHookResult = ReturnType<
-  typeof useCleanupStuckTasksMutation
->;
-export type CleanupStuckTasksMutationResult =
-  Apollo.MutationResult<CleanupStuckTasksMutation>;
-export type CleanupStuckTasksMutationOptions = Apollo.BaseMutationOptions<
-  CleanupStuckTasksMutation,
-  CleanupStuckTasksMutationVariables
->;
+export function useGetTaskHistorySuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(GetTaskHistoryDocument, options);
+        }
+export type GetTaskHistoryQueryHookResult = ReturnType<typeof useGetTaskHistoryQuery>;
+export type GetTaskHistoryLazyQueryHookResult = ReturnType<typeof useGetTaskHistoryLazyQuery>;
+export type GetTaskHistorySuspenseQueryHookResult = ReturnType<typeof useGetTaskHistorySuspenseQuery>;
+export type GetTaskHistoryQueryResult = Apollo.QueryResult<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>;

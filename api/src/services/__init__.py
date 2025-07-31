@@ -3,8 +3,10 @@ from typing import Optional
 
 from .album import AlbumService
 from .artist import ArtistService
+from .downloader import DownloaderService
 from .history import DownloadHistoryService
 from .playlist import PlaylistService
+from .song import SongService
 from .task_history import TaskHistoryService
 
 
@@ -35,6 +37,14 @@ class ServiceRegistry:
     @cached_property
     def task_history(self) -> TaskHistoryService:
         return TaskHistoryService()
+
+    @cached_property
+    def downloader(self) -> DownloaderService:
+        return DownloaderService()
+
+    @cached_property
+    def song(self) -> SongService:
+        return SongService()
 
 
 services = ServiceRegistry()

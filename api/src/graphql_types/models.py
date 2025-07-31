@@ -34,31 +34,47 @@ class EntityType(Enum):
     ARTIST = "ARTIST"
     ALBUM = "ALBUM"
     PLAYLIST = "PLAYLIST"
+    TRACK = "TRACK"
 
 
 @strawberry.type
 class Artist:
-    id: str
+    id: int
     name: str
-    spotify_url: str
-    image_url: Optional[str]
+    gid: str
     is_tracked: bool
     last_synced: Optional[datetime]
-    auto_download: bool = False
+    added_at: Optional[datetime] = None
 
 
 @strawberry.type
 class Album:
-    id: str
+    id: int
     name: str
-    artist_id: str
-    spotify_url: str
-    release_date: datetime
-    image_url: Optional[str]
-    is_downloaded: bool
-    is_wanted: bool
-    download_status: Optional[DownloadStatus]
-    track_count: int
+    spotify_gid: str
+    total_tracks: int
+    wanted: bool
+    downloaded: bool
+    album_type: Optional[str]
+    album_group: Optional[str]
+    artist: Optional[str]
+    artist_id: Optional[int]
+
+
+@strawberry.type
+class Song:
+    id: int
+    name: str
+    gid: str
+    primary_artist: str
+    primary_artist_id: int
+    created_at: datetime
+    failed_count: int
+    bitrate: int
+    unavailable: bool
+    file_path: Optional[str]
+    downloaded: bool
+    spotify_uri: str
 
 
 @strawberry.type
@@ -77,15 +93,12 @@ class Track:
 
 @strawberry.type
 class Playlist:
-    id: str
+    id: int
     name: str
-    owner_id: str
-    spotify_url: str
-    image_url: Optional[str]
-    track_count: int
-    is_tracked: bool
+    url: str
+    enabled: bool
     auto_track_artists: bool
-    last_synced: Optional[datetime]
+    last_synced_at: Optional[datetime]
 
 
 @strawberry.type
@@ -133,41 +146,30 @@ class PageInfo:
 
 @strawberry.type
 class ArtistConnection:
-    edges: List["ArtistEdge"]
+    edges: List[Artist]
     page_info: PageInfo
     total_count: int
-
-
-@strawberry.type
-class ArtistEdge:
-    node: Artist
-    cursor: str
 
 
 @strawberry.type
 class AlbumConnection:
-    edges: List["AlbumEdge"]
+    edges: List[Album]
     page_info: PageInfo
     total_count: int
-
-
-@strawberry.type
-class AlbumEdge:
-    node: Album
-    cursor: str
 
 
 @strawberry.type
 class PlaylistConnection:
-    edges: List["PlaylistEdge"]
+    edges: List[Playlist]
     page_info: PageInfo
     total_count: int
 
 
 @strawberry.type
-class PlaylistEdge:
-    node: Playlist
-    cursor: str
+class SongConnection:
+    edges: List[Song]
+    page_info: PageInfo
+    total_count: int
 
 
 @strawberry.type
@@ -219,6 +221,15 @@ class UpdateArtistInput:
 class UpdateAlbumInput:
     album_id: str
     is_wanted: Optional[bool] = None
+
+
+@strawberry.type
+class MutationResult:
+    success: bool
+    message: str
+    artist: Optional[Artist] = None
+    album: Optional[Album] = None
+    playlist: Optional[Playlist] = None
 
 
 @strawberry.input

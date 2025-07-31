@@ -6,11 +6,11 @@ import {
   SyncPlaylistDocument,
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
-import type { TrackedPlaylist } from '../types/generated/graphql';
+import type { Playlist } from '../types/generated/graphql';
 import { useState, useMemo, useCallback } from 'react';
 
-import { DownloadUrlModal } from '../components/ui/DownloadUrlModal';
 import { PlaylistModal } from '../components/ui/PlaylistModal';
+import { DownloadUrlModal } from '../components/ui/DownloadUrlModal';
 
 // Components
 import { PlaylistFilters } from '../components/playlists/PlaylistFilters';
@@ -30,10 +30,9 @@ function Playlists() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modal states
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
-  const [editingPlaylist, setEditingPlaylist] =
-    useState<TrackedPlaylist | null>(null);
+  const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   const client = useApolloClient();
 
@@ -192,7 +191,7 @@ function Playlists() {
     [queryVariables, client]
   );
 
-  const handleTogglePlaylist = async (playlist: TrackedPlaylist) => {
+  const handleTogglePlaylist = async (playlist: Playlist) => {
     try {
       await togglePlaylist({ variables: { playlistId: playlist.id } });
     } catch (error) {
@@ -208,12 +207,7 @@ function Playlists() {
     }
   };
 
-  const handleCreatePlaylist = useCallback(() => {
-    setEditingPlaylist(null);
-    setShowPlaylistModal(true);
-  }, []);
-
-  const handleEditPlaylist = useCallback((playlist: TrackedPlaylist) => {
+  const handleEditPlaylist = useCallback((playlist: Playlist) => {
     setEditingPlaylist(playlist);
     setShowPlaylistModal(true);
   }, []);
@@ -296,16 +290,16 @@ function Playlists() {
         </div>
         <div className='flex items-center gap-4'>
           <button
-            onClick={() => setShowDownloadModal(true)}
-            className='px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-          >
-            Download URL
-          </button>
-          <button
-            onClick={handleCreatePlaylist}
-            className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+            onClick={() => setShowPlaylistModal(true)}
+            className='px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors'
           >
             Create Playlist
+          </button>
+          <button
+            onClick={() => setShowDownloadModal(true)}
+            className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
+          >
+            Download URL
           </button>
           <SearchInput
             placeholder='Search playlists...'
@@ -359,16 +353,20 @@ function Playlists() {
       />
 
       {/* Modals */}
-      <DownloadUrlModal
-        isOpen={showDownloadModal}
-        onClose={() => setShowDownloadModal(false)}
-      />
 
       <PlaylistModal
         isOpen={showPlaylistModal}
         onClose={handleClosePlaylistModal}
         playlist={editingPlaylist}
         mode={editingPlaylist ? 'edit' : 'create'}
+      />
+
+      <DownloadUrlModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        onSuccess={() => {
+          // Optionally refresh the playlists data
+        }}
       />
     </section>
   );

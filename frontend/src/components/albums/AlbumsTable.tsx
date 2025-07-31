@@ -196,7 +196,7 @@ export function AlbumsTable({
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
                   <a
-                    href={album.spotifyUri}
+                    href={album.spotifyGid}
                     target='_blank'
                     rel='noopener noreferrer'
                     className='text-indigo-600 hover:text-indigo-900 underline'
@@ -213,7 +213,7 @@ export function AlbumsTable({
                     </Link>
                   )}
                   <Link
-                    to='/songs'
+                    to='/albums'
                     search={{ artistId: album.artistId || undefined }}
                     className='text-green-600 hover:text-green-900 underline'
                   >

@@ -1,28 +1,24 @@
-query GetArtist($id: Int!) {
+query GetArtist($id: String!) {
   artist(id: $id) {
     id
     name
     gid
-    tracked
+    isTracked
     addedAt
-    lastSyncedAt
+    lastSynced
   }
 }
 
 query GetArtists(
-  $tracked: Boolean
+  $isTracked: Boolean
   $first: Int = 20
   $after: String
-  $sortBy: String
-  $sortDirection: String
   $search: String
 ) {
   artists(
-    tracked: $tracked
+    isTracked: $isTracked
     first: $first
     after: $after
-    sortBy: $sortBy
-    sortDirection: $sortDirection
     search: $search
   ) {
     totalCount
@@ -36,9 +32,9 @@ query GetArtists(
       id
       name
       gid
-      tracked
+      isTracked
       addedAt
-      lastSyncedAt
+      lastSynced
     }
   }
 }
@@ -85,49 +81,6 @@ query GetAlbums(
   }
 }
 
-query GetSongs(
-  $artistId: Int
-  $downloaded: Boolean
-  $unavailable: Boolean
-  $first: Int = 20
-  $after: String
-  $sortBy: String
-  $sortDirection: String
-  $search: String
-) {
-  songs(
-    artistId: $artistId
-    downloaded: $downloaded
-    unavailable: $unavailable
-    first: $first
-    after: $after
-    sortBy: $sortBy
-    sortDirection: $sortDirection
-    search: $search
-  ) {
-    totalCount
-    pageInfo {
-      hasNextPage
-      hasPreviousPage
-      startCursor
-      endCursor
-    }
-    edges {
-      id
-      name
-      gid
-      createdAt
-      failedCount
-      bitrate
-      unavailable
-      filePath
-      downloaded
-      spotifyUri
-      artist
-    }
-  }
-}
-
 query GetPlaylists(
   $enabled: Boolean
   $first: Int = 20
@@ -162,11 +115,14 @@ query GetPlaylists(
   }
 }
 
-mutation SyncArtist($artistId: Int!) {
+mutation SyncArtist($artistId: String!) {
   syncArtist(artistId: $artistId) {
-    success
-    message
-    taskId
+    id
+    name
+    gid
+    isTracked
+    addedAt
+    lastSynced
   }
 }
 
@@ -174,7 +130,6 @@ mutation SyncPlaylist($playlistId: Int!) {
   syncPlaylist(playlistId: $playlistId) {
     success
     message
-    taskId
   }
 }
 
@@ -185,7 +140,7 @@ mutation TrackArtist($artistId: Int!) {
     artist {
       id
       name
-      tracked
+      isTracked
     }
   }
 }
@@ -197,7 +152,7 @@ mutation UntrackArtist($artistId: Int!) {
     artist {
       id
       name
-      tracked
+      isTracked
     }
   }
 }

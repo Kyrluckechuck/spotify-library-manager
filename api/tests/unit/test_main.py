@@ -100,14 +100,10 @@ class TestMainApplication:
         """Test that settings validation works correctly."""
         Settings.reset()
         settings = get_settings()
-
-        # Test that settings have reasonable defaults
         assert isinstance(settings.debug, bool)
         assert isinstance(settings.host, str)
         assert isinstance(settings.port, int)
         assert isinstance(settings.reload, bool)
-
-        # Test port range
         assert 1 <= settings.port <= 65535
 
     def test_settings_immutability(self):
