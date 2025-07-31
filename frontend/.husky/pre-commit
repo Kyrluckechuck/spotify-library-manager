@@ -1,13 +1,13 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Auto-fix newlines if needed
-echo "🔧 Checking and fixing trailing newlines..."
-yarn fix-newlines
+# Auto-fix newlines across the entire repository
+echo "🔧 Checking and fixing trailing newlines across repository..."
+python scripts/check-repo-newlines.py fix
 
 # Check if there are still files without newlines (shouldn't happen after auto-fix)
 echo "🔍 Verifying newline fixes..."
-yarn check-newlines
+python scripts/check-repo-newlines.py check
 
 # If newline check still fails after auto-fix, block the commit
 if [ $? -ne 0 ]; then

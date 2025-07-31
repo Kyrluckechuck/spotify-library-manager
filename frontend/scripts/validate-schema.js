@@ -158,8 +158,6 @@ function validateQueries(queries, schema) {
       
       // Check for non-existent mutations
       const nonExistentMutations = [
-        'downloadUrl',
-        'createPlaylist', 
         'cleanupStuckTasks',
         'activeTasks',
       ];
