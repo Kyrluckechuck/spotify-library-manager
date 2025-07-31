@@ -160,7 +160,7 @@ fix-newlines:
 
 # Frontend-specific newline commands
 check-newlines-frontend:
-	cd frontend && npm run check-newlines
+	cd frontend && yarn check-newlines
 
 fix-newlines-frontend:
-	cd frontend && npm run fix-newlines
+	cd frontend && yarn fix-newlines

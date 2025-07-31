@@ -92,7 +92,7 @@ function checkNewlines() {
   });
   
   console.log('\n💡 To fix these files, run:');
-  console.log('  npm run fix-newlines');
+  console.log('  yarn fix-newlines');
   
   process.exit(1);
 }

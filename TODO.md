@@ -21,7 +21,7 @@
 ### Development Workflow
 - [ ] **Add schema validation to development workflow**
   - [ ] Create schema validation script that runs on file changes
-  - [ ] Add GraphQL schema testing to npm scripts
+  - [ ] Add GraphQL schema testing to yarn scripts
   - [ ] Implement schema debugging tools
   - [ ] Add schema documentation generation
 
