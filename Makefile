@@ -91,7 +91,7 @@ format-check-frontend:
 lint-api: lint-api-flake8 lint-api-black lint-api-isort lint-api-mypy lint-api-bandit lint-api-pylint
 
 lint-api-flake8:
-	cd api && python -m flake8 --config=../.flake8
+	cd api && python -m flake8 --extend-ignore=W503 --exclude=.venv,__pycache__,node_modules
 
 lint-api-black:
 	cd api && python -m black --check --diff .
@@ -121,6 +121,23 @@ format-api-black:
 
 format-api-isort:
 	cd api && python -m isort .
+
+# Auto-fix linting issues
+fix-lint: fix-lint-api fix-lint-frontend
+
+fix-lint-api: fix-lint-api-black fix-lint-api-isort fix-lint-api-flake8
+
+fix-lint-api-black:
+	cd api && python -m black . --exclude=.venv,__pycache__,node_modules
+
+fix-lint-api-isort:
+	cd api && python -m isort . --profile black
+
+fix-lint-api-flake8:
+	cd api && python -c "import re; import pathlib; [open(f, 'w').write(re.sub(r'\[offset : offset', '[offset:offset', open(f).read())) for f in pathlib.Path('.').rglob('*.py') if 'offset : offset' in open(f).read()]"
+
+fix-lint-frontend:
+	cd frontend && yarn lint:fix
 
 format-frontend:
 	cd frontend && yarn format
