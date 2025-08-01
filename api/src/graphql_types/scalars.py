@@ -24,4 +24,4 @@ class DateTime:
     def parse_literal(ast: Any) -> datetime:
         if hasattr(ast, "value"):
             return DateTime.parse_value(ast.value)
-        raise ValueError(f"Cannot parse literal {ast} as DateTime") 
+        raise ValueError(f"Cannot parse literal {ast} as DateTime")

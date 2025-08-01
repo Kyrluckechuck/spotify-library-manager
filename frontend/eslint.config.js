@@ -9,7 +9,12 @@ import tseslintParser from '@typescript-eslint/parser';
 
 export default [
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**'],
+    ignores: [
+      'dist/**', 
+      'coverage/**', 
+      'node_modules/**',
+      'src/types/generated/**',
+    ],
   },
   js.configs.recommended,
   reactRefresh.configs.vite,
