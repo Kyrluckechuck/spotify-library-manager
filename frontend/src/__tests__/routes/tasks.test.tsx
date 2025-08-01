@@ -201,8 +201,8 @@ const TestTasksComponent = () => {
               <span>{task.progressPercentage}%</span>
               {task.logMessages && task.logMessages.length > 0 && (
                 <div data-testid={`logs-${task.id}`}>
-                  {task.logMessages.map((log: string, index: number) => (
-                    <div key={`task-${task.id}-log-entry-${index}`}>{log}</div>
+                  {task.logMessages.map((log: string) => (
+                    <div key={`task-${task.id}-log-entry-${log}`}>{log}</div>
                   ))}
                 </div>
               )}

@@ -10,8 +10,8 @@ import tseslintParser from '@typescript-eslint/parser';
 export default [
   {
     ignores: [
-      'dist/**', 
-      'coverage/**', 
+      'dist/**',
+      'coverage/**',
       'node_modules/**',
       'src/types/generated/**',
     ],

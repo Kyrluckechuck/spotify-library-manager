@@ -30,3 +30,21 @@ export const CancelTasksByNameDocument = gql`
     }
   }
 `;
+
+export const CancelRunningTasksByNameDocument = gql`
+  mutation CancelRunningTasksByName($taskName: String!) {
+    cancelRunningTasksByName(taskName: $taskName) {
+      success
+      message
+    }
+  }
+`;
+
+export const CancelAllTasksDocument = gql`
+  mutation CancelAllTasks {
+    cancelAllTasks {
+      success
+      message
+    }
+  }
+`;

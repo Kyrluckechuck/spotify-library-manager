@@ -226,6 +226,58 @@ class TestTaskManagementService:
         assert "Successfully cancelled 1 tasks" in result.message
 
     @patch("api.src.services.task_management.HUEY")
+    def test_cancel_running_tasks_by_name_success(
+        self, mock_huey, task_management_service
+    ):
+        """Test cancelling running tasks by name successfully."""
+        with patch("library_manager.models.TaskHistory") as mock_task_history:
+            # Mock running tasks
+            mock_task1 = Mock()
+            mock_task1.task_id = "task_1"
+            mock_task1.status = "RUNNING"
+            mock_task1.save.return_value = None
+
+            mock_task2 = Mock()
+            mock_task2.task_id = "task_2"
+            mock_task2.status = "RUNNING"
+            mock_task2.save.return_value = None
+
+            mock_task_history.objects.filter.return_value = [mock_task1, mock_task2]
+
+            result = task_management_service.cancel_running_tasks_by_name(
+                "download_playlist"
+            )
+
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 2 running tasks" in result.message
+
+    @patch("api.src.services.task_management.HUEY")
+    def test_cancel_all_tasks_success(self, mock_huey, task_management_service):
+        """Test cancelling all tasks (pending and running) successfully."""
+        # Mock pending tasks
+        task1 = Mock(spec=Task)
+        task1.id = "task_1"
+        task1.name = "test_task"
+        mock_huey.pending.return_value = [task1]
+        mock_huey.revoke_by_id.return_value = True
+
+        # Mock running tasks
+        with patch("library_manager.models.TaskHistory") as mock_task_history:
+            mock_running_task = Mock()
+            mock_running_task.task_id = "task_2"
+            mock_running_task.status = "RUNNING"
+            mock_running_task.save.return_value = None
+
+            mock_task_history.objects.filter.return_value = [mock_running_task]
+
+            result = task_management_service.cancel_all_tasks()
+
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 2 total tasks" in result.message
+
+    @patch("api.src.services.task_management.HUEY")
     def test_get_queue_status_success(self, mock_huey, task_management_service):
         """Test getting queue status successfully."""
         task1 = Mock(spec=Task)

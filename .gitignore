@@ -6,6 +6,14 @@ __pycache__
 *.pyd
 .Python
 *.so
+# But allow requirements and project config
+!requirements*.txt
+!pyproject.toml
+!setup.py
+!setup.cfg
+!Pipfile
+!Pipfile.lock
+!poetry.lock
 
 # Node.js
 node_modules/
@@ -19,6 +27,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+# But allow package configs
+!package.json
+!package-lock.json
+!yarn.lock
+!pnpm-lock.yaml
 
 # Editor
 .vscode/
@@ -41,6 +54,7 @@ urls*.txt
 db/
 Spotify/
 temp/
+# Database files
 *.sqlite3
 *.db
 
@@ -69,6 +83,13 @@ frontend/*.timestamp-*.js
 # Generated files (can be regenerated)
 frontend/src/types/generated/
 frontend/src/graphql/generated/
+# But allow GraphQL schema and type definitions
+!frontend/src/types/generated/graphql.ts
+!frontend/src/graphql/
+!frontend/src/queries/
+!frontend/src/schema/
+!api/src/schema/
+!api/src/graphql_types/
 
 # Environment files
 .env
@@ -76,6 +97,10 @@ frontend/src/graphql/generated/
 .env.development.local
 .env.test.local
 .env.production.local
+# But allow example configs
+!.env.example
+!.env.sample
+!*.env.example
 
 # Cache directories
 .cache/

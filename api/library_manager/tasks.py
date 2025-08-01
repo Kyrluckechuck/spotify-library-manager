@@ -91,6 +91,24 @@ def complete_task(
         task_history.mark_failed(error_message)
 
 
+def check_task_cancellation(task_history: TaskHistory) -> bool:
+    """Check if the task has been cancelled by checking the database status."""
+    # Refresh from database to get latest status
+    task_history.refresh_from_db()
+    return task_history.status == "CANCELLED"
+
+
+def check_and_update_progress(
+    task_history: TaskHistory, progress: float, message: Optional[str] = None
+) -> bool:
+    """Update task progress and check for cancellation. Returns True if cancelled."""
+    if check_task_cancellation(task_history):
+        return True
+
+    update_task_progress(task_history, progress, message)
+    return False
+
+
 @huey.task(context=True, priority=3)  # type: ignore[misc]
 def fetch_all_albums_for_artist(artist_id: int, task: Task = None) -> None:
     task_history = None
@@ -117,6 +135,11 @@ def fetch_all_albums_for_artist(artist_id: int, task: Task = None) -> None:
         task_history.status = "RUNNING"
         task_history.save()
 
+        # Check for cancellation before proceeding
+        if check_task_cancellation(task_history):
+            print(f"Task cancelled for artist {artist.name}")
+            return
+
         downloader_config = Config()
         downloader_config.artist_to_fetch = artist.gid
         downloader_config.urls = []
@@ -126,9 +149,20 @@ def fetch_all_albums_for_artist(artist_id: int, task: Task = None) -> None:
                 task, desc=f"fetch all albums for artist (artist.gid: {artist.gid})"
             )
             downloader_config.process_info = process_info
-        update_task_progress(task_history, 25.0, "Fetching artist albums from Spotify")
+
+        # Check for cancellation before major operation
+        if check_and_update_progress(
+            task_history, 25.0, "Fetching artist albums from Spotify"
+        ):
+            print(f"Task cancelled during Spotify fetch for artist {artist.name}")
+            return
 
         spotdl_wrapper.execute(downloader_config)
+
+        # Final cancellation check before completion
+        if check_task_cancellation(task_history):
+            print(f"Task cancelled before completion for artist {artist.name}")
+            return
 
         complete_task(task_history, success=True)
 

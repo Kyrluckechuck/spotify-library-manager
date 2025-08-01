@@ -14,6 +14,8 @@ import {
   GetQueueStatusDocument,
   CancelAllPendingTasksDocument,
   CancelTasksByNameDocument,
+  CancelRunningTasksByNameDocument,
+  CancelAllTasksDocument,
 } from '../queries/taskManagement';
 
 type TaskStatus = 'running' | 'completed' | 'failed' | 'pending' | 'all';
@@ -37,6 +39,10 @@ function Tasks() {
   // Task cancellation mutations
   const [cancelAllTasks] = useMutation(CancelAllPendingTasksDocument);
   const [cancelTasksByName] = useMutation(CancelTasksByNameDocument);
+  const [cancelRunningTasksByName] = useMutation(
+    CancelRunningTasksByNameDocument
+  );
+  const [cancelAllTasksEnhanced] = useMutation(CancelAllTasksDocument);
 
   const {
     data: historyData,
@@ -101,18 +107,17 @@ function Tasks() {
   const handleCancelAllTasks = async () => {
     if (
       confirm(
-        'Are you sure you want to cancel all pending tasks? This action cannot be undone.'
+        'Are you sure you want to cancel all tasks (both pending and running)? This action cannot be undone.'
       )
     ) {
       try {
-        const result = await cancelAllTasks();
-        if (result.data?.cancelAllPendingTasks?.success) {
-          alert('Successfully cancelled all pending tasks');
+        const result = await cancelAllTasksEnhanced();
+        if (result.data?.cancelAllTasks?.success) {
+          alert('Successfully cancelled all tasks');
           refetchQueue();
         } else {
           alert(
-            'Failed to cancel tasks: ' +
-              result.data?.cancelAllPendingTasks?.message
+            'Failed to cancel tasks: ' + result.data?.cancelAllTasks?.message
           );
         }
       } catch (error) {
@@ -139,6 +144,31 @@ function Tasks() {
         }
       } catch (error) {
         alert('Error cancelling tasks: ' + error);
+      }
+    }
+  };
+
+  const handleCancelRunningTasksByName = async (taskName: string) => {
+    if (
+      confirm(
+        `Are you sure you want to cancel all running '${taskName}' tasks? This action cannot be undone.`
+      )
+    ) {
+      try {
+        const result = await cancelRunningTasksByName({
+          variables: { taskName },
+        });
+        if (result.data?.cancelRunningTasksByName?.success) {
+          alert(`Successfully cancelled running ${taskName} tasks`);
+          refetchQueue();
+        } else {
+          alert(
+            'Failed to cancel running tasks: ' +
+              result.data?.cancelRunningTasksByName?.message
+          );
+        }
+      } catch (error) {
+        alert('Error cancelling running tasks: ' + error);
       }
     }
   };
@@ -236,7 +266,7 @@ function Tasks() {
                   onClick={handleCancelAllTasks}
                   className='px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium'
                 >
-                  Cancel All Pending Tasks
+                  Cancel All Tasks (Pending & Running)
                 </button>
               </div>
             </div>
@@ -292,9 +322,17 @@ function Tasks() {
               {/* Running Tasks */}
               {runningTasks.length > 0 && (
                 <div>
-                  <h3 className='text-sm font-medium text-gray-700 mb-3'>
-                    Running ({runningTasks.length})
-                  </h3>
+                  <div className='flex items-center justify-between mb-3'>
+                    <h3 className='text-sm font-medium text-gray-700'>
+                      Running ({runningTasks.length})
+                    </h3>
+                    <button
+                      onClick={() => handleCancelRunningTasksByName('all')}
+                      className='px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600'
+                    >
+                      Cancel All Running
+                    </button>
+                  </div>
                   <div className='space-y-2'>
                     {runningTasks.map((task: TaskHistory) => (
                       <div
@@ -635,16 +673,14 @@ function Tasks() {
                           {task.entityType} {task.entityId}
                         </div>
                         <div className='bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-32 overflow-y-auto'>
-                          {task.logMessages?.map(
-                            (log: string, index: number) => (
-                              <div
-                                key={`task-${task.id}-log-entry-${index}`}
-                                className='mb-1'
-                              >
-                                {log}
-                              </div>
-                            )
-                          )}
+                          {task.logMessages?.map((log: string) => (
+                            <div
+                              key={`task-${task.id}-log-entry-${log}`}
+                              className='mb-1'
+                            >
+                              {log}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );

@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from django.utils import timezone
+
 from huey.contrib.djhuey import HUEY
 
 from ..graphql_types.models import MutationResult
@@ -87,6 +89,74 @@ class TaskManagementService:
         except Exception as e:
             return MutationResult(
                 success=False, message=f"Failed to cancel tasks: {str(e)}"
+            )
+
+    def cancel_running_tasks_by_name(self, task_name: str) -> MutationResult:
+        """Cancel running tasks by marking them as cancelled in the database."""
+        try:
+            from library_manager.models import TaskHistory
+
+            # Find running tasks with the specified name
+            running_tasks = TaskHistory.objects.filter(
+                type__iexact=task_name.replace("_", ""), status="RUNNING"
+            )
+
+            cancelled_count = 0
+            for task_history in running_tasks:
+                try:
+                    # Mark the task as cancelled
+                    task_history.status = "CANCELLED"
+                    task_history.completed_at = timezone.now()
+                    task_history.error_message = "Task cancelled by user"
+                    task_history.save()
+                    cancelled_count += 1
+                except Exception as e:
+                    print(f"Failed to cancel running task {task_history.task_id}: {e}")
+
+            return MutationResult(
+                success=True,
+                message=f"Successfully cancelled {cancelled_count} running tasks with name '{task_name}'",
+            )
+
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Failed to cancel running tasks: {str(e)}"
+            )
+
+    def cancel_all_tasks(self) -> MutationResult:
+        """Cancel both pending and running tasks."""
+        try:
+            # Cancel pending tasks
+            pending_result = self.cancel_all_pending_tasks()
+
+            # Cancel running tasks
+            from library_manager.models import TaskHistory
+
+            running_tasks = TaskHistory.objects.filter(status="RUNNING")
+            cancelled_running_count = 0
+
+            for task_history in running_tasks:
+                try:
+                    task_history.status = "CANCELLED"
+                    task_history.completed_at = timezone.now()
+                    task_history.error_message = "Task cancelled by user"
+                    task_history.save()
+                    cancelled_running_count += 1
+                except Exception as e:
+                    print(f"Failed to cancel running task {task_history.task_id}: {e}")
+
+            total_cancelled = (
+                int(pending_result.message.split()[2]) + cancelled_running_count
+            )
+
+            return MutationResult(
+                success=True,
+                message=f"Successfully cancelled {total_cancelled} total tasks ({pending_result.message.split()[2]} pending, {cancelled_running_count} running)",
+            )
+
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Failed to cancel all tasks: {str(e)}"
             )
 
     def get_queue_status(self) -> Dict[str, any]:

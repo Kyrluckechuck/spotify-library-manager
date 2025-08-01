@@ -11,6 +11,7 @@ import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import type { DocumentNode } from 'graphql';
 import { Kind } from 'graphql';
+import { testLogger } from '../utils/logger';
 
 // Configuration
 const API_URL = 'http://localhost:5000/graphql';
@@ -274,21 +275,21 @@ async function testQuery(
   variables: Record<string, unknown>
 ) {
   try {
-    console.log(`🔍 Testing query: ${name}`);
+    testLogger.action(`Testing query: ${name}`);
     const result = await client.query({
       query: { kind: Kind.DOCUMENT, definitions: [] } as DocumentNode, // This is a placeholder
       variables,
     });
 
     if (result.data) {
-      console.log(`✅ ${name}: SUCCESS`);
+      testLogger.success(`${name}: SUCCESS`);
       return { success: true, data: result.data };
     } else {
-      console.log(`❌ ${name}: FAILED - No data returned`);
+      testLogger.failure(`${name}: FAILED - No data returned`);
       return { success: false, error: 'No data returned' };
     }
   } catch (error) {
-    console.log(`❌ ${name}: FAILED - ${error}`);
+    testLogger.failure(`${name}: FAILED - ${error}`);
     return { success: false, error };
   }
 }
@@ -299,53 +300,53 @@ async function testMutation(
   variables: Record<string, unknown>
 ) {
   try {
-    console.log(`🔍 Testing mutation: ${name}`);
+    testLogger.action(`Testing mutation: ${name}`);
     const result = await client.mutate({
       mutation: { kind: Kind.DOCUMENT, definitions: [] } as DocumentNode, // This is a placeholder
       variables,
     });
 
     if (result.data) {
-      console.log(`✅ ${name}: SUCCESS`);
+      testLogger.success(`${name}: SUCCESS`);
       return { success: true, data: result.data };
     } else {
-      console.log(`❌ ${name}: FAILED - No data returned`);
+      testLogger.failure(`${name}: FAILED - No data returned`);
       return { success: false, error: 'No data returned' };
     }
   } catch (error) {
-    console.log(`❌ ${name}: FAILED - ${error}`);
+    testLogger.failure(`${name}: FAILED - ${error}`);
     return { success: false, error };
   }
 }
 
 async function runAllTests() {
-  console.log('🚀 Starting GraphQL Test Suite...');
-  console.log(`📡 Testing against: ${API_URL}`);
-  console.log('');
+  testLogger.test('🚀 Starting GraphQL Test Suite...');
+  testLogger.test(`📡 Testing against: ${API_URL}`);
+  testLogger.test('');
 
   const queryResults = [];
   const mutationResults = [];
 
   // Test queries
-  console.log('📋 Testing Queries:');
-  console.log('==================');
+  testLogger.section('Testing Queries:');
+  testLogger.test('==================');
   for (const test of testQueries) {
     const result = await testQuery(test.name, test.query, test.variables);
     queryResults.push({ name: test.name, ...result });
   }
 
-  console.log('');
-  console.log('🔄 Testing Mutations:');
-  console.log('=====================');
+  testLogger.test('');
+  testLogger.section('Testing Mutations:');
+  testLogger.test('=====================');
   for (const test of testMutations) {
     const result = await testMutation(test.name, test.mutation, test.variables);
     mutationResults.push({ name: test.name, ...result });
   }
 
   // Summary
-  console.log('');
-  console.log('📊 Test Summary:');
-  console.log('===============');
+  testLogger.test('');
+  testLogger.summary('Test Summary:');
+  testLogger.test('===============');
 
   const successfulQueries = queryResults.filter(r => r.success).length;
   const failedQueries = queryResults.length - successfulQueries;
@@ -353,20 +354,24 @@ async function runAllTests() {
   const successfulMutations = mutationResults.filter(r => r.success).length;
   const failedMutations = mutationResults.length - successfulMutations;
 
-  console.log(`Queries: ${successfulQueries}/${queryResults.length} passed`);
-  console.log(
+  testLogger.test(
+    `Queries: ${successfulQueries}/${queryResults.length} passed`
+  );
+  testLogger.test(
     `Mutations: ${successfulMutations}/${mutationResults.length} passed`
   );
-  console.log(
+  testLogger.test(
     `Total: ${successfulQueries + successfulMutations}/${queryResults.length + mutationResults.length} passed`
   );
 
   if (failedQueries > 0 || failedMutations > 0) {
-    console.log('');
-    console.log('❌ Failed Tests:');
+    testLogger.test('');
+    testLogger.failure('Failed Tests:');
     [...queryResults, ...mutationResults]
       .filter(r => !r.success)
-      .forEach(r => console.log(`  - ${r.name}: ${r.error}`));
+      .forEach(r => {
+        testLogger.test(`  - ${r.name}: ${r.error}`);
+      });
   }
 
   return {
