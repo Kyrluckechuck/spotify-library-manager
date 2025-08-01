@@ -3,11 +3,12 @@ Runtime type validation using Pydantic.
 This module provides validation schemas for API inputs and outputs.
 """
 
-from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
+
+from .scalars import DateTime
 
 
 class TaskStatus(str, Enum):
@@ -55,8 +56,8 @@ class ArtistInput(BaseModel):
         ..., min_length=1, max_length=100, description="Spotify artist GID"
     )
     tracked: bool = Field(default=False, description="Whether artist is tracked")
-    added_at: Optional[datetime] = Field(None, description="When artist was added")
-    last_synced_at: Optional[datetime] = Field(None, description="Last sync timestamp")
+    added_at: Optional[DateTime] = Field(None, description="When artist was added")
+    last_synced_at: Optional[DateTime] = Field(None, description="Last sync timestamp")
 
     @field_validator("gid")
     @classmethod
@@ -101,7 +102,7 @@ class SongInput(BaseModel):
     id: int = Field(..., gt=0, description="Song ID")
     name: str = Field(..., min_length=1, max_length=500, description="Song name")
     gid: str = Field(..., min_length=1, max_length=100, description="Spotify song GID")
-    created_at: datetime = Field(..., description="Creation timestamp")
+    created_at: DateTime = Field(..., description="Creation timestamp")
     failed_count: int = Field(
         ..., ge=0, description="Number of failed download attempts"
     )
@@ -131,7 +132,7 @@ class PlaylistInput(BaseModel):
     url: str = Field(..., min_length=1, max_length=1000, description="Playlist URL")
     enabled: bool = Field(default=False, description="Whether playlist is enabled")
     auto_track_artists: bool = Field(default=False, description="Auto-track artists")
-    last_synced_at: Optional[datetime] = Field(None, description="Last sync timestamp")
+    last_synced_at: Optional[DateTime] = Field(None, description="Last sync timestamp")
 
     @field_validator("url")
     @classmethod
@@ -153,8 +154,8 @@ class TaskHistoryInput(BaseModel):
     entity_id: str = Field(..., min_length=1, max_length=100, description="Entity ID")
     entity_type: EntityType = Field(..., description="Entity type")
     status: TaskStatus = Field(..., description="Task status")
-    started_at: datetime = Field(..., description="Start timestamp")
-    completed_at: Optional[datetime] = Field(None, description="Completion timestamp")
+    started_at: DateTime = Field(..., description="Start timestamp")
+    completed_at: Optional[DateTime] = Field(None, description="Completion timestamp")
     error_message: Optional[str] = Field(
         None, max_length=1000, description="Error message"
     )

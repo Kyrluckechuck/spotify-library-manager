@@ -1,8 +1,9 @@
-from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
 import strawberry
+
+from .scalars import DateTime
 
 
 @strawberry.enum
@@ -43,8 +44,8 @@ class Artist:
     name: str
     gid: str
     is_tracked: bool
-    last_synced: Optional[datetime]
-    added_at: Optional[datetime] = None
+    last_synced: Optional[DateTime]
+    added_at: Optional[DateTime] = None
 
 
 @strawberry.type
@@ -68,7 +69,7 @@ class Song:
     gid: str
     primary_artist: str
     primary_artist_id: int
-    created_at: datetime
+    created_at: DateTime
     failed_count: int
     bitrate: int
     unavailable: bool
@@ -98,7 +99,7 @@ class Playlist:
     url: str
     enabled: bool
     auto_track_artists: bool
-    last_synced_at: Optional[datetime]
+    last_synced_at: Optional[DateTime]
 
 
 @strawberry.type
@@ -116,8 +117,8 @@ class DownloadHistory:
     entity_id: str
     entity_type: str  # "TRACK" | "ALBUM" | "PLAYLIST"
     status: DownloadStatus
-    started_at: datetime
-    completed_at: Optional[datetime]
+    started_at: DateTime
+    completed_at: Optional[DateTime]
     error_message: Optional[str]
 
 
@@ -129,8 +130,8 @@ class TaskHistory:
     entity_id: str
     entity_type: EntityType
     status: TaskStatus
-    started_at: datetime
-    completed_at: Optional[datetime]
+    started_at: DateTime
+    completed_at: Optional[DateTime]
     duration_seconds: Optional[int]
     progress_percentage: Optional[float]
     log_messages: List[str]

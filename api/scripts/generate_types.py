@@ -19,7 +19,7 @@ def main():
             "--output",
             str(schema_path),
         ],
-        cwd="api",
+        cwd=".",
     )
 
     # Generate TypeScript types
