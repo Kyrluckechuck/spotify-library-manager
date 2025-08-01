@@ -540,13 +540,21 @@ function Tasks() {
                                   task.startedAt
                                 ).toLocaleTimeString()}`
                               : task.status === 'COMPLETED'
-                                ? `Completed ${new Date(
+                                ? `Completed ${
                                     task.completedAt
-                                  ).toLocaleTimeString()}`
+                                      ? new Date(
+                                          task.completedAt
+                                        ).toLocaleTimeString()
+                                      : 'Unknown time'
+                                  }`
                                 : task.status === 'FAILED'
-                                  ? `Failed ${new Date(
+                                  ? `Failed ${
                                       task.completedAt
-                                    ).toLocaleTimeString()}`
+                                        ? new Date(
+                                            task.completedAt
+                                          ).toLocaleTimeString()
+                                        : 'Unknown time'
+                                    }`
                                   : `Pending ${new Date(
                                       task.startedAt
                                     ).toLocaleTimeString()}`}
@@ -597,13 +605,13 @@ function Tasks() {
         <div className='p-6'>
           {historyData?.taskHistory?.edges?.some(
             (edge: { node: { logMessages?: string[] } }) =>
-              edge.node.logMessages?.length > 0
+              (edge.node.logMessages?.length ?? 0) > 0
           ) ? (
             <div className='space-y-4'>
               {historyData.taskHistory.edges
                 .filter(
                   (edge: { node: { logMessages?: string[] } }) =>
-                    edge.node.logMessages?.length > 0
+                    (edge.node.logMessages?.length ?? 0) > 0
                 )
                 .map(
                   (edge: {

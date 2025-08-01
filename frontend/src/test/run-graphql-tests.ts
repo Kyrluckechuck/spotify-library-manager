@@ -9,6 +9,8 @@
 
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
+import type { DocumentNode } from 'graphql';
+import { Kind } from 'graphql';
 
 // Configuration
 const API_URL = 'http://localhost:5000/graphql';
@@ -274,7 +276,7 @@ async function testQuery(
   try {
     console.log(`🔍 Testing query: ${name}`);
     const result = await client.query({
-      query: { kind: 'Document' as unknown, definitions: [] }, // This is a placeholder
+      query: { kind: Kind.DOCUMENT, definitions: [] } as DocumentNode, // This is a placeholder
       variables,
     });
 
@@ -299,7 +301,7 @@ async function testMutation(
   try {
     console.log(`🔍 Testing mutation: ${name}`);
     const result = await client.mutate({
-      mutation: { kind: 'Document' as unknown, definitions: [] }, // This is a placeholder
+      mutation: { kind: Kind.DOCUMENT, definitions: [] } as DocumentNode, // This is a placeholder
       variables,
     });
 
