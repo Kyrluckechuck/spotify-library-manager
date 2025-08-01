@@ -1,7 +1,7 @@
 interface SongFiltersProps {
-  currentDownloadFilter: 'all' | 'downloaded' | 'pending' | 'unavailable';
+  currentDownloadFilter: 'all' | 'downloaded' | 'failed' | 'unavailable';
   onDownloadFilterChange: (
-    filter: 'all' | 'downloaded' | 'pending' | 'unavailable'
+    filter: 'all' | 'downloaded' | 'failed' | 'unavailable'
   ) => void;
 }
 
@@ -46,19 +46,19 @@ export function SongFilters({
           Downloaded
         </button>
         <button
-          onClick={() => onDownloadFilterChange('pending')}
+          onClick={() => onDownloadFilterChange('failed')}
           className={`px-4 py-2 rounded transition-colors font-medium border ${
-            currentDownloadFilter === 'pending'
+            currentDownloadFilter === 'failed'
               ? 'bg-yellow-700 border-yellow-700 shadow-md ring-2 ring-yellow-300'
               : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
           }`}
           style={{
             backgroundColor:
-              currentDownloadFilter === 'pending' ? '#a16207' : 'white',
-            color: currentDownloadFilter === 'pending' ? 'white' : '#374151',
+              currentDownloadFilter === 'failed' ? '#a16207' : 'white',
+            color: currentDownloadFilter === 'failed' ? 'white' : '#374151',
           }}
         >
-          Pending
+          Failed
         </button>
         <button
           onClick={() => onDownloadFilterChange('unavailable')}

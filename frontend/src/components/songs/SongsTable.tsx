@@ -6,7 +6,6 @@ export type SortField =
   | 'primaryArtist'
   | 'createdAt'
   | 'downloaded'
-  | 'failedCount'
   | null;
 
 interface Song {
@@ -80,6 +79,19 @@ export const SongsTable: React.FC<SongsTableProps> = ({
     );
   };
 
+  const getStatusText = (song: Song) => {
+    if (song.unavailable) {
+      return 'Unavailable';
+    }
+    if (song.downloaded) {
+      return 'Downloaded';
+    }
+    if (song.failedCount > 0) {
+      return `Failed (${song.failedCount})`;
+    }
+    return 'Not downloaded';
+  };
+
   const SortableTableHeader: React.FC<{
     field: SortField;
     children: React.ReactNode;
@@ -125,7 +137,7 @@ export const SongsTable: React.FC<SongsTableProps> = ({
       <table className='min-w-full divide-y divide-gray-200'>
         <thead className='bg-gray-50'>
           <tr>
-            <SortableTableHeader field='downloaded' className='w-12'>
+            <SortableTableHeader field='downloaded' className='w-24'>
               Status
             </SortableTableHeader>
             <SortableTableHeader field='name'>Song Name</SortableTableHeader>
@@ -133,9 +145,6 @@ export const SongsTable: React.FC<SongsTableProps> = ({
               Artist
             </SortableTableHeader>
             <SortableTableHeader field='createdAt'>Added</SortableTableHeader>
-            <SortableTableHeader field='failedCount'>
-              Failed
-            </SortableTableHeader>
             <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
               Bitrate
             </th>
@@ -147,8 +156,13 @@ export const SongsTable: React.FC<SongsTableProps> = ({
         <tbody className='bg-white divide-y divide-gray-200'>
           {songs.map(song => (
             <tr key={song.id} className='hover:bg-gray-50'>
-              <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
-                {getStatusIcon(song)}
+              <td className='px-6 py-4 whitespace-nowrap'>
+                <div className='flex items-center gap-2'>
+                  {getStatusIcon(song)}
+                  <span className='text-sm text-gray-900'>
+                    {getStatusText(song)}
+                  </span>
+                </div>
               </td>
               <td className='px-6 py-4 whitespace-nowrap'>
                 <div className='text-sm font-medium text-gray-900'>
@@ -167,9 +181,7 @@ export const SongsTable: React.FC<SongsTableProps> = ({
               <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                 {formatDate(song.createdAt)}
               </td>
-              <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                {song.failedCount > 0 ? song.failedCount : '-'}
-              </td>
+
               <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                 {formatBitrate(song.bitrate)}
               </td>

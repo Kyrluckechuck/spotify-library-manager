@@ -21,7 +21,11 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:graphql": "node src/test/run-graphql-tests.ts",
+    "test:graphql-operations": "node scripts/test-graphql-operations.js",
+    "test:all": "yarn test:run && yarn test:graphql",
+    "validate:comprehensive": "yarn validate-schema && yarn test:graphql-operations"
   },
   "dependencies": {
     "@apollo/client": "^3.9.4",

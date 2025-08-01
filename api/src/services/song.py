@@ -57,8 +57,14 @@ class SongService(BaseService):
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
 
+        # Convert items to GraphQL types
+        graphql_items = []
+        for item in items:
+            graphql_item = await self._to_graphql_type(item)
+            graphql_items.append(graphql_item)
+        
         return (
-            [self._to_graphql_type(item) for item in items],
+            graphql_items,
             has_next_page,
             total_count,
         )
@@ -67,7 +73,7 @@ class SongService(BaseService):
         """Get a song by ID."""
         try:
             django_song = await self.model.objects.aget(id=song_id)
-            return self._to_graphql_type(django_song)
+            return await self._to_graphql_type(django_song)
         except self.model.DoesNotExist:
             return None
 
@@ -75,18 +81,22 @@ class SongService(BaseService):
         """Get a song by Spotify GID."""
         try:
             django_song = await self.model.objects.aget(gid=gid)
-            return self._to_graphql_type(django_song)
+            return await self._to_graphql_type(django_song)
         except self.model.DoesNotExist:
             return None
 
-    def _to_graphql_type(self, django_song: DjangoSong) -> Song:
+    async def _to_graphql_type(self, django_song: DjangoSong) -> Song:
         """Convert Django model to GraphQL type."""
+        # Use sync_to_async for accessing related fields
+        primary_artist_name = await sync_to_async(lambda: django_song.primary_artist.name)()
+        primary_artist_id = await sync_to_async(lambda: django_song.primary_artist.id)()
+        
         return Song(
             id=django_song.id,
             name=django_song.name,
             gid=django_song.gid,
-            primary_artist=django_song.primary_artist.name,
-            primary_artist_id=django_song.primary_artist.id,
+            primary_artist=primary_artist_name,
+            primary_artist_id=primary_artist_id,
             created_at=django_song.created_at,
             failed_count=django_song.failed_count,
             bitrate=django_song.bitrate,

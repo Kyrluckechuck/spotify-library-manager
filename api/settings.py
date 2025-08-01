@@ -29,6 +29,7 @@ settings = dynaconf.DjangoDynaconf(
     ALLOWED_HOSTS=["*"],
     # API-specific installed apps (keeping core Django + adding API needs)
     INSTALLED_APPS=[
+        "django.contrib.admin",
         "django.contrib.auth",
         "django.contrib.contenttypes",
         "django.contrib.sessions",
@@ -50,8 +51,24 @@ settings = dynaconf.DjangoDynaconf(
         "django.contrib.messages.middleware.MessageMiddleware",
         "django.middleware.clickjacking.XFrameOptionsMiddleware",
     ],
+    TEMPLATES=[
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "DIRS": [],
+            "APP_DIRS": True,
+            "OPTIONS": {
+                "context_processors": [
+                    "django.template.context_processors.debug",
+                    "django.template.context_processors.request",
+                    "django.contrib.auth.context_processors.auth",
+                    "django.contrib.messages.context_processors.messages",
+                ],
+            },
+        },
+    ],
     ROOT_URLCONF="urls",
     STATIC_ROOT=BASE_DIR / "staticfiles",
+    STATIC_URL="/static/",
     # Database: use same location as monolith by default
     DATABASES={
         "default": {
@@ -81,7 +98,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# STATIC_URL is now set in the dynaconf configuration above
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom configuration for spotdl and downloader

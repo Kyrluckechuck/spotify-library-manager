@@ -14,6 +14,11 @@ dev-frontend:
 dev-worker:
 	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py run_huey
 
+# Django admin server (separate from main dev setup)
+dev-admin:
+	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py collectstatic --noinput
+	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py runserver 0.0.0.0:8000
+
 # Huey queue management
 clear-huey-queue:
 	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py shell -c "from huey.contrib.djhuey import HUEY; HUEY.flush(); print('Huey queue cleared')"

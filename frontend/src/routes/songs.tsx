@@ -19,7 +19,7 @@ function Songs() {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'downloaded' | 'not_downloaded'>(
+  const [filter, setFilter] = useState<'all' | 'downloaded' | 'failed' | 'unavailable'>(
     'all'
   );
 
@@ -38,6 +38,7 @@ function Songs() {
     () => ({
       ...queryVariables,
       downloaded: filter === 'all' ? undefined : filter === 'downloaded',
+      unavailable: filter === 'unavailable' ? true : undefined,
     }),
     [queryVariables, filter]
   );
@@ -56,7 +57,7 @@ function Songs() {
   );
 
   const handleFilterChange = (
-    newFilter: 'all' | 'downloaded' | 'not_downloaded'
+    newFilter: 'all' | 'downloaded' | 'failed' | 'unavailable'
   ) => {
     setFilter(newFilter);
   };
@@ -81,7 +82,15 @@ function Songs() {
     }
   };
 
-  const songs = data?.songs.edges || [];
+  const allSongs = data?.songs.edges || [];
+  
+  // Apply frontend filtering for failed songs
+  const songs = useMemo(() => {
+    if (filter === 'failed') {
+      return allSongs.filter((song: any) => song.failedCount > 0);
+    }
+    return allSongs;
+  }, [allSongs, filter]);
   const totalCount = data?.songs.totalCount || 0;
   const pageInfo = data?.songs.pageInfo;
   const isRefetching = networkStatus === 3;
@@ -132,14 +141,24 @@ function Songs() {
           Downloaded
         </button>
         <button
-          onClick={() => handleFilterChange('not_downloaded')}
+          onClick={() => handleFilterChange('failed')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            filter === 'not_downloaded'
+            filter === 'failed'
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Failed
+        </button>
+        <button
+          onClick={() => handleFilterChange('unavailable')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            filter === 'unavailable'
               ? 'bg-red-100 text-red-800'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Not Downloaded
+          Unavailable
         </button>
       </div>
 

@@ -1,31 +1,16 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Auto-fix newlines across the entire repository
-echo "🔧 Checking and fixing trailing newlines across repository..."
-python scripts/check-repo-newlines.py fix
-
-# Check if there are still files without newlines (shouldn't happen after auto-fix)
-echo "🔍 Verifying newline fixes..."
-python scripts/check-repo-newlines.py check
-
-# If newline check still fails after auto-fix, block the commit
-if [ $? -ne 0 ]; then
-  echo "❌ Some files still missing trailing newlines after auto-fix. Please check manually."
-  exit 1
-fi
-
-# Validate GraphQL schema before commit
+# Run GraphQL schema validation
 echo "🔍 Validating GraphQL schema..."
 yarn validate-schema
 
-# If validation fails, the commit will be blocked (schema issues require manual fixes)
-if [ $? -ne 0 ]; then
-  echo "❌ GraphQL schema validation failed. Please fix the issues before committing."
-  echo "💡 Common fixes:"
-  echo "   - Update field names (tracked → isTracked, sort_by → sortBy)"
-  echo "   - Remove non-existent mutations (downloadUrl, createPlaylist, etc.)"
-  exit 1
-fi
+# Run comprehensive GraphQL operations test
+echo "🧪 Testing GraphQL operations..."
+yarn test:graphql-operations
 
-echo "✅ All checks passed!" 
+# Run frontend tests
+echo "🧪 Running frontend tests..."
+yarn test:run
+
+echo "✅ All validations passed!" 

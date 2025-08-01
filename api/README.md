@@ -41,6 +41,32 @@ This is the GraphQL API for the Spotify Library Manager. It provides a modern, t
    http://localhost:5000/graphql
    ```
 
+## Django Admin Interface
+
+For database management and debugging, you can access the Django admin interface:
+
+1. Start the admin server:
+   ```bash
+   make dev-admin
+   ```
+
+2. Visit the admin interface:
+   ```
+   http://localhost:8000/admin/
+   ```
+
+3. Login with your superuser credentials
+
+The admin interface provides access to:
+- **Artists** - View and manage tracked artists
+- **Songs** - Browse downloaded songs and their metadata
+- **Albums** - Manage album downloads and status
+- **Download History** - Track download progress and history
+- **Task History** - Monitor background task execution
+- **Tracked Playlists** - Manage playlist tracking settings
+
+> **Note**: The `make dev-admin` command automatically collects static files (CSS/JS) for the admin interface, so the styling should work correctly.
+
 ## Example Queries
 
 ### Get Tracked Artists

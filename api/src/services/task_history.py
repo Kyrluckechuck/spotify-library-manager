@@ -126,7 +126,10 @@ class TaskHistoryService(BaseService[TaskHistory]):
         )
 
     def create_cursor(self, task: TaskHistory) -> str:
-        return str(task.id)
+        if hasattr(task, 'id'):
+            return str(task.id)
+        # Fallback to task_id if id is not available
+        return str(task.task_id)
 
     def decode_cursor(self, cursor: str) -> int:
         return int(cursor)

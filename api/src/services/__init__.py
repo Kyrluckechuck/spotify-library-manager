@@ -8,6 +8,7 @@ from .history import DownloadHistoryService
 from .playlist import PlaylistService
 from .song import SongService
 from .task_history import TaskHistoryService
+from .task_management import TaskManagementService
 
 
 class ServiceRegistry:
@@ -45,6 +46,10 @@ class ServiceRegistry:
     @cached_property
     def song(self) -> SongService:
         return SongService()
+
+    @cached_property
+    def task_management(self) -> TaskManagementService:
+        return TaskManagementService()
 
 
 services = ServiceRegistry()

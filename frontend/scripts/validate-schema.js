@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * GraphQL Schema Validation Script
+ * Enhanced GraphQL Schema Validation Script
  * 
- * This script validates that all frontend GraphQL queries match the backend schema.
- * It helps catch schema mismatches early in development.
+ * This script validates that all frontend GraphQL queries match the backend schema
+ * and proactively detects common issues like async/sync context problems.
  */
 
 import fs from 'fs';
@@ -77,6 +77,128 @@ async function introspectSchema() {
     console.log('💡 Make sure the API server is running on port 5000');
     process.exit(1);
   }
+}
+
+/**
+ * Test GraphQL operations for async/sync context issues
+ */
+async function testGraphQLOperations() {
+  console.log('🧪 Testing GraphQL operations for async/sync issues...');
+  
+  const testOperations = [
+    {
+      name: 'GetSongs',
+      query: `
+        query GetSongs($first: Int = 10) {
+          songs(first: $first) {
+            totalCount
+            edges {
+              id
+              name
+              gid
+              primaryArtist
+              primaryArtistId
+              createdAt
+              failedCount
+              bitrate
+              unavailable
+              filePath
+              downloaded
+              spotifyUri
+            }
+          }
+        }
+      `,
+      variables: { first: 5 },
+    },
+    {
+      name: 'GetArtists',
+      query: `
+        query GetArtists($first: Int = 10) {
+          artists(first: $first) {
+            totalCount
+            edges {
+              id
+              name
+              gid
+              isTracked
+              addedAt
+              lastSynced
+            }
+          }
+        }
+      `,
+      variables: { first: 5 },
+    },
+    {
+      name: 'GetAlbums',
+      query: `
+        query GetAlbums($first: Int = 10) {
+          albums(first: $first) {
+            totalCount
+            edges {
+              id
+              name
+              spotifyGid
+              totalTracks
+              wanted
+              downloaded
+              albumType
+              albumGroup
+              artist
+              artistId
+            }
+          }
+        }
+      `,
+      variables: { first: 5 },
+    },
+  ];
+
+  const results = [];
+  
+  for (const operation of testOperations) {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: operation.query,
+          variables: operation.variables,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.errors) {
+        const errorMessages = result.errors.map(e => e.message).join(', ');
+        results.push({
+          operation: operation.name,
+          success: false,
+          error: errorMessages,
+          isAsyncContextError: errorMessages.includes('async context') || errorMessages.includes('sync_to_async'),
+        });
+      } else {
+        results.push({
+          operation: operation.name,
+          success: true,
+          error: null,
+          isAsyncContextError: false,
+        });
+      }
+    } catch (error) {
+      results.push({
+        operation: operation.name,
+        success: false,
+        error: error.message,
+        isAsyncContextError: false,
+      });
+    }
+  }
+  
+  return results;
 }
 
 /**
@@ -188,7 +310,7 @@ function validateQueries(queries, schema) {
  * Main validation function
  */
 async function validateSchema() {
-  console.log('🔍 Validating GraphQL schema...');
+  console.log('🔍 Enhanced GraphQL schema validation...');
   
   // Check if API server is running
   let schema;
@@ -201,6 +323,9 @@ async function validateSchema() {
     process.exit(1);
   }
   
+  // Test GraphQL operations for async/sync issues
+  const operationResults = await testGraphQLOperations();
+  
   // Extract queries
   const queries = extractQueries();
   console.log(`📝 Found ${queries.length} GraphQL queries`);
@@ -209,16 +334,29 @@ async function validateSchema() {
   const { errors, warnings } = validateQueries(queries, schema);
   
   // Report results
-  if (errors.length === 0 && warnings.length === 0) {
-    console.log('✅ All GraphQL queries are valid!');
-    return;
+  let hasErrors = false;
+  
+  // Report operation test results
+  console.log('\n🧪 GraphQL Operation Test Results:');
+  for (const result of operationResults) {
+    if (result.success) {
+      console.log(`  ✅ ${result.operation}: Success`);
+    } else {
+      console.log(`  ❌ ${result.operation}: ${result.error}`);
+      if (result.isAsyncContextError) {
+        console.log(`     🔧 This appears to be an async/sync context issue. Check backend resolvers.`);
+      }
+      hasErrors = true;
+    }
   }
   
+  // Report schema validation results
   if (errors.length > 0) {
     console.log('\n❌ GraphQL Schema Errors:');
     errors.forEach(error => {
       console.log(`  • ${error.query}:${error.line} - ${error.message}`);
     });
+    hasErrors = true;
   }
   
   if (warnings.length > 0) {
@@ -228,7 +366,16 @@ async function validateSchema() {
     });
   }
   
-  if (errors.length > 0) {
+  if (errors.length === 0 && warnings.length === 0 && !hasErrors) {
+    console.log('\n✅ All GraphQL operations are valid!');
+    return;
+  }
+  
+  if (hasErrors) {
+    console.log('\n💡 Proactive Detection Tips:');
+    console.log('  • Async/sync context errors: Check for missing sync_to_async() wrappers in backend resolvers');
+    console.log('  • Field name mismatches: Use the suggested field names from warnings');
+    console.log('  • Non-existent operations: Remove or replace with valid operations');
     process.exit(1);
   }
 }

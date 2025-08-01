@@ -3,13 +3,23 @@ import { vi } from 'vitest';
 import React from 'react';
 
 // Mock Apollo Client
-vi.mock('@apollo/client', () => ({
-  useQuery: vi.fn(),
-  useMutation: vi.fn(),
-  useApolloClient: vi.fn(),
-  gql: vi.fn(),
-  ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
+vi.mock('@apollo/client', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useQuery: vi.fn(),
+    useMutation: vi.fn(),
+    useApolloClient: vi.fn(),
+    gql: vi.fn(),
+    ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
+    ApolloError: class ApolloError extends Error {
+      constructor(options: any) {
+        super(options.graphQLErrors?.[0]?.message || options.networkError?.message || 'Apollo Error');
+        this.name = 'ApolloError';
+      }
+    },
+  };
+});
 
 // Mock TanStack Router
 vi.mock('@tanstack/react-router', () => ({

@@ -237,3 +237,26 @@ class UpdatePlaylistInput:
     playlist_id: str
     is_tracked: Optional[bool] = None
     auto_track_artists: Optional[bool] = None
+
+
+@strawberry.type
+class PendingTask:
+    id: str
+    name: str
+    args: List[str]
+    kwargs: dict
+    priority: Optional[int]
+    created_at: Optional[str]
+
+
+@strawberry.type
+class TaskCount:
+    task_name: str
+    count: int
+
+
+@strawberry.type
+class QueueStatus:
+    total_pending_tasks: int
+    task_counts: List[TaskCount]
+    queue_size: int
