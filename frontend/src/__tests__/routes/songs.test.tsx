@@ -154,14 +154,13 @@ const TestSongsComponent = () => {
             <span>{song.primaryArtist}</span>
             <span>{song.bitrate}kbps</span>
             <span>
-              {song.unavailable 
-                ? 'Unavailable' 
-                : song.downloaded 
-                  ? 'Downloaded' 
-                  : song.failedCount > 0 
+              {song.unavailable
+                ? 'Unavailable'
+                : song.downloaded
+                  ? 'Downloaded'
+                  : song.failedCount > 0
                     ? `Failed (${song.failedCount})`
-                    : 'Not downloaded'
-              }
+                    : 'Not downloaded'}
             </span>
             {song.filePath && <span>Path: {song.filePath}</span>}
             {song.spotifyUri && <span>URI: {song.spotifyUri}</span>}

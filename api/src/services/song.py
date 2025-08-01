@@ -62,7 +62,7 @@ class SongService(BaseService):
         for item in items:
             graphql_item = await self._to_graphql_type(item)
             graphql_items.append(graphql_item)
-        
+
         return (
             graphql_items,
             has_next_page,
@@ -88,9 +88,11 @@ class SongService(BaseService):
     async def _to_graphql_type(self, django_song: DjangoSong) -> Song:
         """Convert Django model to GraphQL type."""
         # Use sync_to_async for accessing related fields
-        primary_artist_name = await sync_to_async(lambda: django_song.primary_artist.name)()
+        primary_artist_name = await sync_to_async(
+            lambda: django_song.primary_artist.name
+        )()
         primary_artist_id = await sync_to_async(lambda: django_song.primary_artist.id)()
-        
+
         return Song(
             id=django_song.id,
             name=django_song.name,

@@ -14,15 +14,39 @@ const __dirname = path.dirname(__filename);
 
 // File extensions to check
 const EXTENSIONS = [
-  '.js', '.ts', '.tsx', '.jsx', '.json', '.md', '.txt', 
-  '.graphql', '.gql', '.yml', '.yaml', '.toml', '.ini',
-  '.css', '.scss', '.sass', '.html', '.xml', '.svg'
+  '.js',
+  '.ts',
+  '.tsx',
+  '.jsx',
+  '.json',
+  '.md',
+  '.txt',
+  '.graphql',
+  '.gql',
+  '.yml',
+  '.yaml',
+  '.toml',
+  '.ini',
+  '.css',
+  '.scss',
+  '.sass',
+  '.html',
+  '.xml',
+  '.svg',
 ];
 
 // Directories to ignore
 const IGNORE_DIRS = [
-  'node_modules', 'dist', 'build', 'coverage', '.git',
-  '.husky', '.vscode', '.idea', '__pycache__', '.pytest_cache'
+  'node_modules',
+  'dist',
+  'build',
+  'coverage',
+  '.git',
+  '.husky',
+  '.vscode',
+  '.idea',
+  '__pycache__',
+  '.pytest_cache',
 ];
 
 /**
@@ -43,11 +67,11 @@ function checkFileEndsWithNewline(filePath) {
  */
 function findFiles(dir, files = []) {
   const items = fs.readdirSync(dir);
-  
+
   for (const item of items) {
     const fullPath = path.join(dir, item);
     const stat = fs.statSync(fullPath);
-    
+
     if (stat.isDirectory()) {
       if (!IGNORE_DIRS.includes(item)) {
         findFiles(fullPath, files);
@@ -59,7 +83,7 @@ function findFiles(dir, files = []) {
       }
     }
   }
-  
+
   return files;
 }
 
@@ -68,32 +92,32 @@ function findFiles(dir, files = []) {
  */
 function checkNewlines() {
   console.log('🔍 Checking for files without trailing newlines...');
-  
+
   const projectRoot = path.join(__dirname, '..');
   const files = findFiles(projectRoot);
-  
+
   const filesWithoutNewlines = [];
-  
+
   for (const file of files) {
     if (!checkFileEndsWithNewline(file)) {
       filesWithoutNewlines.push(file);
     }
   }
-  
+
   if (filesWithoutNewlines.length === 0) {
     console.log('✅ All files end with newlines!');
     return;
   }
-  
+
   console.log('\n❌ Files missing trailing newlines:');
   filesWithoutNewlines.forEach(file => {
     const relativePath = path.relative(projectRoot, file);
     console.log(`  • ${relativePath}`);
   });
-  
+
   console.log('\n💡 To fix these files, run:');
   console.log('  yarn fix-newlines');
-  
+
   process.exit(1);
 }
 
@@ -102,4 +126,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   checkNewlines();
 }
 
-export { checkNewlines }; 
+export { checkNewlines };

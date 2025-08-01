@@ -14,14 +14,18 @@ class TaskManagementService:
         task_details = []
 
         for task in pending_tasks:
-            task_details.append({
-                "id": str(task.id),
-                "name": task.name,
-                "args": task.args,
-                "kwargs": task.kwargs,
-                "priority": getattr(task, 'priority', None),
-                "created_at": task.created_at.isoformat() if task.created_at else None,
-            })
+            task_details.append(
+                {
+                    "id": str(task.id),
+                    "name": task.name,
+                    "args": task.args,
+                    "kwargs": task.kwargs,
+                    "priority": getattr(task, "priority", None),
+                    "created_at": (
+                        task.created_at.isoformat() if task.created_at else None
+                    ),
+                }
+            )
 
         return task_details
 
@@ -53,13 +57,12 @@ class TaskManagementService:
 
             return MutationResult(
                 success=True,
-                message=f"Successfully cancelled {cancelled_count} pending tasks"
+                message=f"Successfully cancelled {cancelled_count} pending tasks",
             )
 
         except Exception as e:
             return MutationResult(
-                success=False,
-                message=f"Failed to cancel tasks: {str(e)}"
+                success=False, message=f"Failed to cancel tasks: {str(e)}"
             )
 
     def cancel_tasks_by_name(self, task_name: str) -> MutationResult:
@@ -78,13 +81,12 @@ class TaskManagementService:
 
             return MutationResult(
                 success=True,
-                message=f"Successfully cancelled {cancelled_count} tasks with name '{task_name}'"
+                message=f"Successfully cancelled {cancelled_count} tasks with name '{task_name}'",
             )
 
         except Exception as e:
             return MutationResult(
-                success=False,
-                message=f"Failed to cancel tasks: {str(e)}"
+                success=False, message=f"Failed to cancel tasks: {str(e)}"
             )
 
     def get_queue_status(self) -> Dict[str, any]:
@@ -96,4 +98,4 @@ class TaskManagementService:
             "total_pending_tasks": len(pending_tasks),
             "task_counts": task_counts,
             "queue_size": len(pending_tasks),
-        } 
+        }

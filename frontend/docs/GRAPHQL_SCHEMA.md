@@ -20,12 +20,14 @@ yarn generate
 ## Common Issues
 
 ### Field Name Mismatches
+
 - `tracked` → `isTracked`
 - `lastSyncedAt` → `lastSynced`
 - `sort_by` → `sortBy`
 - `sort_direction` → `sortDirection`
 
 ### Removed Operations
+
 - `downloadUrl` (removed)
 - `createPlaylist` (removed)
 - `cleanupStuckTasks` (removed)
@@ -34,6 +36,7 @@ yarn generate
 ## Validation
 
 The pre-commit hook automatically validates:
+
 1. Schema field names match backend
 2. Parameter types are correct
 3. No non-existent operations are used
@@ -45,4 +48,4 @@ frontend/
 ├── src/queries/          # GraphQL query files
 ├── src/types/generated/  # Auto-generated TypeScript types
 └── scripts/validate-schema.js
-``` 
+```

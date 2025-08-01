@@ -2,7 +2,7 @@
 
 /**
  * Comprehensive GraphQL Operations Test Script
- * 
+ *
  * This script tests all GraphQL operations to detect:
  * - Async/sync context issues
  * - Schema mismatches
@@ -25,7 +25,7 @@ const API_URL = 'http://localhost:5000/graphql';
  */
 async function testOperation(name, query, variables = {}) {
   const startTime = Date.now();
-  
+
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -40,27 +40,30 @@ async function testOperation(name, query, variables = {}) {
 
     const result = await response.json();
     const duration = Date.now() - startTime;
-    
+
     if (result.errors) {
       const errorMessages = result.errors.map(e => e.message).join(', ');
-      const isAsyncContextError = errorMessages.includes('async context') || 
-                                 errorMessages.includes('sync_to_async') ||
-                                 errorMessages.includes('You cannot call this from an async context');
-      
+      const isAsyncContextError =
+        errorMessages.includes('async context') ||
+        errorMessages.includes('sync_to_async') ||
+        errorMessages.includes('You cannot call this from an async context');
+
       return {
         name,
         success: false,
         error: errorMessages,
         duration,
         isAsyncContextError,
-        suggestions: isAsyncContextError ? [
-          'Check for missing sync_to_async() wrappers in backend resolvers',
-          'Ensure all database operations are properly wrapped',
-          'Look for direct Django ORM calls in async functions'
-        ] : [],
+        suggestions: isAsyncContextError
+          ? [
+              'Check for missing sync_to_async() wrappers in backend resolvers',
+              'Ensure all database operations are properly wrapped',
+              'Look for direct Django ORM calls in async functions',
+            ]
+          : [],
       };
     }
-    
+
     return {
       name,
       success: true,
@@ -77,7 +80,10 @@ async function testOperation(name, query, variables = {}) {
       error: error.message,
       duration,
       isAsyncContextError: false,
-      suggestions: ['Check if the API server is running', 'Verify network connectivity'],
+      suggestions: [
+        'Check if the API server is running',
+        'Verify network connectivity',
+      ],
     };
   }
 }
@@ -277,7 +283,7 @@ function getTestOperations() {
           }
         }
       `,
-      variables: { artistId: "test-gid" },
+      variables: { artistId: 'test-gid' },
     },
   ];
 }
@@ -287,15 +293,19 @@ function getTestOperations() {
  */
 async function runComprehensiveTests() {
   console.log('🧪 Running comprehensive GraphQL operation tests...\n');
-  
+
   const operations = getTestOperations();
   const results = [];
-  
+
   for (const operation of operations) {
     console.log(`Testing ${operation.name}...`);
-    const result = await testOperation(operation.name, operation.query, operation.variables);
+    const result = await testOperation(
+      operation.name,
+      operation.query,
+      operation.variables
+    );
     results.push(result);
-    
+
     if (result.success) {
       console.log(`  ✅ ${operation.name}: Success (${result.duration}ms)`);
       if (result.dataSize) {
@@ -311,22 +321,23 @@ async function runComprehensiveTests() {
       }
     }
   }
-  
+
   // Generate summary report
   console.log('\n📊 Test Summary:');
   const successful = results.filter(r => r.success);
   const failed = results.filter(r => !r.success);
   const asyncContextErrors = results.filter(r => r.isAsyncContextError);
-  
+
   console.log(`  ✅ Successful: ${successful.length}/${results.length}`);
   console.log(`  ❌ Failed: ${failed.length}/${results.length}`);
   console.log(`  🔧 Async context errors: ${asyncContextErrors.length}`);
-  
+
   if (successful.length > 0) {
-    const avgDuration = successful.reduce((sum, r) => sum + r.duration, 0) / successful.length;
+    const avgDuration =
+      successful.reduce((sum, r) => sum + r.duration, 0) / successful.length;
     console.log(`  ⏱️  Average response time: ${avgDuration.toFixed(0)}ms`);
   }
-  
+
   if (asyncContextErrors.length > 0) {
     console.log('\n🚨 Async/Sync Context Issues Detected:');
     asyncContextErrors.forEach(result => {
@@ -338,14 +349,14 @@ async function runComprehensiveTests() {
     console.log('  3. Check for direct model.objects calls in async functions');
     console.log('  4. Use aget() instead of get() for async operations');
   }
-  
+
   if (failed.length > 0 && asyncContextErrors.length === 0) {
     console.log('\n⚠️  Other Issues Detected:');
     failed.forEach(result => {
       console.log(`  • ${result.name}: ${result.error}`);
     });
   }
-  
+
   return {
     total: results.length,
     successful: successful.length,
@@ -361,7 +372,7 @@ async function runComprehensiveTests() {
 async function main() {
   try {
     const summary = await runComprehensiveTests();
-    
+
     if (summary.asyncContextErrors > 0) {
       console.log('\n❌ Tests failed due to async/sync context issues');
       process.exit(1);
@@ -380,4 +391,4 @@ async function main() {
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   main();
-} 
+}

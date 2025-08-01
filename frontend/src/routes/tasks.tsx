@@ -98,14 +98,21 @@ function Tasks() {
 
   // Handle task cancellation
   const handleCancelAllTasks = async () => {
-    if (confirm('Are you sure you want to cancel all pending tasks? This action cannot be undone.')) {
+    if (
+      confirm(
+        'Are you sure you want to cancel all pending tasks? This action cannot be undone.'
+      )
+    ) {
       try {
         const result = await cancelAllTasks();
         if (result.data?.cancelAllPendingTasks?.success) {
           alert('Successfully cancelled all pending tasks');
           refetchQueue();
         } else {
-          alert('Failed to cancel tasks: ' + result.data?.cancelAllPendingTasks?.message);
+          alert(
+            'Failed to cancel tasks: ' +
+              result.data?.cancelAllPendingTasks?.message
+          );
         }
       } catch (error) {
         alert('Error cancelling tasks: ' + error);
@@ -114,14 +121,20 @@ function Tasks() {
   };
 
   const handleCancelTasksByName = async (taskName: string) => {
-    if (confirm(`Are you sure you want to cancel all '${taskName}' tasks? This action cannot be undone.`)) {
+    if (
+      confirm(
+        `Are you sure you want to cancel all '${taskName}' tasks? This action cannot be undone.`
+      )
+    ) {
       try {
         const result = await cancelTasksByName({ variables: { taskName } });
         if (result.data?.cancelTasksByName?.success) {
           alert(`Successfully cancelled ${taskName} tasks`);
           refetchQueue();
         } else {
-          alert('Failed to cancel tasks: ' + result.data?.cancelTasksByName?.message);
+          alert(
+            'Failed to cancel tasks: ' + result.data?.cancelTasksByName?.message
+          );
         }
       } catch (error) {
         alert('Error cancelling tasks: ' + error);
@@ -168,7 +181,9 @@ function Tasks() {
             </h2>
             <div className='flex items-center gap-2'>
               <span className='text-sm text-gray-600'>
-                {queueLoading ? 'Loading...' : `${queueData?.queueStatus?.totalPendingTasks || 0} pending tasks`}
+                {queueLoading
+                  ? 'Loading...'
+                  : `${queueData?.queueStatus?.totalPendingTasks || 0} pending tasks`}
               </span>
             </div>
           </div>
@@ -179,7 +194,9 @@ function Tasks() {
             <div className='text-center py-8 text-gray-500'>
               <div className='text-4xl mb-4'>✅</div>
               <p>No pending tasks in Huey queue</p>
-              <p className='text-sm'>All tasks are either running or completed</p>
+              <p className='text-sm'>
+                All tasks are either running or completed
+              </p>
             </div>
           ) : (
             <div className='space-y-4'>
@@ -199,7 +216,9 @@ function Tasks() {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleCancelTasksByName(taskCount.taskName)}
+                      onClick={() =>
+                        handleCancelTasksByName(taskCount.taskName)
+                      }
                       className='px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600'
                     >
                       Cancel
@@ -327,7 +346,9 @@ function Tasks() {
                             <div className='text-sm text-gray-600'>
                               Completed{' '}
                               {task.completedAt
-                                ? new Date(task.completedAt).toLocaleTimeString()
+                                ? new Date(
+                                    task.completedAt
+                                  ).toLocaleTimeString()
                                 : 'Recently'}
                             </div>
                           </div>
@@ -366,7 +387,9 @@ function Tasks() {
                             <div className='text-sm text-gray-600'>
                               Failed{' '}
                               {task.completedAt
-                                ? new Date(task.completedAt).toLocaleTimeString()
+                                ? new Date(
+                                    task.completedAt
+                                  ).toLocaleTimeString()
                                 : 'Recently'}
                             </div>
                           </div>
@@ -471,10 +494,10 @@ function Tasks() {
                       task.status === 'RUNNING'
                         ? 'bg-blue-50 border-blue-200'
                         : task.status === 'COMPLETED'
-                        ? 'bg-green-50 border-green-200'
-                        : task.status === 'FAILED'
-                        ? 'bg-red-50 border-red-200'
-                        : 'bg-gray-50 border-gray-200'
+                          ? 'bg-green-50 border-green-200'
+                          : task.status === 'FAILED'
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-gray-50 border-gray-200'
                     }`}
                   >
                     <div className='flex items-center gap-4'>
@@ -483,10 +506,10 @@ function Tasks() {
                           task.status === 'RUNNING'
                             ? 'bg-blue-500 animate-pulse'
                             : task.status === 'COMPLETED'
-                            ? 'bg-green-500'
-                            : task.status === 'FAILED'
-                            ? 'bg-red-500'
-                            : 'bg-gray-400'
+                              ? 'bg-green-500'
+                              : task.status === 'FAILED'
+                                ? 'bg-red-500'
+                                : 'bg-gray-400'
                         }`}
                       />
                       <div>
@@ -501,16 +524,16 @@ function Tasks() {
                                 task.startedAt
                               ).toLocaleTimeString()}`
                             : task.status === 'COMPLETED'
-                            ? `Completed ${new Date(
-                                task.completedAt
-                              ).toLocaleTimeString()}`
-                            : task.status === 'FAILED'
-                            ? `Failed ${new Date(
-                                task.completedAt
-                              ).toLocaleTimeString()}`
-                            : `Pending ${new Date(
-                                task.startedAt
-                              ).toLocaleTimeString()}`}
+                              ? `Completed ${new Date(
+                                  task.completedAt
+                                ).toLocaleTimeString()}`
+                              : task.status === 'FAILED'
+                                ? `Failed ${new Date(
+                                    task.completedAt
+                                  ).toLocaleTimeString()}`
+                                : `Pending ${new Date(
+                                    task.startedAt
+                                  ).toLocaleTimeString()}`}
                         </div>
                       </div>
                     </div>
@@ -537,8 +560,7 @@ function Tasks() {
                   onLoadMore={() =>
                     fetchMore({
                       variables: {
-                        after:
-                          historyData.taskHistory.pageInfo.endCursor,
+                        after: historyData.taskHistory.pageInfo.endCursor,
                       },
                     })
                   }
@@ -570,8 +592,7 @@ function Tasks() {
                       className='border border-gray-200 rounded-lg p-4'
                     >
                       <div className='font-medium text-gray-900 mb-2'>
-                        {task.type.charAt(0).toUpperCase() +
-                          task.type.slice(1)}{' '}
+                        {task.type.charAt(0).toUpperCase() + task.type.slice(1)}{' '}
                         {task.entityType} {task.entityId}
                       </div>
                       <div className='bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-32 overflow-y-auto'>

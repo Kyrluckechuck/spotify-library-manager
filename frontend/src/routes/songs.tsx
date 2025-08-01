@@ -19,9 +19,9 @@ function Songs() {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'downloaded' | 'failed' | 'unavailable'>(
-    'all'
-  );
+  const [filter, setFilter] = useState<
+    'all' | 'downloaded' | 'failed' | 'unavailable'
+  >('all');
 
   // Memoize query variables to prevent unnecessary re-renders
   const queryVariables = useMemo(
@@ -83,7 +83,7 @@ function Songs() {
   };
 
   const allSongs = data?.songs.edges || [];
-  
+
   // Apply frontend filtering for failed songs
   const songs = useMemo(() => {
     if (filter === 'failed') {

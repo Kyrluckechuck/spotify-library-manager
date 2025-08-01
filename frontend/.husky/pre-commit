@@ -1,16 +1,26 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run GraphQL schema validation
-echo "🔍 Validating GraphQL schema..."
-yarn validate-schema
+# Quick local checks only - fast pre-commit validation
+echo "🔍 Running quick pre-commit checks..."
 
-# Run comprehensive GraphQL operations test
-echo "🧪 Testing GraphQL operations..."
-yarn test:graphql-operations
+# Run TypeScript type check (fast)
+echo "📝 TypeScript type check..."
+yarn tsc --noEmit --project tsconfig.app.json
 
-# Run frontend tests
+# Run ESLint (fast)
+echo "🔧 ESLint check..."
+yarn lint
+
+# Run Prettier format check (fast)
+echo "🎨 Prettier format check..."
+yarn format:check
+
+# Run frontend tests (only if they exist and are fast)
 echo "🧪 Running frontend tests..."
 yarn test:run
 
-echo "✅ All validations passed!" 
+echo "✅ Quick pre-commit checks passed!"
+
+# Note: GraphQL schema validation is now part of CI pipeline
+# for faster local development experience 

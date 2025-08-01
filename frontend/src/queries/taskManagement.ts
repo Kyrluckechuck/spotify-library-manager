@@ -29,4 +29,4 @@ export const CancelTasksByNameDocument = gql`
       message
     }
   }
-`; 
+`;

@@ -3,8 +3,8 @@ import { vi } from 'vitest';
 import React from 'react';
 
 // Mock Apollo Client
-vi.mock('@apollo/client', async (importOriginal) => {
-  const actual = await importOriginal();
+vi.mock('@apollo/client', async importOriginal => {
+  const actual = (await importOriginal()) as any;
   return {
     ...actual,
     useQuery: vi.fn(),
@@ -14,7 +14,11 @@ vi.mock('@apollo/client', async (importOriginal) => {
     ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
     ApolloError: class ApolloError extends Error {
       constructor(options: any) {
-        super(options.graphQLErrors?.[0]?.message || options.networkError?.message || 'Apollo Error');
+        super(
+          options.graphQLErrors?.[0]?.message ||
+            options.networkError?.message ||
+            'Apollo Error'
+        );
         this.name = 'ApolloError';
       }
     },

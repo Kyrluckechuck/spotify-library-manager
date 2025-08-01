@@ -57,4 +57,4 @@ query GetSong($id: String!) {
     downloaded
     spotifyUri
   }
-} 
+}

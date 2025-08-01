@@ -43,3 +43,49 @@ Spotify/
 temp/
 *.sqlite3
 *.db
+
+# Static files and build artifacts
+# Coverage reports (generated)
+htmlcov/
+.coverage
+coverage/
+*.coverage
+coverage.xml
+
+# Django static files (collected by collectstatic, not committed)
+api/staticfiles/
+api/static/
+
+# Frontend build artifacts (generated)
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/coverage/
+
+# Generated files (can be regenerated)
+frontend/src/types/generated/
+frontend/src/graphql/generated/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

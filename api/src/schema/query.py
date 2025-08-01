@@ -120,9 +120,7 @@ class Query:
             end_cursor=None,
         )
 
-        return SongConnection(
-            edges=edges, page_info=page_info, total_count=total_count
-        )
+        return SongConnection(edges=edges, page_info=page_info, total_count=total_count)
 
     @strawberry.field
     async def song(self, id: str) -> Optional[Song]:
@@ -208,12 +206,7 @@ class Query:
             search=search,
         )
 
-        edges = [
-            TaskHistoryEdge(
-                node=item, cursor=item.id
-            )
-            for item in items
-        ]
+        edges = [TaskHistoryEdge(node=item, cursor=item.id) for item in items]
 
         page_info = PageInfo(
             has_next_page=has_next_page,
@@ -230,13 +223,13 @@ class Query:
     async def queue_status(self) -> QueueStatus:
         """Get the current status of the Huey task queue."""
         status = services.task_management.get_queue_status()
-        
+
         # Convert the task_counts dict to a list of TaskCount objects
         task_counts = [
             TaskCount(task_name=name, count=count)
             for name, count in status["task_counts"].items()
         ]
-        
+
         return QueueStatus(
             total_pending_tasks=status["total_pending_tasks"],
             task_counts=task_counts,

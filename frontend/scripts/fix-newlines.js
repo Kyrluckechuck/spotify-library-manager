@@ -14,15 +14,39 @@ const __dirname = path.dirname(__filename);
 
 // File extensions to check
 const EXTENSIONS = [
-  '.js', '.ts', '.tsx', '.jsx', '.json', '.md', '.txt', 
-  '.graphql', '.gql', '.yml', '.yaml', '.toml', '.ini',
-  '.css', '.scss', '.sass', '.html', '.xml', '.svg'
+  '.js',
+  '.ts',
+  '.tsx',
+  '.jsx',
+  '.json',
+  '.md',
+  '.txt',
+  '.graphql',
+  '.gql',
+  '.yml',
+  '.yaml',
+  '.toml',
+  '.ini',
+  '.css',
+  '.scss',
+  '.sass',
+  '.html',
+  '.xml',
+  '.svg',
 ];
 
 // Directories to ignore
 const IGNORE_DIRS = [
-  'node_modules', 'dist', 'build', 'coverage', '.git',
-  '.husky', '.vscode', '.idea', '__pycache__', '.pytest_cache'
+  'node_modules',
+  'dist',
+  'build',
+  'coverage',
+  '.git',
+  '.husky',
+  '.vscode',
+  '.idea',
+  '__pycache__',
+  '.pytest_cache',
 ];
 
 /**
@@ -60,11 +84,11 @@ function addNewlineToFile(filePath) {
  */
 function findFiles(dir, files = []) {
   const items = fs.readdirSync(dir);
-  
+
   for (const item of items) {
     const fullPath = path.join(dir, item);
     const stat = fs.statSync(fullPath);
-    
+
     if (stat.isDirectory()) {
       if (!IGNORE_DIRS.includes(item)) {
         findFiles(fullPath, files);
@@ -76,7 +100,7 @@ function findFiles(dir, files = []) {
       }
     }
   }
-  
+
   return files;
 }
 
@@ -85,12 +109,12 @@ function findFiles(dir, files = []) {
  */
 function fixNewlines() {
   console.log('🔧 Fixing files without trailing newlines...');
-  
+
   const projectRoot = path.join(__dirname, '..');
   const files = findFiles(projectRoot);
-  
+
   const fixedFiles = [];
-  
+
   for (const file of files) {
     if (!checkFileEndsWithNewline(file)) {
       if (addNewlineToFile(file)) {
@@ -99,12 +123,12 @@ function fixNewlines() {
       }
     }
   }
-  
+
   if (fixedFiles.length === 0) {
     console.log('✅ All files already end with newlines!');
     return;
   }
-  
+
   console.log(`\n✅ Fixed ${fixedFiles.length} files:`);
   fixedFiles.forEach(file => {
     console.log(`  • ${file}`);
@@ -116,4 +140,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   fixNewlines();
 }
 
-export { fixNewlines }; 
+export { fixNewlines };
