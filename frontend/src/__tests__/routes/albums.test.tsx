@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useQuery, useMutation, ApolloError } from '@apollo/client';
-import type { MockedFunction } from 'vitest';
+import { useQuery, useMutation } from '@apollo/client';
+import type { TestAlbum } from '../../types/test';
 
 // Import mock data
 import {
@@ -33,8 +33,9 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(() => ({ component: () => null })),
 }));
 
-const mockUseQuery = useQuery as MockedFunction<typeof useQuery>;
-const mockUseMutation = useMutation as MockedFunction<typeof useMutation>;
+const mockUseQuery = useQuery as import('../../types/test').MockUseQuery;
+const mockUseMutation =
+  useMutation as import('../../types/test').MockUseMutation;
 
 // Create a test component that simulates the Albums route
 const TestAlbumsComponent = () => {
@@ -122,7 +123,7 @@ const TestAlbumsComponent = () => {
 
       {/* Album list */}
       <div>
-        {data.albums.edges.map((album: any) => (
+        {data.albums.edges.map((album: TestAlbum) => (
           <div key={album.id} data-testid={`album-${album.id}`}>
             <span>{album.name}</span>
             <span>{album.artist}</span>
@@ -326,9 +327,9 @@ describe('Albums Route', () => {
       );
 
       // Mock console.error to avoid test noise
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        // Mock implementation
+      });
 
       render(<TestAlbumsComponent />);
 

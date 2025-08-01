@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@apollo/client';
 import { useState, useMemo } from 'react';
 import { GetSongsDocument } from '../types/generated/graphql';
+import type { Song } from '../types/common';
 
 // Shared Components
 import { PageContainer } from '../components/layout/PageContainer';
@@ -82,15 +83,14 @@ function Songs() {
     }
   };
 
-  const allSongs = data?.songs.edges || [];
-
   // Apply frontend filtering for failed songs
   const songs = useMemo(() => {
+    const allSongs = data?.songs.edges || [];
     if (filter === 'failed') {
-      return allSongs.filter((song: any) => song.failedCount > 0);
+      return allSongs.filter((song: Song) => song.failedCount > 0);
     }
     return allSongs;
-  }, [allSongs, filter]);
+  }, [data?.songs.edges, filter]);
   const totalCount = data?.songs.totalCount || 0;
   const pageInfo = data?.songs.pageInfo;
   const isRefetching = networkStatus === 3;

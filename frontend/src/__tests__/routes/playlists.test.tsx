@@ -1,11 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useQuery, useMutation, ApolloError } from '@apollo/client';
-import type { MockedFunction } from 'vitest';
+import { useQuery, useMutation } from '@apollo/client';
+import type { TestPlaylist } from '../../types/test';
 
 // Import the actual route component
-import { createFileRoute } from '@tanstack/react-router';
 
 // Import mock data
 import {
@@ -37,8 +36,9 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(() => ({ component: () => null })),
 }));
 
-const mockUseQuery = useQuery as MockedFunction<typeof useQuery>;
-const mockUseMutation = useMutation as MockedFunction<typeof useMutation>;
+const mockUseQuery = useQuery as import('../../types/test').MockedUseQuery;
+const mockUseMutation =
+  useMutation as import('../../types/test').MockedUseMutation;
 
 // Create a test component that simulates the Playlists route
 const TestPlaylistsComponent = () => {
@@ -80,7 +80,7 @@ const TestPlaylistsComponent = () => {
         Playlists ({data.playlists.edges.length} of {data.playlists.totalCount})
       </h1>
       <div>
-        {data.playlists.edges.map((playlist: any) => (
+        {data.playlists.edges.map((playlist: TestPlaylist) => (
           <div key={playlist.id} data-testid={`playlist-${playlist.id}`}>
             <span>{playlist.name}</span>
             <span>{playlist.enabled ? 'Enabled' : 'Disabled'}</span>
@@ -258,9 +258,9 @@ describe('Playlists Route', () => {
       );
 
       // Mock console.error to avoid test noise
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        // Mock implementation
+      });
 
       render(<TestPlaylistsComponent />);
 

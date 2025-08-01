@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useQuery, ApolloError } from '@apollo/client';
-import type { MockedFunction } from 'vitest';
+import { useQuery } from '@apollo/client';
+import type { TestTaskHistory, TestEdge } from '../../types/test';
 
 // Import mock data
 import {
@@ -31,7 +31,7 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(() => ({ component: () => null })),
 }));
 
-const mockUseQuery = useQuery as MockedFunction<typeof useQuery>;
+const mockUseQuery = useQuery as import('../../types/test').MockedUseQuery;
 
 // Create a test component that simulates the Tasks route
 const TestTasksComponent = () => {
@@ -71,40 +71,42 @@ const TestTasksComponent = () => {
   };
 
   // Filter tasks based on current filters
-  const filteredTasks = data.taskHistory.edges.filter((edge: any) => {
-    const task = edge.node;
+  const filteredTasks = data.taskHistory.edges.filter(
+    (edge: TestEdge<TestTaskHistory>) => {
+      const task = edge.node;
 
-    if (
-      filters.status !== 'all' &&
-      task.status.toLowerCase() !== filters.status
-    ) {
-      return false;
+      if (
+        filters.status !== 'all' &&
+        task.status.toLowerCase() !== filters.status
+      ) {
+        return false;
+      }
+
+      if (filters.type !== 'all' && task.type.toLowerCase() !== filters.type) {
+        return false;
+      }
+
+      if (
+        filters.entityType !== 'all' &&
+        task.entityType.toLowerCase() !== filters.entityType
+      ) {
+        return false;
+      }
+
+      if (
+        filters.search &&
+        !task.taskId.toLowerCase().includes(filters.search.toLowerCase())
+      ) {
+        return false;
+      }
+
+      return true;
     }
-
-    if (filters.type !== 'all' && task.type.toLowerCase() !== filters.type) {
-      return false;
-    }
-
-    if (
-      filters.entityType !== 'all' &&
-      task.entityType.toLowerCase() !== filters.entityType
-    ) {
-      return false;
-    }
-
-    if (
-      filters.search &&
-      !task.taskId.toLowerCase().includes(filters.search.toLowerCase())
-    ) {
-      return false;
-    }
-
-    return true;
-  });
+  );
 
   // Get active tasks (running status)
   const activeTasks = filteredTasks.filter(
-    (edge: any) => edge.node.status === 'RUNNING'
+    (edge: TestEdge<TestTaskHistory>) => edge.node.status === 'RUNNING'
   );
 
   return (
@@ -114,7 +116,7 @@ const TestTasksComponent = () => {
       {/* Active tasks section */}
       <div>
         <h2>Active Tasks ({activeTasks.length})</h2>
-        {activeTasks.map((edge: any) => {
+        {activeTasks.map((edge: TestEdge<TestTaskHistory>) => {
           const task = edge.node;
           return (
             <div key={task.id} data-testid={`active-task-${task.id}`}>
@@ -187,7 +189,7 @@ const TestTasksComponent = () => {
         <h2>
           Task History ({filteredTasks.length} of {data.taskHistory.totalCount})
         </h2>
-        {filteredTasks.map((edge: any) => {
+        {filteredTasks.map((edge: TestEdge<TestTaskHistory>) => {
           const task = edge.node;
           return (
             <div key={task.id} data-testid={`task-${task.id}`}>
@@ -200,7 +202,7 @@ const TestTasksComponent = () => {
               {task.logMessages && task.logMessages.length > 0 && (
                 <div data-testid={`logs-${task.id}`}>
                   {task.logMessages.map((log: string, index: number) => (
-                    <div key={index}>{log}</div>
+                    <div key={`task-${task.id}-log-entry-${index}`}>{log}</div>
                   ))}
                 </div>
               )}

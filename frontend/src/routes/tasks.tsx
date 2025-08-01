@@ -2,6 +2,7 @@ import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation } from '@apollo/client';
 import { useState } from 'react';
+import type { TaskCount } from '../types/common';
 import { SearchInput } from '../components/ui/SearchInput';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
@@ -202,29 +203,31 @@ function Tasks() {
             <div className='space-y-4'>
               {/* Task Counts */}
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                {queueData?.queueStatus?.taskCounts?.map((taskCount: any) => (
-                  <div
-                    key={taskCount.taskName}
-                    className='flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200'
-                  >
-                    <div>
-                      <div className='font-medium text-gray-900'>
-                        {taskCount.taskName}
-                      </div>
-                      <div className='text-sm text-gray-600'>
-                        {taskCount.count} pending
-                      </div>
-                    </div>
-                    <button
-                      onClick={() =>
-                        handleCancelTasksByName(taskCount.taskName)
-                      }
-                      className='px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600'
+                {queueData?.queueStatus?.taskCounts?.map(
+                  (taskCount: TaskCount) => (
+                    <div
+                      key={taskCount.taskName}
+                      className='flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200'
                     >
-                      Cancel
-                    </button>
-                  </div>
-                ))}
+                      <div>
+                        <div className='font-medium text-gray-900'>
+                          {taskCount.taskName}
+                        </div>
+                        <div className='text-sm text-gray-600'>
+                          {taskCount.count} pending
+                        </div>
+                      </div>
+                      <button
+                        onClick={() =>
+                          handleCancelTasksByName(taskCount.taskName)
+                        }
+                        className='px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600'
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )
+                )}
               </div>
 
               {/* Cancel All Button */}
@@ -468,7 +471,7 @@ function Tasks() {
         <div className='p-6'>
           {historyLoading ? (
             <div className='text-center py-8'>
-              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto'></div>
+              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto' />
               <p className='mt-2 text-gray-600'>Loading task history...</p>
             </div>
           ) : historyError ? (
@@ -485,69 +488,83 @@ function Tasks() {
             </div>
           ) : (
             <div className='space-y-4'>
-              {historyData?.taskHistory?.edges?.map((edge: any) => {
-                const task = edge.node;
-                return (
-                  <div
-                    key={task.id}
-                    className={`flex items-center justify-between p-4 rounded-lg border ${
-                      task.status === 'RUNNING'
-                        ? 'bg-blue-50 border-blue-200'
-                        : task.status === 'COMPLETED'
-                          ? 'bg-green-50 border-green-200'
-                          : task.status === 'FAILED'
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className='flex items-center gap-4'>
-                      <div
-                        className={`w-3 h-3 rounded-full ${
-                          task.status === 'RUNNING'
-                            ? 'bg-blue-500 animate-pulse'
-                            : task.status === 'COMPLETED'
-                              ? 'bg-green-500'
-                              : task.status === 'FAILED'
-                                ? 'bg-red-500'
-                                : 'bg-gray-400'
-                        }`}
-                      />
-                      <div>
-                        <div className='font-medium text-gray-900'>
-                          {task.type.charAt(0).toUpperCase() +
-                            task.type.slice(1)}{' '}
-                          {task.entityType} {task.entityId}
-                        </div>
-                        <div className='text-sm text-gray-600'>
-                          {task.status === 'RUNNING'
-                            ? `Started ${new Date(
-                                task.startedAt
-                              ).toLocaleTimeString()}`
-                            : task.status === 'COMPLETED'
-                              ? `Completed ${new Date(
-                                  task.completedAt
+              {historyData?.taskHistory?.edges?.map(
+                (edge: {
+                  node: {
+                    id: number;
+                    type: string;
+                    entityType: string;
+                    entityId: string;
+                    status: string;
+                    startedAt: string;
+                    completedAt?: string;
+                    progressPercentage?: number;
+                    durationSeconds?: number;
+                  };
+                }) => {
+                  const task = edge.node;
+                  return (
+                    <div
+                      key={task.id}
+                      className={`flex items-center justify-between p-4 rounded-lg border ${
+                        task.status === 'RUNNING'
+                          ? 'bg-blue-50 border-blue-200'
+                          : task.status === 'COMPLETED'
+                            ? 'bg-green-50 border-green-200'
+                            : task.status === 'FAILED'
+                              ? 'bg-red-50 border-red-200'
+                              : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className='flex items-center gap-4'>
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            task.status === 'RUNNING'
+                              ? 'bg-blue-500 animate-pulse'
+                              : task.status === 'COMPLETED'
+                                ? 'bg-green-500'
+                                : task.status === 'FAILED'
+                                  ? 'bg-red-500'
+                                  : 'bg-gray-400'
+                          }`}
+                        />
+                        <div>
+                          <div className='font-medium text-gray-900'>
+                            {task.type.charAt(0).toUpperCase() +
+                              task.type.slice(1)}{' '}
+                            {task.entityType} {task.entityId}
+                          </div>
+                          <div className='text-sm text-gray-600'>
+                            {task.status === 'RUNNING'
+                              ? `Started ${new Date(
+                                  task.startedAt
                                 ).toLocaleTimeString()}`
-                              : task.status === 'FAILED'
-                                ? `Failed ${new Date(
+                              : task.status === 'COMPLETED'
+                                ? `Completed ${new Date(
                                     task.completedAt
                                   ).toLocaleTimeString()}`
-                                : `Pending ${new Date(
-                                    task.startedAt
-                                  ).toLocaleTimeString()}`}
+                                : task.status === 'FAILED'
+                                  ? `Failed ${new Date(
+                                      task.completedAt
+                                    ).toLocaleTimeString()}`
+                                  : `Pending ${new Date(
+                                      task.startedAt
+                                    ).toLocaleTimeString()}`}
+                          </div>
                         </div>
                       </div>
+                      <div className='flex items-center gap-4 text-sm text-gray-600'>
+                        {task.progressPercentage !== null && (
+                          <span>{task.progressPercentage}%</span>
+                        )}
+                        {task.durationSeconds && (
+                          <span>{task.durationSeconds}s</span>
+                        )}
+                      </div>
                     </div>
-                    <div className='flex items-center gap-4 text-sm text-gray-600'>
-                      {task.progressPercentage !== null && (
-                        <span>{task.progressPercentage}%</span>
-                      )}
-                      {task.durationSeconds && (
-                        <span>{task.durationSeconds}s</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
 
               {historyData?.taskHistory?.pageInfo?.hasNextPage && (
                 <LoadMoreButton
@@ -579,32 +596,52 @@ function Tasks() {
 
         <div className='p-6'>
           {historyData?.taskHistory?.edges?.some(
-            (edge: any) => edge.node.logMessages?.length > 0
+            (edge: { node: { logMessages?: string[] } }) =>
+              edge.node.logMessages?.length > 0
           ) ? (
             <div className='space-y-4'>
               {historyData.taskHistory.edges
-                .filter((edge: any) => edge.node.logMessages?.length > 0)
-                .map((edge: any) => {
-                  const task = edge.node;
-                  return (
-                    <div
-                      key={task.id}
-                      className='border border-gray-200 rounded-lg p-4'
-                    >
-                      <div className='font-medium text-gray-900 mb-2'>
-                        {task.type.charAt(0).toUpperCase() + task.type.slice(1)}{' '}
-                        {task.entityType} {task.entityId}
+                .filter(
+                  (edge: { node: { logMessages?: string[] } }) =>
+                    edge.node.logMessages?.length > 0
+                )
+                .map(
+                  (edge: {
+                    node: {
+                      id: number;
+                      type: string;
+                      entityType: string;
+                      entityId: string;
+                      logMessages?: string[];
+                    };
+                  }) => {
+                    const task = edge.node;
+                    return (
+                      <div
+                        key={task.id}
+                        className='border border-gray-200 rounded-lg p-4'
+                      >
+                        <div className='font-medium text-gray-900 mb-2'>
+                          {task.type.charAt(0).toUpperCase() +
+                            task.type.slice(1)}{' '}
+                          {task.entityType} {task.entityId}
+                        </div>
+                        <div className='bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-32 overflow-y-auto'>
+                          {task.logMessages?.map(
+                            (log: string, index: number) => (
+                              <div
+                                key={`task-${task.id}-log-entry-${index}`}
+                                className='mb-1'
+                              >
+                                {log}
+                              </div>
+                            )
+                          )}
+                        </div>
                       </div>
-                      <div className='bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-32 overflow-y-auto'>
-                        {task.logMessages?.map((log: string, index: number) => (
-                          <div key={index} className='mb-1'>
-                            {log}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  }
+                )}
             </div>
           ) : (
             <div className='text-center py-8 text-gray-500'>

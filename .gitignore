@@ -62,6 +62,10 @@ frontend/build/
 frontend/.vite/
 frontend/coverage/
 
+# Vite build artifacts
+frontend/*.timestamp-*.mjs
+frontend/*.timestamp-*.js
+
 # Generated files (can be regenerated)
 frontend/src/types/generated/
 frontend/src/graphql/generated/

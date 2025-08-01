@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useQuery, ApolloError } from '@apollo/client';
-import type { MockedFunction } from 'vitest';
+import { useQuery } from '@apollo/client';
+import type { TestSong } from '../../types/test';
 
 // Import mock data
 import {
@@ -31,7 +31,7 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(() => ({ component: () => null })),
 }));
 
-const mockUseQuery = useQuery as MockedFunction<typeof useQuery>;
+const mockUseQuery = useQuery as import('../../types/test').MockedUseQuery;
 
 // Create a test component that simulates the Songs route
 const TestSongsComponent = () => {
@@ -66,7 +66,7 @@ const TestSongsComponent = () => {
   };
 
   // Filter songs based on current filters
-  const filteredSongs = data.songs.edges.filter((song: any) => {
+  const filteredSongs = data.songs.edges.filter((song: TestSong) => {
     if (filters.downloaded !== 'all') {
       const isDownloaded = song.downloaded;
       if (filters.downloaded === 'downloaded' && !isDownloaded) return false;
@@ -148,7 +148,7 @@ const TestSongsComponent = () => {
 
       {/* Songs list */}
       <div>
-        {filteredSongs.map((song: any) => (
+        {filteredSongs.map((song: TestSong) => (
           <div key={song.id} data-testid={`song-${song.id}`}>
             <span>{song.name}</span>
             <span>{song.primaryArtist}</span>

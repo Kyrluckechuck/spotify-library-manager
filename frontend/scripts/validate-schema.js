@@ -17,7 +17,6 @@ const __dirname = path.dirname(__filename);
 // Configuration
 const API_URL = 'http://localhost:5000/graphql';
 const QUERIES_DIR = path.join(__dirname, '../src/queries');
-const TYPES_DIR = path.join(__dirname, '../src/types/generated');
 
 /**
  * Introspect the GraphQL schema from the backend
@@ -259,7 +258,7 @@ function extractQueries() {
 /**
  * Validate queries against schema
  */
-function validateQueries(queries, schema) {
+function validateQueries(queries, _schema) {
   const errors = [];
   const warnings = [];
 

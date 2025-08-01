@@ -4,7 +4,7 @@ import React from 'react';
 
 // Mock Apollo Client
 vi.mock('@apollo/client', async importOriginal => {
-  const actual = (await importOriginal()) as any;
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
     useQuery: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('@apollo/client', async importOriginal => {
     gql: vi.fn(),
     ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
     ApolloError: class ApolloError extends Error {
-      constructor(options: any) {
+      constructor(options: import('../types/common').ApolloErrorOptions) {
         super(
           options.graphQLErrors?.[0]?.message ||
             options.networkError?.message ||

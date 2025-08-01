@@ -269,9 +269,13 @@ export const createMockUseQuery = (
     data,
     loading,
     error,
-    fetchMore: () => {},
+    fetchMore: () => {
+      // Mock implementation
+    },
     networkStatus: loading ? 1 : 7,
-    refetch: () => {},
+    refetch: () => {
+      // Mock implementation
+    },
   };
 };
 

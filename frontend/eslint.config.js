@@ -13,8 +13,9 @@ export default [
   },
   js.configs.recommended,
   reactRefresh.configs.vite,
+  // Configuration for browser-based files (React components, etc.)
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{ts,tsx}', '!scripts/**/*'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -82,6 +83,83 @@ export default [
       'no-implied-eval': 'error',
       'no-new-func': 'error',
       'no-script-url': 'error',
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'no-unused-vars': 'off', // Use TypeScript version instead
+      'no-undef': 'off', // TypeScript handles this
+      'no-redeclare': 'off', // TypeScript handles this
+      'no-unreachable': 'error',
+      'no-constant-condition': 'error',
+      'no-dupe-args': 'error',
+      'no-dupe-keys': 'error',
+      'no-dupe-else-if': 'error',
+      'no-duplicate-case': 'error',
+      'no-empty': 'warn',
+      'no-extra-boolean-cast': 'error',
+      'no-extra-semi': 'error',
+      'no-func-assign': 'error',
+      'no-import-assign': 'error',
+      'no-inner-declarations': 'error',
+      'no-invalid-regexp': 'error',
+      'no-irregular-whitespace': 'error',
+      'no-obj-calls': 'error',
+      'no-sparse-arrays': 'error',
+      'no-unexpected-multiline': 'error',
+      'no-unreachable-loop': 'error',
+      'no-unsafe-finally': 'error',
+      'no-unsafe-negation': 'error',
+      'no-unsafe-optional-chaining': 'error',
+      'use-isnan': 'error',
+      'valid-typeof': 'error',
+
+      // Prettier integration
+      'prettier/prettier': 'error',
+
+      // Code style (let Prettier handle most formatting)
+      'spaced-comment': ['error', 'always'],
+      'no-multiple-empty-lines': ['error', { max: 1, maxEOF: 0 }],
+      'eol-last': 'error',
+      'no-trailing-spaces': 'error',
+    },
+  },
+  // Configuration for Node.js script files
+  {
+    files: ['scripts/**/*.{js,ts}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: {
+        ...globals.node,
+        ...globals.es2020,
+      },
+      parser: tseslintParser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+      prettier: prettier,
+    },
+    rules: {
+      // TypeScript rules
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-var-requires': 'error',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-empty-function': 'warn',
+
+      // General JavaScript rules
+      'no-console': 'off', // Allow console in scripts
+      'no-debugger': 'error',
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
       'no-var': 'error',
       'prefer-const': 'error',
       'no-unused-vars': 'off', // Use TypeScript version instead

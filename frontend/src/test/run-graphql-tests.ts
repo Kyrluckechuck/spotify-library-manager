@@ -266,11 +266,15 @@ const testMutations = [
   },
 ];
 
-async function testQuery(name: string, query: string, variables: any) {
+async function testQuery(
+  name: string,
+  query: string,
+  variables: Record<string, unknown>
+) {
   try {
     console.log(`🔍 Testing query: ${name}`);
     const result = await client.query({
-      query: { kind: 'Document' as any, definitions: [] }, // This is a placeholder
+      query: { kind: 'Document' as unknown, definitions: [] }, // This is a placeholder
       variables,
     });
 
@@ -287,11 +291,15 @@ async function testQuery(name: string, query: string, variables: any) {
   }
 }
 
-async function testMutation(name: string, mutation: string, variables: any) {
+async function testMutation(
+  name: string,
+  mutation: string,
+  variables: Record<string, unknown>
+) {
   try {
     console.log(`🔍 Testing mutation: ${name}`);
     const result = await client.mutate({
-      mutation: { kind: 'Document' as any, definitions: [] }, // This is a placeholder
+      mutation: { kind: 'Document' as unknown, definitions: [] }, // This is a placeholder
       variables,
     });
 

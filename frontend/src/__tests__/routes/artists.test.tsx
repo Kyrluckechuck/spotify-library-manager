@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useQuery, useMutation, ApolloError } from '@apollo/client';
-import type { MockedFunction } from 'vitest';
+import { useQuery, useMutation } from '@apollo/client';
+import type { MockedUseQuery, MockedUseMutation } from '../../types/test';
 
 // Import mock data
 import {
@@ -35,15 +35,24 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(() => ({ component: () => null })),
 }));
 
-const mockUseQuery = useQuery as MockedFunction<typeof useQuery>;
-const mockUseMutation = useMutation as MockedFunction<typeof useMutation>;
+const mockUseQuery = useQuery as MockedUseQuery;
+const mockUseMutation = useMutation as MockedUseMutation;
 
 // Create a test component that simulates the Artists route
 const TestArtistsComponent = () => {
   const { data, loading, error, fetchMore } = mockUseQuery();
-  const [trackArtist] = mockUseMutation() as [MockedFunction<any>, any];
-  const [untrackArtist] = mockUseMutation() as [MockedFunction<any>, any];
-  const [syncArtist] = mockUseMutation() as [MockedFunction<any>, any];
+  const [trackArtist] = mockUseMutation() as [
+    MockedFunction<() => void>,
+    { loading: boolean; error?: Error },
+  ];
+  const [untrackArtist] = mockUseMutation() as [
+    MockedFunction<() => void>,
+    { loading: boolean; error?: Error },
+  ];
+  const [syncArtist] = mockUseMutation() as [
+    MockedFunction<() => void>,
+    { loading: boolean; error?: Error },
+  ];
 
   const [filter, setFilter] = React.useState<'all' | 'tracked' | 'untracked'>(
     'all'
@@ -89,11 +98,18 @@ const TestArtistsComponent = () => {
   };
 
   // Filter artists based on current filter
-  const filteredArtists = data.artists.edges.filter((artist: any) => {
-    if (filter === 'tracked') return artist.isTracked;
-    if (filter === 'untracked') return !artist.isTracked;
-    return true;
-  });
+  const filteredArtists = data.artists.edges.filter(
+    (artist: {
+      id: number;
+      name: string;
+      isTracked: boolean;
+      lastSynced: string;
+    }) => {
+      if (filter === 'tracked') return artist.isTracked;
+      if (filter === 'untracked') return !artist.isTracked;
+      return true;
+    }
+  );
 
   return (
     <div>
@@ -120,25 +136,32 @@ const TestArtistsComponent = () => {
 
       {/* Artists list */}
       <div>
-        {filteredArtists.map((artist: any) => (
-          <div key={artist.id} data-testid={`artist-${artist.id}`}>
-            <span>{artist.name}</span>
-            <span>{artist.isTracked ? 'Tracked' : 'Not Tracked'}</span>
-            <span>Last synced: {artist.lastSynced}</span>
-            <button
-              onClick={() => handleTrackToggle(artist)}
-              data-testid={`toggle-${artist.id}`}
-            >
-              {artist.isTracked ? 'Untrack' : 'Track'}
-            </button>
-            <button
-              onClick={() => handleSyncArtist(artist.id)}
-              data-testid={`sync-${artist.id}`}
-            >
-              Sync
-            </button>
-          </div>
-        ))}
+        {filteredArtists.map(
+          (artist: {
+            id: number;
+            name: string;
+            isTracked: boolean;
+            lastSynced: string;
+          }) => (
+            <div key={artist.id} data-testid={`artist-${artist.id}`}>
+              <span>{artist.name}</span>
+              <span>{artist.isTracked ? 'Tracked' : 'Not Tracked'}</span>
+              <span>Last synced: {artist.lastSynced}</span>
+              <button
+                onClick={() => handleTrackToggle(artist)}
+                data-testid={`toggle-${artist.id}`}
+              >
+                {artist.isTracked ? 'Untrack' : 'Track'}
+              </button>
+              <button
+                onClick={() => handleSyncArtist(artist.id)}
+                data-testid={`sync-${artist.id}`}
+              >
+                Sync
+              </button>
+            </div>
+          )
+        )}
       </div>
 
       {data.artists.pageInfo.hasNextPage && (
@@ -341,9 +364,9 @@ describe('Artists Route', () => {
       );
 
       // Mock console.error to avoid test noise
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        // Mock implementation
+      });
 
       render(<TestArtistsComponent />);
 
