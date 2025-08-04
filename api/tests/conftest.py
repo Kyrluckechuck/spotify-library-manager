@@ -7,7 +7,7 @@ import django
 import pytest
 
 # Configure Django settings for testing
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api.settings")
 django.setup()
 
 
@@ -85,7 +85,7 @@ def sample_album(sample_artist):
 
 @pytest.fixture
 def sample_song(sample_artist):
-    """Create a sample song for testing."""
+    """Create a sample artist for testing."""
     from library_manager.models import Song
 
     return Song.objects.create(

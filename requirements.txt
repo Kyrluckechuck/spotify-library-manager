@@ -48,8 +48,9 @@ Werkzeug[watchdog]
 whitenoise[brotli]
 
 # Critical: spotdl and yt-dlp (exactly as specified in root requirements)
-git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl
-yt-dlp==2025.06.30
+#git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl
+spotdl==4.3.0
+yt-dlp==2025.7.21
 
 # Development and linting tools
 flake8>=6.0.0

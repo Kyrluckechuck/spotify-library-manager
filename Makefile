@@ -6,22 +6,26 @@ dev:
 
 # Individual service development commands
 dev-api:
-	PYTHONPATH=api python api/run.py
+	cd api && python run.py
 
 dev-frontend:
 	cd frontend && yarn dev
 
 dev-worker:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py run_huey
+	cd api && python manage.py run_huey
 
 # Django admin server (separate from main dev setup)
 dev-admin:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py collectstatic --noinput
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py runserver 0.0.0.0:8000
+	cd api && python manage.py collectstatic --noinput
+	cd api && python manage.py runserver 0.0.0.0:8000
+
+# FastAPI server (alternative to dev-api)
+dev-fastapi:
+	cd api && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
 # Huey queue management
 clear-huey-queue:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py shell -c "from huey.contrib.djhuey import HUEY; HUEY.flush(); print('Huey queue cleared')"
+	cd api && python manage.py shell -c "from huey.contrib.djhuey import HUEY; HUEY.flush(); print('Huey queue cleared')"
 
 # Installation and setup
 setup:
@@ -40,31 +44,31 @@ install: install-api install-frontend
 
 # Database management
 migrate:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py migrate
+	cd api && python manage.py migrate
 
 createsuperuser:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py createsuperuser
+	cd api && python manage.py createsuperuser
 
 # Testing
 test: test-api test-frontend
 
 test-api:
-	PYTHONPATH=api python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing
+	cd api && python -m pytest tests/ src/tests/ -v --cov=src --cov=library_manager --cov-report=html --cov-report=term-missing
 
 test-api-unit:
-	PYTHONPATH=api python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
+	cd api && python -m pytest tests/unit/ src/tests/ -v -m "not integration"
 
 test-api-integration:
-	PYTHONPATH=api python -m pytest api/tests/integration/test_simple_integration.py -v
+	cd api && python -m pytest tests/integration/test_simple_integration.py -v
 
 test-api-integration-full:
-	PYTHONPATH=api python -m pytest api/tests/integration/ -v -m integration
+	cd api && python -m pytest tests/integration/ -v -m integration
 
 test-api-integration-isolated:
-	PYTHONPATH=api python -m pytest api/tests/integration/test_isolated_integration.py -v
+	cd api && python -m pytest tests/integration/test_isolated_integration.py -v
 
 test-api-coverage:
-	PYTHONPATH=api python -m pytest api/tests/ api/src/tests/ --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
+	cd api && python -m pytest tests/ src/tests/ --cov=src --cov=library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
 
 test-frontend:
 	cd frontend && yarn test:run
@@ -79,7 +83,7 @@ test-frontend-ui:
 	cd frontend && yarn test:ui
 
 test-migrations:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python api/manage.py showmigrations
+	cd api && python manage.py showmigrations
 
 # Linting and Code Quality
 lint: lint-api lint-frontend

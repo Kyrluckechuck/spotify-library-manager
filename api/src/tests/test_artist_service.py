@@ -15,10 +15,12 @@ def artist_service() -> ArtistService:
 @pytest.fixture
 def mock_django_artist() -> Mock:
     mock_artist = Mock()
+    mock_artist.id = 1
     mock_artist.gid = "test_id"
     mock_artist.name = "Test Artist"
     mock_artist.tracked = True
     mock_artist.last_synced_at = datetime.now()
+    mock_artist.added_at = datetime.now()
     return mock_artist
 
 
@@ -27,13 +29,13 @@ async def test_get_by_id(
     artist_service: ArtistService, mock_django_artist: Mock
 ) -> None:
     with patch(
-        "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+        "api.library_manager.models.Artist.objects.aget", new_callable=AsyncMock
     ) as mock_aget:
         mock_aget.return_value = mock_django_artist
         result = await artist_service.get_by_id("test_id")
 
         assert isinstance(result, Artist)
-        assert result.id == "test_id"
+        assert result.id == 1
         assert result.name == "Test Artist"
         assert result.is_tracked is True
 
@@ -41,7 +43,7 @@ async def test_get_by_id(
 @pytest.mark.asyncio
 async def test_get_by_id_not_found(artist_service: ArtistService) -> None:
     with patch(
-        "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+        "api.library_manager.models.Artist.objects.aget", new_callable=AsyncMock
     ) as mock_aget:
         mock_aget.side_effect = artist_service.model.DoesNotExist
         result = await artist_service.get_by_id("not_found")
@@ -52,16 +54,14 @@ async def test_get_by_id_not_found(artist_service: ArtistService) -> None:
 async def test_get_connection(
     artist_service: ArtistService, mock_django_artist: Mock
 ) -> None:
-    with patch("library_manager.models.Artist.objects.all") as mock_all:
+    with patch("api.library_manager.models.Artist.objects.all") as mock_all:
         mock_queryset = Mock()
         mock_queryset.filter.return_value = mock_queryset
-        mock_queryset.acount = AsyncMock(return_value=1)
+        mock_queryset.count = Mock(return_value=1)
         mock_queryset.order_by.return_value = mock_queryset
 
-        # Create proper mock slice
-        mock_slice = Mock()
-        mock_slice.all = AsyncMock(return_value=[mock_django_artist])
-        mock_queryset.__getitem__ = Mock(return_value=mock_slice)
+        # Mock the slicing behavior properly
+        mock_queryset.__getitem__ = Mock(return_value=[mock_django_artist])
 
         mock_all.return_value = mock_queryset
 

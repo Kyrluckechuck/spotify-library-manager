@@ -138,8 +138,6 @@ class ArtistService(BaseService[Artist]):
             name=django_artist.name,
             gid=django_artist.gid,
             is_tracked=django_artist.tracked,
-            last_synced=django_artist.last_synced_at,
-            added_at=(
-                django_artist.added_at if hasattr(django_artist, "added_at") else None
-            ),
+            last_synced=django_artist.last_synced_at.isoformat() if django_artist.last_synced_at else None,
+            added_at=django_artist.added_at.isoformat() if hasattr(django_artist, "added_at") and django_artist.added_at else None,
         )

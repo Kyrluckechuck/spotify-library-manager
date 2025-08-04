@@ -188,5 +188,5 @@ class PlaylistService(BaseService[Playlist]):
             url=django_playlist.url,
             enabled=django_playlist.enabled,
             auto_track_artists=django_playlist.auto_track_artists,
-            last_synced_at=django_playlist.last_synced_at,
+            last_synced_at=django_playlist.last_synced_at.isoformat() if django_playlist.last_synced_at else None,
         )

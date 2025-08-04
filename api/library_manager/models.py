@@ -42,6 +42,7 @@ class Artist(models.Model):
         }
 
     class Meta(TypedModelMeta):
+        app_label = "library_manager"
         indexes = [
             models.Index(
                 fields=[
@@ -87,6 +88,7 @@ class Song(models.Model):
         self.save()
 
     class Meta(TypedModelMeta):
+        app_label = "library_manager"
         indexes = [
             models.Index(
                 fields=[
@@ -104,6 +106,7 @@ class ContributingArtist(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
 
     class Meta(TypedModelMeta):
+        app_label = "library_manager"
         unique_together = (
             "song",
             "artist",
@@ -130,7 +133,7 @@ class DownloadHistory(models.Model):
         return float(self.progress) / 10.0
 
     class Meta(TypedModelMeta):
-        pass
+        app_label = "library_manager"
 
 
 class TaskHistory(models.Model):
@@ -169,6 +172,7 @@ class TaskHistory(models.Model):
     timeout_minutes = models.IntegerField(default=30)  # Default 30 minute timeout
 
     class Meta(TypedModelMeta):
+        app_label = "library_manager"
         ordering = ["-started_at"]
         indexes = [
             models.Index(fields=["status", "-started_at"]),
@@ -379,7 +383,7 @@ class Album(models.Model):
         )
 
     class Meta(TypedModelMeta):
-        pass
+        app_label = "library_manager"
 
 
 class TrackedPlaylist(models.Model):
@@ -393,4 +397,4 @@ class TrackedPlaylist(models.Model):
         return f"name: {self.name} | url: {self.url} | enabled: {self.enabled}"
 
     class Meta(TypedModelMeta):
-        pass
+        app_label = "library_manager"

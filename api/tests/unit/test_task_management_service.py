@@ -230,7 +230,7 @@ class TestTaskManagementService:
         self, mock_huey, task_management_service
     ):
         """Test cancelling running tasks by name successfully."""
-        with patch("library_manager.models.TaskHistory") as mock_task_history:
+        with patch("api.library_manager.models.TaskHistory") as mock_task_history:
             # Mock running tasks
             mock_task1 = Mock()
             mock_task1.task_id = "task_1"
@@ -263,7 +263,7 @@ class TestTaskManagementService:
         mock_huey.revoke_by_id.return_value = True
 
         # Mock running tasks
-        with patch("library_manager.models.TaskHistory") as mock_task_history:
+        with patch("api.library_manager.models.TaskHistory") as mock_task_history:
             mock_running_task = Mock()
             mock_running_task.task_id = "task_2"
             mock_running_task.status = "RUNNING"

@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from library_manager import tasks
+from api.library_manager import tasks
 from library_manager.models import Artist
 
 

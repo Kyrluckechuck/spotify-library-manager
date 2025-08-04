@@ -1,0 +1,79 @@
+# Django settings configuration
+# This file is loaded by dynaconf in the Django settings
+
+# Database configuration
+DATABASES:
+  default:
+    ENGINE: django.db.backends.sqlite3
+    NAME: /config/db/db.sqlite3
+    OPTIONS:
+      timeout: 20
+
+# Static files configuration
+STATIC_URL: /static/
+STATIC_ROOT: api/staticfiles
+
+# Media files configuration
+MEDIA_URL: /media/
+MEDIA_ROOT: api/media
+
+# Logging configuration
+LOGGING:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    verbose:
+      format: "{levelname} {asctime} {module} {process:d} {thread:d} {message}"
+      style: "{"
+    simple:
+      format: "{levelname} {message}"
+      style: "{"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: simple
+  root:
+    handlers: [console]
+    level: INFO
+  loggers:
+    django:
+      handlers: [console]
+      level: WARNING
+      propagate: false
+    django.request:
+      handlers: [console]
+      level: WARNING
+      propagate: false
+    django.server:
+      handlers: [console]
+      level: WARNING
+      propagate: false
+    django.db.backends:
+      handlers: [console]
+      level: ERROR
+      propagate: false
+    huey:
+      handlers: [console]
+      level: WARNING
+      propagate: false
+    library_manager:
+      handlers: [console]
+      level: INFO
+      propagate: false
+
+# Huey configuration
+HUEY:
+  huey_class: huey.SqliteHuey
+  name: spotify_library_manager
+  filename: api/huey.sqlite3
+  immediate: false
+  results: true
+  store_none: false
+
+# Custom configuration
+cookies_location: /config/cookies.txt
+po_token: null
+log_level: INFO
+no_lrc: false
+overwrite: false
+print_exceptions: true 

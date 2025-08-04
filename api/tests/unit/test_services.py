@@ -23,7 +23,7 @@ class TestArtistService:
     async def test_get_by_id_success(self, artist_service):
         """Test successful artist retrieval by ID."""
         with patch(
-            "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+            "api.library_manager.models.Artist.objects.aget", new_callable=AsyncMock
         ) as mock_aget:
             mock_artist = Mock()
             mock_artist.gid = "test123"
@@ -43,7 +43,7 @@ class TestArtistService:
     async def test_get_by_id_not_found(self, artist_service):
         """Test artist retrieval when not found."""
         with patch(
-            "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+            "api.library_manager.models.Artist.objects.aget", new_callable=AsyncMock
         ) as mock_aget:
             mock_aget.side_effect = artist_service.model.DoesNotExist
 
@@ -54,7 +54,7 @@ class TestArtistService:
     @pytest.mark.asyncio
     async def test_get_connection_with_filters(self, artist_service):
         """Test getting artist connection with filters."""
-        with patch("library_manager.models.Artist.objects.all") as mock_all:
+        with patch("api.library_manager.models.Artist.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
             mock_queryset.acount = AsyncMock(return_value=5)
@@ -96,7 +96,7 @@ class TestAlbumService:
     async def test_get_by_id_success(self, album_service):
         """Test successful album retrieval by ID."""
         with patch(
-            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+            "api.library_manager.models.Album.objects.aget", new_callable=AsyncMock
         ) as mock_aget:
             mock_album = Mock()
             mock_album.spotify_gid = "album123"
@@ -132,7 +132,7 @@ class TestPlaylistService:
     async def test_get_by_id_success(self, playlist_service):
         """Test successful playlist retrieval by ID."""
         with patch(
-            "library_manager.models.TrackedPlaylist.objects.aget",
+            "api.library_manager.models.TrackedPlaylist.objects.aget",
             new_callable=AsyncMock,
         ) as mock_aget:
             mock_playlist = Mock()
@@ -165,7 +165,7 @@ class TestDownloadHistoryService:
     @pytest.mark.asyncio
     async def test_get_connection_with_pagination(self, history_service):
         """Test getting download history with pagination."""
-        with patch("library_manager.models.DownloadHistory.objects.all") as mock_all:
+        with patch("api.library_manager.models.DownloadHistory.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
             mock_queryset.acount = AsyncMock(return_value=20)

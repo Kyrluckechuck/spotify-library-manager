@@ -255,7 +255,7 @@ def download_missing_albums_for_artist(
     except Exception as e:
         import logging
 
-        logger = logging.getLogger("library_manager")
+        logger = logging.getLogger("api.library_manager")
         logger.error(f"Error in sync_tracked_playlist_internal: {e}", exc_info=True)
         if task_history:
             complete_task(task_history, success=False, error_message=str(e))

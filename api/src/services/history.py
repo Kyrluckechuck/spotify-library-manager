@@ -72,7 +72,7 @@ class DownloadHistoryService(BaseService[DownloadHistory]):
             entity_id=entity_id,
             entity_type=entity_type,
             status=status,
-            started_at=django_history.added_at,
-            completed_at=django_history.completed_at,
+            started_at=django_history.added_at.isoformat(),
+            completed_at=django_history.completed_at.isoformat() if django_history.completed_at else None,
             error_message=None,  # TODO: Add error message support
         )
