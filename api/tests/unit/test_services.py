@@ -165,7 +165,9 @@ class TestDownloadHistoryService:
     @pytest.mark.asyncio
     async def test_get_connection_with_pagination(self, history_service):
         """Test getting download history with pagination."""
-        with patch("api.library_manager.models.DownloadHistory.objects.all") as mock_all:
+        with patch(
+            "api.library_manager.models.DownloadHistory.objects.all"
+        ) as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
             mock_queryset.acount = AsyncMock(return_value=20)

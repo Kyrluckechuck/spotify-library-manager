@@ -119,7 +119,11 @@ class TaskHistoryService(BaseService[TaskHistory]):
             entity_type=entity_mapping.get(django_task.entity_type, EntityType.ARTIST),
             status=status_mapping.get(django_task.status, TaskStatus.PENDING),
             started_at=django_task.started_at.isoformat(),
-            completed_at=django_task.completed_at.isoformat() if django_task.completed_at else None,
+            completed_at=(
+                django_task.completed_at.isoformat()
+                if django_task.completed_at
+                else None
+            ),
             duration_seconds=django_task.duration_seconds,
             progress_percentage=django_task.progress_percentage,
             log_messages=log_messages,
