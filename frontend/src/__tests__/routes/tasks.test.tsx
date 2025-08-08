@@ -243,7 +243,7 @@ describe('Tasks Route', () => {
 
       expect(screen.getByText('Background Tasks')).toBeInTheDocument();
       expect(screen.getByText(/task history/i)).toBeInTheDocument();
-      expect(screen.getByText(/1 of 2/)).toBeInTheDocument();
+      expect(screen.getByText(/2 of 2/)).toBeInTheDocument();
     });
 
     it('renders error state for GraphQL errors', () => {
@@ -395,12 +395,12 @@ describe('Tasks Route', () => {
       render(<TestTasksComponent />);
 
       // Check that task details are displayed
-      expect(screen.getByText('task-123')).toBeInTheDocument();
-      expect(screen.getByText('SYNC')).toBeInTheDocument();
-      expect(screen.getByText('ARTIST')).toBeInTheDocument();
+      expect(screen.getByText('task-123-1')).toBeInTheDocument();
+      expect(screen.getAllByText('SYNC').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('ARTIST').length).toBeGreaterThan(0);
       expect(screen.getByText('COMPLETED')).toBeInTheDocument();
-      expect(screen.getByText('3600s')).toBeInTheDocument();
-      expect(screen.getByText('100%')).toBeInTheDocument();
+      expect(screen.getAllByText('3600s').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
     });
 
     it('displays active tasks correctly', () => {
@@ -425,8 +425,8 @@ describe('Tasks Route', () => {
       // Check that log messages are displayed
       const logsContainer = screen.getByTestId('logs-1');
       expect(logsContainer).toBeInTheDocument();
-      expect(screen.getByText('Task started')).toBeInTheDocument();
-      expect(screen.getByText('Task completed')).toBeInTheDocument();
+      expect(screen.getByText('Task 1 started')).toBeInTheDocument();
+      expect(screen.getByText('Task 1 completed')).toBeInTheDocument();
     });
 
     it('shows correct task counts', () => {
@@ -436,7 +436,7 @@ describe('Tasks Route', () => {
 
       render(<TestTasksComponent />);
 
-      expect(screen.getByText(/1 of 2/)).toBeInTheDocument();
+      expect(screen.getByText(/2 of 2/)).toBeInTheDocument();
       expect(screen.getByText(/active tasks \(1\)/i)).toBeInTheDocument();
     });
   });

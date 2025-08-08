@@ -94,16 +94,6 @@ export function PlaylistsTable({
                   <div className='text-sm font-medium text-gray-900'>
                     {playlist.name}
                   </div>
-                  <div className='text-sm text-gray-500'>
-                    <a
-                      href={playlist.url}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-indigo-600 hover:text-indigo-900 underline'
-                    >
-                      View on Spotify
-                    </a>
-                  </div>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
                   <span

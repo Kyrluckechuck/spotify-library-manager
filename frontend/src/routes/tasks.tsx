@@ -12,7 +12,6 @@ import {
 } from '../types/generated/graphql';
 import {
   GetQueueStatusDocument,
-  CancelAllPendingTasksDocument,
   CancelTasksByNameDocument,
   CancelRunningTasksByNameDocument,
   CancelAllTasksDocument,
@@ -36,8 +35,13 @@ function Tasks() {
   const [pageSize, setPageSize] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // UI state for collapsible sections
+  const [expandedLogs, setExpandedLogs] = useState<Record<number, boolean>>({});
+  const [expandedHistoryLogs, setExpandedHistoryLogs] = useState<
+    Record<number, boolean>
+  >({});
+
   // Task cancellation mutations
-  const [cancelAllTasks] = useMutation(CancelAllPendingTasksDocument);
   const [cancelTasksByName] = useMutation(CancelTasksByNameDocument);
   const [cancelRunningTasksByName] = useMutation(
     CancelRunningTasksByNameDocument
@@ -72,11 +76,16 @@ function Tasks() {
     pollInterval: 5000, // Poll every 5 seconds for queue updates
   });
 
-  // Get active tasks from the task history
-  const realActiveTasks =
-    historyData?.taskHistory?.edges?.filter(
-      (task: TaskHistory) => task.status === 'RUNNING'
+  // Normalize task history edges to nodes for easier processing
+  const historyNodes: TaskHistory[] =
+    historyData?.taskHistory?.edges?.map(
+      (edge: { node: TaskHistory }) => edge.node
     ) || [];
+
+  // Get active tasks from the task history
+  const realActiveTasks = historyNodes.filter(
+    (task: TaskHistory) => task.status === 'RUNNING'
+  );
 
   // Filter active tasks
   const filteredActiveTasks = realActiveTasks.filter((task: TaskHistory) => {
@@ -200,6 +209,93 @@ function Tasks() {
           >
             Refresh
           </button>
+        </div>
+      </div>
+
+      {/* Statistics Dashboard */}
+      <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
+        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+          <div className='flex items-center'>
+            <div className='p-2 bg-blue-100 rounded-lg'>
+              <div className='w-6 h-6 bg-blue-500 rounded-full animate-pulse' />
+            </div>
+            <div className='ml-4'>
+              <p className='text-sm font-medium text-gray-600'>Active Tasks</p>
+              <p className='text-2xl font-bold text-gray-900'>
+                {runningTasks.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+          <div className='flex items-center'>
+            <div className='p-2 bg-green-100 rounded-lg'>
+              <div className='w-6 h-6 bg-green-500 rounded-full' />
+            </div>
+            <div className='ml-4'>
+              <p className='text-sm font-medium text-gray-600'>
+                Completed Today
+              </p>
+              <p className='text-2xl font-bold text-gray-900'>
+                {
+                  historyNodes.filter(
+                    (task: TaskHistory) =>
+                      task.status === 'COMPLETED' &&
+                      !!task.completedAt &&
+                      new Date(task.completedAt).toDateString() ===
+                        new Date().toDateString()
+                  ).length
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+          <div className='flex items-center'>
+            <div className='p-2 bg-red-100 rounded-lg'>
+              <div className='w-6 h-6 bg-red-500 rounded-full' />
+            </div>
+            <div className='ml-4'>
+              <p className='text-sm font-medium text-gray-600'>Failed Today</p>
+              <p className='text-2xl font-bold text-gray-900'>
+                {
+                  historyNodes.filter(
+                    (task: TaskHistory) =>
+                      task.status === 'FAILED' &&
+                      !!task.completedAt &&
+                      new Date(task.completedAt).toDateString() ===
+                        new Date().toDateString()
+                  ).length
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+          <div className='flex items-center'>
+            <div className='p-2 bg-purple-100 rounded-lg'>
+              <div className='w-6 h-6 bg-purple-500 rounded-full' />
+            </div>
+            <div className='ml-4'>
+              <p className='text-sm font-medium text-gray-600'>Success Rate</p>
+              <p className='text-2xl font-bold text-gray-900'>
+                {(() => {
+                  const completed = historyNodes.filter(
+                    (task: TaskHistory) => task.status === 'COMPLETED'
+                  ).length;
+                  const failed = historyNodes.filter(
+                    (task: TaskHistory) => task.status === 'FAILED'
+                  ).length;
+                  const total = completed + failed;
+                  return total > 0 ? Math.round((completed / total) * 100) : 0;
+                })()}
+                %
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -525,93 +621,160 @@ function Tasks() {
               </p>
             </div>
           ) : (
-            <div className='space-y-4'>
-              {historyData?.taskHistory?.edges?.map(
-                (edge: {
-                  node: {
-                    id: number;
-                    type: string;
-                    entityType: string;
-                    entityId: string;
-                    status: string;
-                    startedAt: string;
-                    completedAt?: string;
-                    progressPercentage?: number;
-                    durationSeconds?: number;
-                  };
-                }) => {
-                  const task = edge.node;
-                  return (
-                    <div
-                      key={task.id}
-                      className={`flex items-center justify-between p-4 rounded-lg border ${
-                        task.status === 'RUNNING'
-                          ? 'bg-blue-50 border-blue-200'
-                          : task.status === 'COMPLETED'
-                            ? 'bg-green-50 border-green-200'
-                            : task.status === 'FAILED'
-                              ? 'bg-red-50 border-red-200'
-                              : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div className='flex items-center gap-4'>
-                        <div
-                          className={`w-3 h-3 rounded-full ${
-                            task.status === 'RUNNING'
-                              ? 'bg-blue-500 animate-pulse'
-                              : task.status === 'COMPLETED'
-                                ? 'bg-green-500'
-                                : task.status === 'FAILED'
-                                  ? 'bg-red-500'
-                                  : 'bg-gray-400'
-                          }`}
-                        />
-                        <div>
-                          <div className='font-medium text-gray-900'>
-                            {task.type.charAt(0).toUpperCase() +
-                              task.type.slice(1)}{' '}
-                            {task.entityType} {task.entityId}
-                          </div>
-                          <div className='text-sm text-gray-600'>
-                            {task.status === 'RUNNING'
-                              ? `Started ${new Date(
-                                  task.startedAt
-                                ).toLocaleTimeString()}`
-                              : task.status === 'COMPLETED'
-                                ? `Completed ${
-                                    task.completedAt
-                                      ? new Date(
-                                          task.completedAt
-                                        ).toLocaleTimeString()
-                                      : 'Unknown time'
-                                  }`
-                                : task.status === 'FAILED'
-                                  ? `Failed ${
+            <div className='space-y-3'>
+              <div className='overflow-x-auto'>
+                <table className='min-w-full divide-y divide-gray-200 text-sm'>
+                  <thead className='bg-gray-50'>
+                    <tr>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Status
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Type
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Entity
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Task ID
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Started
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Completed
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Duration
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Progress
+                      </th>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                        Logs
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className='divide-y divide-gray-100'>
+                    {historyData?.taskHistory?.edges?.map(
+                      (edge: {
+                        node: {
+                          id: number;
+                          taskId: string;
+                          type: string;
+                          entityType: string;
+                          entityId: string;
+                          status: string;
+                          startedAt: string;
+                          completedAt?: string;
+                          progressPercentage?: number;
+                          durationSeconds?: number;
+                          logMessages?: string[];
+                        };
+                      }) => {
+                        const task = edge.node;
+                        const isLogsOpen = !!expandedHistoryLogs[task.id];
+                        return (
+                          <>
+                            <tr key={task.id} className='hover:bg-gray-50'>
+                              <td className='px-3 py-2 whitespace-nowrap'>
+                                <span
+                                  className={`inline-block w-2.5 h-2.5 rounded-full align-middle ${
+                                    task.status === 'RUNNING'
+                                      ? 'bg-blue-500'
+                                      : task.status === 'COMPLETED'
+                                        ? 'bg-green-500'
+                                        : task.status === 'FAILED'
+                                          ? 'bg-red-500'
+                                          : 'bg-gray-400'
+                                  }`}
+                                  title={task.status}
+                                />
+                                <span className='ml-2 text-gray-700 text-xs sm:text-sm'>
+                                  {task.status}
+                                </span>
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap text-gray-900'>
+                                {task.type.charAt(0).toUpperCase() +
+                                  task.type.slice(1)}
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                                {task.entityType} {task.entityId}
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                                <span className='font-mono text-xs'>
+                                  {task.taskId}
+                                </span>
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                                {new Date(task.startedAt).toLocaleTimeString()}
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                                {task.completedAt
+                                  ? new Date(
                                       task.completedAt
-                                        ? new Date(
-                                            task.completedAt
-                                          ).toLocaleTimeString()
-                                        : 'Unknown time'
-                                    }`
-                                  : `Pending ${new Date(
-                                      task.startedAt
-                                    ).toLocaleTimeString()}`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className='flex items-center gap-4 text-sm text-gray-600'>
-                        {task.progressPercentage !== null && (
-                          <span>{task.progressPercentage}%</span>
-                        )}
-                        {task.durationSeconds && (
-                          <span>{task.durationSeconds}s</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-              )}
-
+                                    ).toLocaleTimeString()
+                                  : '-'}
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                                {task.durationSeconds
+                                  ? `${task.durationSeconds}s`
+                                  : '-'}
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                                {task.progressPercentage !== null &&
+                                task.progressPercentage !== undefined
+                                  ? `${task.progressPercentage}%`
+                                  : '-'}
+                              </td>
+                              <td className='px-3 py-2 whitespace-nowrap'>
+                                {task.logMessages &&
+                                task.logMessages.length > 0 ? (
+                                  <button
+                                    type='button'
+                                    className='text-indigo-600 hover:underline text-sm'
+                                    onClick={() =>
+                                      setExpandedHistoryLogs(prev => ({
+                                        ...prev,
+                                        [task.id]: !isLogsOpen,
+                                      }))
+                                    }
+                                    aria-expanded={isLogsOpen}
+                                  >
+                                    {isLogsOpen
+                                      ? 'Hide logs'
+                                      : `Show logs (${task.logMessages.length})`}
+                                  </button>
+                                ) : (
+                                  <span className='text-gray-400 text-sm'>
+                                    None
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                            {isLogsOpen && task.logMessages && (
+                              <tr>
+                                <td colSpan={9} className='px-3 pb-3'>
+                                  <div className='mt-1 bg-gray-50 rounded p-3 text-xs sm:text-sm font-mono text-gray-700 max-h-40 overflow-y-auto'>
+                                    {task.logMessages.map((log: string) => (
+                                      <div
+                                        key={`task-${task.id}-log-row-${log}`}
+                                        className='mb-1'
+                                      >
+                                        {log}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        );
+                      }
+                    )}
+                  </tbody>
+                </table>
+              </div>
               {historyData?.taskHistory?.pageInfo?.hasNextPage && (
                 <LoadMoreButton
                   hasNextPage={historyData.taskHistory.pageInfo.hasNextPage}
@@ -645,7 +808,7 @@ function Tasks() {
             (edge: { node: { logMessages?: string[] } }) =>
               (edge.node.logMessages?.length ?? 0) > 0
           ) ? (
-            <div className='space-y-4'>
+            <div className='space-y-2'>
               {historyData.taskHistory.edges
                 .filter(
                   (edge: { node: { logMessages?: string[] } }) =>
@@ -662,26 +825,49 @@ function Tasks() {
                     };
                   }) => {
                     const task = edge.node;
+                    const isExpanded = !!expandedLogs[task.id];
                     return (
                       <div
                         key={task.id}
-                        className='border border-gray-200 rounded-lg p-4'
+                        className='border border-gray-200 rounded-lg p-3'
                       >
-                        <div className='font-medium text-gray-900 mb-2'>
-                          {task.type.charAt(0).toUpperCase() +
-                            task.type.slice(1)}{' '}
-                          {task.entityType} {task.entityId}
+                        <div className='flex items-start justify-between gap-3'>
+                          <div className='font-medium text-gray-900'>
+                            {task.type.charAt(0).toUpperCase() +
+                              task.type.slice(1)}{' '}
+                            {task.entityType} {task.entityId}
+                            {!isExpanded && task.logMessages && (
+                              <span className='ml-2 text-sm text-gray-500'>
+                                ({task.logMessages.length} log entries)
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type='button'
+                            onClick={() =>
+                              setExpandedLogs(prev => ({
+                                ...prev,
+                                [task.id]: !isExpanded,
+                              }))
+                            }
+                            aria-expanded={isExpanded}
+                            className='text-sm text-indigo-600 hover:underline'
+                          >
+                            {isExpanded ? 'Hide logs' : 'Show logs'}
+                          </button>
                         </div>
-                        <div className='bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-32 overflow-y-auto'>
-                          {task.logMessages?.map((log: string) => (
-                            <div
-                              key={`task-${task.id}-log-entry-${log}`}
-                              className='mb-1'
-                            >
-                              {log}
-                            </div>
-                          ))}
-                        </div>
+                        {isExpanded && (
+                          <div className='mt-2 bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-40 overflow-y-auto'>
+                            {task.logMessages?.map((log: string) => (
+                              <div
+                                key={`task-${task.id}-log-entry-${log}`}
+                                className='mb-1'
+                              >
+                                {log}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   }
@@ -699,88 +885,7 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Statistics Dashboard */}
-      <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-blue-100 rounded-lg'>
-              <div className='w-6 h-6 bg-blue-500 rounded-full animate-pulse' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>Active Tasks</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {runningTasks.length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-green-100 rounded-lg'>
-              <div className='w-6 h-6 bg-green-500 rounded-full' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>
-                Completed Today
-              </p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {historyData?.taskHistory?.edges?.filter(
-                  (task: TaskHistory) =>
-                    task.status === 'COMPLETED' &&
-                    new Date(task.startedAt).toDateString() ===
-                      new Date().toDateString()
-                ).length || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-red-100 rounded-lg'>
-              <div className='w-6 h-6 bg-red-500 rounded-full' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>Failed Today</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {historyData?.taskHistory?.edges?.filter(
-                  (task: TaskHistory) =>
-                    task.status === 'FAILED' &&
-                    new Date(task.startedAt).toDateString() ===
-                      new Date().toDateString()
-                ).length || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-purple-100 rounded-lg'>
-              <div className='w-6 h-6 bg-purple-500 rounded-full' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>Success Rate</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {(() => {
-                  const completed =
-                    historyData?.taskHistory?.edges?.filter(
-                      (task: TaskHistory) => task.status === 'COMPLETED'
-                    ).length || 0;
-                  const failed =
-                    historyData?.taskHistory?.edges?.filter(
-                      (task: TaskHistory) => task.status === 'FAILED'
-                    ).length || 0;
-                  const total = completed + failed;
-                  return total > 0 ? Math.round((completed / total) * 100) : 0;
-                })()}
-                %
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Statistics Dashboard removed from bottom after moving to top */}
     </div>
   );
 }

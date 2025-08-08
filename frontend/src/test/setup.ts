@@ -30,11 +30,15 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(),
   Link: ({
     children,
-    ...props
+    activeProps: _activeProps,
+    activeOptions: _activeOptions,
+    to,
+    ...rest
   }: {
     children: React.ReactNode;
+    to?: string;
     [key: string]: unknown;
-  }) => React.createElement('a', { ...props, role: 'link' }, children),
+  }) => React.createElement('a', { href: to, role: 'link', ...rest }, children),
   useNavigate: vi.fn(() => vi.fn()),
   useParams: vi.fn(() => ({})),
 }));

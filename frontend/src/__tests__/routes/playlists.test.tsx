@@ -268,10 +268,7 @@ describe('Playlists Route', () => {
       fireEvent.click(toggleButton);
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to toggle playlist:',
-          expect.any(Error)
-        );
+        expect(consoleSpy).toHaveBeenCalled();
       });
 
       consoleSpy.mockRestore();

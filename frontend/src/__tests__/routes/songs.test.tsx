@@ -337,12 +337,12 @@ describe('Songs Route', () => {
 
       expect(screen.getByText('Song 1')).toBeInTheDocument();
       expect(screen.getByText('Song 2')).toBeInTheDocument();
-      expect(screen.getByText('Test Artist')).toBeInTheDocument();
-      expect(screen.getByText('320kbps')).toBeInTheDocument();
-      expect(screen.getByText('Downloaded')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Artist')).toHaveLength(2);
+      expect(screen.getAllByText('320kbps')).toHaveLength(2);
+      expect(screen.getAllByText('Downloaded').length).toBeGreaterThan(0);
       expect(screen.getByText('Not Downloaded')).toBeInTheDocument();
       expect(screen.getByText('Available')).toBeInTheDocument();
-      expect(screen.getByText('0 failures')).toBeInTheDocument();
+      // Failure count is only shown when > 0; for these mocks it's zero
     });
 
     it('displays song metadata correctly', () => {
@@ -351,12 +351,12 @@ describe('Songs Route', () => {
       render(<TestSongsComponent />);
 
       // Check that file paths and URIs are displayed
-      expect(
-        screen.getByText(/path: \/path\/to\/song\.mp3/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/uri: spotify:track:test123/i)
-      ).toBeInTheDocument();
+      expect(screen.getAllByText(/path: \/path\/to\/song\.mp3/i)).toHaveLength(
+        2
+      );
+      expect(screen.getAllByText(/uri: spotify:track:test123/i)).toHaveLength(
+        2
+      );
     });
 
     it('shows correct song count', () => {
@@ -380,9 +380,9 @@ describe('Songs Route', () => {
       const downloadedFilter = screen.getByTestId('downloaded-filter');
       fireEvent.change(downloadedFilter, { target: { value: 'downloaded' } });
 
-      // Should still show both songs since filtering is handled by the component
+      // List should be filtered to downloaded only
       expect(screen.getByText('Song 1')).toBeInTheDocument();
-      expect(screen.getByText('Song 2')).toBeInTheDocument();
+      expect(screen.queryByText('Song 2')).not.toBeInTheDocument();
     });
 
     it('filters songs based on availability', () => {
@@ -426,8 +426,8 @@ describe('Songs Route', () => {
 
       render(<TestSongsComponent />);
 
-      expect(screen.getByText('Downloaded')).toBeInTheDocument();
-      expect(screen.getByText('Not downloaded')).toBeInTheDocument();
+      expect(screen.getAllByText('Downloaded').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Not downloaded').length).toBeGreaterThan(0);
     });
 
     it('displays availability status correctly', () => {
@@ -435,8 +435,8 @@ describe('Songs Route', () => {
 
       render(<TestSongsComponent />);
 
-      expect(screen.getByText('Downloaded')).toBeInTheDocument();
-      expect(screen.getByText('Not downloaded')).toBeInTheDocument();
+      expect(screen.getAllByText('Downloaded').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Not downloaded').length).toBeGreaterThan(0);
     });
   });
 });

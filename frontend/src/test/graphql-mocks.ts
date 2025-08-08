@@ -69,7 +69,7 @@ export const createMockSong = (overrides = {}) => ({
 
 export const createMockTaskHistory = (overrides = {}) => ({
   id: '1',
-  taskId: 'task-123',
+  taskId: 'task-123-1',
   type: 'SYNC' as const,
   entityId: '1',
   entityType: 'ARTIST' as const,
@@ -78,7 +78,7 @@ export const createMockTaskHistory = (overrides = {}) => ({
   completedAt: '2024-01-01T01:00:00Z',
   durationSeconds: 3600,
   progressPercentage: 100,
-  logMessages: ['Task started', 'Task completed'],
+  logMessages: ['Task 1 started', 'Task 1 completed'],
   ...overrides,
 });
 
@@ -162,7 +162,13 @@ export const mockGetTaskHistoryResponse: GetTaskHistoryQuery = {
         cursor: 'cursor1',
       },
       {
-        node: createMockTaskHistory({ id: '2', status: 'RUNNING' as const }),
+        node: createMockTaskHistory({
+          id: '2',
+          taskId: 'task-123-2',
+          status: 'RUNNING' as const,
+          durationSeconds: 1800,
+          logMessages: ['Task 2 started'],
+        }),
         cursor: 'cursor2',
       },
     ],
@@ -284,5 +290,7 @@ export const createMockUseMutation = (
   loading = false,
   error?: ApolloError
 ) => {
-  return [() => Promise.resolve({ data }), { loading, error }] as const;
+  const mutate = () =>
+    error ? Promise.reject(error) : Promise.resolve({ data });
+  return [mutate, { loading, error }] as const;
 };

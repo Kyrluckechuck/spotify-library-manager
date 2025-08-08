@@ -62,7 +62,10 @@ class TestArtistService:
             mock_queryset.order_by.return_value = mock_queryset
 
             # Return 4 items when first=3 to test has_next logic
-            mock_artists = [Mock(gid=f"artist{i}", name=f"Artist {i}", tracked=True) for i in range(4)]
+            mock_artists = [
+                Mock(gid=f"artist{i}", name=f"Artist {i}", tracked=True)
+                for i in range(4)
+            ]
 
             # Slicing returns a list directly which will be cast via list(...)
             mock_queryset.__getitem__ = Mock(return_value=mock_artists)
@@ -88,9 +91,7 @@ class TestAlbumService:
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, album_service):
         """Test successful album retrieval by ID."""
-        with patch(
-            "library_manager.models.Album.objects.get"
-        ) as mock_get:
+        with patch("library_manager.models.Album.objects.get") as mock_get:
             mock_album = Mock()
             mock_album.spotify_gid = "album123"
             mock_album.name = "Test Album"
@@ -156,9 +157,7 @@ class TestDownloadHistoryService:
     @pytest.mark.asyncio
     async def test_get_connection_with_pagination(self, history_service):
         """Test getting download history with pagination."""
-        with patch(
-            "library_manager.models.DownloadHistory.objects.all"
-        ) as mock_all:
+        with patch("library_manager.models.DownloadHistory.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
             mock_queryset.acount = AsyncMock(return_value=20)
