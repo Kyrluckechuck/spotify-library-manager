@@ -58,22 +58,14 @@ class TestArtistService:
         with patch("library_manager.models.Artist.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
-            mock_queryset.acount = AsyncMock(return_value=5)
+            mock_queryset.count = Mock(return_value=5)
             mock_queryset.order_by.return_value = mock_queryset
 
-            # Create proper mock artists with attributes
-            mock_artists = []
-            for i in range(4):  # Return 4 items when first=3 to test has_next logic
-                mock_artist = Mock()
-                mock_artist.gid = f"artist{i}"
-                mock_artist.name = f"Artist {i}"
-                mock_artist.tracked = True
-                mock_artists.append(mock_artist)
+            # Return 4 items when first=3 to test has_next logic
+            mock_artists = [Mock(gid=f"artist{i}", name=f"Artist {i}", tracked=True) for i in range(4)]
 
-            # Mock the slicing behavior
-            mock_slice = Mock()
-            mock_slice.all = AsyncMock(return_value=mock_artists)
-            mock_queryset.__getitem__ = Mock(return_value=mock_slice)
+            # Slicing returns a list directly which will be cast via list(...)
+            mock_queryset.__getitem__ = Mock(return_value=mock_artists)
             mock_all.return_value = mock_queryset
 
             items, has_next, total = await artist_service.get_connection(
@@ -97,8 +89,8 @@ class TestAlbumService:
     async def test_get_by_id_success(self, album_service):
         """Test successful album retrieval by ID."""
         with patch(
-            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
-        ) as mock_aget:
+            "library_manager.models.Album.objects.get"
+        ) as mock_get:
             mock_album = Mock()
             mock_album.spotify_gid = "album123"
             mock_album.name = "Test Album"
@@ -109,16 +101,16 @@ class TestAlbumService:
             mock_album.spotify_uri = "spotify:album:album123"
             mock_album.artist = Mock()
             mock_album.artist.gid = "artist123"
-            mock_aget.return_value = mock_album
+            mock_get.return_value = mock_album
 
             result = await album_service.get_by_id("album123")
 
             assert result is not None
-            assert result.id == "album123"
+            assert result.spotify_gid == "album123"
             assert result.name == "Test Album"
-            assert result.track_count == 10
-            assert result.is_wanted is True
-            assert result.is_downloaded is False
+            assert result.total_tracks == 10
+            assert result.wanted is True
+            assert result.downloaded is False
 
 
 @pytest.mark.django_db
@@ -133,9 +125,8 @@ class TestPlaylistService:
     async def test_get_by_id_success(self, playlist_service):
         """Test successful playlist retrieval by ID."""
         with patch(
-            "library_manager.models.TrackedPlaylist.objects.aget",
-            new_callable=AsyncMock,
-        ) as mock_aget:
+            "library_manager.models.TrackedPlaylist.objects.get",
+        ) as mock_get:
             mock_playlist = Mock()
             mock_playlist.id = 1
             mock_playlist.name = "Test Playlist"
@@ -143,15 +134,14 @@ class TestPlaylistService:
             mock_playlist.enabled = True
             mock_playlist.auto_track_artists = True
             mock_playlist.last_synced_at = None
-            mock_aget.return_value = mock_playlist
+            mock_get.return_value = mock_playlist
 
             result = await playlist_service.get_by_id("test123")
 
             assert result is not None
-            assert result.id == "test123"  # Extracted from URL
+            assert result.id == 1
             assert result.name == "Test Playlist"
-            assert result.spotify_url == "https://open.spotify.com/playlist/test123"
-            assert result.is_tracked is True
+            assert result.url == "https://open.spotify.com/playlist/test123"
             assert result.auto_track_artists is True
 
 

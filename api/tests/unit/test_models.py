@@ -70,9 +70,10 @@ class TestAlbumModel:
             spotify_gid="album123",
             spotify_uri="spotify:album:album123",
         )
-        # Django's default __str__ method returns "Album object (id)"
-        assert "Album object" in str(album)
-        assert str(album.id) in str(album)
+        # Project defines a custom __str__ for Album including name and artist
+        album_str = str(album)
+        assert "Test Album" in album_str
+        assert sample_artist.name in album_str
 
 
 @pytest.mark.django_db

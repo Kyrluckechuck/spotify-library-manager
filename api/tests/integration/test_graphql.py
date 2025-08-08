@@ -247,4 +247,5 @@ class TestArtistMutations(TransactionTestCase):
 
         assert result.errors is None
         assert result.data["untrackArtist"]["success"] is True
-        assert result.data["untrackArtist"]["artist"]["tracked"] is False
+        # GraphQL model uses isTracked field name
+        assert result.data["untrackArtist"]["artist"]["isTracked"] is False
