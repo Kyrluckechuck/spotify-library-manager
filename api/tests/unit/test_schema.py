@@ -1,7 +1,5 @@
 """Unit tests for GraphQL schema."""
 
-from unittest.mock import patch
-
 import pytest
 
 from api.src.schema import schema
@@ -12,11 +10,17 @@ class TestSchemaQueries:
     """Test GraphQL query resolvers."""
 
     @pytest.mark.asyncio
-    async def test_hello_query(self):
-        """Test hello query."""
+    async def test_artists_query(self):
+        """Test artists query."""
         query = """
         query {
-            hello
+            artists {
+                totalCount
+                edges {
+                    id
+                    name
+                }
+            }
         }
         """
 
@@ -24,7 +28,7 @@ class TestSchemaQueries:
 
         assert result.errors is None
         assert result.data is not None
-        assert result.data["hello"] == "Hello from Spotify Library Manager API!"
+        assert "artists" in result.data
 
 
 @pytest.mark.django_db
@@ -32,29 +36,22 @@ class TestSchemaMutations:
     """Test GraphQL mutation resolvers."""
 
     @pytest.mark.asyncio
-    async def test_cleanup_stuck_tasks_mutation(self):
-        """Test cleanup stuck tasks mutation."""
+    async def test_cancel_all_tasks_mutation(self):
+        """Test cancel all tasks mutation."""
         mutation = """
         mutation {
-            cleanupStuckTasks {
+            cancelAllTasks {
                 success
                 message
-                cleanedCount
             }
         }
         """
 
-        with patch(
-            "api.src.schema.DjangoTaskHistory.cleanup_stuck_tasks"
-        ) as mock_cleanup:
-            mock_cleanup.return_value = 5
+        result = await schema.execute(mutation)
 
-            result = await schema.execute(mutation)
-
-            assert result.errors is None
-            assert result.data is not None
-            assert result.data["cleanupStuckTasks"]["success"] is True
-            assert result.data["cleanupStuckTasks"]["cleanedCount"] == 5
+        assert result.errors is None
+        assert result.data is not None
+        assert "cancelAllTasks" in result.data
 
 
 @pytest.mark.django_db

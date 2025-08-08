@@ -28,7 +28,7 @@ class TestIsolatedIntegration:
                 artist {{
                     id
                     name
-                    tracked
+                    isTracked
                 }}
             }}
         }}
@@ -39,7 +39,7 @@ class TestIsolatedIntegration:
         assert result.errors is None
         assert result.data is not None
         assert result.data["trackArtist"]["success"] is True
-        assert result.data["trackArtist"]["artist"]["tracked"] is True
+        assert result.data["trackArtist"]["artist"]["isTracked"] is True
 
         # Verify in database
         await sync_to_async(artist.refresh_from_db)()
@@ -148,7 +148,7 @@ class TestIsolatedIntegration:
                 edges {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }

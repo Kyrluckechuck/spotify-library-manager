@@ -25,7 +25,7 @@ class TestArtistMutations(TransactionTestCase):
                 artist {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }
@@ -36,7 +36,7 @@ class TestArtistMutations(TransactionTestCase):
 
         assert result.errors is None
         assert result.data["trackArtist"]["success"] is True
-        assert result.data["trackArtist"]["artist"]["tracked"] is True
+        assert result.data["trackArtist"]["artist"]["isTracked"] is True
 
     async def test_track_nonexistent_artist(self):
         """Test tracking a non-existent artist."""
@@ -48,7 +48,7 @@ class TestArtistMutations(TransactionTestCase):
                 artist {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }
@@ -75,7 +75,7 @@ class TestArtistMutations(TransactionTestCase):
                 artist {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }
@@ -86,7 +86,7 @@ class TestArtistMutations(TransactionTestCase):
 
         assert result.errors is None
         assert result.data["untrackArtist"]["success"] is True
-        assert result.data["untrackArtist"]["artist"]["tracked"] is False
+        assert result.data["untrackArtist"]["artist"]["isTracked"] is False
 
 
 class TestAlbumMutations(TransactionTestCase):
@@ -231,14 +231,13 @@ class TestPlaylistMutations(TransactionTestCase):
 class TestTaskMutations(TransactionTestCase):
     """Test task-related mutations."""
 
-    async def test_cleanup_stuck_tasks(self):
-        """Test cleaning up stuck tasks."""
+    async def test_cancel_all_tasks(self):
+        """Test canceling all tasks."""
         mutation = """
-        mutation CleanupStuckTasks {
-            cleanupStuckTasks {
+        mutation CancelAllTasks {
+            cancelAllTasks {
                 success
                 message
-                cleanedCount
             }
         }
         """
@@ -246,5 +245,4 @@ class TestTaskMutations(TransactionTestCase):
         result = await schema.execute(mutation)
 
         assert result.errors is None
-        assert result.data["cleanupStuckTasks"]["success"] is True
-        assert "cleaned" in result.data["cleanupStuckTasks"]["message"].lower()
+        assert result.data["cancelAllTasks"]["success"] is True

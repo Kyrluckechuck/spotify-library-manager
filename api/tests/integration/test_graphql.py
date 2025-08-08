@@ -24,7 +24,7 @@ class TestArtistQueries(TransactionTestCase):
                 edges {
                     id
                     name
-                    tracked
+                    isTracked
                 }
                 totalCount
             }
@@ -48,25 +48,25 @@ class TestArtistQueries(TransactionTestCase):
         )
 
         query = """
-        query Artists($tracked: Boolean) {
-            artists(tracked: $tracked) {
+        query Artists($isTracked: Boolean) {
+            artists(isTracked: $isTracked) {
                 edges {
                     id
                     name
-                    tracked
+                    isTracked
                 }
                 totalCount
             }
         }
         """
 
-        variables = {"tracked": True}
+        variables = {"isTracked": True}
         result = await schema.execute(query, variable_values=variables)
 
         assert result.errors is None
         # Should only return tracked artists
         for artist in result.data["artists"]["edges"]:
-            assert artist["tracked"] is True
+            assert artist["isTracked"] is True
 
     async def test_artists_query_with_pagination(self):
         """Test artists query with pagination."""
@@ -99,8 +99,8 @@ class TestArtistQueries(TransactionTestCase):
         assert len(result.data["artists"]["edges"]) <= 1
         assert result.data["artists"]["totalCount"] >= 1
 
-    async def test_artists_query_with_sorting(self):
-        """Test artists query with sorting."""
+    async def test_artists_query_with_search(self):
+        """Test artists query with search."""
         # Create test data
         await sync_to_async(Artist.objects.create)(
             name="Zebra Artist", gid="zebra123", tracked=True
@@ -110,8 +110,8 @@ class TestArtistQueries(TransactionTestCase):
         )
 
         query = """
-        query Artists($sortBy: String, $sortDirection: String) {
-            artists(sortBy: $sortBy, sortDirection: $sortDirection) {
+        query Artists($search: String) {
+            artists(search: $search) {
                 edges {
                     id
                     name
@@ -121,7 +121,7 @@ class TestArtistQueries(TransactionTestCase):
         }
         """
 
-        variables = {"sortBy": "name", "sortDirection": "asc"}
+        variables = {"search": "Zebra"}
         result = await schema.execute(query, variable_values=variables)
 
         assert result.errors is None
@@ -185,7 +185,7 @@ class TestArtistMutations(TransactionTestCase):
                 artist {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }
@@ -196,7 +196,7 @@ class TestArtistMutations(TransactionTestCase):
 
         assert result.errors is None
         assert result.data["trackArtist"]["success"] is True
-        assert result.data["trackArtist"]["artist"]["tracked"] is True
+        assert result.data["trackArtist"]["artist"]["isTracked"] is True
 
     async def test_track_nonexistent_artist(self):
         """Test tracking non-existent artist."""
@@ -208,7 +208,7 @@ class TestArtistMutations(TransactionTestCase):
                 artist {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }
@@ -236,7 +236,7 @@ class TestArtistMutations(TransactionTestCase):
                 artist {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }

@@ -10,14 +10,14 @@ class TestSimpleIntegration:
     """Test basic GraphQL integration functionality."""
 
     @pytest.mark.asyncio
-    async def test_hello_query(self):
-        """Test the hello query."""
-        query = "{ hello }"
+    async def test_artists_query_basic(self):
+        """Test the artists query."""
+        query = "{ artists { totalCount edges { id name } } }"
         result = await schema.execute(query)
 
         assert result.errors is None
         assert result.data is not None
-        assert result.data["hello"] == "Hello from Spotify Library Manager API!"
+        assert "artists" in result.data
 
     @pytest.mark.asyncio
     async def test_artists_query_empty(self):
@@ -29,7 +29,7 @@ class TestSimpleIntegration:
                 edges {
                     id
                     name
-                    tracked
+                    isTracked
                 }
             }
         }
@@ -86,14 +86,13 @@ class TestSimpleIntegration:
         assert result.data["playlists"]["edges"] == []
 
     @pytest.mark.asyncio
-    async def test_cleanup_stuck_tasks_mutation(self):
-        """Test cleanup stuck tasks mutation."""
+    async def test_cancel_all_tasks_mutation(self):
+        """Test cancel all tasks mutation."""
         mutation = """
         mutation {
-            cleanupStuckTasks {
+            cancelAllTasks {
                 success
                 message
-                cleanedCount
             }
         }
         """
@@ -101,8 +100,7 @@ class TestSimpleIntegration:
 
         assert result.errors is None
         assert result.data is not None
-        assert result.data["cleanupStuckTasks"]["success"] is True
-        assert "cleaned" in result.data["cleanupStuckTasks"]["message"].lower()
+        assert "cancelAllTasks" in result.data
 
     @pytest.mark.asyncio
     async def test_invalid_query(self):

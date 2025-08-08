@@ -39,7 +39,7 @@ class TestFactoryBoyIntegration:
         result = service._to_graphql_type(artist)
 
         assert result.name == artist.name
-        assert result.id == artist.gid
+        assert result.id == artist.id
         assert result.is_tracked == artist.tracked
 
     def test_album_service_with_factories(self):
@@ -62,8 +62,8 @@ class TestFactoryBoyIntegration:
         result = service._to_graphql_type(album)
 
         assert result.name == album.name
-        assert result.is_wanted == album.wanted
-        assert result.is_downloaded == album.downloaded
+        assert result.wanted == album.wanted
+        assert result.downloaded == album.downloaded
         assert result.artist_id is not None  # Automatically created!
 
     def test_playlist_service_with_factories(self):
@@ -74,7 +74,7 @@ class TestFactoryBoyIntegration:
         result = service._to_graphql_type(playlist)
 
         assert result.name == playlist.name
-        assert result.is_tracked == playlist.enabled
+        assert result.enabled == playlist.enabled
 
     def test_complex_scenario_with_factories(self):
         """Test complex scenarios with Factory Boy - relationships handled automatically."""
