@@ -22,12 +22,10 @@ type TaskType = 'sync' | 'download' | 'fetch' | 'all';
 type EntityType = 'artist' | 'album' | 'playlist' | 'all';
 
 function Tasks() {
-  // State for active tasks view
   const [activeTasksFilter, setActiveTasksFilter] = useState<TaskType>('all');
   const [activeTasksEntityFilter, setActiveTasksEntityFilter] =
     useState<EntityType>('all');
 
-  // State for task history view
   const [historyFilter, setHistoryFilter] = useState<TaskStatus>('all');
   const [historyTypeFilter, setHistoryTypeFilter] = useState<TaskType>('all');
   const [historyEntityFilter, setHistoryEntityFilter] =
@@ -35,13 +33,11 @@ function Tasks() {
   const [pageSize, setPageSize] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // UI state for collapsible sections
   const [expandedLogs, setExpandedLogs] = useState<Record<number, boolean>>({});
   const [expandedHistoryLogs, setExpandedHistoryLogs] = useState<
     Record<number, boolean>
   >({});
 
-  // Task cancellation mutations
   const [cancelTasksByName] = useMutation(CancelTasksByNameDocument);
   const [cancelRunningTasksByName] = useMutation(
     CancelRunningTasksByNameDocument
@@ -64,30 +60,26 @@ function Tasks() {
     },
     fetchPolicy: 'cache-first',
     notifyOnNetworkStatusChange: false,
-    pollInterval: 8000, // Poll every 8 seconds for task history updates
+    pollInterval: 8000,
   });
 
-  // Queue status query
   const {
     data: queueData,
     loading: queueLoading,
     refetch: refetchQueue,
   } = useQuery(GetQueueStatusDocument, {
-    pollInterval: 5000, // Poll every 5 seconds for queue updates
+    pollInterval: 5000,
   });
 
-  // Normalize task history edges to nodes for easier processing
   const historyNodes: TaskHistory[] =
     historyData?.taskHistory?.edges?.map(
       (edge: { node: TaskHistory }) => edge.node
     ) || [];
 
-  // Get active tasks from the task history
   const realActiveTasks = historyNodes.filter(
     (task: TaskHistory) => task.status === 'RUNNING'
   );
 
-  // Filter active tasks
   const filteredActiveTasks = realActiveTasks.filter((task: TaskHistory) => {
     if (
       activeTasksFilter !== 'all' &&
@@ -112,7 +104,6 @@ function Tasks() {
     (task: TaskHistory) => task.status === 'FAILED'
   );
 
-  // Handle task cancellation
   const handleCancelAllTasks = async () => {
     if (
       confirm(
@@ -184,7 +175,6 @@ function Tasks() {
 
   return (
     <div className='space-y-8'>
-      {/* Page Header */}
       <div className='flex items-center justify-between'>
         <div>
           <h1 className='text-3xl font-bold text-gray-900'>Background Tasks</h1>
@@ -202,7 +192,6 @@ function Tasks() {
           </div>
           <button
             onClick={() => {
-              // Refetch task history
               window.location.reload();
             }}
             className='px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm'
@@ -212,7 +201,6 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Statistics Dashboard */}
       <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
         <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
           <div className='flex items-center'>
@@ -299,7 +287,6 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Huey Queue Management Section */}
       <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
         <div className='px-6 py-4 border-b border-gray-200'>
           <div className='flex items-center justify-between'>
@@ -327,7 +314,6 @@ function Tasks() {
             </div>
           ) : (
             <div className='space-y-4'>
-              {/* Task Counts */}
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                 {queueData?.queueStatus?.taskCounts?.map(
                   (taskCount: TaskCount) => (
@@ -356,7 +342,6 @@ function Tasks() {
                 )}
               </div>
 
-              {/* Cancel All Button */}
               <div className='flex justify-center pt-4 border-t border-gray-200'>
                 <button
                   onClick={handleCancelAllTasks}
@@ -370,7 +355,6 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Active Tasks Section */}
       <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
         <div className='px-6 py-4 border-b border-gray-200'>
           <div className='flex items-center justify-between'>
@@ -415,7 +399,6 @@ function Tasks() {
             </div>
           ) : (
             <div className='space-y-4'>
-              {/* Running Tasks */}
               {runningTasks.length > 0 && (
                 <div>
                   <div className='flex items-center justify-between mb-3'>
@@ -460,7 +443,6 @@ function Tasks() {
                 </div>
               )}
 
-              {/* Completed Tasks */}
               {completedTasks.length > 0 && (
                 <div>
                   <h3 className='text-sm font-medium text-gray-700 mb-3'>
@@ -501,7 +483,6 @@ function Tasks() {
                 </div>
               )}
 
-              {/* Failed Tasks */}
               {failedTasks.length > 0 && (
                 <div>
                   <h3 className='text-sm font-medium text-gray-700 mb-3'>
@@ -546,7 +527,6 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Task History Section */}
       <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
         <div className='px-6 py-4 border-b border-gray-200'>
           <div className='flex items-center justify-between'>
@@ -797,7 +777,6 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Task Logs Section */}
       <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
         <div className='px-6 py-4 border-b border-gray-200'>
           <h2 className='text-lg font-semibold text-gray-900'>Task Logs</h2>
@@ -884,8 +863,6 @@ function Tasks() {
           )}
         </div>
       </div>
-
-      {/* Statistics Dashboard removed from bottom after moving to top */}
     </div>
   );
 }
