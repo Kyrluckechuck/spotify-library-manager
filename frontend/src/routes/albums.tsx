@@ -34,7 +34,7 @@ function Albums() {
 
   const client = useApolloClient();
 
-  // Memoize query variables to prevent unnecessary re-renders
+  // Memoize query variables
   const queryVariables = useMemo(
     () => ({
       artistId: artistId || undefined,
@@ -64,12 +64,12 @@ function Albums() {
       fetchPolicy: 'cache-and-network',
       nextFetchPolicy: 'cache-first',
       notifyOnNetworkStatusChange: true,
-      pollInterval: 0, // No polling needed since we're not tracking frontend tasks
+      pollInterval: 0,
       errorPolicy: 'all',
-      // Keep previous data while loading new data
+      // Keep previous data while loading
       returnPartialData: true,
       onCompleted: data => {
-        // Pre-fetch other filter combinations to eliminate future jitter
+        // Pre-fetch other filter combinations
         if (data && networkStatus !== 3) {
           // Not refetching
           const baseVariables = {
@@ -96,7 +96,7 @@ function Albums() {
                   fetchPolicy: 'cache-first',
                 })
                 .catch(() => {
-                  // Silently handle errors for pre-fetching
+                  // Ignore pre-fetch errors
                 });
             });
           });
@@ -105,14 +105,14 @@ function Albums() {
     }
   );
 
-  // Get artist information if filtering by artist
+  // Fetch artist details if filtering by artist
   const { data: artistData } = useQuery(GetArtistDocument, {
     variables: { id: artistId ?? 0 },
     skip: !artistId,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
     notifyOnNetworkStatusChange: false,
-    pollInterval: 0, // No polling for artist data
+    pollInterval: 0,
   });
 
   const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
@@ -122,7 +122,7 @@ function Albums() {
   ) => {
     setWantedFilter(newFilter);
 
-    // Pre-fetch data for the new filter to eliminate jitter
+    // Pre-fetch data for the new filter
     const newVariables = {
       ...queryVariables,
       wanted: newFilter === 'all' ? undefined : newFilter === 'wanted',
@@ -144,7 +144,7 @@ function Albums() {
   ) => {
     setDownloadFilter(newFilter);
 
-    // Pre-fetch data for the new filter to eliminate jitter
+    // Pre-fetch data for the new filter
     const newVariables = {
       ...queryVariables,
       downloaded: newFilter === 'all' ? undefined : newFilter === 'downloaded',
@@ -171,7 +171,7 @@ function Albums() {
     setSortField(field);
     setSortDirection(newDirection);
 
-    // Pre-fetch data for the new sort to eliminate jitter
+    // Pre-fetch data for the new sort
     const newVariables = {
       ...queryVariables,
       sortBy: field,
@@ -192,7 +192,7 @@ function Albums() {
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
 
-    // Pre-fetch data for the new page size to eliminate jitter
+    // Pre-fetch data for the new page size
     const newVariables = {
       ...queryVariables,
       first: newPageSize,
@@ -252,11 +252,11 @@ function Albums() {
     }
   };
 
-  // Show subtle loading indicator for filter changes while keeping current data visible
+  // Subtle loading indicator for filter changes
   const isRefetching = networkStatus === 3; // NetworkStatus.refetch
-  const isInitialLoading = networkStatus === 1; // NetworkStatus.loading (initial load)
+  const isInitialLoading = networkStatus === 1; // initial load
 
-  // Only show loading state on initial load, not on filter changes
+  // Only show loading state on initial load
   if (isInitialLoading && !data) {
     return (
       <section>
@@ -285,7 +285,7 @@ function Albums() {
 
   return (
     <section>
-      {/* Show artist context when filtering by artist */}
+      {/* Artist context when filtering by artist */}
       {artistId && artistData?.artist && (
         <ArtistContext
           artistId={artistId}

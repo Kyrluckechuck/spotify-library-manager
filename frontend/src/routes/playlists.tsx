@@ -55,12 +55,12 @@ function Playlists() {
       fetchPolicy: 'cache-and-network',
       nextFetchPolicy: 'cache-first',
       notifyOnNetworkStatusChange: true,
-      pollInterval: 0, // No polling needed since we're not tracking frontend tasks
+      pollInterval: 0,
       errorPolicy: 'all',
       // Keep previous data while loading new data
       returnPartialData: true,
       onCompleted: data => {
-        // Pre-fetch other filter combinations to eliminate future jitter
+        // Pre-fetch other filter combinations
         if (data && networkStatus !== 3) {
           // Not refetching
           const baseVariables = {
@@ -84,7 +84,7 @@ function Playlists() {
                 fetchPolicy: 'cache-first',
               })
               .catch(() => {
-                // Silently handle errors for pre-fetching
+                // Ignore pre-fetch errors
               });
           });
         }
@@ -100,7 +100,7 @@ function Playlists() {
   ) => {
     setFilter(newFilter);
 
-    // Pre-fetch data for the new filter to eliminate jitter
+    // Pre-fetch data for the new filter
     const newVariables = {
       ...queryVariables,
       enabled: newFilter === 'all' ? undefined : newFilter === 'enabled',
@@ -114,7 +114,7 @@ function Playlists() {
         fetchPolicy: 'cache-first',
       })
       .catch(() => {
-        // Silently handle errors for pre-fetching
+        // Ignore pre-fetch errors
       });
   };
 
@@ -128,7 +128,7 @@ function Playlists() {
     setSortField(field);
     setSortDirection(newDirection);
 
-    // Pre-fetch data for the new sort to eliminate jitter
+    // Pre-fetch data for the new sort
     const newVariables = {
       ...queryVariables,
       sortBy: field,
@@ -142,14 +142,14 @@ function Playlists() {
         fetchPolicy: 'cache-first',
       })
       .catch(() => {
-        // Silently handle errors for pre-fetching
+        // Ignore pre-fetch errors
       });
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
 
-    // Pre-fetch data for the new page size to eliminate jitter
+    // Pre-fetch data for the new page size
     const newVariables = {
       ...queryVariables,
       first: newPageSize,
@@ -162,7 +162,7 @@ function Playlists() {
         fetchPolicy: 'cache-first',
       })
       .catch(() => {
-        // Silently handle errors for pre-fetching
+        // Ignore pre-fetch errors
       });
   };
 
@@ -172,7 +172,7 @@ function Playlists() {
 
   const handleFilterHover = useCallback(
     (hoverFilter: 'all' | 'enabled' | 'disabled') => {
-      // Pre-fetch data on hover to eliminate jitter
+      // Pre-fetch data on hover
       const newVariables = {
         ...queryVariables,
         enabled: hoverFilter === 'all' ? undefined : hoverFilter === 'enabled',
@@ -185,7 +185,7 @@ function Playlists() {
           fetchPolicy: 'cache-first',
         })
         .catch(() => {
-          // Silently handle errors for pre-fetching
+          // Ignore pre-fetch errors
         });
     },
     [queryVariables, client]
@@ -243,11 +243,11 @@ function Playlists() {
     }
   };
 
-  // Show subtle loading indicator for filter changes while keeping current data visible
+  // Subtle loading indicator for filter changes
   const isRefetching = networkStatus === 3; // NetworkStatus.refetch
   const isInitialLoading = networkStatus === 1; // NetworkStatus.loading (initial load)
 
-  // Only show loading state on initial load, not on filter changes
+  // Only show loading state on initial load
   if (isInitialLoading && !data) {
     return (
       <section>

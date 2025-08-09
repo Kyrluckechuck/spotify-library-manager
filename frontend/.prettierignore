@@ -1,0 +1,4 @@
+node_modules/
+dist/
+coverage/
+src/routeTree.gen.ts

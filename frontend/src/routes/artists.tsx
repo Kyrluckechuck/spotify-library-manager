@@ -9,17 +9,17 @@ import {
 } from '../types/generated/graphql';
 import { useState, useMemo } from 'react';
 
-// Shared Components
+// Layout & shared components
 import { PageContainer } from '../components/layout/PageContainer';
 import { PageHeader } from '../components/layout/PageHeader';
 import { DataTable } from '../components/common/DataTable';
 import { FilterBar } from '../components/common/FilterBar';
 
-// Specific Components
+// Artists components
 import { ArtistFilters } from '../components/artists/ArtistFilters';
 import { ArtistsTable } from '../components/artists/ArtistsTable';
 
-// Custom Hooks
+// Hooks
 import { useDataTable } from '../hooks/useDataTable';
 import type { SortField } from '../components/artists/ArtistsTable';
 

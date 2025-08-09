@@ -49,26 +49,29 @@ migrate:
 createsuperuser:
 	cd api && python manage.py createsuperuser
 
-# Testing - Updated to run from root directory with proper PYTHONPATH
+# Testing
 test: test-api test-frontend
 
 test-api:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing
+	PYTHONPATH=.:api python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing
 
 test-api-unit:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
+	PYTHONPATH=.:api python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
 
 test-api-integration:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python -m pytest api/tests/integration/test_simple_integration.py -v
+	PYTHONPATH=.:api python -m pytest api/tests/integration/test_simple_integration.py -v
 
 test-api-integration-full:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python -m pytest api/tests/integration/ -v -m integration
+	PYTHONPATH=.:api python -m pytest api/tests/integration/ -v -m integration
 
 test-api-integration-isolated:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python -m pytest api/tests/integration/test_isolated_integration.py -v
+	PYTHONPATH=.:api python -m pytest api/tests/integration/test_isolated_integration.py -v
 
 test-api-coverage:
-	PYTHONPATH=api DJANGO_SETTINGS_MODULE=settings python -m pytest api/tests/ api/src/tests/ --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
+	PYTHONPATH=.:api python -m pytest api/tests/ api/src/tests/ --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
+
+# Convenience alias
+test-backend: test-api
 
 test-frontend:
 	cd frontend && yarn test:run

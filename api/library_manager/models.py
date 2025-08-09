@@ -25,6 +25,10 @@ class Artist(models.Model):
         return ContributingArtist.objects.filter(artist=self).count()
 
     @property
+    def spotify_uri(self) -> str:
+        return f"spotify:artist:{self.gid}"
+
+    @property
     def albums(self) -> dict:
         album_base = Album.objects.filter(
             artist=self, album_type__in=ALBUM_TYPES_TO_DOWNLOAD

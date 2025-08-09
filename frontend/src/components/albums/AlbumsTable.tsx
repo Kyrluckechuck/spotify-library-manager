@@ -213,8 +213,11 @@ export function AlbumsTable({
                     </Link>
                   )}
                   <Link
-                    to='/albums'
-                    search={{ artistId: album.artistId || undefined }}
+                    to='/songs'
+                    search={{
+                      artistId: album.artistId || undefined,
+                      search: undefined,
+                    }}
                     className='text-green-600 hover:text-green-900 underline'
                   >
                     View Songs

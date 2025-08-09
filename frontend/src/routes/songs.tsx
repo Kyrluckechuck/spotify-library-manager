@@ -4,22 +4,24 @@ import { useState, useMemo } from 'react';
 import { GetSongsDocument } from '../types/generated/graphql';
 import type { Song } from '../types/common';
 
-// Shared Components
+// Layout & shared components
 import { PageContainer } from '../components/layout/PageContainer';
 import { PageHeader } from '../components/layout/PageHeader';
 import { DataTable } from '../components/common/DataTable';
 import { FilterBar } from '../components/common/FilterBar';
 
-// Specific Components
+// Songs components
 import { SongsTable } from '../components/songs/SongsTable';
 import type { SortField } from '../components/songs/SongsTable';
 
 function Songs() {
+  const { artistId: artistIdFromSearch, search: initialSearch } =
+    Route.useSearch() as { artistId?: number; search?: string };
   // State management
   const [pageSize, setPageSize] = useState(50);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch || '');
   const [filter, setFilter] = useState<
     'all' | 'downloaded' | 'failed' | 'unavailable'
   >('all');
@@ -28,11 +30,12 @@ function Songs() {
   const queryVariables = useMemo(
     () => ({
       first: pageSize,
+      artistId: artistIdFromSearch || undefined,
       sortBy: sortField,
       sortDirection: sortDirection,
       search: searchQuery || undefined,
     }),
-    [pageSize, sortField, sortDirection, searchQuery]
+    [pageSize, sortField, sortDirection, searchQuery, artistIdFromSearch]
   );
 
   const queryVariablesWithFilter = useMemo(
@@ -185,4 +188,8 @@ function Songs() {
 
 export const Route = createFileRoute('/songs')({
   component: Songs,
+  validateSearch: (search: Record<string, unknown>) => ({
+    artistId: search.artistId as number | undefined,
+    search: (search.search as string | undefined) || undefined,
+  }),
 });
