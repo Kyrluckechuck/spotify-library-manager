@@ -1,5 +1,7 @@
+import logging
 import time
-from typing import Optional
+import uuid
+from typing import Optional, cast
 
 from django.conf import settings
 from django.db.models.functions import Now
@@ -43,8 +45,6 @@ def create_task_history(
         task_id = f"{task_type}-{entity_type_str.lower()}-{entity_id}"
     else:
         # Create task history without Huey context
-        import uuid
-
         task_id = f"{task_name or 'unknown'}-{uuid.uuid4().hex[:8]}"
 
     # Check if task history already exists for this task
@@ -95,7 +95,8 @@ def check_task_cancellation(task_history: TaskHistory) -> bool:
     """Check if the task has been cancelled by checking the database status."""
     # Refresh from database to get latest status
     task_history.refresh_from_db()
-    return task_history.status == "CANCELLED"
+    status_str: str = cast(str, task_history.status)
+    return status_str == "CANCELLED"
 
 
 def check_and_update_progress(
@@ -253,10 +254,8 @@ def download_missing_albums_for_artist(
             complete_task(task_history, success=True)
 
     except Exception as e:
-        import logging
-
         logger = logging.getLogger("api.library_manager")
-        logger.error(f"Error in sync_tracked_playlist_internal: {e}", exc_info=True)
+        logger.error("Error in sync_tracked_playlist_internal: %s", e, exc_info=True)
         if task_history:
             complete_task(task_history, success=False, error_message=str(e))
         raise

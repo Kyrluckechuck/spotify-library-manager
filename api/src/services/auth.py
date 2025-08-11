@@ -71,8 +71,8 @@ class AuthService:
     def verify_token(self, token: str) -> Optional[str]:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username: str = payload.get("sub")
-            if username is None:
+            username = payload.get("sub")
+            if not isinstance(username, str):
                 return None
             return username
         except JWTError:

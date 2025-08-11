@@ -5,7 +5,10 @@ import strawberry
 
 
 @strawberry.scalar(
-    description="The `DateTime` scalar type represents a date and time following the ISO 8601 standard."
+    description=(
+        "The `DateTime` scalar type represents a date and time following the "
+        "ISO 8601 standard."
+    )
 )
 class DateTime:
     @staticmethod

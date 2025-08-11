@@ -117,10 +117,11 @@ lint-api-isort:
 	cd api && python -m isort --check-only --diff .
 
 lint-api-mypy:
-	cd api && python -m mypy src/ library_manager/ --config-file ../pyproject.toml
+	cd api && python -m mypy src/ --config-file ../pyproject.toml
 
 lint-api-bandit:
-	cd api && python -m bandit -r src/ library_manager/ -f json -o bandit-report.json || true
+	mkdir -p reports
+	cd api && python -m bandit -r src/ library_manager/ -f json -o ../reports/bandit-report.json || true
 
 lint-api-pylint:
 	cd api && python -m pylint src/ library_manager/ --rcfile ../pyproject.toml

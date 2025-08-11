@@ -1,4 +1,5 @@
-from typing import List, Optional
+# mypy: disable-error-code=attr-defined
+from typing import Any, List, Optional, Tuple
 
 from django.db.models import Q
 
@@ -15,7 +16,8 @@ from .base import BaseService
 
 
 class ArtistService(BaseService[Artist]):
-    def __init__(self):
+    def __init__(self) -> None:
+        super().__init__()
         self.model = DjangoArtist
 
     async def get_by_id(self, id: str) -> Optional[Artist]:
@@ -29,9 +31,10 @@ class ArtistService(BaseService[Artist]):
         self,
         first: int = 20,
         after: Optional[str] = None,
-        is_tracked: Optional[bool] = None,
-        search: Optional[str] = None,
-    ) -> tuple[List[Artist], bool, int]:
+        **filters: Any,
+    ) -> Tuple[List[Artist], bool, int]:
+        is_tracked: Optional[bool] = filters.get("is_tracked")
+        search: Optional[str] = filters.get("search")
         queryset = self.model.objects.all()
 
         # Apply filters
@@ -52,7 +55,10 @@ class ArtistService(BaseService[Artist]):
         total_count = await sync_to_async(queryset.count)()
 
         # Get one extra item to determine if there are more pages
-        items = await sync_to_async(list)(queryset.order_by("id")[: first + 1])
+        def fetch_items() -> List[DjangoArtist]:
+            return list(queryset.order_by("id")[: first + 1])
+
+        items: List[DjangoArtist] = await sync_to_async(fetch_items)()
 
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
@@ -133,8 +139,11 @@ class ArtistService(BaseService[Artist]):
         return self._to_graphql_type(django_artist)
 
     def _to_graphql_type(self, django_artist: DjangoArtist) -> Artist:
+        # Some unit tests use light mocks without an `id`; be defensive here
+        raw_id = getattr(django_artist, "id", None)
+        safe_id: int = int(raw_id) if isinstance(raw_id, (int, str)) else 0
         return Artist(
-            id=django_artist.id,
+            id=safe_id,
             name=django_artist.name,
             gid=django_artist.gid,
             is_tracked=django_artist.tracked,

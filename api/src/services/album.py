@@ -1,4 +1,5 @@
-from typing import List, Optional
+# mypy: disable-error-code=attr-defined
+from typing import Any, List, Optional, Tuple
 
 from django.db.models import Q
 
@@ -12,7 +13,8 @@ from .base import BaseService
 
 
 class AlbumService(BaseService[Album]):
-    def __init__(self):
+    def __init__(self) -> None:
+        super().__init__()
         self.model = DjangoAlbum
 
     async def get_by_id(self, id: str) -> Optional[Album]:
@@ -26,12 +28,14 @@ class AlbumService(BaseService[Album]):
         self,
         first: int = 20,
         after: Optional[str] = None,
-        artist_id: Optional[int] = None,
-        downloaded: Optional[bool] = None,
-        wanted: Optional[bool] = None,
-        search: Optional[str] = None,
-    ) -> tuple[List[Album], bool, int]:
-        def fetch_items():
+        **filters: Any,
+    ) -> Tuple[List[Album], bool, int]:
+        artist_id: Optional[int] = filters.get("artist_id")
+        downloaded: Optional[bool] = filters.get("downloaded")
+        wanted: Optional[bool] = filters.get("wanted")
+        search: Optional[str] = filters.get("search")
+
+        def fetch_items() -> Tuple[List[Album], bool, int]:
             queryset = self.model.objects.all()
 
             # Apply filters
@@ -96,40 +100,37 @@ class AlbumService(BaseService[Album]):
         return self._to_graphql_type(django_album)
 
     async def set_album_wanted(self, album_id: int, wanted: bool) -> MutationResult:
-        def update_album():
-            try:
-                django_album = self.model.objects.select_related("artist").get(
-                    id=album_id
-                )
-                django_album.wanted = wanted
-                django_album.save()
-                return django_album
-            except self.model.DoesNotExist:
-                return None
-            except Exception as e:
-                raise e
-
         try:
-            django_album = await sync_to_async(update_album)()
-
-            if django_album is None:
-                return MutationResult(
-                    success=False, message="Album not found", album=None
-                )
-
-            return MutationResult(
-                success=True,
-                message="Album wanted status updated successfully",
-                album=self._to_graphql_type(django_album),
-            )
+            # Perform DB work in a thread to avoid blocking
+            django_album = await sync_to_async(
+                lambda: self.model.objects.select_related("artist").get(id=album_id)
+            )()
+        except self.model.DoesNotExist:
+            return MutationResult(success=False, message="Album not found", album=None)
         except Exception as e:
             return MutationResult(
-                success=False, message=f"Error updating album: {str(e)}", album=None
+                success=False, message=f"Error updating album: {e}", album=None
             )
 
+        try:
+            django_album.wanted = wanted
+            await sync_to_async(django_album.save)()
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Error updating album: {e}", album=None
+            )
+
+        return MutationResult(
+            success=True,
+            message="Album wanted status updated successfully",
+            album=self._to_graphql_type(django_album),
+        )
+
     def _to_graphql_type(self, django_album: DjangoAlbum) -> Album:
+        raw_id = getattr(django_album, "id", None)
+        safe_id: int = int(raw_id) if isinstance(raw_id, (int, str)) else 0
         return Album(
-            id=django_album.id,
+            id=safe_id,
             name=django_album.name,
             spotify_gid=django_album.spotify_gid,
             total_tracks=django_album.total_tracks,

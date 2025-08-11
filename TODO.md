@@ -92,12 +92,6 @@
   - [ ] Extract playlist ID from task args in event bus
   - [ ] Extract album ID from task args in event bus
 
-## Important things
-- There are a lot of inline imports in the frontend folder. Should those be replaced with beginning of file imports?
-- There are a lot of inline imports in the api folder. Should those be replaced with beginning of file imports?
-- I'd also love to add the ability to search for a specific song, artist, or playlist, so essentially spotify search, to the "app". If you're still working on stuff, just add this to the TODO file for now.
-
-
 ## Backend Improvements
 
 ### Async/Await Standardization
@@ -175,3 +169,7 @@
   - [ ] Implement query result caching
   - [ ] Add optimistic updates for mutations
   - [ ] Optimize bundle size and loading times
+
+
+## Important things
+- I'd also love to add the ability to search for a specific song, artist, or playlist, so essentially spotify search, to the "app". If you're still working on stuff, just add this to the TODO file for now.

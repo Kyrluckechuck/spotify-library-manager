@@ -240,12 +240,12 @@ class TaskHistory(models.Model):
         """Get expected duration based on task type and entity"""
         if self.type == "SYNC":
             return 5  # Sync operations should be quick
-        elif self.type == "DOWNLOAD":
+        if self.type == "DOWNLOAD":
             if self.entity_type == "PLAYLIST":
                 return 15  # Playlist downloads can take longer
-            elif self.entity_type == "ALBUM":
+            if self.entity_type == "ALBUM":
                 return 10  # Album downloads
-        elif self.type == "FETCH":
+        if self.type == "FETCH":
             return 3  # Fetch operations should be fast
         return 30  # Default fallback
 

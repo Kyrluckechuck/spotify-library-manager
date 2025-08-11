@@ -1,4 +1,5 @@
 """Main FastAPI application module. Sets up Django before any ORM/model usage."""
+# pylint: disable=wrong-import-position
 
 import os
 import sys
@@ -18,14 +19,16 @@ sys.path.insert(0, str(API_DIR))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 django.setup()
 
-# Import the complete schema after Django setup
-from .schema import schema  # noqa: E402
+# Import the complete schema after Django setup. During static analysis this import
+# may fail before Django is configured; suppress the false-positive for linting.
+from .schema import schema  # noqa: E402  # pylint: disable=import-error,no-name-in-module
 
 
 class Settings:
     """Application settings."""
 
-    _instance = None
+    _instance: "Settings | None" = None
+    _initialized: bool
 
     def __new__(cls) -> "Settings":
         if cls._instance is None:
@@ -34,7 +37,7 @@ class Settings:
         return cls._instance
 
     def __init__(self) -> None:
-        if self._initialized:
+        if getattr(self, "_initialized", False):
             return
         self._initialized = True
 

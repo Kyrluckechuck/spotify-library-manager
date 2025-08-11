@@ -1,3 +1,10 @@
+"""Song service.
+
+Note: Strawberry runtime-decorated types trigger attr-defined false-positives in MyPy
+when instantiated. We disable that check for this module to avoid noisy errors.
+"""
+
+# mypy: disable-error-code=attr-defined
 from typing import List, Optional, Tuple
 
 from django.db.models import Q
@@ -10,21 +17,38 @@ from ..graphql_types.models import Song
 from .base import BaseService
 
 
-class SongService(BaseService):
-    def __init__(self):
+class SongService(BaseService[Song]):
+    def __init__(self) -> None:
         super().__init__()
         self.model = DjangoSong
 
     async def get_connection(
         self,
-        first: Optional[int] = 20,
+        first: int = 20,
         after: Optional[str] = None,
-        artist_id: Optional[int] = None,
-        downloaded: Optional[bool] = None,
-        unavailable: Optional[bool] = None,
-        search: Optional[str] = None,
+        **filters: Optional[object],
     ) -> Tuple[List[Song], bool, int]:
         """Get paginated songs with filtering."""
+        # Extract supported filters
+        artist_id = (
+            filters.get("artist_id")
+            if isinstance(filters.get("artist_id"), int)
+            else None
+        )
+        downloaded = (
+            filters.get("downloaded")
+            if isinstance(filters.get("downloaded"), bool)
+            else None
+        )
+        unavailable = (
+            filters.get("unavailable")
+            if isinstance(filters.get("unavailable"), bool)
+            else None
+        )
+        search = (
+            filters.get("search") if isinstance(filters.get("search"), str) else None
+        )
+
         # Copy the exact pattern from ArtistService
         queryset = self.model.objects.all()
 
@@ -52,7 +76,10 @@ class SongService(BaseService):
         total_count = await sync_to_async(queryset.count)()
 
         # Get one extra item to determine if there are more pages
-        items = await sync_to_async(list)(queryset.order_by("id")[: first + 1])
+        def fetch_items() -> List[DjangoSong]:
+            return list(queryset.order_by("id")[: first + 1])
+
+        items: List[DjangoSong] = await sync_to_async(fetch_items)()
 
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
@@ -69,10 +96,10 @@ class SongService(BaseService):
             total_count,
         )
 
-    async def get_by_id(self, song_id: str) -> Optional[Song]:
+    async def get_by_id(self, id: str) -> Optional[Song]:
         """Get a song by ID."""
         try:
-            django_song = await self.model.objects.aget(id=song_id)
+            django_song = await self.model.objects.aget(id=id)
             return await self._to_graphql_type(django_song)
         except self.model.DoesNotExist:
             return None
@@ -94,7 +121,7 @@ class SongService(BaseService):
         primary_artist_id = await sync_to_async(lambda: django_song.primary_artist.id)()
 
         return Song(
-            id=django_song.id,
+            id=int(django_song.id),
             name=django_song.name,
             gid=django_song.gid,
             primary_artist=primary_artist_name,

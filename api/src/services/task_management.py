@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from django.utils import timezone
 
@@ -10,7 +10,7 @@ from ..graphql_types.models import MutationResult
 class TaskManagementService:
     """Service for managing Huey background tasks."""
 
-    def get_pending_tasks(self) -> List[Dict[str, any]]:
+    def get_pending_tasks(self) -> List[Dict[str, Any]]:
         """Get all pending tasks with their details."""
         pending_tasks = HUEY.pending()
         task_details = []
@@ -34,7 +34,7 @@ class TaskManagementService:
     def get_task_count_by_name(self) -> Dict[str, int]:
         """Get count of pending tasks grouped by task name."""
         pending_tasks = HUEY.pending()
-        task_counts = {}
+        task_counts: Dict[str, int] = {}
 
         for task in pending_tasks:
             task_name = task.name
@@ -167,7 +167,7 @@ class TaskManagementService:
                 success=True, message=f"No tasks to cancel ({str(e)})"
             )
 
-    def get_queue_status(self) -> Dict[str, any]:
+    def get_queue_status(self) -> Dict[str, Any]:
         """Get overall queue status information."""
         pending_tasks = HUEY.pending()
         task_counts = self.get_task_count_by_name()

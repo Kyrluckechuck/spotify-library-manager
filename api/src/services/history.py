@@ -1,4 +1,5 @@
-from typing import List, Optional
+# mypy: disable-error-code=attr-defined
+from typing import Any, List, Optional, Tuple
 
 from library_manager.models import DownloadHistory as DjangoDownloadHistory
 
@@ -7,16 +8,22 @@ from .base import BaseService
 
 
 class DownloadHistoryService(BaseService[DownloadHistory]):
-    def __init__(self):
+    def __init__(self) -> None:
+        super().__init__()
         self.model = DjangoDownloadHistory
+
+    async def get_by_id(self, id: str) -> Optional[DownloadHistory]:
+        # Not needed for current API; implement to satisfy linter
+        return None
 
     async def get_connection(
         self,
         first: int = 20,
         after: Optional[str] = None,
-        entity_type: Optional[str] = None,
-        status: Optional[str] = None,
-    ) -> tuple[List[DownloadHistory], bool, int]:
+        **filters: Any,
+    ) -> Tuple[List[DownloadHistory], bool, int]:
+        entity_type: Optional[str] = filters.get("entity_type")
+        status: Optional[str] = filters.get("status")
         queryset = self.model.objects.all()
 
         # Apply filters

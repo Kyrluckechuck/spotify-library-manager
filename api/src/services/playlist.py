@@ -1,4 +1,5 @@
-from typing import List, Optional
+# mypy: disable-error-code=attr-defined
+from typing import Any, List, Optional, Tuple
 
 from django.db.models import Q
 
@@ -12,7 +13,8 @@ from .base import BaseService
 
 
 class PlaylistService(BaseService[Playlist]):
-    def __init__(self):
+    def __init__(self) -> None:
+        super().__init__()
         self.model = DjangoPlaylist
 
     async def get_by_id(self, id: str) -> Optional[Playlist]:
@@ -28,9 +30,10 @@ class PlaylistService(BaseService[Playlist]):
         self,
         first: int = 20,
         after: Optional[str] = None,
-        enabled: Optional[bool] = None,
-        search: Optional[str] = None,
-    ) -> tuple[List[Playlist], bool, int]:
+        **filters: Any,
+    ) -> Tuple[List[Playlist], bool, int]:
+        enabled: Optional[bool] = filters.get("enabled")
+        search: Optional[str] = filters.get("search")
         queryset = self.model.objects.all()
 
         # Apply filters
@@ -51,7 +54,10 @@ class PlaylistService(BaseService[Playlist]):
         total_count = await sync_to_async(queryset.count)()
 
         # Get one extra item to determine if there are more pages
-        items = await sync_to_async(list)(queryset.order_by("id")[: first + 1])
+        def fetch_items() -> List[DjangoPlaylist]:
+            return list(queryset.order_by("id")[: first + 1])
+
+        items: List[DjangoPlaylist] = await sync_to_async(fetch_items)()
 
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
@@ -137,8 +143,6 @@ class PlaylistService(BaseService[Playlist]):
             )
 
             # Trigger sync task
-            from library_manager.tasks import sync_tracked_playlist
-
             await sync_to_async(sync_tracked_playlist)(django_playlist)
 
             return MutationResult(
@@ -183,7 +187,7 @@ class PlaylistService(BaseService[Playlist]):
 
     def _to_graphql_type(self, django_playlist: DjangoPlaylist) -> Playlist:
         return Playlist(
-            id=django_playlist.id,
+            id=int(django_playlist.id),
             name=django_playlist.name,
             url=django_playlist.url,
             enabled=django_playlist.enabled,

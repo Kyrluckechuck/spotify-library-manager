@@ -8,6 +8,7 @@ from ..graphql_types.models import (
     Artist,
     ArtistConnection,
     HistoryConnection,
+    HistoryEdge,
     PageInfo,
     Playlist,
     PlaylistConnection,
@@ -31,8 +32,9 @@ class Query:
         is_tracked: Optional[bool] = None,
         search: Optional[str] = None,
     ) -> ArtistConnection:
+        first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.artist.get_connection(
-            first=first, after=after, is_tracked=is_tracked, search=search
+            first=first_int, after=after, is_tracked=is_tracked, search=search
         )
 
         edges = items
@@ -64,8 +66,9 @@ class Query:
         sort_direction: Optional[str] = None,
         search: Optional[str] = None,
     ) -> AlbumConnection:
+        first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.album.get_connection(
-            first=first,
+            first=first_int,
             after=after,
             artist_id=artist_id,
             downloaded=downloaded,
@@ -102,8 +105,9 @@ class Query:
         sort_direction: Optional[str] = None,
         search: Optional[str] = None,
     ) -> SongConnection:
+        first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.song.get_connection(
-            first=first,
+            first=first_int,
             after=after,
             artist_id=artist_id,
             downloaded=downloaded,
@@ -136,8 +140,9 @@ class Query:
         sort_direction: Optional[str] = None,
         search: Optional[str] = None,
     ) -> PlaylistConnection:
+        first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.playlist.get_connection(
-            first=first, after=after, enabled=enabled, search=search
+            first=first_int, after=after, enabled=enabled, search=search
         )
 
         edges = items
@@ -165,14 +170,13 @@ class Query:
         entity_type: Optional[str] = None,
         status: Optional[str] = None,
     ) -> HistoryConnection:
+        first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.history.get_connection(
-            first=first, after=after, entity_type=entity_type, status=status
+            first=first_int, after=after, entity_type=entity_type, status=status
         )
 
-        edges = [
-            strawberry.type("HistoryEdge")(
-                node=item, cursor=services.history.create_cursor(item)
-            )
+        edges: list[HistoryEdge] = [
+            HistoryEdge(node=item, cursor=services.history.create_cursor(item))
             for item in items
         ]
 
@@ -197,8 +201,9 @@ class Query:
         entity_type: Optional[str] = None,
         search: Optional[str] = None,
     ) -> TaskHistoryConnection:
+        first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.task_history.get_connection(
-            first=first,
+            first=first_int,
             after=after,
             status=status,
             type=type,
@@ -206,7 +211,10 @@ class Query:
             search=search,
         )
 
-        edges = [TaskHistoryEdge(node=item, cursor=item.id) for item in items]
+        edges = [
+            TaskHistoryEdge(node=item, cursor=services.task_history.create_cursor(item))
+            for item in items
+        ]
 
         page_info = PageInfo(
             has_next_page=has_next_page,

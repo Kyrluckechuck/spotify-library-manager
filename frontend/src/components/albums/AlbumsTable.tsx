@@ -113,12 +113,12 @@ export function AlbumsTable({
                 Wanted
               </SortableTableHeader>
               <SortableTableHeader
-                field='created_at'
+                field={null}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               >
-                Added
+                Spotify ID
               </SortableTableHeader>
               <SortableTableHeader
                 field={null}
@@ -142,8 +142,8 @@ export function AlbumsTable({
                   <div className='text-sm text-gray-900'>
                     {album.artist && album.artistId ? (
                       <Link
-                        to='/albums'
-                        search={{ artistId: album.artistId }}
+                        to='/artists'
+                        search={{ search: String(album.artistId) }}
                         className='text-indigo-600 hover:text-indigo-900 hover:underline font-medium'
                       >
                         {album.artist}
@@ -191,22 +191,22 @@ export function AlbumsTable({
                     {album.wanted ? 'Yes' : 'No'}
                   </button>
                 </td>
-                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                  {album.spotifyGid}
-                </td>
-                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
+                <td className='px-6 py-4 whitespace-nowrap text-sm'>
                   <a
-                    href={album.spotifyGid}
+                    href={`https://open.spotify.com/album/${album.spotifyGid}`}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='text-indigo-600 hover:text-indigo-900 underline'
+                    title='Open Spotify'
+                    className='text-indigo-600 hover:text-indigo-900 hover:underline'
                   >
-                    Open Spotify
+                    {album.spotifyGid}
                   </a>
+                </td>
+                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
                   {album.artistId && (
                     <Link
-                      to='/albums'
-                      search={{ artistId: album.artistId }}
+                      to='/artists'
+                      search={{ search: String(album.artistId) }}
                       className='text-blue-600 hover:text-blue-900 underline'
                     >
                       View Artist

@@ -97,16 +97,17 @@ class Downloader:
         download_queue = []
         if "album" in url:
             download_queue.extend(self.get_album(uri)["tracks"]["items"])
-        elif "track" in url:
+            return download_queue
+        if "track" in url:
             download_queue.append(self.get_track(uri))
-        elif "playlist" in url:
+            return download_queue
+        if "playlist" in url:
             raw_playlist = self.get_playlist(uri)["tracks"]["items"]
             for i in raw_playlist:
                 i["track"]["added_at"] = i["added_at"]
             download_queue.extend([i["track"] for i in raw_playlist])
-        else:
-            raise Exception("Not a valid Spotify URL")
-        return download_queue
+            return download_queue
+        raise Exception("Not a valid Spotify URL")
 
     def get_song_core_info(self, metadata: Dict[str, Any]) -> Dict[str, str]:
         return {

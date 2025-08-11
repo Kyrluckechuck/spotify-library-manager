@@ -1,3 +1,4 @@
+# pylint: disable=R1705  # allow explicit elif after return for clarity
 import re
 
 from ..graphql_types.models import MutationResult
@@ -7,7 +8,7 @@ from .playlist import PlaylistService
 
 
 class DownloaderService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.playlist_service = PlaylistService()
         self.artist_service = ArtistService()
         self.album_service = AlbumService()
@@ -67,14 +68,13 @@ class DownloaderService:
         """Determine the type of Spotify content from URL/URI."""
         if "playlist" in url:
             return "playlist"
-        elif "artist" in url:
+        if "artist" in url:
             return "artist"
-        elif "album" in url:
+        if "album" in url:
             return "album"
-        elif "track" in url:
+        if "track" in url:
             return "track"
-        else:
-            return "unknown"
+        return "unknown"
 
     async def _handle_playlist_download(
         self, playlist_url: str, auto_track_artists: bool

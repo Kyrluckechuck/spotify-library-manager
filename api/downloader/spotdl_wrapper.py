@@ -346,8 +346,7 @@ class SpotdlWrapper:
                         try:
                             album = Album.objects.get(spotify_uri=download_queue_url)
                         except Album.DoesNotExist:
-                            # album = self.downloader.create_album(download_queue_url, artist)
-                            pass
+                            album = None
                         if album is not None:
                             album.downloaded = True
                             album.save()

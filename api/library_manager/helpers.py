@@ -5,7 +5,6 @@ from django.db import connection
 from huey.api import Task
 from huey.contrib.djhuey import HUEY as rawHuey
 
-from . import tasks
 from .models import Artist, TrackedPlaylist
 
 
@@ -44,7 +43,10 @@ def update_tracked_artists_albums(
         extra_args = {}
         if priority is not None:
             extra_args["priority"] = priority
-        tasks.fetch_all_albums_for_artist(artist.gid, **extra_args)
+        # Local import to avoid circular import during module initialization
+        from .tasks import fetch_all_albums_for_artist
+
+        fetch_all_albums_for_artist(artist.gid, **extra_args)
 
 
 def download_missing_tracked_artists(
@@ -63,7 +65,10 @@ def download_missing_tracked_artists(
 
         if priority is not None:
             extra_args["priority"] = priority
-        tasks.download_missing_albums_for_artist(artist.gid, **extra_args)
+        # Local import to avoid circular import during module initialization
+        from .tasks import download_missing_albums_for_artist
+
+        download_missing_albums_for_artist(artist.gid, **extra_args)
 
 
 def download_non_enqueued_playlists(
@@ -78,7 +83,10 @@ def download_non_enqueued_playlists(
         extra_args = {}
         if priority is not None:
             extra_args["priority"] = priority
-        tasks.download_playlist(
+        # Local import to avoid circular import during module initialization
+        from .tasks import download_playlist
+
+        download_playlist(
             playlist_url=playlist.url, tracked=playlist.auto_track_artists, **extra_args
         )
 

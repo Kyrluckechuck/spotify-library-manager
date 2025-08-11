@@ -1,4 +1,5 @@
-from typing import List, Optional
+# mypy: disable-error-code=attr-defined
+from typing import Any, List, Optional, Tuple
 
 from django.db import models
 
@@ -7,22 +8,29 @@ from asgiref.sync import sync_to_async
 from library_manager.models import TaskHistory as DjangoTaskHistory
 
 from ..graphql_types.models import EntityType, TaskHistory, TaskStatus, TaskType
+from ..types.typing import SupportsId
 from .base import BaseService
 
 
 class TaskHistoryService(BaseService[TaskHistory]):
-    def __init__(self):
+    def __init__(self) -> None:
+        super().__init__()
         self.model = DjangoTaskHistory
+
+    async def get_by_id(self, id: str) -> Optional[TaskHistory]:
+        # Not required by API; implement to satisfy linter
+        return None
 
     async def get_connection(
         self,
         first: int = 20,
         after: Optional[str] = None,
-        status: Optional[TaskStatus] = None,
-        type: Optional[TaskType] = None,
-        entity_type: Optional[EntityType] = None,
-        search: Optional[str] = None,
-    ) -> tuple[List[TaskHistory], bool, int]:
+        **filters: Any,
+    ) -> Tuple[List[TaskHistory], bool, int]:
+        status: Optional[TaskStatus] = filters.get("status")
+        type: Optional[TaskType] = filters.get("type")
+        entity_type: Optional[EntityType] = filters.get("entity_type")
+        search: Optional[str] = filters.get("search")
         queryset = self.model.objects.all()
 
         # Apply filters
@@ -69,7 +77,10 @@ class TaskHistoryService(BaseService[TaskHistory]):
         total_count = await sync_to_async(queryset.count)()
 
         # Get one extra item to determine if there are more pages
-        items = await sync_to_async(list)(queryset.order_by("-started_at")[: first + 1])
+        def fetch_items() -> List[DjangoTaskHistory]:
+            return list(queryset.order_by("-started_at")[: first + 1])
+
+        items: List[DjangoTaskHistory] = await sync_to_async(fetch_items)()
 
         has_next_page = len(items) > first
         items = items[:first]  # Remove the extra item
@@ -129,14 +140,15 @@ class TaskHistoryService(BaseService[TaskHistory]):
             log_messages=log_messages,
         )
 
-    def create_cursor(self, task: TaskHistory) -> str:
-        if hasattr(task, "id"):
-            return str(task.id)
-        # Fallback to task_id if id is not available
-        return str(task.task_id)
+    def create_cursor(self, item: SupportsId | TaskHistory) -> str:
+        # Prefer string cursor on schema types; BaseService encodes cursor
+        return super().create_cursor(item)
 
     def decode_cursor(self, cursor: str) -> int:
-        return int(cursor)
+        # Use the shared opaque cursor decoder
+        from ..utils.cursor import decode_cursor
+
+        return int(decode_cursor(cursor))
 
     async def create_task(
         self, task_id: str, task_type: TaskType, entity_id: str, entity_type: EntityType

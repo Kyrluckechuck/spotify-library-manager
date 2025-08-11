@@ -66,6 +66,11 @@ coverage/
 *.coverage
 coverage.xml
 
+# Reports and logs (generated)
+reports/
+api/bandit-report.json
+api/server.log
+
 # Django static files (collected by collectstatic, not committed)
 api/staticfiles/
 api/static/

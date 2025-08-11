@@ -22,9 +22,22 @@ class Subscription:
         self, entity_id: str
     ) -> AsyncGenerator[DownloadProgress, None]:
         async for progress in event_bus.subscribe_to_download_progress(entity_id):
-            yield progress
+            # progress is a GQL type already; coerce to the local schema type
+            yield DownloadProgress(
+                entity_id=progress.entity_id,
+                entity_type=progress.entity_type,
+                progress=progress.progress,
+                status=progress.status,
+                message=progress.message or "",
+            )
 
     @strawberry.subscription
     async def all_download_progress(self) -> AsyncGenerator[DownloadProgress, None]:
         async for progress in event_bus.subscribe_to_download_progress():
-            yield progress
+            yield DownloadProgress(
+                entity_id=progress.entity_id,
+                entity_type=progress.entity_type,
+                progress=progress.progress,
+                status=progress.status,
+                message=progress.message or "",
+            )

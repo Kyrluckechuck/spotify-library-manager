@@ -6,7 +6,9 @@ from ..graphql_types.models import DownloadProgress, DownloadStatus
 
 # Mock ProcessInfo class since django-huey-monitor might not be available
 class ProcessInfo:
-    def __init__(self, task=None, desc=None, percentage=0):
+    def __init__(
+        self, task: Any | None = None, desc: str | None = None, percentage: int = 0
+    ):
         self.task = task
         self.desc = desc
         self.percentage = percentage
@@ -17,7 +19,7 @@ class EventBus:
     _subscribers: Dict[str, List[Callable]] = {}
     _download_subscribers: Dict[int, asyncio.Queue] = {}
 
-    def __new__(cls):
+    def __new__(cls) -> "EventBus":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._subscribers = {}
@@ -25,11 +27,11 @@ class EventBus:
         return cls._instance
 
     @classmethod
-    def reset(cls):
+    def reset(cls) -> None:
         """Reset the singleton for testing purposes."""
         cls._instance = None
 
-    def subscribe(self, event_type: str, handler: Callable):
+    def subscribe(self, event_type: str, handler: Callable) -> None:
         """Subscribe to an event type."""
         if event_type not in self._subscribers:
             self._subscribers[event_type] = []
@@ -37,7 +39,7 @@ class EventBus:
         if handler not in self._subscribers[event_type]:
             self._subscribers[event_type].append(handler)
 
-    def unsubscribe(self, event_type: str, handler: Callable):
+    def unsubscribe(self, event_type: str, handler: Callable) -> None:
         """Unsubscribe from an event type."""
         if event_type in self._subscribers:
             if handler in self._subscribers[event_type]:
@@ -46,7 +48,7 @@ class EventBus:
             if not self._subscribers[event_type]:
                 del self._subscribers[event_type]
 
-    async def publish(self, event_type: str, data: Any = None):
+    async def publish(self, event_type: str, data: Any = None) -> None:
         """Publish an event to all subscribers."""
         if event_type in self._subscribers:
             for handler in self._subscribers[event_type]:
@@ -59,7 +61,7 @@ class EventBus:
                     # Log error but don't stop other handlers
                     print(f"Error in event handler: {e}")
 
-    def update_progress(self, process_info: ProcessInfo):
+    def update_progress(self, process_info: ProcessInfo) -> None:
         """Called by the task monitor when progress updates"""
         if not process_info or not process_info.task:
             return
@@ -99,7 +101,7 @@ class EventBus:
     async def subscribe_to_download_progress(
         self, entity_id: Optional[str] = None
     ) -> AsyncGenerator[DownloadProgress, None]:
-        queue = asyncio.Queue()
+        queue: asyncio.Queue = asyncio.Queue()
         subscriber_id = id(queue)
         self._download_subscribers[subscriber_id] = queue
 

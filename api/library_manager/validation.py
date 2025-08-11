@@ -83,11 +83,11 @@ def get_spotify_url_type(url: str) -> Optional[str]:
 
     if "playlist" in url_lower:
         return "playlist"
-    elif "album" in url_lower:
+    if "album" in url_lower:
         return "album"
-    elif "track" in url_lower:
+    if "track" in url_lower:
         return "track"
-    elif "artist" in url_lower:
+    if "artist" in url_lower:
         return "artist"
 
     return "unknown"

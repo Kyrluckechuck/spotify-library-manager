@@ -26,7 +26,7 @@ build-backend = "setuptools.build_meta"
 name = "spotify-library-manager"
 version = "1.0.0"
 description = "Spotify Library Manager"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = [
     "django>=4.0",
     "strawberry-graphql>=0.200",
@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -47,6 +47,14 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
+explicit_package_bases = true
+plugins = [
+  "strawberry.ext.mypy_plugin",
+]
+exclude = [
+  "api/src/tests/",
+  "src/tests/",
+]
 
 [[tool.mypy.overrides]]
 module = [
@@ -60,10 +68,39 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    "api.src.tests.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "api.tests.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+  "api.src.services.artist",
+  "api.src.services.album",
+  "api.src.services.song",
+  "api.src.services.playlist",
+  "api.src.services.history",
+  "api.src.services.task_history",
+]
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = [
+  "services.*",
+]
+disable_error_code = ["attr-defined"]
+
 # Django model field type annotations are handled by Django's ORM
 [[tool.mypy.overrides]]
 module = [
-    "api.library_manager.models",
+    "library_manager.models",
 ]
 disable_error_code = ["var-annotated", "attr-defined"]
 
@@ -77,7 +114,7 @@ disable_error_code = ["no-untyped-def"]
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py311']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -139,6 +176,16 @@ disable = [
     "W0703",  # broad-except
     "W0612",  # unused-variable
     "W0611",  # unused-import
+    "C0301",  # line-too-long (Black governs formatting)
+    "C0415",  # import-outside-toplevel (allowed for tasks/lazy imports)
+    "C0411",  # wrong-import-order (defer to isort)
+    "R0801",  # duplicate-code (noisy for migrations and schemas)
+    "R0917",  # too-many-positional-arguments (GraphQL resolvers often need this)
+    "W0613",  # unused-argument (GraphQL resolver signatures)
+    "W0511",  # fixme/TODO comments
+    "R0401",  # cyclic-import (management command helpers/tasks reference each other)
+    "W1203",  # logging-fstring-interpolation (acceptable in this project)
+    "W0404",  # reimport (intentional timezone reimports in models)
 ]
 
 [tool.pylint.format]
@@ -149,3 +196,10 @@ good-names = ["i", "j", "k", "ex", "Run", "_", "id", "db"]
 
 [tool.pylint.django]
 load-plugins = ["pylint_django"] 
+
+[tool.pylint.master]
+# Ensure Django is configured and project path is on sys.path during linting
+init-hook = "import os, sys; sys.path.insert(0, os.getcwd()); os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')"
+ignore = [
+  "library_manager/migrations",
+]
