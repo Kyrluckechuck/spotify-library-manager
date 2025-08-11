@@ -1,0 +1,70 @@
+#!/usr/bin/env sh
+
+# Incremental pre-commit hook for Spotify Library Manager (tracked in repo)
+echo "🔍 Running pre-commit checks (staged files only)..."
+
+# Collect staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+
+# 1) Trailing newline enforcement (staged files only)
+echo "🔧 Ensuring trailing newlines on staged files..."
+python scripts/check-repo-newlines.py fix --staged >/dev/null 2>&1 || true
+# Re-stage in case files were modified
+git add -A >/dev/null 2>&1
+python scripts/check-repo-newlines.py check --staged >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "❌ Newline check failed."
+    exit 1
+fi
+
+# 2) Frontend: run checks only on changed files
+if [ -d "frontend" ]; then
+    # Filter for frontend files
+    FE_TS_FILES=$(printf "%s\n" "$STAGED_FILES" | grep -E '^frontend/.*\.(ts|tsx)$' || true)
+    FE_LINT_FILES=$(printf "%s\n" "$STAGED_FILES" | grep -E '^frontend/.*\.(ts|tsx|js|jsx)$' | sed 's:^frontend/::' | tr '\n' ' ' || true)
+    FE_PRETTIER_FILES=$(printf "%s\n" "$STAGED_FILES" | grep -E '^frontend/.*\.(ts|tsx|js|jsx|json|md|css|scss|html)$' | sed 's:^frontend/::' | tr '\n' ' ' || true)
+
+    if [ -n "$FE_TS_FILES" ] || [ -n "$FE_LINT_FILES" ] || [ -n "$FE_PRETTIER_FILES" ]; then
+        echo "🔧 Running frontend checks on staged files..."
+        (
+            cd frontend || exit 1
+            # TypeScript type check only if TS files changed
+            if [ -n "$FE_TS_FILES" ]; then
+                echo "📝 TypeScript type check (changed TS only)..."
+                yarn -s tsc --noEmit --project tsconfig.app.json >/dev/null 2>&1 || {
+                    echo "❌ TypeScript type check failed."; exit 1; }
+            fi
+            # ESLint on changed JS/TS files
+            if [ -n "$FE_LINT_FILES" ]; then
+                echo "🔧 ESLint on changed files..."
+                # shellcheck disable=SC2086
+                yarn -s eslint --max-warnings=0 $FE_LINT_FILES >/dev/null 2>&1 || {
+                    echo "❌ ESLint check failed."; exit 1; }
+            fi
+            # Prettier check on changed format-able files
+            if [ -n "$FE_PRETTIER_FILES" ]; then
+                echo "🎨 Prettier check on changed files..."
+                # shellcheck disable=SC2086
+                yarn -s prettier --check $FE_PRETTIER_FILES >/dev/null 2>&1 || {
+                    echo "❌ Prettier format check failed."; exit 1; }
+            fi
+        ) || exit 1
+    fi
+fi
+
+# 3) Backend: Python lint only on changed files
+if [ -d "api" ]; then
+    PY_CHANGED=$(printf "%s\n" "$STAGED_FILES" | grep -E '^api/.*\.py$' | sed 's:^api/::' | tr '\n' ' ' || true)
+    if [ -n "$PY_CHANGED" ]; then
+        echo "🔍 Running Python linting on changed files..."
+        (
+            cd api || exit 1
+            # shellcheck disable=SC2086
+            python -m flake8 --extend-ignore=W503 --exclude=.venv,__pycache__,node_modules $PY_CHANGED >/dev/null 2>&1 || {
+                echo "❌ Python linting failed."; exit 1; }
+        ) || exit 1
+    fi
+fi
+
+echo "✅ All staged-file checks passed!"
+echo "💡 Note: CI runs comprehensive checks; pre-commit is incremental."

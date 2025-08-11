@@ -42,6 +42,11 @@ install-frontend:
 
 install: install-api install-frontend
 
+# Install git hooks from tracked .githooks directory
+.PHONY: install-git-hooks
+install-git-hooks:
+	sh scripts/install-git-hooks.sh
+
 # Database management
 migrate:
 	cd api && python manage.py migrate
