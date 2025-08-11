@@ -83,7 +83,7 @@ settings = dynaconf.DjangoDynaconf(
     HUEY={
         "huey_class": "huey.SqliteHuey",
         "name": "spotify_library_manager",
-        "filename": BASE_DIR / "huey.sqlite3",
+        "filename": Path("/config/db/huey.sqlite3"),
         "immediate": False,
         "results": True,
         "store_none": False,

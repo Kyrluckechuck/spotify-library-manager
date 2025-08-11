@@ -1,6 +1,12 @@
 __pycache__
 *.exe
 .vscode/
+node_modules/
+htmlcov/
+reports/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # User Configs
 client*.bin
@@ -17,3 +23,4 @@ bin/
 db/
 Spotify/
 temp/
+*.log

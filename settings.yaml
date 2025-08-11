@@ -65,7 +65,7 @@ LOGGING:
 HUEY:
   huey_class: huey.SqliteHuey
   name: spotify_library_manager
-  filename: api/huey.sqlite3
+  filename: /config/db/huey.sqlite3
   immediate: false
   results: true
   store_none: false

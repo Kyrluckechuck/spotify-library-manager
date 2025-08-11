@@ -1,20 +1,34 @@
 services:
   web:
+    build: .
     image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
-    command:  bash -c "python api/manage.py migrate && python api/manage.py runserver 0.0.0.0:5000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-development-only-key}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - HOST=0.0.0.0
+      - PORT=5000
+    command: bash -c "python manage.py migrate && uvicorn src.main:app --host 0.0.0.0 --port 5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/healthz').read().decode())"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
     volumes:
       - config_storage:/config
-      - /mnt/some_external_nas/music_spotify:/mnt/music_spotify
+      - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
     ports:
       - "5000:5000"
   worker:
     image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
-    command: python api/manage.py run_huey
+    command: python manage.py run_huey
     volumes:
       - config_storage:/config
-      - /mnt/some_external_nas/music_spotify:/mnt/music_spotify
+      - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
     depends_on:
       - web
+    restart: unless-stopped
 
 volumes:
   config_storage:
@@ -23,4 +37,4 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/opt/configs/spotify_library_manager/'
+      device: '${SLM_CONFIG_DIR:-/opt/configs/spotify_library_manager/}'

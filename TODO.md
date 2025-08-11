@@ -18,6 +18,19 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [ ] Validate schema consistency between frontend and backend
   - [ ] Test error scenarios with real API responses
 
+## Containerization and DevOps
+- [ ] Docker images and compose
+  - [ ] Add non-root user in image and proper file permissions for `/config` and `/mnt/music_spotify`
+  - [ ] Add healthcheck (simple HTTP or management command) and wire into compose
+  - [ ] Split dev/prod compose (`docker-compose.override.yml` for dev with bind mounts; prod uses image only)
+  - [ ] Provide `.env.example` with sane defaults; document required variables
+  - [ ] Parameterize music directory via env (e.g., `MUSIC_DIR`) in compose instead of hard-coded path
+  - [ ] Move Huey SQLite file to `/config/db/huey.sqlite3` to persist across restarts
+  - [ ] Review image size; consider multi-stage and dependency caching
+  - [ ] Add CI job to build/push image to GHCR on main with buildx + cache
+
+  - [ ] Verify Dockerfile works on this branch end-to-end (build, migrate, run)
+
 ## Backend
 - [ ] Configuration management
   - [ ] Make album types configurable (allow "appears_on" to be optional, or others deselectable)
@@ -47,6 +60,7 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [ ] Add input validation for all mutations
   - [ ] Implement proper pagination for all list queries
   - [ ] Re-evaluate previously removed mutations and add back only if needed
+  - [ ] Add dedicated health endpoint for container healthchecks
 
 ## Frontend
 - [ ] Error handling and user feedback
@@ -70,6 +84,7 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [ ] Implement query performance tracking
   - [ ] Add error tracking for GraphQL failures
   - [ ] Create alerts for schema mismatches
+  - [ ] Add smoke tests that exercise the running container in CI (GraphQL ping, DB migrations)
 
 ## Feature: Spotify search
 - [ ] Implement Spotify search for artists, albums, songs, playlists
