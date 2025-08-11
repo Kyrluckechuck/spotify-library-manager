@@ -2,7 +2,11 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useQuery, useMutation } from '@apollo/client';
-import type { TestPlaylist } from '../../types/test';
+import type {
+  TestPlaylist,
+  MockedUseQuery,
+  MockedUseMutation,
+} from '../../types/test';
 
 // Import the actual route component
 
@@ -36,9 +40,8 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(() => ({ component: () => null })),
 }));
 
-const mockUseQuery = useQuery as import('../../types/test').MockedUseQuery;
-const mockUseMutation =
-  useMutation as import('../../types/test').MockedUseMutation;
+const mockUseQuery = useQuery as MockedUseQuery;
+const mockUseMutation = useMutation as MockedUseMutation;
 
 // Create a test component that simulates the Playlists route
 const TestPlaylistsComponent = () => {

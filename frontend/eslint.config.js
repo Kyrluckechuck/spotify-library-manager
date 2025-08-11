@@ -40,6 +40,11 @@ export default [
       prettier: prettier,
     },
     rules: {
+      // Prefer top-level type imports for readability/consistency
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
       // TypeScript rules
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [

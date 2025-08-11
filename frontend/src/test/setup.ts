@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import React from 'react';
+import type { ApolloErrorOptions } from '../types/common';
 
 // Mock Apollo Client
 vi.mock('@apollo/client', async importOriginal => {
@@ -13,7 +14,7 @@ vi.mock('@apollo/client', async importOriginal => {
     gql: vi.fn(),
     ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
     ApolloError: class ApolloError extends Error {
-      constructor(options: import('../types/common').ApolloErrorOptions) {
+      constructor(options: ApolloErrorOptions) {
         super(
           options.graphQLErrors?.[0]?.message ||
             options.networkError?.message ||

@@ -2,7 +2,11 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useQuery } from '@apollo/client';
-import type { TestTaskHistory, TestEdge } from '../../types/test';
+import type {
+  TestTaskHistory,
+  TestEdge,
+  MockedUseQuery,
+} from '../../types/test';
 
 // Import mock data
 import {
@@ -31,7 +35,7 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: vi.fn(() => ({ component: () => null })),
 }));
 
-const mockUseQuery = useQuery as import('../../types/test').MockedUseQuery;
+const mockUseQuery = useQuery as MockedUseQuery;
 
 // Create a test component that simulates the Tasks route
 const TestTasksComponent = () => {
