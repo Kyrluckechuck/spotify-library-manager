@@ -10,7 +10,7 @@ import django
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from starlette.staticfiles import StaticFiles
 from django.db import connections
 from django.conf import settings as dj_settings
@@ -110,15 +110,15 @@ def create_app() -> FastAPI:
         return {"status": "ok", "db": db_ok}
 
     @app.get("/{full_path:path}")
-    async def spa_fallback(full_path: str) -> FileResponse:  # noqa: ARG001 - path captured for spa
-        # Allow GraphQL routes to be handled by GraphQL router
+    async def spa_fallback(full_path: str):  # noqa: ANN201, ARG001 - FastAPI infers response, path captured for SPA
+        # Let GraphQL routes be handled by their router; return 404 on GET if it falls through
         if full_path.startswith("graphql"):
-            # Shouldn't generally reach here for POST; return 404 for GET to avoid leaking index
-            return FileResponse(frontend_dir / "index.html") if frontend_dir.exists() else FileResponse("/dev/null")
-        # Serve index.html for SPA routes
+            return PlainTextResponse("Not Found", status_code=404)
+        # Serve index.html for SPA routes only when frontend assets are present
         if frontend_dir.exists():
             return FileResponse(frontend_dir / "index.html")
-        raise RuntimeError("Frontend assets not found. Ensure the Docker multi-stage build copied /frontend/dist")
+        # In local dev (make dev), frontend runs on Vite dev server; do not error here
+        return PlainTextResponse("Not Found", status_code=404)
 
     return app
 

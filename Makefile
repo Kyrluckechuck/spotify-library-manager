@@ -1,8 +1,33 @@
-.PHONY: build-and-publish dev setup migrate createsuperuser test-migrations install clean test lint docker-build docker-run docker-stop dev-api dev-frontend dev-worker
+.PHONY: build-and-publish dev dev-container dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations install clean test lint docker-build docker-run docker-stop dev-api dev-frontend dev-worker
 
 # Main development command - starts all services
 dev:
 	python dev.py
+
+# Dev container: run compose with optional local override if present
+dev-container:
+	@if [ -f docker-compose.override.yml ]; then \
+		docker compose up --build; \
+	else \
+		cp docker-compose.override.example.yml docker-compose.override.yml && echo "Created local override from example"; \
+		docker compose up --build; \
+	fi
+
+dev-container-down:
+	docker compose down
+
+dev-container-logs:
+	docker compose logs -f
+
+# Tail logs per service
+dev-container-logs-web:
+	docker compose logs -f web
+
+dev-container-logs-frontend:
+	docker compose logs -f frontend
+
+dev-container-logs-worker:
+	docker compose logs -f worker
 
 # Individual service development commands
 dev-api:

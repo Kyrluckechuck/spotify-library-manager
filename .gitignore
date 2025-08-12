@@ -107,6 +107,9 @@ frontend/src/graphql/generated/
 !.env.sample
 !*.env.example
 
+# Local docker compose overrides
+docker-compose.override.yml
+
 # Cache directories
 .cache/
 .parcel-cache/
