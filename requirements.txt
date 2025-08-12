@@ -36,16 +36,14 @@ faker>=22.0.0
 
 # Essential dependencies from root requirements.txt
 click
-django-debug-toolbar
-django-extensions
 dynaconf
-jinja2
-pybase62
-pylint-django
 pymediainfo
 pyyaml
-Werkzeug[watchdog]
-whitenoise[brotli]
+# The following are useful in development but not required at runtime.
+# They live in requirements-dev.txt to avoid inflating the runtime image.
+# django-debug-toolbar
+# django-extensions
+# pylint-django
 
 # Critical: spotdl and yt-dlp (exactly as specified in root requirements)
 #git+https://github.com/Kyrluckechuck/spotify-downloader.git@fix-yt-dlp-memory-leak#egg=spotdl

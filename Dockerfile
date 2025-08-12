@@ -24,7 +24,13 @@ RUN apt-get update \
 
 # Python dependencies
 COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt
+COPY requirements-dev.txt /app/requirements-dev.txt
+ARG INSTALL_DEV_DEPS=false
+RUN if [ "$INSTALL_DEV_DEPS" = "true" ]; then \
+      pip install -r /app/requirements.txt -r /app/requirements-dev.txt; \
+    else \
+      pip install -r /app/requirements.txt; \
+    fi
 
 # App source
 COPY ./api/ /app/

@@ -40,6 +40,7 @@ settings = dynaconf.DjangoDynaconf(
         "huey.contrib.djhuey",
         "huey_monitor",
         "library_manager",
+        # Dev-only apps may be appended below when DEBUG is true
     ],
     # API-specific middleware (simpler than full web app)
     MIDDLEWARE=[
@@ -89,6 +90,26 @@ settings = dynaconf.DjangoDynaconf(
         "store_none": False,
     },
 )
+# Optionally enable dev-only Django apps when available and DEBUG is true
+if settings.DEBUG:  # type: ignore[name-defined]
+    try:
+        import debug_toolbar  # noqa: F401
+
+        settings.INSTALLED_APPS.append("debug_toolbar")
+        settings.MIDDLEWARE = [
+            "debug_toolbar.middleware.DebugToolbarMiddleware",
+            *settings.MIDDLEWARE,
+        ]
+        INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]  # For Docker, VMs
+    except Exception:
+        pass
+
+    try:
+        import django_extensions  # noqa: F401
+
+        settings.INSTALLED_APPS.append("django_extensions")
+    except Exception:
+        pass
 
 # Ensure /config/db/ directory exists (same as monolith)
 Path("/config/db/").mkdir(parents=True, exist_ok=True)

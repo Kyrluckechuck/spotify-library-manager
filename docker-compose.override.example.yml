@@ -4,6 +4,7 @@ services:
   web:
     environment:
       - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - INSTALL_DEV_DEPS=true
     # Live code sync for backend (uvicorn --reload)
     command: bash -c "python manage.py migrate && uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload"
     volumes:

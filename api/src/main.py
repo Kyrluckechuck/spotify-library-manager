@@ -119,10 +119,10 @@ def create_app() -> FastAPI:
             db_ok = False
         return {"status": "ok", "db": db_ok}
 
-    @app.get("/{full_path:path}")
+    @app.get("/{full_path:path}", response_model=None)
     async def spa_fallback(
         full_path: str,
-    ) -> PlainTextResponse | FileResponse:  # noqa: ARG001 - path captured for SPA
+    ) -> PlainTextResponse | FileResponse:
         # Let GraphQL routes be handled by their router; return 404 on GET if it falls through
         if full_path.startswith("graphql"):
             return PlainTextResponse("Not Found", status_code=404)
