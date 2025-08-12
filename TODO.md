@@ -3,15 +3,15 @@
 This list removes completed items and internal-only documentation tasks (e.g., public GraphQL API docs). Remaining items are actionable and prioritized.
 
 ## High Priority
-- [ ] Fix TypeScript errors in test files
-  - [ ] Resolve type issues in `frontend/src/__tests__/routes/artists.test.tsx`
-  - [ ] Ensure all test files compile without errors
-  - [ ] Add proper TypeScript types for all mock data
+- [x] Fix TypeScript errors in test files
+  - [x] Resolve type issues in `frontend/src/__tests__/routes/artists.test.tsx`
+  - [x] Ensure all test files compile without errors
+  - [x] Add proper TypeScript types for all mock data
 
-- [ ] Run and validate the test suite
-  - [ ] Execute `yarn test:run` for unit tests
-  - [ ] Execute `yarn test:graphql` for backend integration
-  - [ ] Fix any failing tests and ensure coverage is adequate
+- [x] Run and validate the test suite
+  - [x] Execute `yarn test:run` for unit tests
+  - [x] Execute `yarn test:graphql` for backend integration
+  - [x] Fix any failing tests and ensure coverage is adequate
 
 - [ ] Add integration tests for real GraphQL operations
   - [ ] Test actual backend connectivity
@@ -25,7 +25,7 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [x] Split dev/prod compose (`docker-compose.override.yml` for dev with bind mounts; prod uses image only)
   - [x] Provide `.env.example` with sane defaults; document required variables
   - [x] Add `docker-compose.override.yml` with local bind mounts for quicker dev
-  - [ ] Parameterize music directory via env (e.g., `MUSIC_DIR`) in compose instead of hard-coded path
+  - [x] Parameterize music directory via env (e.g., `MUSIC_DIR`) in compose instead of hard-coded path
   - [x] Move Huey SQLite file to `/config/db/huey.sqlite3` to persist across restarts
   - [ ] Review image size; consider multi-stage and dependency caching
   - [ ] Add CI workflow to build/push image (GHCR, buildx cache) and run smoke tests (migrate + hit `/healthz`)
@@ -34,8 +34,8 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 
 ## Backend
 - [ ] Configuration management
-  - [ ] Make album types configurable (allow "appears_on" to be optional, or others deselectable)
-  - [ ] Move SECRET_KEY to environment variable in auth service
+  - [x] Make album types configurable (allow "appears_on" to be optional, or others deselectable)
+  - [x] Move SECRET_KEY to environment variable in auth service
   - [ ] Replace in-memory user storage with persistent storage in auth service
 
 - [ ] Downloader integration
@@ -61,11 +61,11 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [ ] Add input validation for all mutations
   - [ ] Implement proper pagination for all list queries
   - [ ] Re-evaluate previously removed mutations and add back only if needed
-  - [ ] Add dedicated health endpoint for container healthchecks
+  - [x] Add dedicated health endpoint for container healthchecks
 
 ## Frontend
 - [ ] Error handling and user feedback
-  - [ ] Add proper error messages for GraphQL failures
+  - [x] Add proper error messages for GraphQL failures
   - [ ] Implement retry logic for failed operations
   - [ ] Add offline support for critical operations
   - [ ] Improve loading and error states across views
