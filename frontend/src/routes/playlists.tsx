@@ -17,6 +17,9 @@ import { DownloadUrlModal } from '../components/ui/DownloadUrlModal';
 import { PlaylistFilters } from '../components/playlists/PlaylistFilters';
 import { PlaylistsTable } from '../components/playlists/PlaylistsTable';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
+import { InlineSpinner } from '../components/ui/InlineSpinner';
+import { PageSpinner } from '../components/ui/PageSpinner';
+import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { SearchInput } from '../components/ui/SearchInput';
 import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
@@ -266,9 +269,7 @@ function Playlists() {
     return (
       <section>
         <h1 className='text-2xl font-semibold mb-4'>Playlists</h1>
-        <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400'>
-          Loading playlists...
-        </div>
+        <PageSpinner message='Loading playlists...' />
       </section>
     );
   }
@@ -277,9 +278,7 @@ function Playlists() {
     return (
       <section>
         <h1 className='text-2xl font-semibold mb-4'>Playlists</h1>
-        <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-red-500'>
-          Error loading playlists: {error.message}
-        </div>
+        <ErrorBanner title='Error loading playlists' message={error.message} />
       </section>
     );
   }
@@ -295,12 +294,7 @@ function Playlists() {
           <h1 className='text-2xl font-semibold'>
             Playlists ({playlists.length} of {totalCount})
           </h1>
-          {isRefetching && (
-            <div className='flex items-center gap-2 text-sm text-gray-500'>
-              <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-              <span>Updating...</span>
-            </div>
-          )}
+          {isRefetching && <InlineSpinner label='Updating...' />}
         </div>
         <div className='flex items-center gap-4'>
           <button
@@ -351,11 +345,8 @@ function Playlists() {
           loading={loading}
         />
         {isRefetching && (
-          <div className='absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center pointer-events-none'>
-            <div className='flex items-center gap-2 text-sm text-gray-600'>
-              <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-              <span>Updating...</span>
-            </div>
+          <div className='absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none'>
+            <InlineSpinner label='Updating...' />
           </div>
         )}
       </div>

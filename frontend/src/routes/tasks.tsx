@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@apollo/client';
 import { useState } from 'react';
 import type { TaskCount } from '../types/common';
 import { SearchInput } from '../components/ui/SearchInput';
+import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import {
@@ -183,9 +184,12 @@ function Tasks() {
           </p>
         </div>
         <div className='flex items-center gap-4'>
-          <div className='flex items-center gap-2 text-sm text-blue-600'>
-            <div className='w-2 h-2 bg-blue-500 rounded-full animate-pulse' />
-            <span>{runningTasks.length} active tasks</span>
+          <div className='flex items-center gap-3 text-sm text-blue-600'>
+            <span className='flex items-center gap-2'>
+              <span className='w-2 h-2 bg-blue-500 rounded-full animate-pulse' />
+              {runningTasks.length} active tasks
+            </span>
+            {queueLoading && <InlineSpinner label='Refreshing queue…' />}
             <span className='text-xs text-gray-500'>
               (auto-refreshing every 5s)
             </span>

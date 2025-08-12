@@ -12,6 +12,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { AlbumFilters } from '../components/albums/AlbumFilters';
 import { AlbumsTable } from '../components/albums/AlbumsTable';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
+import { InlineSpinner } from '../components/ui/InlineSpinner';
+import { PageSpinner } from '../components/ui/PageSpinner';
+import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { ArtistContext } from '../components/ui/ArtistContext';
 import { SearchInput } from '../components/ui/SearchInput';
@@ -261,9 +264,7 @@ function Albums() {
     return (
       <section>
         <h1 className='text-2xl font-semibold mb-4'>Albums</h1>
-        <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400'>
-          Loading albums...
-        </div>
+        <PageSpinner message='Loading albums...' />
       </section>
     );
   }
@@ -272,9 +273,7 @@ function Albums() {
     return (
       <section>
         <h1 className='text-2xl font-semibold mb-4'>Albums</h1>
-        <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-red-500'>
-          Error loading albums: {error.message}
-        </div>
+        <ErrorBanner title='Error loading albums' message={error.message} />
       </section>
     );
   }
@@ -300,12 +299,7 @@ function Albums() {
           <h1 className='text-2xl font-semibold'>
             Albums ({albums.length} of {totalCount})
           </h1>
-          {isRefetching && (
-            <div className='flex items-center gap-2 text-sm text-gray-500'>
-              <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-              <span>Updating...</span>
-            </div>
-          )}
+          {isRefetching && <InlineSpinner label='Updating...' />}
         </div>
         <div className='flex items-center gap-4'>
           <SearchInput
@@ -342,11 +336,8 @@ function Albums() {
           loading={loading}
         />
         {isRefetching && (
-          <div className='absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center pointer-events-none'>
-            <div className='flex items-center gap-2 text-sm text-gray-600'>
-              <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-              <span>Updating...</span>
-            </div>
+          <div className='absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none'>
+            <InlineSpinner label='Updating...' />
           </div>
         )}
       </div>

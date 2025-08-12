@@ -8,6 +8,7 @@ import type { Song } from '../types/common';
 import { PageContainer } from '../components/layout/PageContainer';
 import { PageHeader } from '../components/layout/PageHeader';
 import { DataTable } from '../components/common/DataTable';
+import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { FilterBar } from '../components/common/FilterBar';
 
 // Songs components
@@ -104,12 +105,7 @@ function Songs() {
         title='Songs'
         subtitle='Manage and track your downloaded songs'
       >
-        {isRefetching && (
-          <div className='flex items-center gap-2 text-sm text-gray-500'>
-            <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-            <span>Updating...</span>
-          </div>
-        )}
+        {isRefetching && <InlineSpinner label='Updating...' />}
       </PageHeader>
 
       <FilterBar
