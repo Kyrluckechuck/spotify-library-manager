@@ -56,9 +56,8 @@ describe('ArtistsTable', () => {
       />
     );
 
-    // Check for tracked indicators
-    expect(screen.getByText('Tracked')).toBeInTheDocument();
-    expect(screen.getByText('Not Tracked')).toBeInTheDocument();
+    expect(screen.getAllByText('Tracked').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Not Tracked').length).toBeGreaterThan(0);
   });
 
   it('calls onTrackToggle when track button is clicked', () => {

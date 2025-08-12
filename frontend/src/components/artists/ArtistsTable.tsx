@@ -83,15 +83,47 @@ export function ArtistsTable({
                   <div className='text-sm text-gray-500'>ID: {artist.gid}</div>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  <button
+                    onClick={() => onTrackToggle(artist)}
+                    role='switch'
+                    aria-checked={artist.isTracked}
+                    aria-label={
+                      artist.isTracked ? 'Untrack artist' : 'Track artist'
+                    }
+                    className='md:hidden inline-flex items-center w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 '
+                    style={{
+                      backgroundColor: artist.isTracked ? '#22c55e' : '#e5e7eb',
+                    }}
+                  >
+                    <span
+                      className={`inline-block w-5 h-5 bg-white rounded-full transform transition-transform translate-x-1 ${
+                        artist.isTracked ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                    <span className='sr-only'>
+                      {artist.isTracked ? 'Tracked' : 'Not Tracked'}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => onTrackToggle(artist)}
+                    aria-pressed={artist.isTracked}
+                    aria-label={
+                      artist.isTracked ? 'Untrack artist' : 'Track artist'
+                    }
+                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
                       artist.isTracked
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800 focus:bg-red-100 focus:text-red-800'
+                        : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
                     }`}
                   >
-                    {artist.isTracked ? 'Tracked' : 'Not Tracked'}
-                  </span>
+                    <span className='group-hover:hidden group-focus:hidden'>
+                      {artist.isTracked ? 'Tracked' : 'Not Tracked'}
+                    </span>
+                    <span className='hidden group-hover:inline group-focus:inline'>
+                      {artist.isTracked ? 'Untrack' : 'Track'}
+                    </span>
+                  </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                   {artist.lastSynced
@@ -99,16 +131,6 @@ export function ArtistsTable({
                     : 'Never'}
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
-                  <button
-                    onClick={() => onTrackToggle(artist)}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      artist.isTracked
-                        ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                        : 'bg-green-100 text-green-800 hover:bg-green-200'
-                    }`}
-                  >
-                    {artist.isTracked ? 'Untrack' : 'Track'}
-                  </button>
                   <button
                     onClick={() => onSyncArtist(artist.id)}
                     className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors'
