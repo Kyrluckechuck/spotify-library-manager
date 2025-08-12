@@ -39,9 +39,9 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [ ] Replace in-memory user storage with persistent storage in auth service
 
 - [ ] Downloader integration
-  - [ ] Re-add spotdl integration once dependencies are resolved
+  - [x] Re-add spotdl integration once dependencies are resolved
   - [ ] Implement artist tracking from playlist functionality
-  - [ ] Implement spotdl wrapper
+  - [x] Implement spotdl wrapper
 
 - [ ] Error handling
   - [ ] Add error message support to history service
@@ -67,7 +67,6 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 - [ ] Error handling and user feedback
   - [x] Add proper error messages for GraphQL failures
   - [ ] Implement retry logic for failed operations
-  - [ ] Add offline support for critical operations
   - [ ] Improve loading and error states across views
 
 - [ ] Optimistic updates
