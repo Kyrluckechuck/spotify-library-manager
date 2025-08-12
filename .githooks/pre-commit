@@ -39,7 +39,7 @@ if [ -d "frontend" ]; then
             if [ -n "$FE_LINT_FILES" ]; then
                 echo "🛠️  ESLint auto-fix (changed files)..."
                 # shellcheck disable=SC2086
-                yarn -s eslint --fix $FE_LINT_FILES >/dev/null 2>&1 || true
+                ESLINT_USE_FLAT_CONFIG=true yarn -s eslint --fix $FE_LINT_FILES >/dev/null 2>&1 || true
             fi
             if [ -n "$FE_PRETTIER_FILES" ]; then
                 echo "🖌️  Prettier write (changed files)..."
@@ -54,7 +54,7 @@ if [ -d "frontend" ]; then
             if [ -n "$FE_LINT_FILES" ]; then
                 echo "🔧 ESLint check (changed files)..."
                 # shellcheck disable=SC2086
-                yarn -s eslint --max-warnings=0 $FE_LINT_FILES >/dev/null 2>&1 || {
+                ESLINT_USE_FLAT_CONFIG=true yarn -s eslint --no-warn-ignored --max-warnings=0 $FE_LINT_FILES || {
                     echo "❌ ESLint check failed."; exit 1; }
             fi
             # Prettier check on changed format-able files (strict)

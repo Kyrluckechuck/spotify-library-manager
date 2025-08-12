@@ -1,40 +1,23 @@
 #!/usr/bin/env node
 
-/**
- * GraphQL Test Runner
- *
- * This script runs comprehensive tests to validate that all GraphQL queries
- * and mutations work correctly with the backend.
- */
+// GraphQL Test Runner (Node ESM JS version)
+// Runs real queries/mutations against API_URL. Safe to run locally.
 
-import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
-import { gql } from '@apollo/client';
-import { testLogger } from '../utils/logger';
+import {
+  ApolloClient,
+  InMemoryCache,
+  createHttpLink,
+  gql,
+} from '@apollo/client/core/index.js';
+import fetch from 'node-fetch';
 
-// Configuration
-const API_URL = 'http://localhost:5000/graphql';
-
-// Create Apollo Client for testing
-const httpLink = createHttpLink({
-  uri: API_URL,
-});
-
-const authLink = setContext((_, { headers }) => {
-  return {
-    headers: {
-      ...headers,
-      // Add any auth headers if needed
-    },
-  };
-});
+const API_URL = process.env.API_URL || 'http://localhost:5000/graphql';
 
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: createHttpLink({ uri: API_URL, fetch }),
   cache: new InMemoryCache(),
 });
 
-// Test queries and mutations
 const testQueries = [
   {
     name: 'GetArtists',
@@ -258,7 +241,7 @@ const testQueries = [
 const testMutations = [
   {
     name: 'TrackArtist',
-    mutation: `
+    mutation: gql`
       mutation TrackArtist($artistId: Int!) {
         trackArtist(artistId: $artistId) {
           success
@@ -275,7 +258,7 @@ const testMutations = [
   },
   {
     name: 'UntrackArtist',
-    mutation: `
+    mutation: gql`
       mutation UntrackArtist($artistId: Int!) {
         untrackArtist(artistId: $artistId) {
           success
@@ -292,7 +275,7 @@ const testMutations = [
   },
   {
     name: 'SyncArtist',
-    mutation: `
+    mutation: gql`
       mutation SyncArtist($artistId: String!) {
         syncArtist(artistId: $artistId) {
           id
@@ -308,7 +291,7 @@ const testMutations = [
   },
   {
     name: 'SetAlbumWanted',
-    mutation: `
+    mutation: gql`
       mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
         setAlbumWanted(albumId: $albumId, wanted: $wanted) {
           success
@@ -342,135 +325,81 @@ const testMutations = [
   },
 ];
 
-async function testQuery(
-  name: string,
-  query: ReturnType<typeof gql>,
-  variables: Record<string, unknown>
-) {
+async function testQuery(name, query, variables) {
   try {
-    testLogger.action(`Testing query: ${name}`);
-    const result = await client.query({ query, variables });
-
-    if (result.data) {
-      testLogger.success(`${name}: SUCCESS`);
-      return { success: true, data: result.data };
-    } else {
-      testLogger.failure(`${name}: FAILED - No data returned`);
-      return { success: false, error: 'No data returned' };
-    }
+    console.log(`→ Query: ${name}`);
+    const result = await client.query({
+      query,
+      variables,
+      fetchPolicy: 'no-cache',
+    });
+    const ok = !!result.data;
+    console.log(ok ? `✓ ${name}` : `✗ ${name} (no data)`);
+    return { success: ok, data: result.data };
   } catch (error) {
-    testLogger.failure(`${name}: FAILED - ${error}`);
+    console.log(`✗ ${name}: ${error}`);
     return { success: false, error };
   }
 }
 
-async function testMutation(
-  name: string,
-  mutation: ReturnType<typeof gql>,
-  variables: Record<string, unknown>
-) {
+async function testMutation(name, mutation, variables) {
   try {
-    testLogger.action(`Testing mutation: ${name}`);
+    console.log(`→ Mutation: ${name}`);
     const result = await client.mutate({ mutation, variables });
-
-    if (result.data) {
-      testLogger.success(`${name}: SUCCESS`);
-      return { success: true, data: result.data };
-    } else {
-      testLogger.failure(`${name}: FAILED - No data returned`);
-      return { success: false, error: 'No data returned' };
-    }
+    const ok = !!result.data;
+    console.log(ok ? `✓ ${name}` : `✗ ${name} (no data)`);
+    return { success: ok, data: result.data };
   } catch (error) {
-    testLogger.failure(`${name}: FAILED - ${error}`);
+    console.log(`✗ ${name}: ${error}`);
     return { success: false, error };
   }
 }
 
 async function runAllTests() {
-  testLogger.test('🚀 Starting GraphQL Test Suite...');
-  testLogger.test(`📡 Testing against: ${API_URL}`);
-  testLogger.test('');
+  console.log('🚀 Starting GraphQL Test Suite...');
+  console.log(`📡 API: ${API_URL}`);
 
   const queryResults = [];
   const mutationResults = [];
 
-  // Test queries
-  testLogger.section('Testing Queries:');
-  testLogger.test('==================');
-  for (const test of testQueries) {
-    const q =
-      typeof test.query === 'string'
-        ? gql`
-            ${test.query}
-          `
-        : test.query;
-    const result = await testQuery(test.name, q, test.variables);
-    queryResults.push({ name: test.name, ...result });
-  }
+  for (const t of testQueries)
+    queryResults.push({
+      name: t.name,
+      ...(await testQuery(t.name, t.query, t.variables)),
+    });
+  for (const t of testMutations)
+    mutationResults.push({
+      name: t.name,
+      ...(await testMutation(t.name, t.mutation, t.variables)),
+    });
 
-  testLogger.test('');
-  testLogger.section('Testing Mutations:');
-  testLogger.test('=====================');
-  for (const test of testMutations) {
-    const m =
-      typeof test.mutation === 'string'
-        ? gql`
-            ${test.mutation}
-          `
-        : test.mutation;
-    const result = await testMutation(test.name, m, test.variables);
-    mutationResults.push({ name: test.name, ...result });
-  }
+  const qPass = queryResults.filter(r => r.success).length;
+  const mPass = mutationResults.filter(r => r.success).length;
+  const total = testQueries.length + testMutations.length;
+  const passed = qPass + mPass;
 
-  // Summary
-  testLogger.test('');
-  testLogger.summary('Test Summary:');
-  testLogger.test('===============');
-
-  const successfulQueries = queryResults.filter(r => r.success).length;
-  const failedQueries = queryResults.length - successfulQueries;
-
-  const successfulMutations = mutationResults.filter(r => r.success).length;
-  const failedMutations = mutationResults.length - successfulMutations;
-
-  testLogger.test(
-    `Queries: ${successfulQueries}/${queryResults.length} passed`
-  );
-  testLogger.test(
-    `Mutations: ${successfulMutations}/${mutationResults.length} passed`
-  );
-  testLogger.test(
-    `Total: ${successfulQueries + successfulMutations}/${queryResults.length + mutationResults.length} passed`
-  );
-
-  if (failedQueries > 0 || failedMutations > 0) {
-    testLogger.test('');
-    testLogger.failure('Failed Tests:');
-    [...queryResults, ...mutationResults]
-      .filter(r => !r.success)
-      .forEach(r => {
-        testLogger.test(`  - ${r.name}: ${r.error}`);
-      });
-  }
+  console.log('');
+  console.log(`Queries:   ${qPass}/${testQueries.length}`);
+  console.log(`Mutations: ${mPass}/${testMutations.length}`);
+  console.log(`Total:     ${passed}/${total}`);
 
   return {
     queries: queryResults,
     mutations: mutationResults,
-    totalPassed: successfulQueries + successfulMutations,
-    totalTests: queryResults.length + mutationResults.length,
+    totalPassed: passed,
+    totalTests: total,
   };
 }
 
-// Run tests if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   runAllTests()
-    .then(results => {
-      process.exit(results.totalPassed === results.totalTests ? 0 : 1);
-    })
-    .catch(error => {
-      console.error('Test runner failed:', error);
+    .then(results =>
+      process.exit(results.totalPassed === results.totalTests ? 0 : 1)
+    )
+    .catch(err => {
+      console.error('Test runner failed:', err);
       process.exit(1);
     });
 }
 
-export { runAllTests, testQuery, testMutation };
+export { runAllTests };

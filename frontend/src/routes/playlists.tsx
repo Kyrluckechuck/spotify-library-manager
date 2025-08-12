@@ -4,6 +4,7 @@ import {
   GetPlaylistsDocument,
   TogglePlaylistDocument,
   SyncPlaylistDocument,
+  TogglePlaylistAutoTrackDocument,
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
 import type { Playlist } from '../types/generated/graphql';
@@ -94,6 +95,9 @@ function Playlists() {
 
   const [togglePlaylist] = useMutation(TogglePlaylistDocument);
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
+  const [togglePlaylistAutoTrack] = useMutation(
+    TogglePlaylistAutoTrackDocument
+  );
 
   const handleEnabledFilterChange = (
     newFilter: 'all' | 'enabled' | 'disabled'
@@ -204,6 +208,16 @@ function Playlists() {
       await syncPlaylist({ variables: { playlistId } });
     } catch (error) {
       console.error('Error syncing playlist:', error);
+    }
+  };
+
+  const handleToggleAutoTrack = async (playlist: Playlist) => {
+    try {
+      await togglePlaylistAutoTrack({
+        variables: { playlistId: playlist.id },
+      });
+    } catch (error) {
+      console.error('Error toggling auto-track:', error);
     }
   };
 
@@ -331,6 +345,7 @@ function Playlists() {
           sortDirection={sortDirection}
           onSort={handleSort}
           onToggleEnabled={handleTogglePlaylist}
+          onToggleAutoTrack={handleToggleAutoTrack}
           onSyncPlaylist={handleSyncPlaylist}
           onEditPlaylist={handleEditPlaylist}
           loading={loading}

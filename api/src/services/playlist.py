@@ -185,6 +185,30 @@ class PlaylistService(BaseService[Playlist]):
                 playlist=None,
             )
 
+    async def toggle_playlist_auto_track(self, playlist_id: int) -> MutationResult:
+        try:
+            django_playlist = await sync_to_async(self.model.objects.get)(
+                id=playlist_id
+            )
+            django_playlist.auto_track_artists = not django_playlist.auto_track_artists
+            await sync_to_async(django_playlist.save)()
+
+            return MutationResult(
+                success=True,
+                message="Playlist auto-track toggled successfully",
+                playlist=self._to_graphql_type(django_playlist),
+            )
+        except self.model.DoesNotExist:
+            return MutationResult(
+                success=False, message="Playlist not found", playlist=None
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False,
+                message=f"Error toggling playlist auto-track: {str(e)}",
+                playlist=None,
+            )
+
     def _to_graphql_type(self, django_playlist: DjangoPlaylist) -> Playlist:
         return Playlist(
             id=int(django_playlist.id),

@@ -14,6 +14,7 @@ interface PlaylistsTableProps {
   sortDirection: 'asc' | 'desc';
   onSort: (field: PlaylistSortField) => void;
   onToggleEnabled: (playlist: Playlist) => void;
+  onToggleAutoTrack: (playlist: Playlist) => void;
   onSyncPlaylist: (playlistId: number) => void;
   onEditPlaylist?: (playlist: Playlist) => void;
   loading?: boolean;
@@ -25,6 +26,7 @@ export function PlaylistsTable({
   sortDirection,
   onSort,
   onToggleEnabled,
+  onToggleAutoTrack,
   onSyncPlaylist,
   onEditPlaylist,
   loading = false,
@@ -96,26 +98,102 @@ export function PlaylistsTable({
                   </div>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  {/* Mobile: Toggle switch */}
+                  <button
+                    onClick={() => onToggleEnabled(playlist)}
+                    role='switch'
+                    aria-checked={playlist.enabled}
+                    aria-label={
+                      playlist.enabled ? 'Disable playlist' : 'Enable playlist'
+                    }
+                    className='md:hidden inline-flex items-center w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 '
+                    style={{
+                      backgroundColor: playlist.enabled ? '#22c55e' : '#e5e7eb',
+                    }}
+                  >
+                    <span
+                      className={`inline-block w-5 h-5 bg-white rounded-full transform transition-transform translate-x-1 ${
+                        playlist.enabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                    <span className='sr-only'>
+                      {playlist.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </button>
+
+                  {/* Desktop: Interactive status pill */}
+                  <button
+                    onClick={() => onToggleEnabled(playlist)}
+                    aria-pressed={playlist.enabled}
+                    aria-label={
+                      playlist.enabled ? 'Disable playlist' : 'Enable playlist'
+                    }
+                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
                       playlist.enabled
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800 focus:bg-red-100 focus:text-red-800'
+                        : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
                     }`}
                   >
-                    {playlist.enabled ? 'Enabled' : 'Disabled'}
-                  </span>
+                    <span className='group-hover:hidden group-focus:hidden'>
+                      {playlist.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                    <span className='hidden group-hover:inline group-focus:inline'>
+                      {playlist.enabled ? 'Disable' : 'Enable'}
+                    </span>
+                  </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  {/* Mobile: Toggle switch for auto track */}
+                  <button
+                    onClick={() => onToggleAutoTrack(playlist)}
+                    role='switch'
+                    aria-checked={playlist.autoTrackArtists}
+                    aria-label={
                       playlist.autoTrackArtists
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-orange-100 text-orange-800'
+                        ? 'Disable auto-track artists'
+                        : 'Enable auto-track artists'
+                    }
+                    className='md:hidden inline-flex items-center w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 '
+                    style={{
+                      backgroundColor: playlist.autoTrackArtists
+                        ? '#60a5fa'
+                        : '#fed7aa',
+                    }}
+                  >
+                    <span
+                      className={`inline-block w-5 h-5 bg-white rounded-full transform transition-transform translate-x-1 ${
+                        playlist.autoTrackArtists
+                          ? 'translate-x-6'
+                          : 'translate-x-1'
+                      }`}
+                    />
+                    <span className='sr-only'>
+                      {playlist.autoTrackArtists ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </button>
+
+                  {/* Desktop: Interactive status pill */}
+                  <button
+                    onClick={() => onToggleAutoTrack(playlist)}
+                    aria-pressed={playlist.autoTrackArtists}
+                    aria-label={
+                      playlist.autoTrackArtists
+                        ? 'Disable auto-track artists'
+                        : 'Enable auto-track artists'
+                    }
+                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
+                      playlist.autoTrackArtists
+                        ? 'bg-blue-100 text-blue-800 hover:bg-orange-100 hover:text-orange-800 focus:bg-orange-100 focus:text-orange-800'
+                        : 'bg-orange-100 text-orange-800 hover:bg-blue-100 hover:text-blue-800 focus:bg-blue-100 focus:text-blue-800'
                     }`}
                   >
-                    {playlist.autoTrackArtists ? 'Yes' : 'No'}
-                  </span>
+                    <span className='group-hover:hidden group-focus:hidden'>
+                      {playlist.autoTrackArtists ? 'Yes' : 'No'}
+                    </span>
+                    <span className='hidden group-hover:inline group-focus:inline'>
+                      {playlist.autoTrackArtists ? 'Disable' : 'Enable'}
+                    </span>
+                  </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                   {playlist.lastSyncedAt
@@ -123,16 +201,6 @@ export function PlaylistsTable({
                     : 'Never'}
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
-                  <button
-                    onClick={() => onToggleEnabled(playlist)}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      playlist.enabled
-                        ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                        : 'bg-green-100 text-green-800 hover:bg-green-200'
-                    }`}
-                  >
-                    {playlist.enabled ? 'Disable' : 'Enable'}
-                  </button>
                   <button
                     onClick={() => onSyncPlaylist(playlist.id)}
                     className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors'

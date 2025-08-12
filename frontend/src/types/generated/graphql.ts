@@ -115,6 +115,7 @@ export type Mutation = {
   syncArtist: Artist;
   syncPlaylist: MutationResult;
   togglePlaylist: MutationResult;
+  togglePlaylistAutoTrack: MutationResult;
   trackArtist: MutationResult;
   trackPlaylist: Playlist;
   untrackArtist: MutationResult;
@@ -160,6 +161,10 @@ export type MutationSyncPlaylistArgs = {
 };
 
 export type MutationTogglePlaylistArgs = {
+  playlistId: Scalars['Int']['input'];
+};
+
+export type MutationTogglePlaylistAutoTrackArgs = {
   playlistId: Scalars['Int']['input'];
 };
 
@@ -1708,6 +1713,63 @@ export type UpdatePlaylistMutationResult =
 export type UpdatePlaylistMutationOptions = Apollo.BaseMutationOptions<
   UpdatePlaylistMutation,
   UpdatePlaylistMutationVariables
+>;
+export const TogglePlaylistAutoTrackDocument = gql`
+  mutation TogglePlaylistAutoTrack($playlistId: Int!) {
+    togglePlaylistAutoTrack(playlistId: $playlistId) {
+      success
+      message
+      playlist {
+        id
+        name
+        autoTrackArtists
+      }
+    }
+  }
+`;
+export type TogglePlaylistAutoTrackMutation = {
+  __typename?: 'Mutation';
+  togglePlaylistAutoTrack: {
+    __typename?: 'MutationResult';
+    success: boolean;
+    message: string;
+    playlist?: {
+      __typename?: 'Playlist';
+      id: number;
+      name: string;
+      autoTrackArtists: boolean;
+    } | null;
+  };
+};
+export type TogglePlaylistAutoTrackMutationVariables = Exact<{
+  playlistId: Scalars['Int']['input'];
+}>;
+
+export type TogglePlaylistAutoTrackMutationFn = Apollo.MutationFunction<
+  TogglePlaylistAutoTrackMutation,
+  TogglePlaylistAutoTrackMutationVariables
+>;
+
+export function useTogglePlaylistAutoTrackMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    TogglePlaylistAutoTrackMutation,
+    TogglePlaylistAutoTrackMutationVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<
+    TogglePlaylistAutoTrackMutation,
+    TogglePlaylistAutoTrackMutationVariables
+  >(TogglePlaylistAutoTrackDocument, options);
+}
+export type TogglePlaylistAutoTrackMutationHookResult = ReturnType<
+  typeof useTogglePlaylistAutoTrackMutation
+>;
+export type TogglePlaylistAutoTrackMutationResult =
+  Apollo.MutationResult<TogglePlaylistAutoTrackMutation>;
+export type TogglePlaylistAutoTrackMutationOptions = Apollo.BaseMutationOptions<
+  TogglePlaylistAutoTrackMutation,
+  TogglePlaylistAutoTrackMutationVariables
 >;
 export const GetSongsDocument = gql`
   query GetSongs(

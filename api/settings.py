@@ -74,7 +74,8 @@ settings = dynaconf.DjangoDynaconf(
     DATABASES={
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "/config/db/db.sqlite3",  # Same as monolith
+            # Allow override via env for dev/test separation
+            "NAME": os.getenv("DJANGO_DB_PATH", "/config/db/db.sqlite3"),
             "OPTIONS": {
                 "timeout": 20,
             },

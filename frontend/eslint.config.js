@@ -39,6 +39,11 @@ export default [
       'react-hooks': reactHooks,
       prettier: prettier,
     },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
     rules: {
       // Prefer top-level type imports for readability/consistency
       '@typescript-eslint/consistent-type-imports': [

@@ -1,5 +1,6 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+# POSIX-compatible: avoid bash-specific options for portability
+set -eu
 
 # Install repo-tracked git hooks from .githooks into .git/hooks
 ROOT_DIR=$(git rev-parse --show-toplevel)

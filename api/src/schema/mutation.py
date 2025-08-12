@@ -45,6 +45,12 @@ class Mutation:
         return await services.playlist.toggle_playlist(playlist_id=playlist_id)
 
     @strawberry.mutation
+    async def toggle_playlist_auto_track(self, playlist_id: int) -> "MutationResult":
+        return await services.playlist.toggle_playlist_auto_track(
+            playlist_id=playlist_id
+        )
+
+    @strawberry.mutation
     async def track_playlist(self, input: TrackPlaylistInput) -> Playlist:
         return await services.playlist.track_playlist(
             playlist_id=input.playlist_id, auto_track_artists=input.auto_track_artists

@@ -120,7 +120,9 @@ export function PlaylistModal({
         <div className='px-6 py-4 border-b border-gray-200'>
           <h3 className='text-lg font-semibold text-gray-900'>{title}</h3>
           <p className='text-sm text-gray-600 mt-1'>
-            Update playlist settings and auto-track artists preference
+            {mode === 'create'
+              ? 'Create a new playlist and choose whether to auto-track artists'
+              : 'Update the playlist name'}
           </p>
         </div>
 
@@ -143,24 +145,26 @@ export function PlaylistModal({
             />
           </div>
 
-          <div className='mb-6'>
-            <label className='flex items-center'>
-              <input
-                type='checkbox'
-                checked={autoTrackArtists}
-                onChange={e => setAutoTrackArtists(e.target.checked)}
-                className='h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded'
-                disabled={isSubmitting}
-              />
-              <span className='ml-2 text-sm text-gray-700'>
-                Auto-track artists from this playlist
-              </span>
-            </label>
-            <p className='text-xs text-gray-500 mt-1'>
-              When enabled, all artists from the playlist will be automatically
-              tracked for future releases
-            </p>
-          </div>
+          {mode === 'create' && (
+            <div className='mb-6'>
+              <label className='flex items-center'>
+                <input
+                  type='checkbox'
+                  checked={autoTrackArtists}
+                  onChange={e => setAutoTrackArtists(e.target.checked)}
+                  className='h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded'
+                  disabled={isSubmitting}
+                />
+                <span className='ml-2 text-sm text-gray-700'>
+                  Auto-track artists from this playlist
+                </span>
+              </label>
+              <p className='text-xs text-gray-500 mt-1'>
+                When enabled, all artists from the playlist will be
+                automatically tracked for future releases
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md'>
