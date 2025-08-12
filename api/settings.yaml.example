@@ -1,0 +1,21 @@
+default:
+  # Downloader defaults (used by api/lib/config_class.py)
+  cookies_location: "/config/cookies.txt"
+  po_token: null
+  log_level: "INFO"
+  no_lrc: false
+  overwrite: false
+
+  # Album selection
+  ALBUM_TYPES_TO_DOWNLOAD:
+    - single
+    - album
+    - compilation
+  ALBUM_GROUPS_TO_IGNORE:
+    - appears_on
+
+  # Operational toggles
+  disable_missing_tracked_artist_download: false
+
+  # Optional: paths (ensure these exist in your environment)
+  final_path: "/mnt/music_spotify"

@@ -25,8 +25,14 @@ class Config:
         self.cookies_location = cookies_location or Path(
             getattr(settings, "cookies_location", "/config/cookies.txt")
         )
-        self.po_token = po_token or getattr(settings, "po_token", None)
-        self.log_level = log_level or getattr(settings, "log_level", "INFO")
+        self.po_token = (
+            po_token if po_token is not None else getattr(settings, "po_token", None)
+        )
+        self.log_level = (
+            log_level
+            if log_level is not None
+            else getattr(settings, "log_level", "INFO")
+        )
         self.no_lrc = (
             no_lrc if no_lrc is not None else getattr(settings, "no_lrc", False)
         )

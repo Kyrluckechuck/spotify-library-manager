@@ -68,13 +68,21 @@ if [ -d "frontend" ]; then
     fi
 fi
 
-# 3) Backend: Python lint only on changed files
+# 3) Backend: Python autofix and lint on changed files
 if [ -d "api" ]; then
     PY_CHANGED=$(printf "%s\n" "$STAGED_FILES" | grep -E '^api/.*\.py$' | sed 's:^api/::' | tr '\n' ' ' || true)
     if [ -n "$PY_CHANGED" ]; then
-        echo "🔍 Running Python linting on changed files..."
+        echo "🛠️  Running Python autofixers on changed files..."
         (
             cd api || exit 1
+            # Auto-format with isort and black (best-effort)
+            # shellcheck disable=SC2086
+            python -m isort $PY_CHANGED >/dev/null 2>&1 || true
+            # shellcheck disable=SC2086
+            python -m black $PY_CHANGED >/dev/null 2>&1 || true
+            # Re-stage auto-fixed files
+            git add -A >/dev/null 2>&1
+            echo "🔍 Running Python linting on changed files..."
             # shellcheck disable=SC2086
             python -m flake8 --extend-ignore=W503 --exclude=.venv,__pycache__,node_modules $PY_CHANGED >/dev/null 2>&1 || {
                 echo "❌ Python linting failed."; exit 1; }

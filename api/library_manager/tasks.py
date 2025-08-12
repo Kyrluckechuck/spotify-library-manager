@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db.models.functions import Now
 from django.utils import timezone
 
-import huey.contrib.djhuey as huey
+import huey.contrib.djhuey as huey  # pylint: disable=no-name-in-module
 from downloader.spotdl_wrapper import SpotdlWrapper
 from downloader.spotipy_tasks import track_artists_in_playlist
 from downloader.utils import sanitize_and_strip_url
@@ -18,8 +18,8 @@ from lib.config_class import Config
 
 from . import helpers
 from .models import (
+    ALBUM_GROUPS_TO_IGNORE,
     ALBUM_TYPES_TO_DOWNLOAD,
-    EXTRA_GROUPS_TO_IGNORE,
     Album,
     Artist,
     DownloadHistory,
@@ -201,7 +201,7 @@ def download_missing_albums_for_artist(
             downloaded=False,
             wanted=True,
             album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
-        ).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
+        ).exclude(album_group__in=ALBUM_GROUPS_TO_IGNORE)
         print(
             f"missing albums search for artist {artist.gid} found {missing_albums.count()}"
         )
@@ -399,7 +399,7 @@ def download_extra_album_types_for_artist(artist_id: int, task: Task = None) -> 
         artist=artist,
         downloaded=False,
         wanted=True,
-        album_group__in=EXTRA_GROUPS_TO_IGNORE,
+        album_group__in=ALBUM_GROUPS_TO_IGNORE,
     )
     print(
         f"extra album missing albums search for artist {artist.gid} found {missing_albums.count()}"
@@ -482,7 +482,7 @@ def download_missing_tracked_artists(task: Task = None) -> None:
             album__wanted=True,
             album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
         )
-        .exclude(album__album_group__in=EXTRA_GROUPS_TO_IGNORE)
+        .exclude(album__album_group__in=ALBUM_GROUPS_TO_IGNORE)
         .distinct()
         .order_by("last_synced_at", "added_at", "id")[:150]
     )

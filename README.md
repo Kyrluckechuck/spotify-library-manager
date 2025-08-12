@@ -52,11 +52,33 @@ If there is enough desire from folks, I am happy to put more time in, and of cou
 It's currently being designed to mostly run on Linux-based systems, however, many of the configurations should only require minor tweaks to adjust for Windows-based systems.
 
 Existing settings (that are applicable) are now set via `/config/settings.yaml`, and will override any default configurations.
-They must follow the format:
-```yaml
-default:
-    final_path: "/mnt/music_spotify"
-```
+
+Quick start:
+
+1. Copy the example file and adjust values
+   ```bash
+   cp api/settings.yaml.example /config/settings.yaml
+   ```
+2. Edit `/config/settings.yaml` (mounted volume) to fit your environment:
+   ```yaml
+   default:
+     # Where downloaded music is stored
+     final_path: "/mnt/music_spotify"
+
+     # Downloader defaults
+     cookies_location: "/config/cookies.txt"
+     log_level: INFO
+     no_lrc: false
+     overwrite: false
+
+     # Album selection
+     ALBUM_TYPES_TO_DOWNLOAD: [single, album, compilation]
+     ALBUM_GROUPS_TO_IGNORE: [appears_on]
+   ```
+
+Notes:
+- You can also set environment variables to override YAML at runtime.
+- Secrets like `AUTH_SECRET_KEY` and `DJANGO_SECRET_KEY` should be set via env vars.
 
 ## Running From Docker (recommended)
 An example docker-compose file is included in this repo that can be dropped into Portainer or your flavour of running it, swapping out any mounts for your local directory structure

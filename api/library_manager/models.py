@@ -1,15 +1,39 @@
 from typing import Optional
 
 import django.core.validators
+from django.conf import settings
 from django.db import models
 from django.db.models import QuerySet, Sum
 from django.utils import timezone
 
 from django_stubs_ext.db.models import TypedModelMeta
 
-# TODO: Make this configurable, allowing "appears_on" to optionally be requested, or others be de-selected
-ALBUM_TYPES_TO_DOWNLOAD = ["single", "album", "compilation"]
-EXTRA_GROUPS_TO_IGNORE = ["appears_on"]
+# Album selection configuration
+#
+# These are read from Django settings (Dynaconf-backed), which in turn load from
+# `/config/settings.yaml` automatically in containers. Operators should configure
+# values there. Environment variables can still override via Dynaconf if needed.
+#
+# Accepted formats in settings:
+# - List, e.g. ["single", "album", "compilation"]
+# - Comma-separated string, e.g. "single,album,compilation"
+
+
+def _get_setting_list(name: str, default: list[str]) -> list[str]:
+    value = getattr(settings, name, default)
+    if isinstance(value, str):
+        parsed = [item.strip() for item in value.split(",") if item.strip()]
+        return parsed or default
+    if isinstance(value, (list, tuple)):
+        # Normalize to list[str]
+        return [str(item) for item in value if str(item).strip()]
+    return default
+
+
+ALBUM_TYPES_TO_DOWNLOAD = _get_setting_list(
+    "ALBUM_TYPES_TO_DOWNLOAD", ["single", "album", "compilation"]
+)
+ALBUM_GROUPS_TO_IGNORE = _get_setting_list("ALBUM_GROUPS_TO_IGNORE", ["appears_on"])
 
 
 # Create your models here.
@@ -32,7 +56,7 @@ class Artist(models.Model):
     def albums(self) -> dict:
         album_base = Album.objects.filter(
             artist=self, album_type__in=ALBUM_TYPES_TO_DOWNLOAD
-        ).exclude(album_group__in=EXTRA_GROUPS_TO_IGNORE)
+        ).exclude(album_group__in=ALBUM_GROUPS_TO_IGNORE)
         return {
             "known": album_base.count(),
             "missing": album_base.filter(wanted=True, downloaded=False).count(),
@@ -378,7 +402,7 @@ class Album(models.Model):
     def desired_album_type(self) -> bool:
         return (
             self.album_type in ALBUM_TYPES_TO_DOWNLOAD
-            and self.album_group not in EXTRA_GROUPS_TO_IGNORE
+            and self.album_group not in ALBUM_GROUPS_TO_IGNORE
         )
 
     def __str__(self) -> str:

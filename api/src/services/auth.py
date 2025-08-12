@@ -1,30 +1,28 @@
-from datetime import datetime, timedelta
-from typing import Optional
-import os
 import base64
+import os
 import secrets
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 import strawberry
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
-"""
-Security configuration
-
-AUTH_SECRET_KEY is the HMAC secret used to sign and verify JWTs (HS256).
-It is NOT a user password. In production, set it via environment variables.
-
-Example (generate a strong key):
-  openssl rand -base64 32
-
-If AUTH_SECRET_KEY is not set, we attempt to load it from a persisted file
-at AUTH_SECRET_FILE (default: /config/auth_secret_key). If the file does not
-exist, we will generate a secure secret and persist it there, so that tokens
-remain valid across restarts. If persistence fails (e.g., during tests), we
-fall back to an in-memory random key for this process only.
-"""
+# Security configuration
+#
+# AUTH_SECRET_KEY is the HMAC secret used to sign and verify JWTs (HS256).
+# It is NOT a user password. In production, set it via environment variables.
+#
+# Example (generate a strong key):
+#   openssl rand -base64 32
+#
+# If AUTH_SECRET_KEY is not set, we attempt to load it from a persisted file
+# at AUTH_SECRET_FILE (default: /config/auth_secret_key). If the file does not
+# exist, we will generate a secure secret and persist it there, so that tokens
+# remain valid across restarts. If persistence fails (e.g., during tests), we
+# fall back to an in-memory random key for this process only.
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
