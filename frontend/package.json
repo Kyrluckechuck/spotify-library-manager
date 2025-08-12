@@ -24,7 +24,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:run": "vitest run",
-    "test:graphql": "node scripts/run-graphql-tests.js",
+    "test:graphql": "node scripts/test-graphql-operations.js",
     "test:graphql-operations": "node scripts/test-graphql-operations.js",
     "test:all": "yarn test:run && yarn test:graphql",
     "validate:comprehensive": "yarn validate-schema && yarn test:graphql-operations"
