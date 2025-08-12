@@ -34,16 +34,32 @@ if [ -d "frontend" ]; then
                 yarn -s tsc --noEmit --project tsconfig.app.json >/dev/null 2>&1 || {
                     echo "❌ TypeScript type check failed."; exit 1; }
             fi
-            # ESLint on changed JS/TS files
+            
+            # Autofix on staged files first
             if [ -n "$FE_LINT_FILES" ]; then
-                echo "🔧 ESLint on changed files..."
+                echo "🛠️  ESLint auto-fix (changed files)..."
+                # shellcheck disable=SC2086
+                yarn -s eslint --fix $FE_LINT_FILES >/dev/null 2>&1 || true
+            fi
+            if [ -n "$FE_PRETTIER_FILES" ]; then
+                echo "🖌️  Prettier write (changed files)..."
+                # shellcheck disable=SC2086
+                yarn -s prettier --write $FE_PRETTIER_FILES >/dev/null 2>&1 || true
+            fi
+            
+            # Re-stage any changes produced by autofixers
+            git add -A >/dev/null 2>&1
+
+            # ESLint on changed JS/TS files (strict)
+            if [ -n "$FE_LINT_FILES" ]; then
+                echo "🔧 ESLint check (changed files)..."
                 # shellcheck disable=SC2086
                 yarn -s eslint --max-warnings=0 $FE_LINT_FILES >/dev/null 2>&1 || {
                     echo "❌ ESLint check failed."; exit 1; }
             fi
-            # Prettier check on changed format-able files
+            # Prettier check on changed format-able files (strict)
             if [ -n "$FE_PRETTIER_FILES" ]; then
-                echo "🎨 Prettier check on changed files..."
+                echo "🎨 Prettier check (changed files)..."
                 # shellcheck disable=SC2086
                 yarn -s prettier --check $FE_PRETTIER_FILES >/dev/null 2>&1 || {
                     echo "❌ Prettier format check failed."; exit 1; }

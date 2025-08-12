@@ -8,13 +8,30 @@ echo "🔍 Running quick pre-commit checks..."
 echo "📝 TypeScript type check..."
 yarn tsc --noEmit --project tsconfig.app.json
 
-# Run ESLint (fast)
-echo "🔧 ESLint check..."
-yarn lint
+# Auto-fix with ESLint and Prettier on staged files, then strict checks
+echo "🛠️  ESLint auto-fix (staged files)..."
+STAGED_JS_TS=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^src/.*\.(ts|tsx|js|jsx)$' | tr '\n' ' ' || true)
+if [ -n "$STAGED_JS_TS" ]; then
+  # shellcheck disable=SC2086
+  yarn -s eslint --fix $STAGED_JS_TS || true
+fi
 
-# Run Prettier format check (fast)
+echo "🖌️  Prettier write (staged files)..."
+STAGED_FORMAT=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^src/.*\.(ts|tsx|js|jsx|json|md|css|scss|html)$' | tr '\n' ' ' || true)
+if [ -n "$STAGED_FORMAT" ]; then
+  # shellcheck disable=SC2086
+  yarn -s prettier --write $STAGED_FORMAT || true
+fi
+
+# Re-stage after autofix
+git add -A
+
+# Strict checks
+echo "🔧 ESLint check..."
+yarn -s lint
+
 echo "🎨 Prettier format check..."
-yarn format:check
+yarn -s format:check
 
 # Run frontend tests (only if they exist and are fast)
 echo "🧪 Running frontend tests..."

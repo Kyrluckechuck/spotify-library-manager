@@ -91,3 +91,7 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 - [ ] Implement Spotify search for artists, albums, songs, playlists
 - [ ] Add search UI components
 - [ ] Integrate with backend search endpoints
+
+## QOL before merging this branch
+  - Add a CI workflow to build/push image and run smoke tests (migrate + hit /healthz)?
+  - Ensure any existing CI is updated to make sense with the new build system
