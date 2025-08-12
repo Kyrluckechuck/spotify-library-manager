@@ -1,5 +1,9 @@
 import React from 'react';
 import { LoadMoreButton } from '../ui/LoadMoreButton';
+import { PageSpinner } from '../ui/PageSpinner';
+import { ErrorBanner } from '../ui/ErrorBanner';
+import { EmptyState } from '../ui/EmptyState';
+// import { RetryButton } from '../ui/RetryButton';
 
 interface DataTableProps<T> {
   data: T[];
@@ -28,27 +32,21 @@ export function DataTable<T>({
   errorMessage = 'Error loading data',
 }: DataTableProps<T>) {
   if (loading && data.length === 0) {
-    return (
-      <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400'>
-        {loadingMessage}
-      </div>
-    );
+    return <PageSpinner message={loadingMessage} />;
   }
 
   if (error) {
     return (
-      <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-red-500'>
-        {errorMessage}: {error.message}
-      </div>
+      <ErrorBanner
+        title={errorMessage}
+        message={error.message}
+        onRetry={onLoadMore}
+      />
     );
   }
 
   if (data.length === 0) {
-    return (
-      <div className='bg-white rounded shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400'>
-        {emptyMessage}
-      </div>
-    );
+    return <EmptyState title={emptyMessage} />;
   }
 
   return (

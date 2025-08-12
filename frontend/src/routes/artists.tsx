@@ -8,6 +8,7 @@ import {
   SyncArtistDocument,
 } from '../types/generated/graphql';
 import { useState, useMemo } from 'react';
+import { InlineSpinner } from '../components/ui/InlineSpinner';
 
 // Layout & shared components
 import { PageContainer } from '../components/layout/PageContainer';
@@ -163,12 +164,7 @@ function Artists() {
         title='Artists'
         subtitle='Manage and track your favorite artists'
       >
-        {isRefetching && (
-          <div className='flex items-center gap-2 text-sm text-gray-500'>
-            <div className='w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-            <span>Updating...</span>
-          </div>
-        )}
+        {isRefetching && <InlineSpinner label='Updating...' />}
       </PageHeader>
 
       <FilterBar
