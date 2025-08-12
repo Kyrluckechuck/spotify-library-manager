@@ -34,7 +34,7 @@ try {
     } else {
       throw new Error(`HTTP ${response.status}`);
     }
-  } catch (error) {
+  } catch {
     console.log('   ❌ API server is not running');
     console.log(
       '   💡 Start the API server: cd api && python -m uvicorn src.main:app --reload --port 5000'

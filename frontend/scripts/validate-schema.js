@@ -71,8 +71,11 @@ async function introspectSchema() {
 
     const result = await response.json();
     return result.data.__schema;
-  } catch (error) {
-    console.error('❌ Failed to introspect schema:', error.message);
+  } catch (e) {
+    console.error(
+      '❌ Failed to introspect schema:',
+      e && e.message ? e.message : e
+    );
     console.log('💡 Make sure the API server is running on port 5000');
     process.exit(1);
   }
@@ -301,10 +304,10 @@ function validateQueries(queries, _schema) {
           });
         }
       }
-    } catch (error) {
+    } catch (e) {
       errors.push({
         query: query.name,
-        message: `Failed to validate query: ${error.message}`,
+        message: `Failed to validate query: ${e && e.message ? e.message : e}`,
         line: 1,
       });
     }
@@ -324,7 +327,7 @@ async function validateSchema() {
   try {
     schema = await introspectSchema();
     console.log('✅ Successfully connected to GraphQL API');
-  } catch (error) {
+  } catch {
     console.error('❌ Cannot connect to GraphQL API');
     console.log(
       '💡 Please start the API server: cd api && python -m uvicorn src.main:app --reload --port 5000'

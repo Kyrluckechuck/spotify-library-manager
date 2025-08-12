@@ -15,30 +15,30 @@ export const DownloadUrlModal: React.FC<DownloadUrlModalProps> = ({
 }) => {
   const [url, setUrl] = useState('');
   const [autoTrackArtists, setAutoTrackArtists] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [downloadUrl, { loading }] = useMutation(DOWNLOAD_URL, {
     onCompleted: data => {
       if (data.downloadUrl.success) {
-        setError(null);
+        setErrorMessage(null);
         setUrl('');
         onClose();
         onSuccess?.();
       } else {
-        setError(data.downloadUrl.message);
+        setErrorMessage(data.downloadUrl.message);
       }
     },
-    onError: error => {
-      setError(error.message);
+    onError: err => {
+      setErrorMessage(err.message);
     },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setErrorMessage(null);
 
     if (!url.trim()) {
-      setError('Please enter a Spotify URL or URI');
+      setErrorMessage('Please enter a Spotify URL or URI');
       return;
     }
 
@@ -49,14 +49,14 @@ export const DownloadUrlModal: React.FC<DownloadUrlModalProps> = ({
           autoTrackArtists,
         },
       });
-    } catch (error) {
+    } catch {
       // Error is handled in onError callback
     }
   };
 
   const handleClose = () => {
     setUrl('');
-    setError(null);
+    setErrorMessage(null);
     setAutoTrackArtists(false);
     onClose();
   };
@@ -122,9 +122,9 @@ export const DownloadUrlModal: React.FC<DownloadUrlModalProps> = ({
             </label>
           </div>
 
-          {error && (
+          {errorMessage && (
             <div className='mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded'>
-              {error}
+              {errorMessage}
             </div>
           )}
 
