@@ -1,18 +1,7 @@
-# TODO
 
 This list removes completed items and internal-only documentation tasks (e.g., public GraphQL API docs). Remaining items are actionable and prioritized.
 
 ## High Priority
-- [x] Fix TypeScript errors in test files
-  - [x] Resolve type issues in `frontend/src/__tests__/routes/artists.test.tsx`
-  - [x] Ensure all test files compile without errors
-  - [x] Add proper TypeScript types for all mock data
-
-- [x] Run and validate the test suite
-  - [x] Execute `yarn test:run` for unit tests
-  - [x] Execute `yarn test:graphql` for backend integration
-  - [x] Fix any failing tests and ensure coverage is adequate
-
 - [ ] Add integration tests for real GraphQL operations
   - [ ] Test actual backend connectivity
   - [ ] Validate schema consistency between frontend and backend
@@ -37,11 +26,6 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [x] Make album types configurable (allow "appears_on" to be optional, or others deselectable)
   - [x] Move SECRET_KEY to environment variable in auth service
   - [ ] Replace in-memory user storage with persistent storage in auth service
-
-- [ ] Downloader integration
-  - [x] Re-add spotdl integration once dependencies are resolved
-  - [ ] Implement artist tracking from playlist functionality
-  - [x] Implement spotdl wrapper
 
 - [ ] Error handling
   - [ ] Add error message support to history service
@@ -94,3 +78,31 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 ## QOL before merging this branch
   - Add a CI workflow to build/push image and run smoke tests (migrate + hit /healthz)?
   - Ensure any existing CI is updated to make sense with the new build system
+
+## Frontend: Loading & Error State UX Improvements
+- [ ] Reusable UI primitives
+  - [ ] `InlineSpinner` and `PageSpinner`
+  - [ ] `SkeletonBlock` and `SkeletonTable` that match table/card layouts
+  - [ ] `ErrorBanner` with focus management and aria-live
+  - [ ] `EmptyState` with contextual CTAs
+  - [ ] `RetryButton` wrapper for re-executing queries
+- [ ] Route-level loading
+  - [ ] Use TanStack Router pending state to show a top progress bar or `PageSpinner`
+- [ ] Query loading patterns
+  - [ ] Initial load: render skeletons instead of blank pages
+  - [ ] Background/refetch: keep previous data; show subtle inline spinner or “Refreshing…” chip
+  - [ ] Pagination: show spinner/disable on “Load more”
+- [ ] Mutation states
+  - [ ] Disable action controls while mutating; inline spinner in buttons
+  - [ ] Show inline error near the control; fall back to banner when page-level
+- [ ] Error handling UX
+  - [ ] Map network vs GraphQL errors to friendly messages
+  - [ ] Use `ErrorBanner` for blocking failures and keep stale data for non-blocking
+  - [ ] Add distinct empty states per view (Artists/Albums/Songs/Playlists/Tasks)
+- [ ] Accessibility
+  - [ ] `aria-busy` on containers, `aria-live='polite'` for status updates, move focus to error banner
+- [ ] Global plumbing
+  - [ ] Add a small `useRequestState` helper to normalize Apollo `networkStatus` → { isInitial, isRefreshing, isPaginating }
+- [ ] Rollout plan
+  - [ ] Implement primitives and wire into `Artists` as the reference view
+  - [ ] Apply the pattern to `Albums`, `Songs`, `Playlists`, `Tasks`
