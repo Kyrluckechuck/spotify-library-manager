@@ -210,17 +210,20 @@ function getTestOperations() {
               endCursor
             }
             edges {
-              id
-              taskId
-              type
-              entityId
-              entityType
-              status
-              startedAt
-              completedAt
-              durationSeconds
-              progressPercentage
-              logMessages
+              cursor
+              node {
+                id
+                taskId
+                type
+                entityId
+                entityType
+                status
+                startedAt
+                completedAt
+                durationSeconds
+                progressPercentage
+                logMessages
+              }
             }
           }
         }
@@ -262,22 +265,27 @@ function getTestOperations() {
       `,
       variables: { artistId: 1 },
     },
-    {
-      name: 'SyncArtist',
-      query: `
-        mutation SyncArtist($artistId: String!) {
-          syncArtist(artistId: $artistId) {
-            id
-            name
-            gid
-            isTracked
-            addedAt
-            lastSynced
-          }
-        }
-      `,
-      variables: { artistId: 'test-gid' },
-    },
+    // Optionally include data-dependent mutations that require seeded data
+    ...(process.env.INCLUDE_MUTATION_SYNC_ARTIST === 'true'
+      ? [
+          {
+            name: 'SyncArtist',
+            query: `
+              mutation SyncArtist($artistId: String!) {
+                syncArtist(artistId: $artistId) {
+                  id
+                  name
+                  gid
+                  isTracked
+                  addedAt
+                  lastSynced
+                }
+              }
+            `,
+            variables: { artistId: 'test-gid' },
+          },
+        ]
+      : []),
   ];
 }
 
