@@ -1,3 +1,9 @@
+version: '3.8'
+
+networks:
+  slm_net:
+    name: slm_net
+
 services:
   web:
     build: .
@@ -15,20 +21,44 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - slm_net
     volumes:
       - config_storage:/config
       - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
+    # No host port published; reachable only on internal network
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL:-/graphql}
+    image: ghcr.io/kyrluckechuck/spotify-library-manager-frontend:latest
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - slm_net
     ports:
-      - "5000:5000"
+      - "3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   worker:
+    build: .
     image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
     command: python manage.py run_huey
     volumes:
       - config_storage:/config
       - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - slm_net
 
 volumes:
   config_storage:

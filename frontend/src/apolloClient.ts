@@ -7,7 +7,7 @@ import {
 import { onError } from '@apollo/client/link/error';
 
 const httpLink = createHttpLink({
-  uri: 'http://localhost:5000/graphql',
+  uri: import.meta.env.VITE_API_URL ?? '/graphql',
 });
 
 const errorLink = onError(({ graphQLErrors, networkError }) => {

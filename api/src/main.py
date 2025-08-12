@@ -13,6 +13,7 @@ from strawberry.fastapi import GraphQLRouter
 from fastapi.responses import FileResponse
 from starlette.staticfiles import StaticFiles
 from django.db import connections
+from django.conf import settings as dj_settings
 
 # Add the API directory to Python path for Django apps
 API_DIR = Path(__file__).resolve().parent.parent
@@ -85,6 +86,11 @@ def create_app() -> FastAPI:
 
     graphql_app = GraphQLRouter(schema)
     app.include_router(graphql_app, prefix="/graphql")
+
+    # Serve Django static files
+    static_root = getattr(dj_settings, "STATIC_ROOT", None)
+    if static_root:
+        app.mount("/static", StaticFiles(directory=str(static_root)), name="static")
 
     # Serve built frontend
     frontend_dir = API_DIR / "frontend-dist"

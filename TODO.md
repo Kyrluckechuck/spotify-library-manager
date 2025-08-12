@@ -20,16 +20,17 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 
 ## Containerization and DevOps
 - [ ] Docker images and compose
-  - [ ] Add non-root user in image and proper file permissions for `/config` and `/mnt/music_spotify`
-  - [ ] Add healthcheck (simple HTTP or management command) and wire into compose
-  - [ ] Split dev/prod compose (`docker-compose.override.yml` for dev with bind mounts; prod uses image only)
-  - [ ] Provide `.env.example` with sane defaults; document required variables
+  - [x] Add non-root user in image and proper file permissions for `/config` and `/mnt/music_spotify`
+  - [x] Add healthcheck (simple HTTP or management command) and wire into compose
+  - [x] Split dev/prod compose (`docker-compose.override.yml` for dev with bind mounts; prod uses image only)
+  - [x] Provide `.env.example` with sane defaults; document required variables
+  - [x] Add `docker-compose.override.yml` with local bind mounts for quicker dev
   - [ ] Parameterize music directory via env (e.g., `MUSIC_DIR`) in compose instead of hard-coded path
-  - [ ] Move Huey SQLite file to `/config/db/huey.sqlite3` to persist across restarts
+  - [x] Move Huey SQLite file to `/config/db/huey.sqlite3` to persist across restarts
   - [ ] Review image size; consider multi-stage and dependency caching
-  - [ ] Add CI job to build/push image to GHCR on main with buildx + cache
+  - [ ] Add CI workflow to build/push image (GHCR, buildx cache) and run smoke tests (migrate + hit `/healthz`)
 
-  - [ ] Verify Dockerfile works on this branch end-to-end (build, migrate, run)
+  - [ ] Verify Docker images work on this branch end-to-end (build, migrate, run)
 
 ## Backend
 - [ ] Configuration management
