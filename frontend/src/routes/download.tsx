@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { DownloadUrlModal } from '../components/ui/DownloadUrlModal';
 
 function DownloadPage() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   return (
     <section className='space-y-6'>
       <div>
