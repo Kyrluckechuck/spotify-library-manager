@@ -2,6 +2,8 @@
 This list removes completed items and internal-only documentation tasks (e.g., public GraphQL API docs). Remaining items are actionable and prioritized.
 
 ## High Priority
+- [ ] Fix dev entrypoint mismatch
+  - Makefile uses `dev: python dev.py` but no `dev.py` exists. Either add a `dev.py` that launches API, worker, and Vite concurrently, or update `dev` to orchestrate `dev-api`, `dev-worker`, and `dev-frontend` (or compose with the override).
 - [ ] Add integration tests for real GraphQL operations
   - [ ] Test actual backend connectivity
   - [ ] Validate schema consistency between frontend and backend
@@ -16,10 +18,18 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [x] Add `docker-compose.override.yml` with local bind mounts for quicker dev
   - [x] Parameterize music directory via env (e.g., `MUSIC_DIR`) in compose instead of hard-coded path
   - [x] Move Huey SQLite file to `/config/db/huey.sqlite3` to persist across restarts
-  - [ ] Review image size; consider multi-stage and dependency caching
-  - [ ] Add CI workflow to build/push image (GHCR, buildx cache) and run smoke tests (migrate + hit `/healthz`)
-
+  - [ ] Review image size; switch to a multi-stage build and leverage dependency caching
+  - [ ] Add CI workflow to build and push images (GHCR, buildx cache) and run smoke tests (migrate + hit `/healthz`)
+  - [ ] Replace README Docker TODO with concrete `docker compose up` instructions and a sample `.env.example`
   - [ ] Verify Docker images work on this branch end-to-end (build, migrate, run)
+
+### CI/CD
+- [ ] Add GitHub Actions workflow(s)
+  - [ ] API: lint (flake8/black/isort/mypy/pylint), tests (unit + selected integration)
+  - [ ] Frontend: lint, unit tests
+  - [ ] GraphQL: run `frontend/scripts/validate-schema.js` and `frontend/scripts/test-graphql-operations.js`
+  - [ ] Build and push multi-stage images (web, worker) to GHCR with cache
+  - [ ] Compose up container and run smoke tests (migrate + `/healthz`)
 
 ## Backend
 - [ ] Configuration management
@@ -46,6 +56,9 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [ ] Implement proper pagination for all list queries
   - [ ] Re-evaluate previously removed mutations and add back only if needed
   - [x] Add dedicated health endpoint for container healthchecks
+
+- [ ] Downloader fallback
+  - [ ] Implement `api/downloader/spotdl_wrapper.py` and wire fallback to spotdl/yt-dlp when Spotify AAC is unavailable (configurable via `/config/settings.yaml`)
 
 ## Frontend
 - [ ] Error handling and user feedback
@@ -78,6 +91,20 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 ## QOL before merging this branch
   - Add a CI workflow to build/push image and run smoke tests (migrate + hit /healthz)?
   - Ensure any existing CI is updated to make sense with the new build system
+
+## Repo hygiene and developer experience
+- [ ] Unify Node package manager and lockfiles
+  - Choose Yarn or npm; remove the other’s lockfile(s). Consolidate to a single lockfile and update Makefile/scripts accordingly.
+  - Remove `frontend/package-lock.json` if standardizing on Yarn.
+- [ ] Align Python version requirements
+  - README mentions Python 3.13+, while `pyproject.toml` targets 3.11+. Decide and align both.
+- [ ] Documentation and onboarding
+  - Finish migration notes for `settings.yaml` and update README onboarding (first run, required env vars/secrets, cookie export, device.wvd).
+  - Replace README Docker placeholder with exact commands and expected URLs.
+- [ ] Repository templates and housekeeping
+  - Add `.github/ISSUE_TEMPLATE` and `PULL_REQUEST_TEMPLATE.md`
+  - Add `.github/workflows/*` for CI/CD (see CI/CD section)
+  - Optional: rename branch `overhual-frontend-tanstack` → `overhaul-frontend-tanstack`
 
 ## Frontend: Loading & Error State UX Improvements
 - [ ] Reusable UI primitives
