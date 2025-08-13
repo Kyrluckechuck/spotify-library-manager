@@ -188,7 +188,7 @@ export function AlbumsTable({
                   <button
                     onClick={() => onToggleWanted(album.id, !album.wanted)}
                     disabled={mutatingIds?.has(album.id)}
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors disabled:opacity-60 ${
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors disabled:opacity-60 w-24 justify-center ${
                       album.wanted
                         ? 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'
                         : 'bg-red-100 text-red-800 hover:bg-red-200'
@@ -199,10 +199,8 @@ export function AlbumsTable({
                         <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
                         <span>Working…</span>
                       </span>
-                    ) : album.wanted ? (
-                      'Yes'
                     ) : (
-                      'No'
+                      <span>{album.wanted ? 'Yes' : 'No'}</span>
                     )}
                   </button>
                 </td>

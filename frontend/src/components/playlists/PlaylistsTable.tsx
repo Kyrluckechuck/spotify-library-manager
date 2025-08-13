@@ -135,26 +135,30 @@ export function PlaylistsTable({
                     aria-label={
                       playlist.enabled ? 'Disable playlist' : 'Enable playlist'
                     }
-                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-                      playlist.enabled
+                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors relative w-28 justify-center ${
+                      (
+                        mutatingIds?.has(playlist.id)
+                          ? !playlist.enabled
+                          : playlist.enabled
+                      )
                         ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800 focus:bg-red-100 focus:text-red-800'
                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
                     }`}
                   >
-                    {mutatingIds?.has(playlist.id) ? (
-                      <span className='inline-flex items-center gap-2'>
-                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-                        <span>Working…</span>
-                      </span>
-                    ) : (
-                      <>
-                        <span className='group-hover:hidden group-focus:hidden'>
-                          {playlist.enabled ? 'Enabled' : 'Disabled'}
-                        </span>
-                        <span className='hidden group-hover:inline group-focus:inline'>
-                          {playlist.enabled ? 'Disable' : 'Enable'}
-                        </span>
-                      </>
+                    <span>
+                      {(
+                        mutatingIds?.has(playlist.id)
+                          ? !playlist.enabled
+                          : playlist.enabled
+                      )
+                        ? 'Enabled'
+                        : 'Disabled'}
+                    </span>
+                    {mutatingIds?.has(playlist.id) && (
+                      <span
+                        className='absolute right-1 top-1.5 w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin'
+                        aria-hidden='true'
+                      />
                     )}
                   </button>
                 </td>
@@ -199,26 +203,30 @@ export function PlaylistsTable({
                         ? 'Disable tracking artists'
                         : 'Enable tracking artists'
                     }
-                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-                      playlist.autoTrackArtists
+                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors relative w-28 justify-center ${
+                      (
+                        mutatingIds?.has(playlist.id)
+                          ? !playlist.autoTrackArtists
+                          : playlist.autoTrackArtists
+                      )
                         ? 'bg-blue-100 text-blue-800 hover:bg-orange-100 hover:text-orange-800 focus:bg-orange-100 focus:text-orange-800'
                         : 'bg-orange-100 text-orange-800 hover:bg-blue-100 hover:text-blue-800 focus:bg-blue-100 focus:text-blue-800'
                     }`}
                   >
-                    {mutatingIds?.has(playlist.id) ? (
-                      <span className='inline-flex items-center gap-2'>
-                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-                        <span>Working…</span>
-                      </span>
-                    ) : (
-                      <>
-                        <span className='group-hover:hidden group-focus:hidden'>
-                          {playlist.autoTrackArtists ? 'Yes' : 'No'}
-                        </span>
-                        <span className='hidden group-hover:inline group-focus:inline'>
-                          {playlist.autoTrackArtists ? 'Disable' : 'Enable'}
-                        </span>
-                      </>
+                    <span>
+                      {(
+                        mutatingIds?.has(playlist.id)
+                          ? !playlist.autoTrackArtists
+                          : playlist.autoTrackArtists
+                      )
+                        ? 'Yes'
+                        : 'No'}
+                    </span>
+                    {mutatingIds?.has(playlist.id) && (
+                      <span
+                        className='absolute right-1 top-1.5 w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin'
+                        aria-hidden='true'
+                      />
                     )}
                   </button>
                 </td>

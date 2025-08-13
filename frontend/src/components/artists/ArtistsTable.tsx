@@ -15,6 +15,7 @@ interface ArtistsTableProps {
   mutatingIds?: Set<number>;
   syncMutatingIds?: Set<number>;
   errorById?: Record<number, string>;
+  desiredTrackedById?: Record<number, boolean>;
 }
 
 export function ArtistsTable({
@@ -28,6 +29,7 @@ export function ArtistsTable({
   mutatingIds,
   syncMutatingIds,
   errorById,
+  desiredTrackedById,
 }: ArtistsTableProps) {
   if (artists.length === 0) {
     return (
@@ -119,26 +121,22 @@ export function ArtistsTable({
                     aria-label={
                       artist.isTracked ? 'Untrack artist' : 'Track artist'
                     }
-                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-                      artist.isTracked
+                    className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors relative w-28 justify-center ${
+                      (desiredTrackedById?.[artist.id] ?? artist.isTracked)
                         ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800 focus:bg-red-100 focus:text-red-800'
                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
                     }`}
                   >
-                    {mutatingIds?.has(artist.id) ? (
-                      <span className='inline-flex items-center gap-2'>
-                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
-                        <span>Working…</span>
-                      </span>
-                    ) : (
-                      <>
-                        <span className='group-hover:hidden group-focus:hidden'>
-                          {artist.isTracked ? 'Tracked' : 'Not Tracked'}
-                        </span>
-                        <span className='hidden group-hover:inline group-focus:inline'>
-                          {artist.isTracked ? 'Untrack' : 'Track'}
-                        </span>
-                      </>
+                    <span>
+                      {(desiredTrackedById?.[artist.id] ?? artist.isTracked)
+                        ? 'Tracked'
+                        : 'Not Tracked'}
+                    </span>
+                    {mutatingIds?.has(artist.id) && (
+                      <span
+                        className='absolute right-1 top-1.5 w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin'
+                        aria-hidden='true'
+                      />
                     )}
                   </button>
                 </td>
