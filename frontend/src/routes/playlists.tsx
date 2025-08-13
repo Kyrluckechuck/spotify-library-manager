@@ -20,6 +20,7 @@ import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { PageSpinner } from '../components/ui/PageSpinner';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { useRequestState } from '../hooks/useRequestState';
+import { useToast } from '../components/ui/useToast';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { SearchInput } from '../components/ui/SearchInput';
 import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
@@ -27,6 +28,7 @@ import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
 type SortDirection = 'asc' | 'desc';
 
 function Playlists() {
+  const toast = useToast();
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [pageSize, setPageSize] = useState(50);
   const [sortField, setSortField] = useState<PlaylistSortField>(null);
@@ -100,7 +102,15 @@ function Playlists() {
   const [togglePlaylistAutoTrack] = useMutation(
     TogglePlaylistAutoTrackDocument
   );
-  const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
+  const [enabledMutatingIds, setEnabledMutatingIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [autoMutatingIds, setAutoMutatingIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [syncMutatingIds, setSyncMutatingIds] = useState<Set<number>>(
+    new Set()
+  );
   const [errorById, setErrorById] = useState<Record<number, string>>({});
 
   const handleEnabledFilterChange = (
@@ -202,15 +212,16 @@ function Playlists() {
   const handleTogglePlaylist = async (playlist: Playlist) => {
     try {
       setErrorById(prev => ({ ...prev, [playlist.id]: '' }));
-      setMutatingIds(prev => new Set(prev).add(playlist.id));
+      setEnabledMutatingIds(prev => new Set(prev).add(playlist.id));
       await togglePlaylist({ variables: { playlistId: playlist.id } });
+      toast.success(`Playlist ${playlist.enabled ? 'disabled' : 'enabled'}`);
     } catch (error) {
       setErrorById(prev => ({
         ...prev,
         [playlist.id]: error instanceof Error ? error.message : 'Action failed',
       }));
     }
-    setMutatingIds(prev => {
+    setEnabledMutatingIds(prev => {
       const next = new Set(prev);
       next.delete(playlist.id);
       return next;
@@ -220,15 +231,16 @@ function Playlists() {
   const handleSyncPlaylist = async (playlistId: number) => {
     try {
       setErrorById(prev => ({ ...prev, [playlistId]: '' }));
-      setMutatingIds(prev => new Set(prev).add(playlistId));
+      setSyncMutatingIds(prev => new Set(prev).add(playlistId));
       await syncPlaylist({ variables: { playlistId } });
+      toast.success('Playlist synced');
     } catch (error) {
       setErrorById(prev => ({
         ...prev,
         [playlistId]: error instanceof Error ? error.message : 'Sync failed',
       }));
     }
-    setMutatingIds(prev => {
+    setSyncMutatingIds(prev => {
       const next = new Set(prev);
       next.delete(playlistId);
       return next;
@@ -238,17 +250,20 @@ function Playlists() {
   const handleToggleAutoTrack = async (playlist: Playlist) => {
     try {
       setErrorById(prev => ({ ...prev, [playlist.id]: '' }));
-      setMutatingIds(prev => new Set(prev).add(playlist.id));
+      setAutoMutatingIds(prev => new Set(prev).add(playlist.id));
       await togglePlaylistAutoTrack({
         variables: { playlistId: playlist.id },
       });
+      toast.success(
+        `Track Artists ${playlist.autoTrackArtists ? 'disabled' : 'enabled'}`
+      );
     } catch (error) {
       setErrorById(prev => ({
         ...prev,
         [playlist.id]: error instanceof Error ? error.message : 'Action failed',
       }));
     }
-    setMutatingIds(prev => {
+    setAutoMutatingIds(prev => {
       const next = new Set(prev);
       next.delete(playlist.id);
       return next;
@@ -369,7 +384,9 @@ function Playlists() {
           onSyncPlaylist={handleSyncPlaylist}
           onEditPlaylist={handleEditPlaylist}
           loading={loading}
-          mutatingIds={mutatingIds}
+          enabledMutatingIds={enabledMutatingIds}
+          autoMutatingIds={autoMutatingIds}
+          syncMutatingIds={syncMutatingIds}
           errorById={errorById}
         />
       </div>

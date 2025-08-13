@@ -16,6 +16,7 @@ import { PageContainer } from '../components/layout/PageContainer';
 import { PageHeader } from '../components/layout/PageHeader';
 import { DataTable } from '../components/common/DataTable';
 import { FilterBar } from '../components/common/FilterBar';
+import { useToast } from '../components/ui/useToast';
 
 // Artists components
 import { ArtistFilters } from '../components/artists/ArtistFilters';
@@ -26,6 +27,7 @@ import { useDataTable } from '../hooks/useDataTable';
 import type { SortField } from '../components/artists/ArtistsTable';
 
 function Artists() {
+  const toast = useToast();
   const client = useApolloClient();
 
   // Use custom hook for data table state management
@@ -134,8 +136,10 @@ function Artists() {
       setMutatingIds(prev => new Set(prev).add(artist.id));
       if (artist.isTracked) {
         await untrackArtist({ variables: { artistId: artist.id } });
+        toast.success('Artist untracked');
       } else {
         await trackArtist({ variables: { artistId: artist.id } });
+        toast.success('Artist tracked');
       }
     } catch (error) {
       setErrorById(prev => ({
@@ -155,6 +159,7 @@ function Artists() {
       setErrorById(prev => ({ ...prev, [artistId]: '' }));
       setSyncMutatingIds(prev => new Set(prev).add(artistId));
       await syncArtist({ variables: { artistId: artistId.toString() } });
+      toast.success('Artist sync started');
     } catch (error) {
       setErrorById(prev => ({
         ...prev,

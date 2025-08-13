@@ -16,6 +16,7 @@ import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { PageSpinner } from '../components/ui/PageSpinner';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { useRequestState } from '../hooks/useRequestState';
+import { useToast } from '../components/ui/useToast';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { ArtistContext } from '../components/ui/ArtistContext';
 import { SearchInput } from '../components/ui/SearchInput';
@@ -24,6 +25,7 @@ import type { AlbumSortField } from '../components/albums/AlbumsTable';
 type SortDirection = 'asc' | 'desc';
 
 function Albums() {
+  const toast = useToast();
   const { artistId } = Route.useSearch();
   const [wantedFilter, setWantedFilter] = useState<
     'all' | 'wanted' | 'unwanted'
@@ -229,6 +231,7 @@ function Albums() {
           wanted,
         },
       });
+      toast.success(`Wanted ${wanted ? 'enabled' : 'disabled'}`);
     } catch (error) {
       setErrorById(prev => ({
         ...prev,

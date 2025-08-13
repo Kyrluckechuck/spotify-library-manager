@@ -18,7 +18,9 @@ interface PlaylistsTableProps {
   onSyncPlaylist: (playlistId: number) => void;
   onEditPlaylist?: (playlist: Playlist) => void;
   loading?: boolean;
-  mutatingIds?: Set<number>;
+  enabledMutatingIds?: Set<number>;
+  autoMutatingIds?: Set<number>;
+  syncMutatingIds?: Set<number>;
   errorById?: Record<number, string>;
 }
 
@@ -32,7 +34,9 @@ export function PlaylistsTable({
   onSyncPlaylist,
   onEditPlaylist,
   loading = false,
-  mutatingIds,
+  enabledMutatingIds,
+  autoMutatingIds,
+  syncMutatingIds,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   errorById,
 }: PlaylistsTableProps) {
@@ -106,7 +110,7 @@ export function PlaylistsTable({
                   {/* Mobile: Toggle switch */}
                   <button
                     onClick={() => onToggleEnabled(playlist)}
-                    disabled={mutatingIds?.has(playlist.id)}
+                    disabled={enabledMutatingIds?.has(playlist.id)}
                     role='switch'
                     aria-checked={playlist.enabled}
                     aria-label={
@@ -130,31 +134,48 @@ export function PlaylistsTable({
                   {/* Desktop: Interactive status pill */}
                   <button
                     onClick={() => onToggleEnabled(playlist)}
-                    disabled={mutatingIds?.has(playlist.id)}
+                    disabled={enabledMutatingIds?.has(playlist.id)}
                     aria-pressed={playlist.enabled}
                     aria-label={
                       playlist.enabled ? 'Disable playlist' : 'Enable playlist'
                     }
                     className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors relative w-28 justify-center ${
-                      (
-                        mutatingIds?.has(playlist.id)
-                          ? !playlist.enabled
-                          : playlist.enabled
-                      )
+                      playlist.enabled
                         ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800 focus:bg-red-100 focus:text-red-800'
                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
                     }`}
                   >
-                    <span>
-                      {(
-                        mutatingIds?.has(playlist.id)
-                          ? !playlist.enabled
-                          : playlist.enabled
-                      )
-                        ? 'Enabled'
-                        : 'Disabled'}
+                    <span className='inline-flex items-center gap-1'>
+                      {playlist.enabled ? (
+                        <svg
+                          className='w-3 h-3 text-green-700'
+                          viewBox='0 0 20 20'
+                          fill='currentColor'
+                          aria-hidden='true'
+                        >
+                          <path
+                            fillRule='evenodd'
+                            d='M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z'
+                            clipRule='evenodd'
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className='w-3 h-3 text-red-700'
+                          viewBox='0 0 20 20'
+                          fill='currentColor'
+                          aria-hidden='true'
+                        >
+                          <path
+                            fillRule='evenodd'
+                            d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
+                            clipRule='evenodd'
+                          />
+                        </svg>
+                      )}
+                      <span>{playlist.enabled ? 'Enabled' : 'Disabled'}</span>
                     </span>
-                    {mutatingIds?.has(playlist.id) && (
+                    {enabledMutatingIds?.has(playlist.id) && (
                       <span
                         className='absolute right-1 top-1.5 w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin'
                         aria-hidden='true'
@@ -166,7 +187,7 @@ export function PlaylistsTable({
                   {/* Mobile: Toggle switch for auto track */}
                   <button
                     onClick={() => onToggleAutoTrack(playlist)}
-                    disabled={mutatingIds?.has(playlist.id)}
+                    disabled={autoMutatingIds?.has(playlist.id)}
                     role='switch'
                     aria-checked={playlist.autoTrackArtists}
                     aria-label={
@@ -196,7 +217,7 @@ export function PlaylistsTable({
                   {/* Desktop: Interactive status pill */}
                   <button
                     onClick={() => onToggleAutoTrack(playlist)}
-                    disabled={mutatingIds?.has(playlist.id)}
+                    disabled={autoMutatingIds?.has(playlist.id)}
                     aria-pressed={playlist.autoTrackArtists}
                     aria-label={
                       playlist.autoTrackArtists
@@ -204,25 +225,42 @@ export function PlaylistsTable({
                         : 'Enable tracking artists'
                     }
                     className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors relative w-28 justify-center ${
-                      (
-                        mutatingIds?.has(playlist.id)
-                          ? !playlist.autoTrackArtists
-                          : playlist.autoTrackArtists
-                      )
+                      playlist.autoTrackArtists
                         ? 'bg-blue-100 text-blue-800 hover:bg-orange-100 hover:text-orange-800 focus:bg-orange-100 focus:text-orange-800'
                         : 'bg-orange-100 text-orange-800 hover:bg-blue-100 hover:text-blue-800 focus:bg-blue-100 focus:text-blue-800'
                     }`}
                   >
-                    <span>
-                      {(
-                        mutatingIds?.has(playlist.id)
-                          ? !playlist.autoTrackArtists
-                          : playlist.autoTrackArtists
-                      )
-                        ? 'Yes'
-                        : 'No'}
+                    <span className='inline-flex items-center gap-1'>
+                      {playlist.autoTrackArtists ? (
+                        <svg
+                          className='w-3 h-3 text-blue-700'
+                          viewBox='0 0 20 20'
+                          fill='currentColor'
+                          aria-hidden='true'
+                        >
+                          <path
+                            fillRule='evenodd'
+                            d='M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z'
+                            clipRule='evenodd'
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className='w-3 h-3 text-orange-700'
+                          viewBox='0 0 20 20'
+                          fill='currentColor'
+                          aria-hidden='true'
+                        >
+                          <path
+                            fillRule='evenodd'
+                            d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
+                            clipRule='evenodd'
+                          />
+                        </svg>
+                      )}
+                      <span>{playlist.autoTrackArtists ? 'Yes' : 'No'}</span>
                     </span>
-                    {mutatingIds?.has(playlist.id) && (
+                    {autoMutatingIds?.has(playlist.id) && (
                       <span
                         className='absolute right-1 top-1.5 w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin'
                         aria-hidden='true'
@@ -238,10 +276,10 @@ export function PlaylistsTable({
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
                   <button
                     onClick={() => onSyncPlaylist(playlist.id)}
-                    disabled={mutatingIds?.has(playlist.id)}
+                    disabled={syncMutatingIds?.has(playlist.id)}
                     className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors'
                   >
-                    {mutatingIds?.has(playlist.id) ? (
+                    {syncMutatingIds?.has(playlist.id) ? (
                       <span className='inline-flex items-center gap-2'>
                         <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
                         <span>Syncing…</span>
