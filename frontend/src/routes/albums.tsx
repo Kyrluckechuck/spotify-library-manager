@@ -350,11 +350,7 @@ function Albums() {
           mutatingIds={mutatingIds}
           errorById={errorById}
         />
-        {isRefetching && (
-          <div className='absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none'>
-            <InlineSpinner label='Updating...' />
-          </div>
-        )}
+        {/* No full overlay during refetch to reduce jitter */}
       </div>
 
       <LoadMoreButton

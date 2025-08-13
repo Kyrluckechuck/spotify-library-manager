@@ -372,11 +372,6 @@ function Playlists() {
           mutatingIds={mutatingIds}
           errorById={errorById}
         />
-        {isRefetching && (
-          <div className='absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none'>
-            <InlineSpinner label='Updating...' />
-          </div>
-        )}
       </div>
 
       <LoadMoreButton
