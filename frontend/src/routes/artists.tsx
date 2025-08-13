@@ -105,7 +105,7 @@ function Artists() {
     new Set()
   );
   const [errorById, setErrorById] = useState<Record<number, string>>({});
-  const [succeededIds, setSucceededIds] = useState<Set<number>>(new Set());
+  const [pulseIds, setPulseIds] = useState<Set<number>>(new Set());
 
   const handleFilterChange = (newFilter: 'all' | 'tracked' | 'untracked') => {
     setFilter(newFilter);
@@ -142,7 +142,7 @@ function Artists() {
         await trackArtist({ variables: { artistId: artist.id } });
         toast.success('Artist tracked');
       }
-      setSucceededIds(prev => new Set(prev).add(artist.id));
+      setPulseIds(prev => new Set(prev).add(artist.id));
     } catch (error) {
       setErrorById(prev => ({
         ...prev,
@@ -155,12 +155,12 @@ function Artists() {
       return next;
     });
     window.setTimeout(() => {
-      setSucceededIds(prev => {
+      setPulseIds(prev => {
         const next = new Set(prev);
         next.delete(artist.id);
         return next;
       });
-    }, 1500);
+    }, 500);
   };
 
   const handleSyncArtist = async (artistId: number) => {
@@ -245,7 +245,7 @@ function Artists() {
           mutatingIds={mutatingIds}
           syncMutatingIds={syncMutatingIds}
           errorById={errorById}
-          succeededIds={succeededIds}
+          pulseIds={pulseIds}
         />
       </DataTable>
     </PageContainer>
