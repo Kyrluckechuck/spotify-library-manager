@@ -169,6 +169,9 @@ function Songs() {
         pageSize={pageSize}
         hasNextPage={!!pageInfo?.hasNextPage}
         onLoadMore={handleLoadMore}
+        emptyMessage='No songs found'
+        loadingMessage='Loading songs...'
+        errorMessage='Error loading songs'
       >
         <SongsTable
           songs={songs}
