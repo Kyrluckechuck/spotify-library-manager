@@ -2,8 +2,8 @@
 This list removes completed items and internal-only documentation tasks (e.g., public GraphQL API docs). Remaining items are actionable and prioritized.
 
 ## High Priority
-- [ ] Fix dev entrypoint mismatch
-  - Makefile uses `dev: python dev.py` but no `dev.py` exists. Either add a `dev.py` that launches API, worker, and Vite concurrently, or update `dev` to orchestrate `dev-api`, `dev-worker`, and `dev-frontend` (or compose with the override).
+- [x] Verify dev entrypoint works as intended
+  - `make dev` calls `dev.py`, which exists and starts services; no change needed.
 - [ ] Add integration tests for real GraphQL operations
   - [ ] Test actual backend connectivity
   - [ ] Validate schema consistency between frontend and backend
