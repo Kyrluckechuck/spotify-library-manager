@@ -1,9 +1,10 @@
 import React from 'react';
 import { LoadMoreButton } from '../ui/LoadMoreButton';
-import { PageSpinner } from '../ui/PageSpinner';
+// import { PageSpinner } from '../ui/PageSpinner';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { EmptyState } from '../ui/EmptyState';
 // import { RetryButton } from '../ui/RetryButton';
+import { SkeletonTable } from '../ui/SkeletonTable';
 
 interface DataTableProps<T> {
   data: T[];
@@ -28,11 +29,13 @@ export function DataTable<T>({
   onLoadMore,
   children,
   emptyMessage = 'No data found',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   loadingMessage = 'Loading...',
   errorMessage = 'Error loading data',
 }: DataTableProps<T>) {
   if (loading && data.length === 0) {
-    return <PageSpinner message={loadingMessage} />;
+    // Skeletons for initial loads
+    return <SkeletonTable columns={4} rows={10} />;
   }
 
   if (error) {
