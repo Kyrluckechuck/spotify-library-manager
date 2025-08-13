@@ -15,6 +15,7 @@ interface ArtistsTableProps {
   mutatingIds?: Set<number>;
   syncMutatingIds?: Set<number>;
   errorById?: Record<number, string>;
+  succeededIds?: Set<number>;
 }
 
 export function ArtistsTable({
@@ -28,6 +29,7 @@ export function ArtistsTable({
   mutatingIds,
   syncMutatingIds,
   errorById,
+  succeededIds,
 }: ArtistsTableProps) {
   if (artists.length === 0) {
     return (
@@ -163,6 +165,21 @@ export function ArtistsTable({
                         aria-hidden='true'
                       />
                     )}
+                    {!mutatingIds?.has(artist.id) &&
+                      succeededIds?.has(artist.id) && (
+                        <span
+                          className='absolute right-1 bottom-1.5 w-3 h-3 text-green-600'
+                          aria-hidden='true'
+                        >
+                          <svg viewBox='0 0 20 20' fill='currentColor'>
+                            <path
+                              fillRule='evenodd'
+                              d='M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z'
+                              clipRule='evenodd'
+                            />
+                          </svg>
+                        </span>
+                      )}
                   </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
