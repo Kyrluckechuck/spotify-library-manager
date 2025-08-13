@@ -29,8 +29,11 @@ pnpm-debug.log*
 lerna-debug.log*
 # But allow package configs
 !package.json
-!package-lock.json
-!yarn.lock
+# Enforce Yarn-only in frontend: ignore root yarn.lock and any package-lock.json
+package-lock.json
+**/package-lock.json
+yarn.lock
+!frontend/yarn.lock
 !pnpm-lock.yaml
 
 # Editor
