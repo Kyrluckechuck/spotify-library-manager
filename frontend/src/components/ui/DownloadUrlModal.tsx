@@ -117,7 +117,7 @@ export const DownloadUrlModal: React.FC<DownloadUrlModalProps> = ({
                 disabled={loading}
               />
               <span className='text-sm text-gray-700'>
-                Auto-track artists from this content
+                Track artists found in this content
               </span>
             </label>
           </div>

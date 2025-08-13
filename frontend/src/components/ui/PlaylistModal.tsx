@@ -156,7 +156,7 @@ export function PlaylistModal({
                   disabled={isSubmitting}
                 />
                 <span className='ml-2 text-sm text-gray-700'>
-                  Auto-track artists from this playlist
+                  Track artists found in this playlist
                 </span>
               </label>
               <p className='text-xs text-gray-500 mt-1'>

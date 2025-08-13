@@ -69,7 +69,7 @@ export function PlaylistsTable({
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               >
-                Auto Track Artists
+                Track Artists
               </SortableTableHeader>
               <SortableTableHeader
                 field='last_synced_at'
@@ -150,8 +150,8 @@ export function PlaylistsTable({
                     aria-checked={playlist.autoTrackArtists}
                     aria-label={
                       playlist.autoTrackArtists
-                        ? 'Disable auto-track artists'
-                        : 'Enable auto-track artists'
+                        ? 'Disable tracking artists'
+                        : 'Enable tracking artists'
                     }
                     className='md:hidden inline-flex items-center w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 '
                     style={{
@@ -178,8 +178,8 @@ export function PlaylistsTable({
                     aria-pressed={playlist.autoTrackArtists}
                     aria-label={
                       playlist.autoTrackArtists
-                        ? 'Disable auto-track artists'
-                        : 'Enable auto-track artists'
+                        ? 'Disable tracking artists'
+                        : 'Enable tracking artists'
                     }
                     className={`group hidden md:inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
                       playlist.autoTrackArtists
