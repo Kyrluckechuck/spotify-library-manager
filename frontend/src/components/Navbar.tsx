@@ -6,6 +6,7 @@ const navLinks = [
   { to: '/albums', label: 'Albums' },
   { to: '/playlists', label: 'Playlists' },
   { to: '/tasks', label: 'Tasks' },
+  { to: '/download', label: 'Download' },
 ];
 
 export const Navbar = () => {

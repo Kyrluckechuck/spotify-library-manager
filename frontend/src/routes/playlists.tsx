@@ -11,7 +11,6 @@ import type { Playlist } from '../types/generated/graphql';
 import { useState, useMemo, useCallback } from 'react';
 
 import { PlaylistModal } from '../components/ui/PlaylistModal';
-import { DownloadUrlModal } from '../components/ui/DownloadUrlModal';
 
 // Components
 import { PlaylistFilters } from '../components/playlists/PlaylistFilters';
@@ -36,7 +35,6 @@ function Playlists() {
   // Modal states
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   const client = useApolloClient();
 
@@ -303,12 +301,7 @@ function Playlists() {
           >
             Create Playlist
           </button>
-          <button
-            onClick={() => setShowDownloadModal(true)}
-            className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
-          >
-            Download URL
-          </button>
+
           <SearchInput
             placeholder='Search playlists...'
             onSearch={handleSearch}
@@ -365,14 +358,6 @@ function Playlists() {
         onClose={handleClosePlaylistModal}
         playlist={editingPlaylist}
         mode={editingPlaylist ? 'edit' : 'create'}
-      />
-
-      <DownloadUrlModal
-        isOpen={showDownloadModal}
-        onClose={() => setShowDownloadModal(false)}
-        onSuccess={() => {
-          // Optionally refresh the playlists data
-        }}
       />
     </section>
   );
