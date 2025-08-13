@@ -120,6 +120,8 @@ function Albums() {
   });
 
   const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
+  const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
+  const [errorById, setErrorById] = useState<Record<number, string>>({});
 
   const handleWantedFilterChange = (
     newFilter: 'all' | 'wanted' | 'unwanted'
@@ -219,6 +221,8 @@ function Albums() {
 
   const handleWantedToggle = async (albumId: number, wanted: boolean) => {
     try {
+      setErrorById(prev => ({ ...prev, [albumId]: '' }));
+      setMutatingIds(prev => new Set(prev).add(albumId));
       await setAlbumWanted({
         variables: {
           albumId,
@@ -226,8 +230,16 @@ function Albums() {
         },
       });
     } catch (error) {
-      console.error('Error toggling album wanted status:', error);
+      setErrorById(prev => ({
+        ...prev,
+        [albumId]: error instanceof Error ? error.message : 'Action failed',
+      }));
     }
+    setMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(albumId);
+      return next;
+    });
   };
 
   const handleLoadMore = () => {
@@ -335,6 +347,8 @@ function Albums() {
           onSort={handleSort}
           onToggleWanted={handleWantedToggle}
           loading={loading}
+          mutatingIds={mutatingIds}
+          errorById={errorById}
         />
         {isRefetching && (
           <div className='absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none'>

@@ -100,6 +100,8 @@ function Playlists() {
   const [togglePlaylistAutoTrack] = useMutation(
     TogglePlaylistAutoTrackDocument
   );
+  const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
+  const [errorById, setErrorById] = useState<Record<number, string>>({});
 
   const handleEnabledFilterChange = (
     newFilter: 'all' | 'enabled' | 'disabled'
@@ -199,28 +201,58 @@ function Playlists() {
 
   const handleTogglePlaylist = async (playlist: Playlist) => {
     try {
+      setErrorById(prev => ({ ...prev, [playlist.id]: '' }));
+      setMutatingIds(prev => new Set(prev).add(playlist.id));
       await togglePlaylist({ variables: { playlistId: playlist.id } });
     } catch (error) {
-      console.error('Error toggling playlist:', error);
+      setErrorById(prev => ({
+        ...prev,
+        [playlist.id]: error instanceof Error ? error.message : 'Action failed',
+      }));
     }
+    setMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(playlist.id);
+      return next;
+    });
   };
 
   const handleSyncPlaylist = async (playlistId: number) => {
     try {
+      setErrorById(prev => ({ ...prev, [playlistId]: '' }));
+      setMutatingIds(prev => new Set(prev).add(playlistId));
       await syncPlaylist({ variables: { playlistId } });
     } catch (error) {
-      console.error('Error syncing playlist:', error);
+      setErrorById(prev => ({
+        ...prev,
+        [playlistId]: error instanceof Error ? error.message : 'Sync failed',
+      }));
     }
+    setMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(playlistId);
+      return next;
+    });
   };
 
   const handleToggleAutoTrack = async (playlist: Playlist) => {
     try {
+      setErrorById(prev => ({ ...prev, [playlist.id]: '' }));
+      setMutatingIds(prev => new Set(prev).add(playlist.id));
       await togglePlaylistAutoTrack({
         variables: { playlistId: playlist.id },
       });
     } catch (error) {
-      console.error('Error toggling auto-track:', error);
+      setErrorById(prev => ({
+        ...prev,
+        [playlist.id]: error instanceof Error ? error.message : 'Action failed',
+      }));
     }
+    setMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(playlist.id);
+      return next;
+    });
   };
 
   const handleEditPlaylist = useCallback((playlist: Playlist) => {
@@ -337,6 +369,8 @@ function Playlists() {
           onSyncPlaylist={handleSyncPlaylist}
           onEditPlaylist={handleEditPlaylist}
           loading={loading}
+          mutatingIds={mutatingIds}
+          errorById={errorById}
         />
         {isRefetching && (
           <div className='absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none'>

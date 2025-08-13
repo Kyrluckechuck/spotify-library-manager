@@ -12,6 +12,9 @@ interface ArtistsTableProps {
   onTrackToggle: (artist: Artist) => void;
   onSyncArtist: (artistId: number) => void;
   loading?: boolean;
+  mutatingIds?: Set<number>;
+  syncMutatingIds?: Set<number>;
+  errorById?: Record<number, string>;
 }
 
 export function ArtistsTable({
@@ -22,6 +25,9 @@ export function ArtistsTable({
   onTrackToggle,
   onSyncArtist,
   loading = false,
+  mutatingIds,
+  syncMutatingIds,
+  errorById,
 }: ArtistsTableProps) {
   if (artists.length === 0) {
     return (
@@ -85,6 +91,7 @@ export function ArtistsTable({
                 <td className='px-6 py-4 whitespace-nowrap'>
                   <button
                     onClick={() => onTrackToggle(artist)}
+                    disabled={mutatingIds?.has(artist.id)}
                     role='switch'
                     aria-checked={artist.isTracked}
                     aria-label={
@@ -107,6 +114,7 @@ export function ArtistsTable({
 
                   <button
                     onClick={() => onTrackToggle(artist)}
+                    disabled={mutatingIds?.has(artist.id)}
                     aria-pressed={artist.isTracked}
                     aria-label={
                       artist.isTracked ? 'Untrack artist' : 'Track artist'
@@ -117,12 +125,21 @@ export function ArtistsTable({
                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
                     }`}
                   >
-                    <span className='group-hover:hidden group-focus:hidden'>
-                      {artist.isTracked ? 'Tracked' : 'Not Tracked'}
-                    </span>
-                    <span className='hidden group-hover:inline group-focus:inline'>
-                      {artist.isTracked ? 'Untrack' : 'Track'}
-                    </span>
+                    {mutatingIds?.has(artist.id) ? (
+                      <span className='inline-flex items-center gap-2'>
+                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
+                        <span>Working…</span>
+                      </span>
+                    ) : (
+                      <>
+                        <span className='group-hover:hidden group-focus:hidden'>
+                          {artist.isTracked ? 'Tracked' : 'Not Tracked'}
+                        </span>
+                        <span className='hidden group-hover:inline group-focus:inline'>
+                          {artist.isTracked ? 'Untrack' : 'Track'}
+                        </span>
+                      </>
+                    )}
                   </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
@@ -133,9 +150,17 @@ export function ArtistsTable({
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
                   <button
                     onClick={() => onSyncArtist(artist.id)}
-                    className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors'
+                    disabled={syncMutatingIds?.has(artist.id)}
+                    className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors disabled:opacity-60'
                   >
-                    Sync Now
+                    {syncMutatingIds?.has(artist.id) ? (
+                      <span className='inline-flex items-center gap-2'>
+                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
+                        <span>Syncing…</span>
+                      </span>
+                    ) : (
+                      'Sync Now'
+                    )}
                   </button>
                   <Link
                     to='/albums'
@@ -144,6 +169,11 @@ export function ArtistsTable({
                   >
                     View Albums
                   </Link>
+                  {errorById?.[artist.id] && (
+                    <div className='text-xs text-red-600 mt-1'>
+                      {errorById[artist.id]}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

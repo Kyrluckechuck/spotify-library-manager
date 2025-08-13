@@ -20,6 +20,8 @@ interface AlbumsTableProps {
   onSort: (field: AlbumSortField) => void;
   onToggleWanted: (albumId: number, wanted: boolean) => void;
   loading?: boolean;
+  mutatingIds?: Set<number>;
+  errorById?: Record<number, string>;
 }
 
 // Helper function to format album type/group values
@@ -39,6 +41,9 @@ export function AlbumsTable({
   onSort,
   onToggleWanted,
   loading = false,
+  mutatingIds,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  errorById,
 }: AlbumsTableProps) {
   if (albums.length === 0) {
     return (
@@ -182,13 +187,23 @@ export function AlbumsTable({
                 <td className='px-6 py-4 whitespace-nowrap'>
                   <button
                     onClick={() => onToggleWanted(album.id, !album.wanted)}
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
+                    disabled={mutatingIds?.has(album.id)}
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors disabled:opacity-60 ${
                       album.wanted
                         ? 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'
                         : 'bg-red-100 text-red-800 hover:bg-red-200'
                     }`}
                   >
-                    {album.wanted ? 'Yes' : 'No'}
+                    {mutatingIds?.has(album.id) ? (
+                      <span className='inline-flex items-center gap-2'>
+                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
+                        <span>Working…</span>
+                      </span>
+                    ) : album.wanted ? (
+                      'Yes'
+                    ) : (
+                      'No'
+                    )}
                   </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm'>

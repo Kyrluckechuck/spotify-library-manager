@@ -18,6 +18,8 @@ interface PlaylistsTableProps {
   onSyncPlaylist: (playlistId: number) => void;
   onEditPlaylist?: (playlist: Playlist) => void;
   loading?: boolean;
+  mutatingIds?: Set<number>;
+  errorById?: Record<number, string>;
 }
 
 export function PlaylistsTable({
@@ -30,6 +32,9 @@ export function PlaylistsTable({
   onSyncPlaylist,
   onEditPlaylist,
   loading = false,
+  mutatingIds,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  errorById,
 }: PlaylistsTableProps) {
   if (playlists.length === 0) {
     return (
@@ -101,6 +106,7 @@ export function PlaylistsTable({
                   {/* Mobile: Toggle switch */}
                   <button
                     onClick={() => onToggleEnabled(playlist)}
+                    disabled={mutatingIds?.has(playlist.id)}
                     role='switch'
                     aria-checked={playlist.enabled}
                     aria-label={
@@ -124,6 +130,7 @@ export function PlaylistsTable({
                   {/* Desktop: Interactive status pill */}
                   <button
                     onClick={() => onToggleEnabled(playlist)}
+                    disabled={mutatingIds?.has(playlist.id)}
                     aria-pressed={playlist.enabled}
                     aria-label={
                       playlist.enabled ? 'Disable playlist' : 'Enable playlist'
@@ -134,18 +141,28 @@ export function PlaylistsTable({
                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
                     }`}
                   >
-                    <span className='group-hover:hidden group-focus:hidden'>
-                      {playlist.enabled ? 'Enabled' : 'Disabled'}
-                    </span>
-                    <span className='hidden group-hover:inline group-focus:inline'>
-                      {playlist.enabled ? 'Disable' : 'Enable'}
-                    </span>
+                    {mutatingIds?.has(playlist.id) ? (
+                      <span className='inline-flex items-center gap-2'>
+                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
+                        <span>Working…</span>
+                      </span>
+                    ) : (
+                      <>
+                        <span className='group-hover:hidden group-focus:hidden'>
+                          {playlist.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                        <span className='hidden group-hover:inline group-focus:inline'>
+                          {playlist.enabled ? 'Disable' : 'Enable'}
+                        </span>
+                      </>
+                    )}
                   </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
                   {/* Mobile: Toggle switch for auto track */}
                   <button
                     onClick={() => onToggleAutoTrack(playlist)}
+                    disabled={mutatingIds?.has(playlist.id)}
                     role='switch'
                     aria-checked={playlist.autoTrackArtists}
                     aria-label={
@@ -175,6 +192,7 @@ export function PlaylistsTable({
                   {/* Desktop: Interactive status pill */}
                   <button
                     onClick={() => onToggleAutoTrack(playlist)}
+                    disabled={mutatingIds?.has(playlist.id)}
                     aria-pressed={playlist.autoTrackArtists}
                     aria-label={
                       playlist.autoTrackArtists
@@ -187,12 +205,21 @@ export function PlaylistsTable({
                         : 'bg-orange-100 text-orange-800 hover:bg-blue-100 hover:text-blue-800 focus:bg-blue-100 focus:text-blue-800'
                     }`}
                   >
-                    <span className='group-hover:hidden group-focus:hidden'>
-                      {playlist.autoTrackArtists ? 'Yes' : 'No'}
-                    </span>
-                    <span className='hidden group-hover:inline group-focus:inline'>
-                      {playlist.autoTrackArtists ? 'Disable' : 'Enable'}
-                    </span>
+                    {mutatingIds?.has(playlist.id) ? (
+                      <span className='inline-flex items-center gap-2'>
+                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
+                        <span>Working…</span>
+                      </span>
+                    ) : (
+                      <>
+                        <span className='group-hover:hidden group-focus:hidden'>
+                          {playlist.autoTrackArtists ? 'Yes' : 'No'}
+                        </span>
+                        <span className='hidden group-hover:inline group-focus:inline'>
+                          {playlist.autoTrackArtists ? 'Disable' : 'Enable'}
+                        </span>
+                      </>
+                    )}
                   </button>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
@@ -203,9 +230,17 @@ export function PlaylistsTable({
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
                   <button
                     onClick={() => onSyncPlaylist(playlist.id)}
+                    disabled={mutatingIds?.has(playlist.id)}
                     className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors'
                   >
-                    Sync Now
+                    {mutatingIds?.has(playlist.id) ? (
+                      <span className='inline-flex items-center gap-2'>
+                        <span className='w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin' />
+                        <span>Syncing…</span>
+                      </span>
+                    ) : (
+                      'Sync Now'
+                    )}
                   </button>
                   {onEditPlaylist && (
                     <button

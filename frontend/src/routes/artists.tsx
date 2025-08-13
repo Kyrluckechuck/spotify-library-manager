@@ -98,6 +98,11 @@ function Artists() {
   const [trackArtist] = useMutation(TrackArtistDocument);
   const [untrackArtist] = useMutation(UntrackArtistDocument);
   const [syncArtist] = useMutation(SyncArtistDocument);
+  const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
+  const [syncMutatingIds, setSyncMutatingIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [errorById, setErrorById] = useState<Record<number, string>>({});
 
   const handleFilterChange = (newFilter: 'all' | 'tracked' | 'untracked') => {
     setFilter(newFilter);
@@ -125,22 +130,42 @@ function Artists() {
     isTracked: boolean;
   }) => {
     try {
+      setErrorById(prev => ({ ...prev, [artist.id]: '' }));
+      setMutatingIds(prev => new Set(prev).add(artist.id));
       if (artist.isTracked) {
         await untrackArtist({ variables: { artistId: artist.id } });
       } else {
         await trackArtist({ variables: { artistId: artist.id } });
       }
     } catch (error) {
-      console.error('Error toggling artist tracking:', error);
+      setErrorById(prev => ({
+        ...prev,
+        [artist.id]: error instanceof Error ? error.message : 'Action failed',
+      }));
     }
+    setMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(artist.id);
+      return next;
+    });
   };
 
   const handleSyncArtist = async (artistId: number) => {
     try {
+      setErrorById(prev => ({ ...prev, [artistId]: '' }));
+      setSyncMutatingIds(prev => new Set(prev).add(artistId));
       await syncArtist({ variables: { artistId: artistId.toString() } });
     } catch (error) {
-      console.error('Error syncing artist:', error);
+      setErrorById(prev => ({
+        ...prev,
+        [artistId]: error instanceof Error ? error.message : 'Sync failed',
+      }));
     }
+    setSyncMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(artistId);
+      return next;
+    });
   };
 
   const handleLoadMore = () => {
@@ -203,6 +228,9 @@ function Artists() {
           onTrackToggle={handleTrackToggle}
           onSyncArtist={handleSyncArtist}
           loading={loading}
+          mutatingIds={mutatingIds}
+          syncMutatingIds={syncMutatingIds}
+          errorById={errorById}
         />
       </DataTable>
     </PageContainer>

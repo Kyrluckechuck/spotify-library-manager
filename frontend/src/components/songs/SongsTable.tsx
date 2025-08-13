@@ -29,6 +29,8 @@ interface SongsTableProps {
   sortDirection: 'asc' | 'desc';
   onSort: (field: SortField) => void;
   loading?: boolean;
+  mutatingIds?: Set<number>;
+  errorById?: Record<number, string>;
 }
 
 export const SongsTable: React.FC<SongsTableProps> = ({
