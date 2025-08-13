@@ -19,6 +19,7 @@ import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { PageSpinner } from '../components/ui/PageSpinner';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
+import { useRequestState } from '../hooks/useRequestState';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { SearchInput } from '../components/ui/SearchInput';
 import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
@@ -259,8 +260,8 @@ function Playlists() {
   };
 
   // Subtle loading indicator for filter changes
-  const isRefetching = networkStatus === 3; // NetworkStatus.refetch
-  const isInitialLoading = networkStatus === 1; // NetworkStatus.loading (initial load)
+  const { isRefreshing: isRefetching, isInitial: isInitialLoading } =
+    useRequestState(networkStatus);
 
   // Only show loading state on initial load
   if (isInitialLoading && !data) {

@@ -9,6 +9,7 @@ import {
 } from '../types/generated/graphql';
 import { useState, useMemo } from 'react';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
+import { useRequestState } from '../hooks/useRequestState';
 
 // Layout & shared components
 import { PageContainer } from '../components/layout/PageContainer';
@@ -156,7 +157,7 @@ function Artists() {
   const artists = data?.artists.edges || [];
   const totalCount = data?.artists.totalCount || 0;
   const pageInfo = data?.artists.pageInfo;
-  const isRefetching = networkStatus === 3;
+  const { isRefreshing: isRefetching } = useRequestState(networkStatus);
 
   return (
     <PageContainer>

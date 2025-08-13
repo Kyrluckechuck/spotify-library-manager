@@ -9,6 +9,7 @@ import { PageContainer } from '../components/layout/PageContainer';
 import { PageHeader } from '../components/layout/PageHeader';
 import { DataTable } from '../components/common/DataTable';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
+import { useRequestState } from '../hooks/useRequestState';
 import { FilterBar } from '../components/common/FilterBar';
 
 // Songs components
@@ -97,7 +98,7 @@ function Songs() {
   }, [data?.songs.edges, filter]);
   const totalCount = data?.songs.totalCount || 0;
   const pageInfo = data?.songs.pageInfo;
-  const isRefetching = networkStatus === 3;
+  const { isRefreshing: isRefetching } = useRequestState(networkStatus);
 
   return (
     <PageContainer>
