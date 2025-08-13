@@ -81,28 +81,28 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 
 ## Frontend: Loading & Error State UX Improvements
 - [ ] Reusable UI primitives
-  - [ ] `InlineSpinner` and `PageSpinner`
+  - [x] `InlineSpinner` and `PageSpinner`
   - [ ] `SkeletonBlock` and `SkeletonTable` that match table/card layouts
-  - [ ] `ErrorBanner` with focus management and aria-live
-  - [ ] `EmptyState` with contextual CTAs
-  - [ ] `RetryButton` wrapper for re-executing queries
+  - [x] `ErrorBanner` with focus management and aria-live
+  - [x] `EmptyState` with contextual CTAs
+  - [x] `RetryButton` wrapper for re-executing queries
 - [ ] Route-level loading
-  - [ ] Use TanStack Router pending state to show a top progress bar or `PageSpinner`
+  - [ ] Use TanStack Router pending state to show a top progress bar
 - [ ] Query loading patterns
   - [ ] Initial load: render skeletons instead of blank pages
-  - [ ] Background/refetch: keep previous data; show subtle inline spinner or “Refreshing…” chip
-  - [ ] Pagination: show spinner/disable on “Load more”
+  - [x] Background/refetch: keep previous data; show subtle inline spinner/“Updating…” chip
+  - [x] Pagination: show spinner/disable on “Load more”
 - [ ] Mutation states
   - [ ] Disable action controls while mutating; inline spinner in buttons
   - [ ] Show inline error near the control; fall back to banner when page-level
 - [ ] Error handling UX
   - [ ] Map network vs GraphQL errors to friendly messages
-  - [ ] Use `ErrorBanner` for blocking failures and keep stale data for non-blocking
+  - [x] Use `ErrorBanner` for blocking failures and keep stale data for non-blocking
   - [ ] Add distinct empty states per view (Artists/Albums/Songs/Playlists/Tasks)
 - [ ] Accessibility
-  - [ ] `aria-busy` on containers, `aria-live='polite'` for status updates, move focus to error banner
+  - [x] `aria-busy` on containers, `aria-live='polite'` for status updates, move focus to error banner
 - [ ] Global plumbing
   - [ ] Add a small `useRequestState` helper to normalize Apollo `networkStatus` → { isInitial, isRefreshing, isPaginating }
 - [ ] Rollout plan
-  - [ ] Implement primitives and wire into `Artists` as the reference view
-  - [ ] Apply the pattern to `Albums`, `Songs`, `Playlists`, `Tasks`
+  - [x] Implement primitives and wire into `Artists` as the reference view
+  - [x] Apply the pattern to `Albums`, `Songs`, `Playlists`, `Tasks`
