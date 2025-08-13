@@ -21,6 +21,8 @@ interface PlaylistsTableProps {
   enabledMutatingIds?: Set<number>;
   autoMutatingIds?: Set<number>;
   syncMutatingIds?: Set<number>;
+  enabledPulseIds?: Set<number>;
+  autoPulseIds?: Set<number>;
   errorById?: Record<number, string>;
 }
 
@@ -37,6 +39,8 @@ export function PlaylistsTable({
   enabledMutatingIds,
   autoMutatingIds,
   syncMutatingIds,
+  enabledPulseIds,
+  autoPulseIds,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   errorById,
 }: PlaylistsTableProps) {
@@ -143,7 +147,7 @@ export function PlaylistsTable({
                       playlist.enabled
                         ? 'bg-green-100 text-green-800 hover:bg-red-100 hover:text-red-800 focus:bg-red-100 focus:text-red-800'
                         : 'bg-red-100 text-red-800 hover:bg-green-100 hover:text-green-800 focus:bg-green-100 focus:text-green-800'
-                    }`}
+                    } ${enabledPulseIds?.has(playlist.id) ? 'ring-2 ring-green-400 ring-offset-1' : ''}`}
                   >
                     <span className='inline-flex items-center gap-1'>
                       {playlist.enabled ? (
@@ -228,7 +232,7 @@ export function PlaylistsTable({
                       playlist.autoTrackArtists
                         ? 'bg-blue-100 text-blue-800 hover:bg-orange-100 hover:text-orange-800 focus:bg-orange-100 focus:text-orange-800'
                         : 'bg-orange-100 text-orange-800 hover:bg-blue-100 hover:text-blue-800 focus:bg-blue-100 focus:text-blue-800'
-                    }`}
+                    } ${autoPulseIds?.has(playlist.id) ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
                   >
                     <span className='inline-flex items-center gap-1'>
                       {playlist.autoTrackArtists ? (

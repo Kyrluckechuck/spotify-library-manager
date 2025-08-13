@@ -123,6 +123,7 @@ function Albums() {
 
   const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
   const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
+  const [pulseIds, setPulseIds] = useState<Set<number>>(new Set());
   const [errorById, setErrorById] = useState<Record<number, string>>({});
 
   const handleWantedFilterChange = (
@@ -232,6 +233,7 @@ function Albums() {
         },
       });
       toast.success(`Wanted ${wanted ? 'enabled' : 'disabled'}`);
+      setPulseIds(prev => new Set(prev).add(albumId));
     } catch (error) {
       setErrorById(prev => ({
         ...prev,
@@ -243,6 +245,13 @@ function Albums() {
       next.delete(albumId);
       return next;
     });
+    window.setTimeout(() => {
+      setPulseIds(prev => {
+        const next = new Set(prev);
+        next.delete(albumId);
+        return next;
+      });
+    }, 500);
   };
 
   const handleLoadMore = () => {
@@ -352,6 +361,7 @@ function Albums() {
           loading={loading}
           mutatingIds={mutatingIds}
           errorById={errorById}
+          pulseIds={pulseIds}
         />
         {/* No full overlay during refetch to reduce jitter */}
       </div>

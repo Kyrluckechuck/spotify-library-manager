@@ -111,6 +111,10 @@ function Playlists() {
   const [syncMutatingIds, setSyncMutatingIds] = useState<Set<number>>(
     new Set()
   );
+  const [enabledPulseIds, setEnabledPulseIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [autoPulseIds, setAutoPulseIds] = useState<Set<number>>(new Set());
   const [errorById, setErrorById] = useState<Record<number, string>>({});
 
   const handleEnabledFilterChange = (
@@ -215,6 +219,7 @@ function Playlists() {
       setEnabledMutatingIds(prev => new Set(prev).add(playlist.id));
       await togglePlaylist({ variables: { playlistId: playlist.id } });
       toast.success(`Playlist ${playlist.enabled ? 'disabled' : 'enabled'}`);
+      setEnabledPulseIds(prev => new Set(prev).add(playlist.id));
     } catch (error) {
       setErrorById(prev => ({
         ...prev,
@@ -226,6 +231,13 @@ function Playlists() {
       next.delete(playlist.id);
       return next;
     });
+    window.setTimeout(() => {
+      setEnabledPulseIds(prev => {
+        const next = new Set(prev);
+        next.delete(playlist.id);
+        return next;
+      });
+    }, 500);
   };
 
   const handleSyncPlaylist = async (playlistId: number) => {
@@ -257,6 +269,7 @@ function Playlists() {
       toast.success(
         `Track Artists ${playlist.autoTrackArtists ? 'disabled' : 'enabled'}`
       );
+      setAutoPulseIds(prev => new Set(prev).add(playlist.id));
     } catch (error) {
       setErrorById(prev => ({
         ...prev,
@@ -268,6 +281,13 @@ function Playlists() {
       next.delete(playlist.id);
       return next;
     });
+    window.setTimeout(() => {
+      setAutoPulseIds(prev => {
+        const next = new Set(prev);
+        next.delete(playlist.id);
+        return next;
+      });
+    }, 500);
   };
 
   const handleEditPlaylist = useCallback((playlist: Playlist) => {
@@ -387,6 +407,8 @@ function Playlists() {
           enabledMutatingIds={enabledMutatingIds}
           autoMutatingIds={autoMutatingIds}
           syncMutatingIds={syncMutatingIds}
+          enabledPulseIds={enabledPulseIds}
+          autoPulseIds={autoPulseIds}
           errorById={errorById}
         />
       </div>

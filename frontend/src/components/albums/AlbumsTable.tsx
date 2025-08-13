@@ -22,6 +22,7 @@ interface AlbumsTableProps {
   loading?: boolean;
   mutatingIds?: Set<number>;
   errorById?: Record<number, string>;
+  pulseIds?: Set<number>;
 }
 
 // Helper function to format album type/group values
@@ -44,6 +45,7 @@ export function AlbumsTable({
   mutatingIds,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   errorById,
+  pulseIds,
 }: AlbumsTableProps) {
   if (albums.length === 0) {
     return (
@@ -192,7 +194,7 @@ export function AlbumsTable({
                       album.wanted
                         ? 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'
                         : 'bg-red-100 text-red-800 hover:bg-red-200'
-                    }`}
+                    } ${pulseIds?.has(album.id) ? 'ring-2 ring-indigo-400 ring-offset-1' : ''}`}
                   >
                     <span className='inline-flex items-center gap-1'>
                       {album.wanted ? (
