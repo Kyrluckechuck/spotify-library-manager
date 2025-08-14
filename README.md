@@ -245,6 +245,32 @@ If you encounter issues:
 
 For more details on the optimizations, see [DEVELOPMENT_OPTIMIZATIONS.md](DEVELOPMENT_OPTIMIZATIONS.md).
 
+## Upgrading from the legacy Django app
+
+If you are upgrading from the older repository layout where the Django app lived at `spotify_library_sync/library_manager` with migrations `0001`–`0020`, this branch consolidates that history into a new `library_manager` app with a fresh `0001_initial` that declares `replaces` for the legacy chain. This prevents migration history conflicts.
+
+Recommended steps:
+
+1. Back up your database.
+2. Inspect the current migration state:
+   ```bash
+   # From repo root
+   cd api
+   python manage.py showmigrations library_manager
+   ```
+3. Apply migrations normally:
+   ```bash
+   python manage.py migrate
+   ```
+4. Only if you see errors about tables already existing for `library_manager` (e.g., upgrading from a DB that has tables but missing migration records), re-run with:
+   ```bash
+   python manage.py migrate --fake-initial
+   ```
+
+Notes:
+- The new `0001_initial` includes a `replaces = [...]` list mapping all legacy migrations, so environments that had applied those will upgrade cleanly.
+- Fresh installations are unaffected and will run the new migration sequence as normal.
+
 ## Configuration (IGNORE, Half-updated and docker is the intended use)
 > [!CAUTION]
 > TO BE MIGRATED TO `settings.yaml` -- THESE WILL CHANGE NOTHING PRESENTLY
