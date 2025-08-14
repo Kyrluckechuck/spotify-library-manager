@@ -8,6 +8,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     initial = True
+    # This initial migration intentionally squashes the legacy migration chain from the
+    # previous project layout (spotify_library_sync/library_manager). Adding `replaces`
+    # ensures environments that already applied those migrations won't see an
+    # InconsistentMigrationHistory when switching to this codebase.
+    replaces = [
+        ("library_manager", "0001_initial"),
+        ("library_manager", "0002_settings"),
+        ("library_manager", "0003_rename_settings_setting"),
+        ("library_manager", "0004_downloadhistory_delete_setting"),
+        ("library_manager", "0005_alter_downloadhistory_completed_at"),
+        ("library_manager", "0006_album"),
+        ("library_manager", "0007_rename_artist_gid_album_artist"),
+        ("library_manager", "0008_album_name_album_wanted"),
+        ("library_manager", "0009_trackedplaylist"),
+        ("library_manager", "0010_artist_added_at_artist_last_synced_at"),
+        ("library_manager", "0011_trackedplaylist_auto_track_artists"),
+        ("library_manager", "0012_rename_last_synced_trackedplaylist_last_synced_at"),
+        ("library_manager", "0013_song_created_at_song_downloaded_at"),
+        ("library_manager", "0014_remove_song_downloaded_at"),
+        ("library_manager", "0015_album_failed_count_song_failed_count"),
+        ("library_manager", "0016_album_album_type"),
+        ("library_manager", "0017_song_bitrate"),
+        ("library_manager", "0018_album_album_group"),
+        ("library_manager", "0019_song_unavailable"),
+        ("library_manager", "0020_song_downloaded_song_file_path"),
+    ]
 
     dependencies = []
 
