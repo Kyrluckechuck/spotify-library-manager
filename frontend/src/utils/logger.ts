@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Centralized logging utility for the application
  * This utility provides a consistent interface for logging while respecting ESLint rules
@@ -37,14 +38,13 @@ class Logger {
 
   debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      // Route non-critical logs to warn to satisfy no-console rule
-      console.warn(this.formatMessage('debug', message), ...args);
+      console.log(this.formatMessage('debug', message), ...args);
     }
   }
 
   info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      console.warn(this.formatMessage('info', message), ...args);
+      console.log(this.formatMessage('info', message), ...args);
     }
   }
 
@@ -62,27 +62,27 @@ class Logger {
 
   // Special methods for test output with emojis
   test(message: string, ...args: unknown[]): void {
-    console.warn(message, ...args);
+    console.log(message, ...args);
   }
 
   success(message: string, ...args: unknown[]): void {
-    console.warn(`✅ ${message}`, ...args);
+    console.log(`✅ ${message}`, ...args);
   }
 
   failure(message: string, ...args: unknown[]): void {
-    console.warn(`❌ ${message}`, ...args);
+    console.log(`❌ ${message}`, ...args);
   }
 
   section(message: string, ...args: unknown[]): void {
-    console.warn(`📋 ${message}`, ...args);
+    console.log(`📋 ${message}`, ...args);
   }
 
   action(message: string, ...args: unknown[]): void {
-    console.warn(`🔍 ${message}`, ...args);
+    console.log(`🔍 ${message}`, ...args);
   }
 
   summary(message: string, ...args: unknown[]): void {
-    console.warn(`📊 ${message}`, ...args);
+    console.log(`📊 ${message}`, ...args);
   }
 }
 
