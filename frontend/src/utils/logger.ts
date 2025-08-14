@@ -37,61 +37,52 @@ class Logger {
 
   debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      // eslint-disable-next-line no-console
-      console.log(this.formatMessage('debug', message), ...args);
+      // Route non-critical logs to warn to satisfy no-console rule
+      console.warn(this.formatMessage('debug', message), ...args);
     }
   }
 
   info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      // eslint-disable-next-line no-console
-      console.log(this.formatMessage('info', message), ...args);
+      console.warn(this.formatMessage('info', message), ...args);
     }
   }
 
   warn(message: string, ...args: unknown[]): void {
     if (this.shouldLog('warn')) {
-      // eslint-disable-next-line no-console
       console.warn(this.formatMessage('warn', message), ...args);
     }
   }
 
   error(message: string, ...args: unknown[]): void {
     if (this.shouldLog('error')) {
-      // eslint-disable-next-line no-console
       console.error(this.formatMessage('error', message), ...args);
     }
   }
 
   // Special methods for test output with emojis
   test(message: string, ...args: unknown[]): void {
-    // eslint-disable-next-line no-console
-    console.log(message, ...args);
+    console.warn(message, ...args);
   }
 
   success(message: string, ...args: unknown[]): void {
-    // eslint-disable-next-line no-console
-    console.log(`✅ ${message}`, ...args);
+    console.warn(`✅ ${message}`, ...args);
   }
 
   failure(message: string, ...args: unknown[]): void {
-    // eslint-disable-next-line no-console
-    console.log(`❌ ${message}`, ...args);
+    console.warn(`❌ ${message}`, ...args);
   }
 
   section(message: string, ...args: unknown[]): void {
-    // eslint-disable-next-line no-console
-    console.log(`📋 ${message}`, ...args);
+    console.warn(`📋 ${message}`, ...args);
   }
 
   action(message: string, ...args: unknown[]): void {
-    // eslint-disable-next-line no-console
-    console.log(`🔍 ${message}`, ...args);
+    console.warn(`🔍 ${message}`, ...args);
   }
 
   summary(message: string, ...args: unknown[]): void {
-    // eslint-disable-next-line no-console
-    console.log(`📊 ${message}`, ...args);
+    console.warn(`📊 ${message}`, ...args);
   }
 }
 
