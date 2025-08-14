@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
     # ensures environments that already applied those migrations won't see an
     # InconsistentMigrationHistory when switching to this codebase.
     replaces = [
-        ("library_manager", "0001_initial"),
         ("library_manager", "0002_settings"),
         ("library_manager", "0003_rename_settings_setting"),
         ("library_manager", "0004_downloadhistory_delete_setting"),
