@@ -81,12 +81,42 @@ Notes:
 - Secrets like `AUTH_SECRET_KEY` and `DJANGO_SECRET_KEY` should be set via env vars.
 
 ## Running From Docker (recommended)
-An example docker-compose file is included in this repo that can be dropped into Portainer or your flavour of running it, swapping out any mounts for your local directory structure
+An example compose setup is included. Follow these steps:
 
-1. Export your cookies using this Google Chrome extension on the Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif
-   - Make sure to be logged in
-   - Save it as `cookies.txt`
-2. // TODO - Execute docker container, mapping /config to the local directory with your cookies.txt, device.wvd, and settings.yml
+1. Prepare a local config directory and files:
+   ```bash
+   mkdir -p ./config/db
+   # Export cookies from your browser while logged into Spotify
+   # Save as ./config/cookies.txt
+   # Optional: place your Widevine device file as ./config/device.wvd
+   # Create ./config/settings.yaml with your desired overrides (see earlier example)
+   ```
+
+2. Create an environment file from the example and set paths:
+   ```bash
+   cp .env.example .env
+   # Edit .env and set SLM_CONFIG_DIR to the absolute path of ./config, e.g.:
+   # SLM_CONFIG_DIR="${PWD}/config"
+   # Optionally set MUSIC_DIR to where downloads should be stored
+   ```
+
+3. Bring up the stack:
+   ```bash
+   docker compose up --build -d
+   ```
+
+4. Access the app:
+   - Frontend: http://localhost:3000
+   - API health: http://localhost:5000/healthz (internal, not published by default)
+
+5. Useful commands:
+   ```bash
+   docker compose logs -f                # tail all services
+   docker compose logs -f web            # API logs
+   docker compose logs -f frontend       # Frontend logs
+   docker compose logs -f worker         # Worker logs
+   docker compose down -v                # stop and remove volumes
+   ```
 
 ## Running From Source (Development)
 

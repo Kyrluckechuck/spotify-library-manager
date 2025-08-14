@@ -19,17 +19,17 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [x] Parameterize music directory via env (e.g., `MUSIC_DIR`) in compose instead of hard-coded path
   - [x] Move Huey SQLite file to `/config/db/huey.sqlite3` to persist across restarts
   - [ ] Review image size; switch to a multi-stage build and leverage dependency caching
-  - [ ] Add CI workflow to build and push images (GHCR, buildx cache) and run smoke tests (migrate + hit `/healthz`)
-  - [ ] Replace README Docker TODO with concrete `docker compose up` instructions and a sample `.env.example`
+  - [x] Add CI workflow to build and push images (GHCR, buildx cache) and run smoke tests (migrate + hit `/healthz`)
+  - [x] Replace README Docker TODO with concrete `docker compose up` instructions and a sample `.env.example`
   - [ ] Verify Docker images work on this branch end-to-end (build, migrate, run)
 
 ### CI/CD
-- [ ] Add GitHub Actions workflow(s)
-  - [ ] API: lint (flake8/black/isort/mypy/pylint), tests (unit + selected integration)
-  - [ ] Frontend: lint, unit tests
-  - [ ] GraphQL: run `frontend/scripts/validate-schema.js` and `frontend/scripts/test-graphql-operations.js`
-  - [ ] Build and push multi-stage images (web, worker) to GHCR with cache
-  - [ ] Compose up container and run smoke tests (migrate + `/healthz`)
+- [x] Add GitHub Actions workflow(s)
+  - [x] API: lint (flake8/black/isort/mypy/pylint), tests (unit + selected integration)
+  - [x] Frontend: lint, unit tests
+  - [x] GraphQL: run `frontend/scripts/validate-schema.js` and `frontend/scripts/test-graphql-operations.js`
+  - [x] Build and push multi-stage images (web, worker) to GHCR with cache
+  - [x] Compose up container and run smoke tests (migrate + `/healthz`)
 
 ## Backend
 - [ ] Configuration management
