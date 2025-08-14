@@ -77,7 +77,20 @@ class EventBus:
             entity_id = desc.split("artist.id:")[-1].strip().strip(")")
         elif "playlist download" in desc:
             entity_type = "PLAYLIST"
-            # TODO: Extract playlist ID from task args
+            # Attempt to extract playlist ID from task args (first arg is the URL)
+            try:
+                if process_info.task and getattr(process_info.task, "args", None):
+                    first_arg = process_info.task.args[0]
+                    if isinstance(first_arg, str) and first_arg:
+                        # Expect formats like "spotify:playlist:<id>" or full URLs
+                        if ":" in first_arg:
+                            entity_id = first_arg.split(":")[-1]
+                        else:
+                            # Fallback: last path segment
+                            entity_id = first_arg.rstrip("/").split("/")[-1]
+            except Exception:
+                # Best-effort only; leave default on failure
+                pass
         elif "album download" in desc:
             entity_type = "ALBUM"
             # TODO: Extract album ID from task args

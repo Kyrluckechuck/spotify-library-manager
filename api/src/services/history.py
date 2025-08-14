@@ -85,5 +85,9 @@ class DownloadHistoryService(BaseService[DownloadHistory]):
                 if django_history.completed_at
                 else None
             ),
-            error_message=None,  # TODO: Add error message support
+            error_message=(
+                getattr(django_history, "error_message", None)
+                if hasattr(django_history, "error_message")
+                else None
+            ),
         )

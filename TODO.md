@@ -38,10 +38,10 @@ This list removes completed items and internal-only documentation tasks (e.g., p
   - [ ] Replace in-memory user storage with persistent storage in auth service
 
 - [ ] Error handling
-  - [ ] Add error message support to history service
+  - [x] Add error message support to history service
 
 - [ ] Event bus improvements
-  - [ ] Extract playlist ID from task args in event bus
+  - [x] Extract playlist ID from task args in event bus
   - [ ] Extract album ID from task args in event bus
 
 - [ ] Async/await standardization
