@@ -6,7 +6,7 @@ RUN yarn install --frozen-lockfile
 COPY frontend/ ./
 RUN yarn build
 
-FROM python:3.13-slim-bookworm
+FROM python:3.13-slim-bookworm AS api-base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -15,6 +15,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # System dependencies
+# Install runtime packages separately to leverage layer caching
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -26,14 +27,25 @@ RUN apt-get update \
 COPY requirements.txt /app/requirements.txt
 COPY requirements-dev.txt /app/requirements-dev.txt
 ARG INSTALL_DEV_DEPS=false
-RUN if [ "$INSTALL_DEV_DEPS" = "true" ]; then \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    if [ "$INSTALL_DEV_DEPS" = "true" ]; then \
       pip install -r /app/requirements.txt -r /app/requirements-dev.txt; \
     else \
       pip install -r /app/requirements.txt; \
     fi
 
-# App source
-COPY ./api/ /app/
+# App source (copy only what’s needed first for better caching)
+COPY ./api/src /app/src
+COPY ./api/library_manager /app/library_manager
+COPY ./api/manage.py /app/manage.py
+COPY ./api/urls.py /app/urls.py
+COPY ./api/settings.py /app/settings.py
+COPY ./api/run.py /app/run.py
+COPY ./api/requirements.txt /app/requirements.txt
+COPY ./api/requirements-dev.txt /app/requirements-dev.txt
+COPY ./api/settings.yaml /app/settings.yaml
+COPY ./api/scripts /app/scripts
+COPY ./api/library_manager/migrations /app/library_manager/migrations
 
 # Copy built frontend (served by FastAPI static files)
 COPY --from=frontend-build /frontend/dist /app/frontend-dist

@@ -153,12 +153,12 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push backend image
+      - name: Build and push backend image (multi-arch)
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest
@@ -168,12 +168,12 @@ jobs:
           build-args: |
             INSTALL_DEV_DEPS=false
 
-      - name: Build and push frontend image
+      - name: Build and push frontend image (multi-arch)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest
