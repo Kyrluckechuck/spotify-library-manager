@@ -78,26 +78,61 @@ class AlbumService(BaseService[Album]):
     async def update_album(
         self, album_id: str, is_wanted: Optional[bool] = None
     ) -> Album:
-        django_album = await sync_to_async(self.model.objects.get)(spotify_gid=album_id)
+        try:
+            # Try to parse as database ID first (for internal operations)
+            if album_id.isdigit():
+                django_album = await sync_to_async(self.model.objects.get)(
+                    id=int(album_id)
+                )
+            else:
+                # Fall back to spotify_gid for external API calls
+                django_album = await sync_to_async(self.model.objects.get)(
+                    spotify_gid=album_id
+                )
 
-        if is_wanted is not None:
-            django_album.wanted = is_wanted
-            await sync_to_async(django_album.save)()
+            if is_wanted is not None:
+                django_album.wanted = is_wanted
+                await sync_to_async(django_album.save)()
 
-            if is_wanted:
-                # Queue download if marked as wanted
-                pass
-                # await sync_to_async(download_missing_albums_for_artist)(django_album.artist.id)
+                if is_wanted:
+                    # Queue download if marked as wanted
+                    pass
+                    # await sync_to_async(download_missing_albums_for_artist)(django_album.artist.id)
 
-        return self._to_graphql_type(django_album)
+            return self._to_graphql_type(django_album)
+        except ValueError:
+            raise ValueError(f"Invalid album ID format: {album_id}")
+        except self.model.DoesNotExist:
+            raise ValueError(f"Album with ID {album_id} not found")
+        except Exception as e:
+            raise Exception(f"Error updating album: {str(e)}")
 
     async def download_album(self, album_id: str) -> Album:
-        django_album = await sync_to_async(self.model.objects.get)(spotify_gid=album_id)
-        django_album.wanted = True
-        await sync_to_async(django_album.save)()
+        try:
+            # Try to parse as database ID first (for internal operations)
+            if album_id.isdigit():
+                django_album = await sync_to_async(self.model.objects.get)(
+                    id=int(album_id)
+                )
+            else:
+                # Fall back to spotify_gid for external API calls
+                django_album = await sync_to_async(self.model.objects.get)(
+                    spotify_gid=album_id
+                )
 
-        await sync_to_async(download_missing_albums_for_artist)(django_album.artist.id)
-        return self._to_graphql_type(django_album)
+            django_album.wanted = True
+            await sync_to_async(django_album.save)()
+
+            await sync_to_async(download_missing_albums_for_artist)(
+                django_album.artist.id
+            )
+            return self._to_graphql_type(django_album)
+        except ValueError:
+            raise ValueError(f"Invalid album ID format: {album_id}")
+        except self.model.DoesNotExist:
+            raise ValueError(f"Album with ID {album_id} not found")
+        except Exception as e:
+            raise Exception(f"Error downloading album: {str(e)}")
 
     async def set_album_wanted(self, album_id: int, wanted: bool) -> MutationResult:
         try:

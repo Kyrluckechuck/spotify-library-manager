@@ -1,4 +1,7 @@
+from typing import List
+
 import strawberry
+from asgiref.sync import sync_to_async
 
 from ..graphql_types.models import (
     Album,
@@ -115,3 +118,77 @@ class Mutation:
     async def cancel_all_tasks(self) -> "MutationResult":
         """Cancel both pending and running tasks."""
         return await services.task_management.cancel_all_tasks()
+
+    @strawberry.mutation
+    async def sync_all_tracked_artists(self) -> "MutationResult":
+        """Sync all tracked artists in batch."""
+        try:
+            from library_manager.helpers import enqueue_artist_sync_with_download
+            from library_manager.models import Artist
+
+            tracked_artists = await sync_to_async(list)(
+                Artist.objects.filter(tracked=True)
+            )
+
+            if not tracked_artists:
+                return MutationResult(
+                    success=True, message="No tracked artists found to sync"
+                )
+
+            # Use database IDs for batch operations with sync_to_async
+            operation_counts = await sync_to_async(enqueue_artist_sync_with_download)(
+                Artist.objects.filter(tracked=True),
+                auto_download=True,
+                delay_seconds=5,  # Rate limiting
+            )
+
+            total_operations = sum(operation_counts.values())
+            return MutationResult(
+                success=True,
+                message=f"Enqueued {total_operations} operations for {len(tracked_artists)} tracked artists",
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Failed to sync tracked artists: {str(e)}"
+            )
+
+    @strawberry.mutation
+    async def batch_artist_operations(
+        self, artist_ids: List[int], operations: List[str] = None
+    ) -> "MutationResult":
+        """Perform batch operations on multiple artists using database IDs."""
+        try:
+            from library_manager.helpers import enqueue_batch_artist_operations
+            from library_manager.models import Artist
+
+            if not artist_ids:
+                return MutationResult(success=False, message="No artist IDs provided")
+
+            # Get artists by database IDs
+            artists = await sync_to_async(list)(
+                Artist.objects.filter(id__in=artist_ids)
+            )
+
+            if not artists:
+                return MutationResult(
+                    success=False, message="No artists found with provided IDs"
+                )
+
+            # Default operations if none specified
+            if operations is None:
+                operations = ["fetch", "download"]
+
+            # Use database IDs for batch operations with sync_to_async
+            operation_counts = await sync_to_async(enqueue_batch_artist_operations)(
+                Artist.objects.filter(id__in=artist_ids), operations=operations
+            )
+
+            total_operations = sum(operation_counts.values())
+            return MutationResult(
+                success=True,
+                message=f"Enqueued {total_operations} operations for {len(artists)} artists",
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Failed to enqueue batch operations: {str(e)}"
+            )

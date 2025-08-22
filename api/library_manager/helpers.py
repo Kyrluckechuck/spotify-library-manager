@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from django.db import connection
 from django.db.models import QuerySet
@@ -168,3 +168,98 @@ def cleanup_huey_history() -> None:
             "DELETE FROM huey_monitor_taskmodel WHERE create_dt < DATETIME('now', '-4 day');"
         )
         cursor.execute("VACUUM;")
+
+
+def enqueue_batch_artist_operations(
+    artists: QuerySet[Artist], operations: List[str] = None, extra_args: dict = None
+) -> Dict[str, int]:
+    """
+    Enqueue multiple operations for multiple artists in batch.
+
+    Args:
+        artists: QuerySet of artists to process
+        operations: List of operations to perform (e.g., ['fetch', 'download'])
+        extra_args: Additional arguments to pass to operations
+
+    Returns:
+        Dict with operation counts
+    """
+    if extra_args is None:
+        extra_args = {}
+
+    if operations is None:
+        operations = ["fetch", "download"]
+
+    # Track already enqueued artists to avoid duplicates
+    already_enqueued_artists = set()
+    operation_counts = {}
+
+    for artist in artists:
+        # Use database ID for internal operations
+        if artist.id in already_enqueued_artists:
+            continue
+        already_enqueued_artists.add(artist.id)
+
+        # Enqueue operations based on artist status
+        if "fetch" in operations:
+            from .tasks import fetch_all_albums_for_artist
+
+            fetch_all_albums_for_artist(artist.id, **extra_args)
+            operation_counts["fetch"] = operation_counts.get("fetch", 0) + 1
+
+        if "download" in operations and artist.tracked:
+            from .tasks import download_missing_albums_for_artist
+
+            download_missing_albums_for_artist(artist.id, **extra_args)
+            operation_counts["download"] = operation_counts.get("download", 0) + 1
+
+    return operation_counts
+
+
+def enqueue_priority_artist_operations(
+    artists: QuerySet[Artist], priority: int = 5, max_concurrent: int = 10
+) -> Dict[str, int]:
+    """
+    Enqueue high-priority operations for artists with rate limiting.
+
+    Args:
+        artists: QuerySet of artists to process
+        priority: Huey task priority (lower = higher priority)
+        max_concurrent: Maximum concurrent operations
+
+    Returns:
+        Dict with operation counts
+    """
+    extra_args = {"priority": priority}
+
+    # Limit concurrent operations
+    limited_artists = artists[:max_concurrent]
+
+    return enqueue_batch_artist_operations(
+        limited_artists, operations=["fetch", "download"], extra_args=extra_args
+    )
+
+
+def enqueue_artist_sync_with_download(
+    artists: QuerySet[Artist], auto_download: bool = True, delay_seconds: int = 0
+) -> Dict[str, int]:
+    """
+    Enqueue artist sync operations with optional automatic download.
+
+    Args:
+        artists: QuerySet of artists to sync
+        auto_download: Whether to automatically download missing albums
+        delay_seconds: Delay between operations to avoid rate limiting
+
+    Returns:
+        Dict with operation counts
+    """
+    extra_args = {"delay": delay_seconds}
+
+    operations = ["fetch"]
+    if auto_download:
+        operations.append("download")
+
+    return enqueue_batch_artist_operations(
+        artists, operations=operations, extra_args=extra_args
+    )

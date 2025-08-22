@@ -8,8 +8,11 @@ from django.test import TestCase
 
 from library_manager.helpers import (
     download_missing_tracked_artists,
+    enqueue_artist_sync_with_download,
+    enqueue_batch_artist_operations,
     enqueue_download_missing_albums_for_artists,
     enqueue_fetch_all_albums_for_artists,
+    enqueue_priority_artist_operations,
     update_tracked_artists_albums,
 )
 from library_manager.models import Artist
@@ -142,3 +145,93 @@ class TestHelpers(TestCase):
         assert self.artist1.id != self.artist1.gid
         assert self.artist2.id != self.artist2.gid
         assert self.artist3.id != self.artist3.gid
+
+    @patch("library_manager.helpers.fetch_all_albums_for_artist")
+    @patch("library_manager.helpers.download_missing_albums_for_artist")
+    def test_enqueue_batch_artist_operations_uses_database_ids(
+        self, mock_download, mock_fetch
+    ):
+        """Test that enqueue_batch_artist_operations uses database IDs."""
+        artists = Artist.objects.filter(tracked=True)
+
+        operation_counts = enqueue_batch_artist_operations(
+            artists, operations=["fetch", "download"]
+        )
+
+        # Verify operations were called with database IDs
+        expected_fetch_calls = [
+            ((self.artist1.id,), {}),
+            ((self.artist2.id,), {}),
+        ]
+        expected_download_calls = [
+            ((self.artist1.id,), {}),
+            ((self.artist2.id,), {}),
+        ]
+
+        mock_fetch.assert_has_calls(expected_fetch_calls, any_order=True)
+        mock_download.assert_has_calls(expected_download_calls, any_order=True)
+
+        # Verify operation counts
+        assert operation_counts["fetch"] == 2
+        assert operation_counts["download"] == 2
+
+    @patch("library_manager.helpers.fetch_all_albums_for_artist")
+    @patch("library_manager.helpers.download_missing_albums_for_artist")
+    def test_enqueue_priority_artist_operations_with_limit(
+        self, mock_download, mock_fetch
+    ):
+        """Test that enqueue_priority_artist_operations respects concurrency limits."""
+        artists = Artist.objects.filter(tracked=True)
+
+        operation_counts = enqueue_priority_artist_operations(artists, max_concurrent=1)
+
+        # Should only process first artist due to concurrency limit
+        assert mock_fetch.call_count == 1
+        assert mock_download.call_count == 1
+
+        # Verify operation counts
+        assert operation_counts["fetch"] == 1
+        assert operation_counts["download"] == 1
+
+    @patch("library_manager.helpers.fetch_all_albums_for_artist")
+    @patch("library_manager.helpers.download_missing_albums_for_artist")
+    def test_enqueue_artist_sync_with_download_uses_database_ids(
+        self, mock_download, mock_fetch
+    ):
+        """Test that enqueue_artist_sync_with_download uses database IDs."""
+        artists = Artist.objects.filter(tracked=True)
+
+        operation_counts = enqueue_artist_sync_with_download(
+            artists, auto_download=True
+        )
+
+        # Verify operations were called with database IDs
+        expected_fetch_calls = [
+            ((self.artist1.id,), {"delay": 0}),
+            ((self.artist2.id,), {"delay": 0}),
+        ]
+        expected_download_calls = [
+            ((self.artist1.id,), {"delay": 0}),
+            ((self.artist2.id,), {"delay": 0}),
+        ]
+
+        mock_fetch.assert_has_calls(expected_fetch_calls, any_order=True)
+        mock_download.assert_has_calls(expected_download_calls, any_order=True)
+
+        # Verify operation counts
+        assert operation_counts["fetch"] == 2
+        assert operation_counts["download"] == 2
+
+    @patch("library_manager.helpers.fetch_all_albums_for_artist")
+    def test_enqueue_artist_sync_without_download(self, mock_fetch):
+        """Test that enqueue_artist_sync_with_download can skip downloads."""
+        artists = Artist.objects.filter(tracked=True)
+
+        operation_counts = enqueue_artist_sync_with_download(
+            artists, auto_download=False
+        )
+
+        # Should only call fetch, not download
+        assert mock_fetch.call_count == 2
+        assert operation_counts["fetch"] == 2
+        assert "download" not in operation_counts

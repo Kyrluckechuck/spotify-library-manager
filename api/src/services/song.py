@@ -99,8 +99,15 @@ class SongService(BaseService[Song]):
     async def get_by_id(self, id: str) -> Optional[Song]:
         """Get a song by ID."""
         try:
-            django_song = await self.model.objects.aget(id=id)
+            # Try to parse as database ID first (for internal operations)
+            if id.isdigit():
+                django_song = await self.model.objects.aget(id=int(id))
+            else:
+                # Fall back to gid for external API calls
+                django_song = await self.model.objects.aget(gid=id)
             return await self._to_graphql_type(django_song)
+        except ValueError:
+            return None
         except self.model.DoesNotExist:
             return None
 
