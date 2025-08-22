@@ -38,7 +38,8 @@ def update_tracked_artists_albums(
     priority: Optional[int] = None,
 ) -> None:
     for artist in artists_to_enqueue:
-        if artist.gid in already_enqueued_artists:
+        # Use database ID for internal operations
+        if artist.id in already_enqueued_artists:
             continue
 
         extra_args = {}
@@ -47,7 +48,8 @@ def update_tracked_artists_albums(
         # Local import to avoid circular import during module initialization
         from .tasks import fetch_all_albums_for_artist
 
-        fetch_all_albums_for_artist(artist.gid, **extra_args)
+        # Pass database ID, not gid
+        fetch_all_albums_for_artist(artist.id, **extra_args)
 
 
 def download_missing_tracked_artists(
@@ -56,7 +58,8 @@ def download_missing_tracked_artists(
     priority: Optional[int] = None,
 ) -> None:
     for artist in artists_to_enqueue:
-        if artist.gid in already_enqueued_artists:
+        # Use database ID for internal operations
+        if artist.id in already_enqueued_artists:
             continue
 
         extra_args = {
@@ -69,7 +72,8 @@ def download_missing_tracked_artists(
         # Local import to avoid circular import during module initialization
         from .tasks import download_missing_albums_for_artist
 
-        download_missing_albums_for_artist(artist.gid, **extra_args)
+        # Pass database ID, not gid
+        download_missing_albums_for_artist(artist.id, **extra_args)
 
 
 def download_non_enqueued_playlists(
