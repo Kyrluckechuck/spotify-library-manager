@@ -134,9 +134,18 @@ class ArtistService(BaseService[Artist]):
         return self._to_graphql_type(django_artist)
 
     async def sync_artist(self, artist_id: str) -> Artist:
-        django_artist = await self.model.objects.aget(gid=artist_id)
-        await sync_to_async(fetch_all_albums_for_artist)(django_artist.id)
-        return self._to_graphql_type(django_artist)
+        try:
+            # Convert string to int since frontend sends database ID
+            artist_db_id = int(artist_id)
+            django_artist = await sync_to_async(self.model.objects.get)(id=artist_db_id)
+            await sync_to_async(fetch_all_albums_for_artist)(django_artist.id)
+            return self._to_graphql_type(django_artist)
+        except ValueError:
+            raise ValueError(f"Invalid artist ID format: {artist_id}")
+        except self.model.DoesNotExist:
+            raise ValueError(f"Artist with ID {artist_id} not found")
+        except Exception as e:
+            raise Exception(f"Error syncing artist: {str(e)}")
 
     def _to_graphql_type(self, django_artist: DjangoArtist) -> Artist:
         # Some unit tests use light mocks without an `id`; be defensive here

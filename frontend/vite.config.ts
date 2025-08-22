@@ -13,9 +13,10 @@ export default defineConfig({
   publicDir: 'public',
   server: {
     port: 3000,
+    host: '0.0.0.0',
     proxy: {
       '/graphql': {
-        target: process.env.VITE_PROXY_TARGET || 'http://localhost:5000',
+        target: 'http://web:5000',
         changeOrigin: true,
         rewrite: path => path,
       },

@@ -230,7 +230,7 @@ class Query:
     @strawberry.field
     async def queue_status(self) -> QueueStatus:
         """Get the current status of the Huey task queue."""
-        status = services.task_management.get_queue_status()
+        status = await services.task_management.get_queue_status()
 
         # Convert the task_counts dict to a list of TaskCount objects
         task_counts = [

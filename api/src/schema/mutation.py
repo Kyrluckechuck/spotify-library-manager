@@ -97,21 +97,21 @@ class Mutation:
     @strawberry.mutation
     async def cancel_all_pending_tasks(self) -> "MutationResult":
         """Cancel all pending tasks in the Huey queue."""
-        return services.task_management.cancel_all_pending_tasks()
+        return await services.task_management.cancel_all_pending_tasks()
 
     @strawberry.mutation
     async def cancel_tasks_by_name(self, task_name: str) -> "MutationResult":
         """Cancel all pending tasks with a specific name."""
-        return services.task_management.cancel_tasks_by_name(task_name=task_name)
+        return await services.task_management.cancel_tasks_by_name(task_name=task_name)
 
     @strawberry.mutation
     async def cancel_running_tasks_by_name(self, task_name: str) -> "MutationResult":
         """Cancel running tasks with a specific name."""
-        return services.task_management.cancel_running_tasks_by_name(
+        return await services.task_management.cancel_running_tasks_by_name(
             task_name=task_name
         )
 
     @strawberry.mutation
     async def cancel_all_tasks(self) -> "MutationResult":
         """Cancel both pending and running tasks."""
-        return services.task_management.cancel_all_tasks()
+        return await services.task_management.cancel_all_tasks()
