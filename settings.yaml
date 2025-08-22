@@ -4,10 +4,14 @@
 # Database configuration
 DATABASES:
   default:
-    ENGINE: django.db.backends.sqlite3
-    NAME: /config/db/db.sqlite3
+    ENGINE: django.db.backends.postgresql
+    NAME: spotify_library_manager
+    USER: slm_user
+    PASSWORD: slm_dev_password
+    HOST: localhost
+    PORT: 5432
     OPTIONS:
-      timeout: 20
+      connect_timeout: 10
 
 # Static files configuration
 STATIC_URL: /static/
@@ -63,9 +67,9 @@ LOGGING:
 
 # Huey configuration
 HUEY:
-  huey_class: huey.SqliteHuey
+  huey_class: huey.PostgresqlHuey
   name: spotify_library_manager
-  filename: /config/db/huey.sqlite3
+  url: postgresql://slm_user:slm_dev_password@localhost:5432/spotify_library_manager
   immediate: false
   results: true
   store_none: false

@@ -71,6 +71,7 @@ class Artist(models.Model):
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
+        db_table = "artists"
         indexes = [
             models.Index(
                 fields=[
@@ -117,6 +118,7 @@ class Song(models.Model):
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
+        db_table = "songs"
         indexes = [
             models.Index(
                 fields=[
@@ -135,6 +137,7 @@ class ContributingArtist(models.Model):
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
+        db_table = "contributing_artists"
         unique_together = (
             "song",
             "artist",
@@ -162,6 +165,7 @@ class DownloadHistory(models.Model):
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
+        db_table = "download_history"
 
 
 class TaskHistory(models.Model):
@@ -201,6 +205,7 @@ class TaskHistory(models.Model):
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
+        db_table = "task_history"
         ordering = ["-started_at"]
         indexes = [
             models.Index(fields=["status", "-started_at"]),
@@ -412,6 +417,7 @@ class Album(models.Model):
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
+        db_table = "albums"
 
 
 class TrackedPlaylist(models.Model):
@@ -426,3 +432,4 @@ class TrackedPlaylist(models.Model):
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
+        db_table = "playlists"

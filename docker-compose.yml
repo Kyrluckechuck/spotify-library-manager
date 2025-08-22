@@ -1,13 +1,27 @@
-version: '3.8'
-
 networks:
   slm_net:
     name: slm_net
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-spotify_library_manager}
+      POSTGRES_USER: ${POSTGRES_USER:-slm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-slm_dev_password}
+    volumes:
+      - /config/db/postgres:/var/lib/postgresql/data
+    networks:
+      - slm_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-slm_user} -d ${POSTGRES_DB:-spotify_library_manager}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   web:
     build: .
-    image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
     environment:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-development-only-key}
       - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
@@ -15,8 +29,19 @@ services:
       - PORT=5000
       - AUTH_SECRET_KEY=${AUTH_SECRET_KEY:-change-me-in-production}
       - INSTALL_DEV_DEPS=${INSTALL_DEV_DEPS:-false}
-      - DJANGO_DB_PATH=${DJANGO_DB_PATH:-/config/db/db.sqlite3}
-    command: bash -c "python manage.py migrate && uvicorn src.main:app --host 0.0.0.0 --port 5000"
+      - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+      - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - SPOTDL_CACHE_PATH=/config/spotdl_cache
+      - HOME=/config
+      - XDG_DATA_HOME=/config/.local/share
+      - XDG_CACHE_HOME=/config/.cache
+    command: bash -c "python manage.py migrate_from_sqlite && uvicorn src.main:app --host 0.0.0.0 --port 5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/healthz').read().decode())"]
       interval: 10s
@@ -29,7 +54,12 @@ services:
     volumes:
       - config_storage:/config
       - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
+      # Live code sync for development
+      - ./api:/app
+      - ./requirements.txt:/app/requirements.txt
+      - ./requirements-dev.txt:/app/requirements-dev.txt
     # No host port published; reachable only on internal network
+
   frontend:
     build:
       context: ./frontend
@@ -49,25 +79,35 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
   worker:
     build: .
     image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+      - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - SPOTDL_CACHE_PATH=/config/spotdl_cache
+      - HOME=/config
+      - XDG_DATA_HOME=/config/.local/share
+      - XDG_CACHE_HOME=/config/.cache
     command: python manage.py run_huey
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - config_storage:/config
       - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
-    depends_on:
-      web:
-        condition: service_healthy
     restart: unless-stopped
     networks:
       - slm_net
 
 volumes:
   config_storage:
-    name: config_storage
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '${SLM_CONFIG_DIR:-/opt/configs/spotify_library_manager/}'
+      device: '${SLM_CONFIG_DIR:-/config}'

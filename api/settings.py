@@ -70,26 +70,29 @@ settings = dynaconf.DjangoDynaconf(
     ROOT_URLCONF="urls",
     STATIC_ROOT=BASE_DIR / "staticfiles",
     STATIC_URL="/static/",
-    # Database: use same location as monolith by default
+    # Database: PostgreSQL for better concurrent access
     DATABASES={
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            # Allow override via env for dev/test separation
-            "NAME": os.getenv("DJANGO_DB_PATH", "/config/db/db.sqlite3"),
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "spotify_library_manager"),
+            "USER": os.getenv("POSTGRES_USER", "slm_user"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "slm_dev_password"),
+            "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+            "PORT": os.getenv("POSTGRES_PORT", "5432"),
             "OPTIONS": {
-                "timeout": 20,
+                "connect_timeout": 10,
             },
         }
     },
-    # Huey: basic configuration for development
-    HUEY={
-        "huey_class": "huey.SqliteHuey",
-        "name": "spotify_library_manager",
-        "filename": Path("/config/db/huey.sqlite3"),
-        "immediate": False,
-        "results": True,
-        "store_none": False,
-    },
+    # Huey: temporarily disabled for testing PostgreSQL connection
+    # HUEY={
+    #     "huey_class": "huey.SqliteHuey",
+    #     "name": "spotify_library_manager",
+    #     "filename": Path("/config/db/huey.sqlite3"),
+    #     "immediate": False,
+    #     "results": True,
+    #     "store_none": False,
+    # },
 )
 # Optionally enable dev-only Django apps when available and DEBUG is true
 if settings.DEBUG:  # type: ignore[name-defined]
@@ -111,9 +114,6 @@ if settings.DEBUG:  # type: ignore[name-defined]
         settings.INSTALLED_APPS.append("django_extensions")
     except Exception:
         pass
-
-# Ensure /config/db/ directory exists (same as monolith)
-Path("/config/db/").mkdir(parents=True, exist_ok=True)
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"

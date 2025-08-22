@@ -1,8 +1,6 @@
 import re
 from typing import Any, Dict, List
 
-from spotdl.utils.spotify import SpotifyClient
-
 from library_manager.models import (
     Album,
     Artist,
@@ -12,7 +10,7 @@ from . import utils
 
 
 class Downloader:
-    def __init__(self, spotipy_client: SpotifyClient):
+    def __init__(self, spotipy_client):
         self.spotipy_client = spotipy_client
 
     def get_artist_albums(self, artist_gid: str) -> List[Album]:

@@ -145,9 +145,15 @@ def _validate_runtime_configuration() -> None:
     # Cookies file for downloader
     cookies_path_str = getattr(dj_settings, "cookies_location", "/config/cookies.txt")
     cookies_path = Path(str(cookies_path_str))
-    if not cookies_path.exists():
+    try:
+        if not cookies_path.exists():
+            logger.warning(
+                "cookies_location not found at %s. Place your Spotify cookies.txt there or set 'cookies_location' in /config/settings.yaml",
+                cookies_path,
+            )
+    except PermissionError:
         logger.warning(
-            "cookies_location not found at %s. Place your Spotify cookies.txt there or set 'cookies_location' in /config/settings.yaml",
+            "Cannot access cookies_location at %s due to permission error. Service will continue without cookies.",
             cookies_path,
         )
 

@@ -28,6 +28,7 @@ from .models import (
     TrackedPlaylist,
 )
 
+# Initialize SpotdlWrapper
 spotdl_wrapper = SpotdlWrapper(Config())
 
 

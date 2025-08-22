@@ -3,11 +3,19 @@ django==5.0.2
 django-stubs[compatible-mypy]==4.2.7
 django-stubs-ext==4.2.7
 django-huey-monitor==0.10.1
-huey>=2.4.5,<3.0.0
+huey[postgresql]>=2.4.5,<3.0.0
 bx_django_utils
+
+# Database
+psycopg2-binary>=2.9.0
+
+# Utilities
+pybase62>=1.0.0
 
 # Runtime type checking and validation
 pydantic>=2.0.0
+
+
 pydantic-settings>=2.0.0
 
 # GraphQL API (updated for Python 3.13 compatibility)

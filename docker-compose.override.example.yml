@@ -5,11 +5,21 @@ services:
     environment:
       - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
       - INSTALL_DEV_DEPS=true
-      - DJANGO_DB_PATH=/config/db/dev.sqlite3
+      - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager_dev}
+      - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - SPOTDL_CACHE_PATH=/config/spotdl_cache
+      - HOME=/config
+      - XDG_DATA_HOME=/config/.local/share
+      - XDG_CACHE_HOME=/config/.cache
     # Live code sync for backend (uvicorn --reload)
-    command: bash -c "python manage.py migrate && uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload"
+    command: bash -c "python manage.py migrate_from_sqlite && uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload"
     volumes:
       - ./api:/app
+      - ./requirements.txt:/app/requirements.txt
+      - ./requirements-dev.txt:/app/requirements-dev.txt
 
   # Disable prod frontend port publishing in dev (we'll use Vite dev server below)
   frontend:

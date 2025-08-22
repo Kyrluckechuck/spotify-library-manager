@@ -6,6 +6,7 @@ RUN yarn install --frozen-lockfile
 COPY frontend/ ./
 RUN yarn build
 
+# Use upstream Python image as base for better caching
 FROM python:3.13-slim-bookworm AS api-base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -23,7 +24,7 @@ RUN apt-get update \
     ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# Python dependencies
+# Python dependencies - copy requirements first for better caching
 COPY requirements.txt /app/requirements.txt
 COPY requirements-dev.txt /app/requirements-dev.txt
 ARG INSTALL_DEV_DEPS=false
@@ -34,16 +35,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
       pip install -r /app/requirements.txt; \
     fi
 
-# App source (copy only what’s needed first for better caching)
+# App source (copy only what's needed first for better caching)
 COPY ./api/src /app/src
 COPY ./api/library_manager /app/library_manager
 COPY ./api/manage.py /app/manage.py
 COPY ./api/urls.py /app/urls.py
 COPY ./api/settings.py /app/settings.py
 COPY ./api/run.py /app/run.py
-COPY ./api/requirements.txt /app/requirements.txt
-COPY ./api/requirements-dev.txt /app/requirements-dev.txt
-COPY ./api/settings.yaml /app/settings.yaml
 COPY ./api/scripts /app/scripts
 COPY ./api/library_manager/migrations /app/library_manager/migrations
 
@@ -56,11 +54,11 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 5000
 
 # Default command runs FastAPI via uvicorn; override in compose as needed
-# Create non-root user and prepare dirs
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser \
- && mkdir -p /config /config/db /mnt/music_spotify /app/frontend-dist \
- && chown -R appuser:appgroup /app /config /mnt/music_spotify
+# Create non-root user and prepare dirs (commented out for now due to permission issues)
+# RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser \
+#  && mkdir -p /config /config/db /mnt/music_spotify /app/frontend-dist \
+#  && chown -R appuser:appgroup /app /config /mnt/music_spotify
 
-USER appuser
+# USER appuser
 
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]
