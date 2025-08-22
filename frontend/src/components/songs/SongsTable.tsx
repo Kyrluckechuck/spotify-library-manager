@@ -170,7 +170,9 @@ export const SongsTable: React.FC<SongsTableProps> = ({
                 <div className='text-sm font-medium text-gray-900'>
                   {song.name}
                 </div>
-                <div className='text-sm text-gray-500'>{song.gid}</div>
+                <div className='text-sm text-gray-500'>
+                  DB ID: {song.id} | Spotify: {song.gid}
+                </div>
               </td>
               <td className='px-6 py-4 whitespace-nowrap'>
                 <Link

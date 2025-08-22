@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 
 from django.db import connection
+from django.db.models import QuerySet
 
 from huey.api import Task
 from huey.contrib.djhuey import HUEY as rawHuey
@@ -105,6 +106,50 @@ def enqueue_playlists(
     download_non_enqueued_playlists(
         playlist_urls, playlists_to_enqueue, priority=priority
     )
+
+
+def enqueue_fetch_all_albums_for_artists(
+    artists: QuerySet[Artist], extra_args: dict = None
+) -> None:
+    """Enqueue fetch_all_albums_for_artist task for multiple artists."""
+    if extra_args is None:
+        extra_args = {}
+
+    # Track already enqueued artists to avoid duplicates
+    already_enqueued_artists = set()
+
+    for artist in artists:
+        # Use database ID for internal operations
+        if artist.id in already_enqueued_artists:
+            continue
+        already_enqueued_artists.add(artist.id)
+
+        # Pass database ID, not gid
+        from .tasks import fetch_all_albums_for_artist
+
+        fetch_all_albums_for_artist(artist.id, **extra_args)
+
+
+def enqueue_download_missing_albums_for_artists(
+    artists: QuerySet[Artist], extra_args: dict = None
+) -> None:
+    """Enqueue download_missing_albums_for_artist task for multiple artists."""
+    if extra_args is None:
+        extra_args = {}
+
+    # Track already enqueued artists to avoid duplicates
+    already_enqueued_artists = set()
+
+    for artist in artists:
+        # Use database ID for internal operations
+        if artist.id in already_enqueued_artists:
+            continue
+        already_enqueued_artists.add(artist.id)
+
+        # Pass database ID, not gid
+        from .tasks import download_missing_albums_for_artist
+
+        download_missing_albums_for_artist(artist.id, **extra_args)
 
 
 def cleanup_huey_history() -> None:
