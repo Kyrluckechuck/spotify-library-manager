@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from api.src.services.event_bus import EventBus
+from src.services.event_bus import EventBus
 
 
 @pytest.fixture

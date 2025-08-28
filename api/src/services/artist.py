@@ -22,10 +22,16 @@ class ArtistService(BaseService[Artist]):
 
     async def get_by_id(self, id: str) -> Optional[Artist]:
         try:
+            # First try to find by GID
             django_artist = await self.model.objects.aget(gid=id)
             return self._to_graphql_type(django_artist)
         except self.model.DoesNotExist:
-            return None
+            try:
+                # If not found by GID, try to find by database ID
+                django_artist = await self.model.objects.aget(id=int(id))
+                return self._to_graphql_type(django_artist)
+            except (self.model.DoesNotExist, ValueError):
+                return None
 
     async def get_connection(
         self,

@@ -4,7 +4,7 @@ from datetime import timedelta
 
 import pytest
 
-from api.src.services.auth import AuthService
+from src.services.auth import AuthService
 
 
 @pytest.fixture

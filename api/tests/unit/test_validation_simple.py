@@ -1,6 +1,6 @@
 """Simple validation tests that don't depend on Django models."""
 
-from api.library_manager.validation import (
+from library_manager.validation import (
     extract_spotify_id,
     get_spotify_url_type,
     is_spotify_album_url,

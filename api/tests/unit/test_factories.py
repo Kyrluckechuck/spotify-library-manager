@@ -1,8 +1,7 @@
 """Tests demonstrating Factory Boy usage."""
 
 import pytest
-
-from api.tests.factories import (
+from tests.factories import (
     AlbumFactory,
     ArtistFactory,
     DisabledPlaylistFactory,

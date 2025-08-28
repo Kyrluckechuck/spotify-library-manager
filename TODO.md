@@ -15,6 +15,9 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 - [ ] Async/await cleanup where needed (lightweight pass)
 - [ ] API input validation for mutations (incremental)
 - [ ] Downloader fallback (`spotdl_wrapper` with settings)
+- [ ] Fix Django 5.1 deprecation warnings
+  - [ ] Replace `DEFAULT_FILE_STORAGE` with `STORAGES` setting
+  - [ ] Replace `STATICFILES_STORAGE` with `STORAGES` setting
 
 ## Frontend
 - [ ] Add `useRequestState` helper and wire to routes

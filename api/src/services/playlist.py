@@ -19,12 +19,18 @@ class PlaylistService(BaseService[Playlist]):
 
     async def get_by_id(self, id: str) -> Optional[Playlist]:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(
-                url__contains=id
-            )
+            # First try to find by database ID (more specific)
+            django_playlist = await sync_to_async(self.model.objects.get)(id=int(id))
             return self._to_graphql_type(django_playlist)
-        except self.model.DoesNotExist:
-            return None
+        except (self.model.DoesNotExist, ValueError):
+            try:
+                # If not found by database ID, try to find by URL containing the ID
+                django_playlist = await sync_to_async(self.model.objects.get)(
+                    url__contains=id
+                )
+                return self._to_graphql_type(django_playlist)
+            except (self.model.DoesNotExist, self.model.MultipleObjectsReturned):
+                return None
 
     async def get_connection(
         self,

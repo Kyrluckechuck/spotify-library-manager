@@ -2,7 +2,7 @@
 
 import pytest
 
-from api.src.services.monitor import MonitorService
+from src.services.monitor import MonitorService
 
 
 @pytest.fixture

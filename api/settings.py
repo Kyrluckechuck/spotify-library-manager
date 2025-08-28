@@ -97,13 +97,13 @@ settings = dynaconf.DjangoDynaconf(
 # Optionally enable dev-only Django apps when available and DEBUG is true
 if settings.DEBUG:  # type: ignore[name-defined]
     try:
-        import debug_toolbar  # noqa: F401
+        # import debug_toolbar  # noqa: F401
 
-        settings.INSTALLED_APPS.append("debug_toolbar")
-        settings.MIDDLEWARE = [
-            "debug_toolbar.middleware.DebugToolbarMiddleware",
-            *settings.MIDDLEWARE,
-        ]
+        # settings.INSTALLED_APPS.append("debug_toolbar")
+        # settings.MIDDLEWARE = [
+        #     "debug_toolbar.middleware.DebugToolbarMiddleware",
+        #     *settings.MIDDLEWARE,
+        # ]
         INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]  # For Docker, VMs
     except Exception:
         pass
@@ -186,5 +186,14 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+    },
+}
+# Storage configuration (replaces deprecated DEFAULT_FILE_STORAGE and STATICFILES_STORAGE)
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }

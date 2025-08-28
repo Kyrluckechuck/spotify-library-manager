@@ -3,7 +3,7 @@
 import pytest
 from asgiref.sync import sync_to_async
 
-from api.src.schema import schema
+from src.schema import schema
 
 
 @pytest.mark.django_db

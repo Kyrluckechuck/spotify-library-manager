@@ -2,7 +2,7 @@
 
 import pytest
 
-from api.src.schema import schema
+from src.schema import schema
 
 
 @pytest.mark.django_db

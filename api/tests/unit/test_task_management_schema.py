@@ -4,9 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 from asgiref.sync import sync_to_async
+from tests.factories import TaskHistoryFactory
 
-from api.src.schema import schema
-from api.tests.factories import TaskHistoryFactory
+from src.schema import schema
 
 
 class TestTaskManagementGraphQL:

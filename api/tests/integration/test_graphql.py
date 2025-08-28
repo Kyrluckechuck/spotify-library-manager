@@ -4,8 +4,8 @@ from django.test import TransactionTestCase
 
 from asgiref.sync import sync_to_async
 
-from api.src.schema import schema
 from library_manager.models import Album, Artist
+from src.schema import schema
 
 
 class TestArtistQueries(TransactionTestCase):

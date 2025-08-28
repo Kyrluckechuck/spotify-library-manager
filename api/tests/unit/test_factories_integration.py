@@ -1,11 +1,7 @@
 """Integration tests showing Factory Boy benefits."""
 
 import pytest
-
-from api.src.services.album import AlbumService
-from api.src.services.artist import ArtistService
-from api.src.services.playlist import PlaylistService
-from api.tests.factories import (
+from tests.factories import (
     AlbumFactory,
     ArtistFactory,
     DownloadedAlbumFactory,
@@ -15,6 +11,10 @@ from api.tests.factories import (
     UntrackedArtistFactory,
     WantedAlbumFactory,
 )
+
+from src.services.album import AlbumService
+from src.services.artist import ArtistService
+from src.services.playlist import PlaylistService
 
 
 @pytest.mark.django_db

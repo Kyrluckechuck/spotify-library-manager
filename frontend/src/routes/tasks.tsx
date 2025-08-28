@@ -18,6 +18,7 @@ import {
   CancelRunningTasksByNameDocument,
   CancelAllTasksDocument,
 } from '../queries/taskManagement';
+import EnhancedEntityDisplay from '../components/EnhancedEntityDisplay';
 
 type TaskStatus = 'running' | 'completed' | 'failed' | 'pending' | 'all';
 type TaskType = 'sync' | 'download' | 'fetch' | 'all';
@@ -429,7 +430,10 @@ function Tasks() {
                             <div className='font-medium text-gray-900'>
                               {task.type.charAt(0).toUpperCase() +
                                 task.type.slice(1)}{' '}
-                              {task.entityType} {task.entityId}
+                              <EnhancedEntityDisplay
+                                entityType={task.entityType}
+                                entityId={task.entityId}
+                              />
                             </div>
                             <div className='text-sm text-gray-600'>
                               Started{' '}
@@ -465,7 +469,10 @@ function Tasks() {
                             <div className='font-medium text-gray-900'>
                               {task.type.charAt(0).toUpperCase() +
                                 task.type.slice(1)}{' '}
-                              {task.entityType} {task.entityId}
+                              <EnhancedEntityDisplay
+                                entityType={task.entityType}
+                                entityId={task.entityId}
+                              />
                             </div>
                             <div className='text-sm text-gray-600'>
                               Completed{' '}
@@ -505,7 +512,10 @@ function Tasks() {
                             <div className='font-medium text-gray-900'>
                               {task.type.charAt(0).toUpperCase() +
                                 task.type.slice(1)}{' '}
-                              {task.entityType} {task.entityId}
+                              <EnhancedEntityDisplay
+                                entityType={task.entityType}
+                                entityId={task.entityId}
+                              />
                             </div>
                             <div className='text-sm text-gray-600'>
                               Failed{' '}
@@ -617,7 +627,7 @@ function Tasks() {
                       <th className='px-3 py-2 text-left font-medium text-gray-700'>
                         Type
                       </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
+                      <th className='px-3 py-2 text-left font-medium text-gray-700 w-48'>
                         Entity
                       </th>
                       <th className='px-3 py-2 text-left font-medium text-gray-700'>
@@ -683,8 +693,12 @@ function Tasks() {
                                 {task.type.charAt(0).toUpperCase() +
                                   task.type.slice(1)}
                               </td>
-                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
-                                {task.entityType} {task.entityId}
+                              <td className='px-3 py-2 text-gray-700 max-w-xs'>
+                                <EnhancedEntityDisplay
+                                  entityType={task.entityType}
+                                  entityId={task.entityId}
+                                  compact={true}
+                                />
                               </td>
                               <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
                                 <span className='font-mono text-xs'>
@@ -792,7 +806,7 @@ function Tasks() {
             (edge: { node: { logMessages?: string[] } }) =>
               (edge.node.logMessages?.length ?? 0) > 0
           ) ? (
-            <div className='space-y-2'>
+            <div className='space-y-1'>
               {historyData.taskHistory.edges
                 .filter(
                   (edge: { node: { logMessages?: string[] } }) =>
@@ -813,16 +827,24 @@ function Tasks() {
                     return (
                       <div
                         key={task.id}
-                        className='border border-gray-200 rounded-lg p-3'
+                        className='border border-gray-200 rounded p-2'
                       >
-                        <div className='flex items-start justify-between gap-3'>
-                          <div className='font-medium text-gray-900'>
-                            {task.type.charAt(0).toUpperCase() +
-                              task.type.slice(1)}{' '}
-                            {task.entityType} {task.entityId}
+                        <div className='flex items-center justify-between gap-3'>
+                          <div className='flex items-center gap-2 text-sm min-w-0 flex-1'>
+                            <span className='font-medium text-gray-900 whitespace-nowrap'>
+                              {task.type.charAt(0).toUpperCase() +
+                                task.type.slice(1)}
+                            </span>
+                            <div className='min-w-0 flex-1'>
+                              <EnhancedEntityDisplay
+                                entityType={task.entityType}
+                                entityId={task.entityId}
+                                compact={true}
+                              />
+                            </div>
                             {!isExpanded && task.logMessages && (
-                              <span className='ml-2 text-sm text-gray-500'>
-                                ({task.logMessages.length} log entries)
+                              <span className='text-xs text-gray-500 whitespace-nowrap flex-shrink-0'>
+                                ({task.logMessages.length} logs)
                               </span>
                             )}
                           </div>
@@ -835,13 +857,13 @@ function Tasks() {
                               }))
                             }
                             aria-expanded={isExpanded}
-                            className='text-sm text-indigo-600 hover:underline'
+                            className='text-xs text-indigo-600 hover:underline px-2 py-1 rounded hover:bg-indigo-50'
                           >
-                            {isExpanded ? 'Hide logs' : 'Show logs'}
+                            {isExpanded ? 'Hide' : 'Show logs'}
                           </button>
                         </div>
                         {isExpanded && (
-                          <div className='mt-2 bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-40 overflow-y-auto'>
+                          <div className='mt-2 bg-gray-50 rounded p-2 text-xs font-mono text-gray-700 max-h-32 overflow-y-auto'>
                             {task.logMessages?.map((log: string) => (
                               <div
                                 key={`task-${task.id}-log-entry-${log}`}

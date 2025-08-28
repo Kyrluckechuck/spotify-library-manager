@@ -153,6 +153,28 @@ class TaskManagementService:
                 success=True, message=f"No tasks to cancel ({str(e)})"
             )
 
+    def get_pending_tasks(self) -> list:
+        """Get list of pending tasks from Huey queue."""
+        try:
+            pending_tasks = HUEY.pending()
+            result = []
+
+            for task in pending_tasks:
+                task_info = {
+                    "id": task.id,
+                    "name": getattr(task, "name", "unknown"),
+                    "args": getattr(task, "args", []),
+                    "kwargs": getattr(task, "kwargs", {}),
+                    "priority": getattr(task, "priority", 0),
+                    "created_at": getattr(task, "created_at", None),
+                }
+                result.append(task_info)
+
+            return result
+        except Exception as e:
+            # Re-raise the exception as expected by the test
+            raise e
+
     async def get_queue_status(self) -> Dict[str, Any]:
         """Get overall queue status information."""
         pending_tasks = HUEY.pending()

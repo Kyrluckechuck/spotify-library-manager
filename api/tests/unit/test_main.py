@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from api.src.main import Settings, create_app, get_settings
+from src.main import Settings, create_app, get_settings
 
 
 class TestMainApplication:
@@ -57,7 +57,7 @@ class TestMainApplication:
             assert settings.debug is False
             assert settings.reload is False
 
-    @patch("api.src.main.FastAPI")
+    @patch("src.main.FastAPI")
     def test_create_app_success(self, mock_fastapi):
         """Test creating FastAPI app successfully."""
         mock_app = Mock()
@@ -68,8 +68,8 @@ class TestMainApplication:
         assert app is not None
         mock_fastapi.assert_called_once()
 
-    @patch("api.src.main.FastAPI")
-    @patch("api.src.main.get_settings")
+    @patch("src.main.FastAPI")
+    @patch("src.main.get_settings")
     def test_create_app_with_settings(self, mock_get_settings, mock_fastapi):
         """Test creating app with custom settings."""
         mock_settings = Mock()
@@ -89,7 +89,7 @@ class TestMainApplication:
     def test_main_module_imports(self):
         """Test that main module can be imported without errors."""
         try:
-            from api.src.main import create_app, get_settings
+            from src.main import create_app, get_settings
 
             assert create_app is not None
             assert get_settings is not None
@@ -115,7 +115,7 @@ class TestMainApplication:
         # Settings should be the same instance (singleton-like behavior)
         assert settings1 is settings2
 
-    @patch("api.src.main.FastAPI")
+    @patch("src.main.FastAPI")
     def test_create_app_multiple_calls(self, mock_fastapi):
         """Test creating app multiple times."""
         mock_app1 = Mock()

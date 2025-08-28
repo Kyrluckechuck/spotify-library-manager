@@ -22,7 +22,14 @@ export default defineConfig({
       },
     },
   },
-  plugins: [tanstackRouter(), react(), tailwindcss(), tsConfigPaths()],
+  plugins: [
+    tanstackRouter({
+      tempDir: '/tmp/tanstack-router',
+    }),
+    react(),
+    tailwindcss(),
+    tsConfigPaths(),
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

@@ -1,5 +1,5 @@
 # Django and related packages
-django==5.0.2
+django==5.2.5
 django-stubs[compatible-mypy]==4.2.7
 django-stubs-ext==4.2.7
 django-huey-monitor==0.10.1
