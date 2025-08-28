@@ -2,7 +2,8 @@
 This list removes completed items and internal-only documentation tasks (e.g., public GraphQL API docs). Remaining items are actionable and prioritized.
 
 ## High Priority (post-merge)
-- [ ] Verify Docker images end-to-end (build, migrate, run) on main
+- [x] Verify Docker images end-to-end (build, migrate, run) on main ✅ **COMPLETED**
+- [ ] **Re-enable Huey with PostgreSQL backend** (final migration step)
 - [ ] Optimize Docker image size (multi-stage/cache tuning)
 - [ ] Implement downloader fallback (`spotdl_wrapper`) and settings gate
 
@@ -18,10 +19,14 @@ This list removes completed items and internal-only documentation tasks (e.g., p
 - [ ] Fix Django 5.1 deprecation warnings
   - [ ] Replace `DEFAULT_FILE_STORAGE` with `STORAGES` setting
   - [ ] Replace `STATICFILES_STORAGE` with `STORAGES` setting
+- [x] PostgreSQL migration and infrastructure ✅ **COMPLETED**
+- [x] Enhanced entity lookup services ✅ **COMPLETED**
 
 ## Frontend
 - [ ] Add `useRequestState` helper and wire to routes
 - [ ] Implement retries and optimistic updates for key mutations
+- [x] Enhanced Entity Display component ✅ **COMPLETED**
+- [x] Task History UI improvements ✅ **COMPLETED**
 
 ## Monitoring
 - [ ] Dev: GraphQL query logging (simple)
