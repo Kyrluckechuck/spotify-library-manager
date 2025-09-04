@@ -72,6 +72,20 @@ jobs:
         working-directory: frontend
         run: yarn test:run
 
+  code-quality:
+    name: Code quality checks (newlines + formatting)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check trailing newlines
+        run: python scripts/check-repo-newlines.py check
+
   docker-smoke-and-graphql:
     name: Docker smoke + GraphQL validation
     runs-on: ubuntu-latest
