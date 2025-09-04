@@ -7,6 +7,8 @@ reports/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.venv/
+venv/
 
 # User Configs
 client*.bin
@@ -24,3 +26,7 @@ db/
 Spotify/
 temp/
 *.log
+
+# TanStack Router generated files
+frontend/.tanstack/
+.tanstack/

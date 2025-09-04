@@ -1,7 +1,10 @@
+from typing import Optional
+
 from django.conf import settings
 
 import spotipy
-from huey.api import Task
+
+# from huey.api import Task  # Removed for Celery migration
 from spotipy.oauth2 import SpotifyClientCredentials
 
 from library_manager.models import Artist
@@ -22,7 +25,7 @@ class SpotifyClient:
         self.sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 
-def track_artists_in_playlist(playlist_url: str, task: Task) -> None:
+def track_artists_in_playlist(playlist_url: str, task_id: Optional[str] = None) -> None:
     # TODO: Implement artist tracking from playlist
     spotipy_client = SpotifyClient()
     downloader = Downloader(spotipy_client.sp)

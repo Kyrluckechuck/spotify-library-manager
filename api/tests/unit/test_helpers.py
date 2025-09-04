@@ -89,13 +89,15 @@ class TestHelpers(TestCase):
 
         download_missing_tracked_artists(already_enqueued, artists)
 
-        # Verify that download_missing_albums_for_artist was called with database IDs
-        expected_calls = [
-            ((self.artist1.id,), {"delay": 5}),
-            ((self.artist2.id,), {"delay": 5}),
-        ]
-        mock_download.assert_has_calls(expected_calls, any_order=True)
-        assert mock_download.call_count == 2
+        # Verify that download_missing_albums_for_artist.delay was called with database IDs
+        mock_download.delay.assert_has_calls(
+            [
+                ((self.artist1.id,), {"delay": 5}),
+                ((self.artist2.id,), {"delay": 5}),
+            ],
+            any_order=True,
+        )
+        assert mock_download.delay.call_count == 2
 
     @patch("library_manager.tasks.fetch_all_albums_for_artist")
     def test_enqueue_fetch_all_albums_for_artists_with_extra_args(self, mock_fetch):

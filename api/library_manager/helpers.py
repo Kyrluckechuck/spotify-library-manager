@@ -1,35 +1,43 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from django.db import connection
 from django.db.models import QuerySet
 
-from huey.api import Task
-from huey.contrib.djhuey import HUEY as rawHuey
-
 from .models import Artist, TrackedPlaylist
 
-
-def get_all_tasks_with_name(task_name: str) -> List[Task]:
-    potential_tasks: List[Task] = rawHuey.pending()
-
-    found_tasks: List[Task] = []
-
-    for potential_task in potential_tasks:
-        if potential_task.name == task_name:
-            found_tasks.append(potential_task)
-
-    return found_tasks
+# from huey.api import Task  # Removed for Celery migration
+# from huey.contrib.djhuey import HUEY as rawHuey  # Removed for Celery migration
 
 
-def convert_first_task_args_to_list(
-    pending_tasks: List[Task],
-) -> Union[List[int], List[str]]:
-    pending_args: Union[List[int], List[str]] = []
+# Original Huey implementations (commented out)
+# def get_all_tasks_with_name(task_name: str) -> List[Task]:
+#     potential_tasks: List[Task] = rawHuey.pending()
+#     found_tasks: List[Task] = []
+#     for potential_task in potential_tasks:
+#         if potential_task.name == task_name:
+#             found_tasks.append(potential_task)
+#     return found_tasks
 
-    for pending_task in pending_tasks:
-        pending_args.append(pending_task.args[0])
+# def convert_first_task_args_to_list(
+#     pending_tasks: List[Task],
+# ) -> Union[List[int], List[str]]:
+#     pending_args: Union[List[int], List[str]] = []
+#     for pending_task in pending_tasks:
+#         pending_args.append(pending_task.args[0])
+#     return pending_args
 
-    return pending_args
+
+# TODO: Implement Celery-based task deduplication
+def get_all_tasks_with_name(task_name: str) -> List:
+    """Temporary stub - returns empty list to avoid failures.
+    TODO: Implement proper Celery task deduplication."""
+    return []
+
+
+def convert_first_task_args_to_list(pending_tasks: List) -> List:
+    """Temporary stub - returns empty list to avoid failures.
+    TODO: Implement proper Celery task arg conversion."""
+    return []
 
 
 def update_tracked_artists_albums(
@@ -72,8 +80,8 @@ def download_missing_tracked_artists(
         # Local import to avoid circular import during module initialization
         from .tasks import download_missing_albums_for_artist
 
-        # Pass database ID, not gid
-        download_missing_albums_for_artist(artist.id, **extra_args)
+        # Queue the task (pass database ID, not gid)
+        download_missing_albums_for_artist.delay(artist.id, delay=5)
 
 
 def download_non_enqueued_playlists(
@@ -91,8 +99,9 @@ def download_non_enqueued_playlists(
         # Local import to avoid circular import during module initialization
         from .tasks import download_playlist
 
-        download_playlist(
-            playlist_url=playlist.url, tracked=playlist.auto_track_artists, **extra_args
+        # Queue the task (remove priority from extra_args as it's not supported by delay())
+        download_playlist.delay(
+            playlist_url=playlist.url, tracked=playlist.auto_track_artists
         )
 
 
@@ -113,7 +122,7 @@ def enqueue_playlists(
 
 
 def enqueue_fetch_all_albums_for_artists(
-    artists: QuerySet[Artist], extra_args: dict = None
+    artists: QuerySet[Artist], extra_args: Optional[dict] = None
 ) -> None:
     """Enqueue fetch_all_albums_for_artist task for multiple artists."""
     if extra_args is None:
@@ -135,7 +144,7 @@ def enqueue_fetch_all_albums_for_artists(
 
 
 def enqueue_download_missing_albums_for_artists(
-    artists: QuerySet[Artist], extra_args: dict = None
+    artists: QuerySet[Artist], extra_args: Optional[dict] = None
 ) -> None:
     """Enqueue download_missing_albums_for_artist task for multiple artists."""
     if extra_args is None:
@@ -171,7 +180,9 @@ def cleanup_huey_history() -> None:
 
 
 def enqueue_batch_artist_operations(
-    artists: QuerySet[Artist], operations: List[str] = None, extra_args: dict = None
+    artists: QuerySet[Artist],
+    operations: Optional[List[str]] = None,
+    extra_args: Optional[dict] = None,
 ) -> Dict[str, int]:
     """
     Enqueue multiple operations for multiple artists in batch.

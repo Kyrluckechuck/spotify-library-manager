@@ -287,18 +287,15 @@ class TaskHistory(models.Model):
         if self.status != "RUNNING":
             return False
 
-        # Method 1: Check Huey task state
+        # Method 1: Check Celery task state
         try:
-            from huey_monitor.models import TaskModel
-
-            huey_task = TaskModel.objects.filter(task_id=self.task_id).first()
-            if huey_task:
-                # If Huey says it's finished but we're still running, we're stuck
-                if huey_task.finished and self.status == "RUNNING":
-                    return True
-                # If Huey task doesn't exist but we're running, we're stuck
-                if not huey_task and self.status == "RUNNING":
-                    return True
+            # TODO: Implement Celery-based task state checking
+            # from django_celery_results.models import TaskResult
+            # celery_task = TaskResult.objects.filter(task_id=self.task_id).first()
+            # if celery_task and celery_task.status in ['SUCCESS', 'FAILURE', 'REVOKED']:
+            #     if self.status == "RUNNING":
+            #         return True
+            pass
         except Exception:
             pass
 

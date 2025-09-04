@@ -1,10 +1,8 @@
 """Unit tests for task management service."""
 
-from datetime import datetime
 from unittest.mock import Mock, patch
 
 import pytest
-from huey.api import Task
 
 from src.services.task_management import MutationResult, TaskManagementService
 
@@ -15,22 +13,20 @@ def task_management_service():
 
 
 @pytest.fixture
-def mock_huey():
-    """Mock Huey instance for testing."""
+def mock_celery_app():
+    """Mock Celery app instance for testing."""
     return Mock()
 
 
 @pytest.fixture
-def mock_pending_task():
-    """Mock a pending Huey task."""
-    task = Mock(spec=Task)
-    task.id = "task_123"
-    task.name = "test_task"
-    task.args = ["arg1", "arg2"]
-    task.kwargs = {"key1": "value1"}
-    task.priority = 1
-    task.created_at = datetime.now()
-    return task
+def mock_celery_task():
+    """Mock a Celery task result."""
+    return {
+        "id": "task_123",
+        "name": "test_task",
+        "args": ["arg1", "arg2"],
+        "kwargs": {"key1": "value1"},
+    }
 
 
 class TestTaskManagementService:
@@ -45,12 +41,14 @@ class TestTaskManagementService:
         assert hasattr(task_management_service, "cancel_tasks_by_name")
         assert hasattr(task_management_service, "get_queue_status")
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     def test_get_pending_tasks_success(
-        self, mock_huey, task_management_service, mock_pending_task
+        self, mock_celery_app, task_management_service, mock_celery_task
     ):
         """Test getting pending tasks successfully."""
-        mock_huey.pending.return_value = [mock_pending_task]
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {"worker1": [mock_celery_task]}
+        mock_celery_app.control.inspect.return_value = mock_inspect
 
         result = task_management_service.get_pending_tasks()
 
@@ -59,91 +57,97 @@ class TestTaskManagementService:
         assert result[0]["name"] == "test_task"
         assert result[0]["args"] == ["arg1", "arg2"]
         assert result[0]["kwargs"] == {"key1": "value1"}
-        assert result[0]["priority"] == 1
-        assert result[0]["created_at"] is not None
 
-    @patch("src.services.task_management.HUEY")
-    def test_get_pending_tasks_empty(self, mock_huey, task_management_service):
+    @patch("src.services.task_management.current_app")
+    def test_get_pending_tasks_empty(self, mock_celery_app, task_management_service):
         """Test getting pending tasks when queue is empty."""
-        mock_huey.pending.return_value = []
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {}
+        mock_celery_app.control.inspect.return_value = mock_inspect
 
         result = task_management_service.get_pending_tasks()
 
         assert result == []
 
-    @patch("src.services.task_management.HUEY")
-    def test_get_pending_tasks_exception(self, mock_huey, task_management_service):
-        """Test getting pending tasks when Huey raises an exception."""
-        mock_huey.pending.side_effect = Exception("Huey error")
+    @patch("src.services.task_management.current_app")
+    def test_get_pending_tasks_exception(
+        self, mock_celery_app, task_management_service
+    ):
+        """Test getting pending tasks when Celery raises an exception."""
+        mock_celery_app.control.inspect.side_effect = Exception("Celery error")
 
         # The actual implementation doesn't handle exceptions, so this should raise
-        with pytest.raises(Exception, match="Huey error"):
+        with pytest.raises(Exception, match="Celery error"):
             task_management_service.get_pending_tasks()
 
-    @patch("src.services.task_management.HUEY")
     @pytest.mark.asyncio
-    async def test_get_task_count_by_name(
-        self, mock_huey, task_management_service, mock_pending_task
-    ):
+    async def test_get_task_count_by_name(self, task_management_service):
         """Test getting task count by name."""
-        # Mock the TaskHistory model and its query
-        with patch("library_manager.models.TaskHistory") as mock_task_history:
-            # Mock the values() call to return task types
+        # Mock the TaskResult model and its query
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock the filter and values chain
+            mock_queryset = Mock()
             mock_values = Mock()
             mock_values.__iter__ = Mock(
                 return_value=iter(
                     [
-                        {"type": "test_task"},
-                        {"type": "test_task"},
-                        {"type": "other_task"},
+                        {"task_name": "test_task"},
+                        {"task_name": "test_task"},
+                        {"task_name": "other_task"},
                     ]
                 )
             )
-            mock_task_history.objects.values.return_value = mock_values
+            mock_queryset.values.return_value = mock_values
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await task_management_service.get_task_count_by_name()
 
             assert result["test_task"] == 2
             assert result["other_task"] == 1
 
-    @patch("src.services.task_management.HUEY")
     @pytest.mark.asyncio
-    async def test_get_task_count_by_name_not_found(
-        self, mock_huey, task_management_service
-    ):
+    async def test_get_task_count_by_name_not_found(self, task_management_service):
         """Test getting task count for non-existent task name."""
-        with patch("library_manager.models.TaskHistory") as mock_task_history:
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            mock_queryset = Mock()
             mock_values = Mock()
             mock_values.__iter__ = Mock(return_value=iter([]))
-            mock_task_history.objects.values.return_value = mock_values
+            mock_queryset.values.return_value = mock_values
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await task_management_service.get_task_count_by_name()
 
             assert result == {}
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_all_pending_tasks_success(
-        self, mock_huey, task_management_service, mock_pending_task
+        self, mock_celery_app, task_management_service, mock_celery_task
     ):
         """Test cancelling all pending tasks successfully."""
-        mock_huey.pending.return_value = [mock_pending_task]
-        mock_huey.revoke_by_id.return_value = True
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {"worker1": [mock_celery_task]}
+        mock_celery_app.control.inspect.return_value = mock_inspect
+        mock_celery_app.control.revoke.return_value = None
 
         result = await task_management_service.cancel_all_pending_tasks()
 
         assert isinstance(result, MutationResult)
         assert result.success is True
         assert "Successfully cancelled 1 pending tasks" in result.message
-        mock_huey.revoke_by_id.assert_called_once_with("task_123")
+        mock_celery_app.control.revoke.assert_called_once_with(
+            "task_123", terminate=True
+        )
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_all_pending_tasks_empty_queue(
-        self, mock_huey, task_management_service
+        self, mock_celery_app, task_management_service
     ):
         """Test cancelling all pending tasks when queue is empty."""
-        mock_huey.pending.return_value = []
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {}
+        mock_celery_app.control.inspect.return_value = mock_inspect
 
         result = await task_management_service.cancel_all_pending_tasks()
 
@@ -151,19 +155,19 @@ class TestTaskManagementService:
         assert result.success is True
         assert "Successfully cancelled 0 pending tasks" in result.message
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_all_pending_tasks_partial_failure(
-        self, mock_huey, task_management_service
+        self, mock_celery_app, task_management_service
     ):
         """Test cancelling all pending tasks with some failures."""
-        task1 = Mock(spec=Task)
-        task1.id = "task_1"
-        task2 = Mock(spec=Task)
-        task2.id = "task_2"
+        task1 = {"id": "task_1", "name": "test_task"}
+        task2 = {"id": "task_2", "name": "test_task"}
 
-        mock_huey.pending.return_value = [task1, task2]
-        mock_huey.revoke_by_id.side_effect = [True, Exception("Revoke failed")]
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {"worker1": [task1, task2]}
+        mock_celery_app.control.inspect.return_value = mock_inspect
+        mock_celery_app.control.revoke.side_effect = [None, Exception("Revoke failed")]
 
         result = await task_management_service.cancel_all_pending_tasks()
 
@@ -171,13 +175,13 @@ class TestTaskManagementService:
         assert result.success is True
         assert "Successfully cancelled 1 pending tasks" in result.message
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_all_pending_tasks_huey_exception(
-        self, mock_huey, task_management_service
+    async def test_cancel_all_pending_tasks_celery_exception(
+        self, mock_celery_app, task_management_service
     ):
-        """Test cancelling all pending tasks when Huey raises an exception."""
-        mock_huey.pending.side_effect = Exception("Huey error")
+        """Test cancelling all pending tasks when Celery raises an exception."""
+        mock_celery_app.control.inspect.side_effect = Exception("Celery error")
 
         result = await task_management_service.cancel_all_pending_tasks()
 
@@ -185,40 +189,37 @@ class TestTaskManagementService:
         assert result.success is False
         assert "Failed to cancel tasks" in result.message
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_tasks_by_name_success(
-        self, mock_huey, task_management_service
+        self, mock_celery_app, task_management_service
     ):
         """Test cancelling tasks by name successfully."""
-        task1 = Mock(spec=Task)
-        task1.id = "task_1"
-        # Make the string representation include the task name for the service's string search
-        task1.__str__ = Mock(return_value="test_task")
-        task2 = Mock(spec=Task)
-        task2.id = "task_2"
-        task2.__str__ = Mock(return_value="test_task")
-        task3 = Mock(spec=Task)
-        task3.id = "task_3"
-        task3.__str__ = Mock(return_value="other_task")
+        task1 = {"id": "task_1", "name": "test_task"}
+        task2 = {"id": "task_2", "name": "test_task"}
+        task3 = {"id": "task_3", "name": "other_task"}
 
-        mock_huey.pending.return_value = [task1, task2, task3]
-        mock_huey.revoke_by_id.return_value = True
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {"worker1": [task1, task2, task3]}
+        mock_celery_app.control.inspect.return_value = mock_inspect
+        mock_celery_app.control.revoke.return_value = None
 
         result = await task_management_service.cancel_tasks_by_name("test_task")
 
         assert isinstance(result, MutationResult)
         assert result.success is True
         assert "Successfully cancelled 2 tasks" in result.message
-        assert mock_huey.revoke_by_id.call_count == 2
+        assert mock_celery_app.control.revoke.call_count == 2
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_tasks_by_name_not_found(
-        self, mock_huey, task_management_service
+        self, mock_celery_app, task_management_service
     ):
         """Test cancelling tasks by name when no matching tasks exist."""
-        mock_huey.pending.return_value = []
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {}
+        mock_celery_app.control.inspect.return_value = mock_inspect
 
         result = await task_management_service.cancel_tasks_by_name("non_existent_task")
 
@@ -226,21 +227,19 @@ class TestTaskManagementService:
         assert result.success is True
         assert "Successfully cancelled 0 tasks" in result.message
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_tasks_by_name_partial_failure(
-        self, mock_huey, task_management_service
+        self, mock_celery_app, task_management_service
     ):
         """Test cancelling tasks by name with some failures."""
-        task1 = Mock(spec=Task)
-        task1.id = "task_1"
-        task1.__str__ = Mock(return_value="test_task")
-        task2 = Mock(spec=Task)
-        task2.id = "task_2"
-        task2.__str__ = Mock(return_value="test_task")
+        task1 = {"id": "task_1", "name": "test_task"}
+        task2 = {"id": "task_2", "name": "test_task"}
 
-        mock_huey.pending.return_value = [task1, task2]
-        mock_huey.revoke_by_id.side_effect = [True, Exception("Revoke failed")]
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {"worker1": [task1, task2]}
+        mock_celery_app.control.inspect.return_value = mock_inspect
+        mock_celery_app.control.revoke.side_effect = [None, Exception("Revoke failed")]
 
         result = await task_management_service.cancel_tasks_by_name("test_task")
 
@@ -248,11 +247,8 @@ class TestTaskManagementService:
         assert result.success is True
         assert "Successfully cancelled 1 tasks" in result.message
 
-    @patch("src.services.task_management.HUEY")
     @pytest.mark.asyncio
-    async def test_cancel_running_tasks_by_name_success(
-        self, mock_huey, task_management_service
-    ):
+    async def test_cancel_running_tasks_by_name_success(self, task_management_service):
         """Test cancelling running tasks by name successfully."""
         with patch("library_manager.models.TaskHistory") as mock_task_history:
             # Mock running tasks
@@ -276,16 +272,18 @@ class TestTaskManagementService:
             assert result.success is True
             assert "Successfully cancelled 2 running tasks" in result.message
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_all_tasks_success(self, mock_huey, task_management_service):
+    async def test_cancel_all_tasks_success(
+        self, mock_celery_app, task_management_service
+    ):
         """Test cancelling all tasks (pending and running) successfully."""
         # Mock pending tasks
-        task1 = Mock(spec=Task)
-        task1.id = "task_1"
-        task1.name = "test_task"
-        mock_huey.pending.return_value = [task1]
-        mock_huey.revoke_by_id.return_value = True
+        task1 = {"id": "task_1", "name": "test_task"}
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {"worker1": [task1]}
+        mock_celery_app.control.inspect.return_value = mock_inspect
+        mock_celery_app.control.revoke.return_value = None
 
         # Mock running tasks
         with patch("library_manager.models.TaskHistory") as mock_task_history:
@@ -302,19 +300,19 @@ class TestTaskManagementService:
             assert result.success is True
             assert "Successfully cancelled 2 total tasks" in result.message
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_get_queue_status_success(self, mock_huey, task_management_service):
+    async def test_get_queue_status_success(
+        self, mock_celery_app, task_management_service
+    ):
         """Test getting queue status successfully."""
-        task1 = Mock(spec=Task)
-        task1.name = "task_a"
-        task2 = Mock(spec=Task)
-        task2.name = "task_a"
-        task3 = Mock(spec=Task)
-        task3.name = "task_b"
+        task1 = {"id": "task_1", "name": "task_a"}
+        task2 = {"id": "task_2", "name": "task_a"}
+        task3 = {"id": "task_3", "name": "task_b"}
 
-        mock_huey.pending.return_value = [task1, task2, task3]
-        mock_huey.storage.queue_size.return_value = 3
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {"worker1": [task1, task2, task3]}
+        mock_celery_app.control.inspect.return_value = mock_inspect
 
         # Mock the async get_task_count_by_name method
         with patch.object(
@@ -325,16 +323,18 @@ class TestTaskManagementService:
             result = await task_management_service.get_queue_status()
 
         assert result["total_pending_tasks"] == 3
-        assert result["queue_size"] == 3
         assert result["task_counts"]["task_a"] == 2
         assert result["task_counts"]["task_b"] == 1
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_get_queue_status_empty(self, mock_huey, task_management_service):
+    async def test_get_queue_status_empty(
+        self, mock_celery_app, task_management_service
+    ):
         """Test getting queue status when queue is empty."""
-        mock_huey.pending.return_value = []
-        mock_huey.storage.queue_size.return_value = 0
+        mock_inspect = Mock()
+        mock_inspect.active.return_value = {}
+        mock_celery_app.control.inspect.return_value = mock_inspect
 
         # Mock the async get_task_count_by_name method
         with patch.object(
@@ -343,17 +343,18 @@ class TestTaskManagementService:
             result = await task_management_service.get_queue_status()
 
         assert result["total_pending_tasks"] == 0
-        assert result["queue_size"] == 0
         assert result["task_counts"] == {}
 
-    @patch("src.services.task_management.HUEY")
+    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_get_queue_status_exception(self, mock_huey, task_management_service):
-        """Test getting queue status when Huey raises an exception."""
-        mock_huey.pending.side_effect = Exception("Huey error")
+    async def test_get_queue_status_exception(
+        self, mock_celery_app, task_management_service
+    ):
+        """Test getting queue status when Celery raises an exception."""
+        mock_celery_app.control.inspect.side_effect = Exception("Celery error")
 
         # The actual implementation doesn't handle exceptions, so this should raise
-        with pytest.raises(Exception, match="Huey error"):
+        with pytest.raises(Exception, match="Celery error"):
             await task_management_service.get_queue_status()
 
     def test_mutation_result_creation(self):

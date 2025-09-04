@@ -1,4 +1,4 @@
-.PHONY: build-and-publish dev dev-container dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations install clean test lint docker-build docker-run docker-stop dev-api dev-frontend dev-worker
+.PHONY: build-and-publish dev dev-container dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin
 
 # Main development command - starts all services
 dev:
@@ -37,35 +37,33 @@ dev-frontend:
 	cd frontend && yarn dev
 
 dev-worker:
-	cd api && python manage.py run_huey
+	cd api && celery -A celery_app worker --loglevel=info
 
-# Django admin server (separate from main dev setup)
+# Django admin server for accessing Django admin console
 dev-admin:
 	cd api && python manage.py collectstatic --noinput
 	cd api && python manage.py runserver 0.0.0.0:8000
 
-# FastAPI server (alternative to dev-api)
-dev-fastapi:
-	cd api && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+# Celery queue management
+clear-celery-queue:
+	cd api && celery -A celery_app purge -f
 
-# Huey queue management
-clear-huey-queue:
-	cd api && python manage.py shell -c "from huey.contrib.djhuey import HUEY; HUEY.flush(); print('Huey queue cleared')"
+# Celery monitoring 
+celery-monitor:
+	cd api && celery -A celery_app monitor
 
 # Installation and setup
 setup:
 	# Install API dependencies
 	pip install -r requirements.txt
 	# Install frontend dependencies
-	yarn install
+	cd frontend && yarn install
 
 install-api:
 	pip install -r requirements.txt
 
 install-frontend:
 	cd frontend && yarn install
-
-install: install-api install-frontend
 
 # Install git hooks from tracked .githooks directory
 .PHONY: install-git-hooks
@@ -82,27 +80,33 @@ createsuperuser:
 # Testing
 test: test-api test-frontend
 
+# Main API test command with coverage
 test-api:
-	PYTHONPATH=.:api python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing
+	PYTHONPATH=.:api python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
 
+# API test variants
 test-api-unit:
 	PYTHONPATH=.:api python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
 
 test-api-integration:
-	PYTHONPATH=.:api python -m pytest api/tests/integration/test_simple_integration.py -v
-
-test-api-integration-full:
 	PYTHONPATH=.:api python -m pytest api/tests/integration/ -v -m integration
 
-test-api-integration-isolated:
-	PYTHONPATH=.:api python -m pytest api/tests/integration/test_isolated_integration.py -v
+# Docker-based testing - runs tests in containerized environment
+test-docker: test-api-docker test-frontend-docker
 
-test-api-coverage:
-	PYTHONPATH=.:api python -m pytest api/tests/ api/src/tests/ --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
+# Main API test command in Docker with coverage
+test-api-docker:
+	docker compose exec web python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
 
-# Convenience alias
-test-backend: test-api
+# API test variants in Docker
+test-api-unit-docker:
+	docker compose exec web python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
 
+test-api-integration-docker:
+	docker compose exec web python -m pytest api/tests/integration/ -v -m integration
+
+
+# Frontend testing
 test-frontend:
 	cd frontend && yarn test:run
 
@@ -112,8 +116,8 @@ test-frontend-watch:
 test-frontend-coverage:
 	cd frontend && yarn test:coverage
 
-test-frontend-ui:
-	cd frontend && yarn test:ui
+test-frontend-docker:
+	docker compose exec frontend yarn test:run
 
 test-migrations:
 	cd api && python manage.py showmigrations
@@ -154,18 +158,10 @@ lint-api-pylint:
 lint-frontend:
 	cd frontend && yarn lint
 
-# Code formatting
-format: format-api format-frontend
+# Code formatting and auto-fix linting issues
+format: fix-lint-api format-frontend
 
-format-api: format-api-black format-api-isort
-
-format-api-black:
-	cd api && python -m black .
-
-format-api-isort:
-	cd api && python -m isort .
-
-# Auto-fix linting issues
+# Auto-fix linting issues (includes formatting)
 fix-lint: fix-lint-api fix-lint-frontend
 
 fix-lint-api: fix-lint-api-black fix-lint-api-isort fix-lint-api-flake8
@@ -195,11 +191,12 @@ build-frontend:
 docker-build:
 	docker build -t spotify-library-manager .
 
-docker-run:
-	docker-compose up
+# Use dev-container and dev-container-down instead
+docker-up:
+	docker compose up -d
 
-docker-stop:
-	docker-compose down
+docker-down:
+	docker compose down
 
 # Build and publish (existing)
 build-and-publish:

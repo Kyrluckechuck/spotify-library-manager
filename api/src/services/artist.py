@@ -8,7 +8,7 @@ from asgiref.sync import sync_to_async
 from library_manager.models import Artist as DjangoArtist
 from library_manager.tasks import (
     download_missing_albums_for_artist,
-    fetch_all_albums_for_artist,
+    fetch_all_albums_for_artist_sync,
 )
 
 from ..graphql_types.models import Artist, MutationResult
@@ -144,7 +144,7 @@ class ArtistService(BaseService[Artist]):
             # Convert string to int since frontend sends database ID
             artist_db_id = int(artist_id)
             django_artist = await sync_to_async(self.model.objects.get)(id=artist_db_id)
-            await sync_to_async(fetch_all_albums_for_artist)(django_artist.id)
+            await sync_to_async(fetch_all_albums_for_artist_sync)(django_artist.id)
             return self._to_graphql_type(django_artist)
         except ValueError:
             raise ValueError(f"Invalid artist ID format: {artist_id}")

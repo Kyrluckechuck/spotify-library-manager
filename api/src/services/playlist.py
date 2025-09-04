@@ -148,8 +148,8 @@ class PlaylistService(BaseService[Playlist]):
                 id=playlist_id
             )
 
-            # Trigger sync task
-            await sync_to_async(sync_tracked_playlist)(django_playlist)
+            # Trigger sync task (queue it for Celery worker)
+            await sync_to_async(sync_tracked_playlist.delay)(django_playlist.id)
 
             return MutationResult(
                 success=True,

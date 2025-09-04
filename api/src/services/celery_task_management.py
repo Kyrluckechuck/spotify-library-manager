@@ -1,8 +1,8 @@
 """
-Task management service for handling Celery task operations.
+Celery task management service for handling task operations.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from django.utils import timezone
 
@@ -19,7 +19,7 @@ class MutationResult:
         self.message = message
 
 
-class TaskManagementService:
+class CeleryTaskManagementService:
     """Service for managing Celery tasks."""
 
     async def cancel_all_pending_tasks(self) -> MutationResult:
@@ -27,17 +27,27 @@ class TaskManagementService:
         try:
             # Get pending tasks from Celery
             inspect = current_app.control.inspect()
-            pending_tasks = inspect.active() or {}
+            active_tasks = inspect.active() or {}
+            scheduled_tasks = inspect.scheduled() or {}
             cancelled_count = 0
 
-            for worker, tasks in pending_tasks.items():
+            # Cancel active tasks
+            for worker, tasks in active_tasks.items():
                 for task in tasks:
                     try:
-                        # Cancel the task
                         current_app.control.revoke(task["id"], terminate=True)
                         cancelled_count += 1
                     except Exception as e:
-                        print(f"Failed to cancel task {task['id']}: {e}")
+                        print(f"Failed to cancel active task {task['id']}: {e}")
+
+            # Cancel scheduled tasks
+            for worker, tasks in scheduled_tasks.items():
+                for task in tasks:
+                    try:
+                        current_app.control.revoke(task["id"], terminate=True)
+                        cancelled_count += 1
+                    except Exception as e:
+                        print(f"Failed to cancel scheduled task {task['id']}: {e}")
 
             return MutationResult(
                 success=True,
@@ -52,20 +62,18 @@ class TaskManagementService:
     async def cancel_tasks_by_name(self, task_name: str) -> MutationResult:
         """Cancel all pending tasks with a specific name."""
         try:
-            # Get pending tasks from Celery
             inspect = current_app.control.inspect()
-            pending_tasks = inspect.active() or {}
+            active_tasks = inspect.active() or {}
             cancelled_count = 0
 
-            for worker, tasks in pending_tasks.items():
+            for worker, tasks in active_tasks.items():
                 for task in tasks:
-                    try:
-                        # Check if task name matches
-                        if task.get("name", "").lower() == task_name.lower():
+                    if task_name.lower() in task.get("name", "").lower():
+                        try:
                             current_app.control.revoke(task["id"], terminate=True)
                             cancelled_count += 1
-                    except Exception as e:
-                        print(f"Failed to cancel task {task['id']}: {e}")
+                        except Exception as e:
+                            print(f"Failed to cancel task {task['id']}: {e}")
 
             return MutationResult(
                 success=True,
@@ -82,20 +90,28 @@ class TaskManagementService:
         try:
             from library_manager.models import TaskHistory
 
-            # Find running tasks with the specified name using sync_to_async
-            queryset = TaskHistory.objects.filter(
-                type__iexact=task_name.replace("_", ""), status="RUNNING"
+            # Find running tasks with the specified name
+            running_tasks = await sync_to_async(list)(
+                TaskHistory.objects.filter(
+                    type__iexact=task_name.replace("_", ""), status="RUNNING"
+                )
             )
-            running_tasks: list = await sync_to_async(list)(queryset)
 
             cancelled_count = 0
             for task_history in running_tasks:
                 try:
-                    # Mark the task as cancelled using sync_to_async
+                    # Mark the task as cancelled
                     task_history.status = "CANCELLED"
                     task_history.completed_at = timezone.now()
                     task_history.error_message = "Task cancelled by user"
                     await sync_to_async(task_history.save)()
+
+                    # Also revoke from Celery
+                    try:
+                        current_app.control.revoke(task_history.task_id, terminate=True)
+                    except Exception:
+                        pass  # Task might not be in Celery queue anymore
+
                     cancelled_count += 1
                 except Exception as e:
                     print(f"Failed to cancel running task {task_history.task_id}: {e}")
@@ -110,104 +126,88 @@ class TaskManagementService:
                 success=False, message=f"Failed to cancel running tasks: {str(e)}"
             )
 
-    async def cancel_all_tasks(self) -> MutationResult:
-        """Cancel both pending and running tasks."""
-        try:
-            # Cancel pending tasks
-            pending_result = await self.cancel_all_pending_tasks()
-
-            # Cancel running tasks
-            from library_manager.models import TaskHistory
-
-            queryset = TaskHistory.objects.filter(status="RUNNING")
-            running_tasks: list = await sync_to_async(list)(queryset)
-            cancelled_running_count = 0
-
-            for task_history in running_tasks:
-                try:
-                    task_history.status = "CANCELLED"
-                    task_history.completed_at = timezone.now()
-                    task_history.error_message = "Task cancelled by user"
-                    await sync_to_async(task_history.save)()
-                    cancelled_running_count += 1
-                except Exception as e:
-                    print(f"Failed to cancel running task {task_history.task_id}: {e}")
-
-            # Safely parse pending count from message; default to 0 if parsing fails
-            try:
-                pending_count = int(pending_result.message.split()[2])
-            except Exception:
-                pending_count = 0
-
-            total_cancelled = pending_count + cancelled_running_count
-
-            return MutationResult(
-                success=True,
-                message=(
-                    f"Successfully cancelled {total_cancelled} total tasks ("
-                    f"{pending_count} pending, {cancelled_running_count} running)"
-                ),
-            )
-
-        except Exception as e:
-            # In test/integration contexts, Huey backends may be unavailable; treat as no-op success
-            return MutationResult(
-                success=True, message=f"No tasks to cancel ({str(e)})"
-            )
-
-    def get_pending_tasks(self) -> list:
+    def get_pending_tasks(self) -> List[Dict[str, Any]]:
         """Get list of pending tasks from Celery queue."""
         try:
             inspect = current_app.control.inspect()
-            pending_tasks = inspect.active() or {}
+            active_tasks = inspect.active() or {}
+            scheduled_tasks = inspect.scheduled() or {}
             result = []
 
-            for worker, tasks in pending_tasks.items():
+            # Process active tasks
+            for worker, tasks in active_tasks.items():
                 for task in tasks:
                     task_info = {
                         "id": task.get("id"),
                         "name": task.get("name", "unknown"),
                         "args": task.get("args", []),
                         "kwargs": task.get("kwargs", {}),
+                        "worker": worker,
+                        "status": "active",
+                    }
+                    result.append(task_info)
+
+            # Process scheduled tasks
+            for worker, tasks in scheduled_tasks.items():
+                for task in tasks:
+                    task_info = {
+                        "id": task.get("id"),
+                        "name": task.get("name", "unknown"),
+                        "args": task.get("args", []),
+                        "kwargs": task.get("kwargs", {}),
+                        "worker": worker,
+                        "status": "scheduled",
+                        "eta": task.get("eta"),
                     }
                     result.append(task_info)
 
             return result
         except Exception as e:
-            # Re-raise the exception as expected by the test
             raise e
 
     async def get_queue_status(self) -> Dict[str, Any]:
         """Get overall queue status information."""
-        inspect = current_app.control.inspect()
-        pending_tasks = inspect.active() or {}
+        try:
+            inspect = current_app.control.inspect()
+            active_tasks = inspect.active() or {}
+            scheduled_tasks = inspect.scheduled() or {}
 
-        # Count total pending tasks
-        total_tasks = sum(len(tasks) for tasks in pending_tasks.values())
+            total_active = sum(len(tasks) for tasks in active_tasks.values())
+            total_scheduled = sum(len(tasks) for tasks in scheduled_tasks.values())
 
-        task_counts = await self.get_task_count_by_name()
+            task_counts = await self.get_task_count_by_name()
 
-        return {
-            "total_pending_tasks": total_tasks,
-            "task_counts": task_counts,
-            "queue_size": total_tasks,
-        }
+            return {
+                "total_active_tasks": total_active,
+                "total_scheduled_tasks": total_scheduled,
+                "total_pending_tasks": total_active + total_scheduled,
+                "task_counts": task_counts,
+                "workers": list(active_tasks.keys()),
+            }
+        except Exception as e:
+            return {
+                "total_active_tasks": 0,
+                "total_scheduled_tasks": 0,
+                "total_pending_tasks": 0,
+                "task_counts": {},
+                "workers": [],
+                "error": str(e),
+            }
 
     async def get_task_count_by_name(self) -> Dict[str, int]:
         """Get count of tasks by name from the database."""
         try:
+            from library_manager.models import TaskHistory
+
             # Use sync_to_async for Django ORM operations
-            queryset = TaskResult.objects.filter(
-                status__in=["PENDING", "STARTED", "RETRY"]
-            ).values("task_name")
-            task_results: list = await sync_to_async(list)(queryset)
+            tasks = await sync_to_async(list)(TaskHistory.objects.values("type"))
 
             task_counts = {}
-            for task in task_results:
-                task_name = task["task_name"]
-                if task_name not in task_counts:
-                    task_counts[task_name] = 0
-                task_counts[task_name] += 1
+            for task in tasks:
+                task_type = task["type"]
+                if task_type not in task_counts:
+                    task_counts[task_type] = 0
+                task_counts[task_type] += 1
 
             return task_counts
 
@@ -220,7 +220,7 @@ class TaskManagementService:
         try:
             from library_manager.models import TaskHistory
 
-            # Try to find the task in the database using sync_to_async
+            # Try to find the task in the database
             try:
                 task = await sync_to_async(TaskHistory.objects.get)(task_id=task_id)
                 return {
@@ -232,17 +232,18 @@ class TaskManagementService:
                     "error_message": task.error_message,
                 }
             except TaskHistory.DoesNotExist:
-                # Task not found in database, check if it's in Celery queue
+                # Check if it's in Celery
                 inspect = current_app.control.inspect()
-                pending_tasks = inspect.active() or {}
+                active_tasks = inspect.active() or {}
 
-                for worker, tasks in pending_tasks.items():
+                for worker, tasks in active_tasks.items():
                     for task in tasks:
                         if task.get("id") == task_id:
                             return {
                                 "task_id": task_id,
-                                "status": "PENDING",
+                                "status": "ACTIVE",
                                 "type": task.get("name", "UNKNOWN"),
+                                "worker": worker,
                                 "started_at": None,
                                 "completed_at": None,
                                 "error_message": None,
@@ -258,19 +259,32 @@ class TaskManagementService:
         try:
             from datetime import timedelta
 
+            from library_manager.models import TaskHistory
+
             cutoff_date = timezone.now() - timedelta(days=days_old)
 
-            # Use sync_to_async for Django ORM operations
+            # Clear from TaskHistory
             deleted_count = await sync_to_async(
-                lambda: TaskResult.objects.filter(
-                    status__in=["SUCCESS", "FAILURE", "REVOKED"],
-                    date_done__lt=cutoff_date,
+                lambda: TaskHistory.objects.filter(
+                    status__in=["COMPLETED", "FAILED", "CANCELLED"],
+                    completed_at__lt=cutoff_date,
                 ).delete()
-            )()
+            )
+
+            # Clear from Celery results
+            try:
+                celery_deleted = await sync_to_async(
+                    lambda: TaskResult.objects.filter(
+                        date_done__lt=cutoff_date
+                    ).delete()
+                )
+                total_deleted = deleted_count[0] + celery_deleted[0]
+            except Exception:
+                total_deleted = deleted_count[0]
 
             return MutationResult(
                 success=True,
-                message=f"Successfully cleared {deleted_count[0]} completed tasks older than {days_old} days",
+                message=f"Successfully cleared {total_deleted} completed tasks older than {days_old} days",
             )
 
         except Exception as e:

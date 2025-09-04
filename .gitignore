@@ -85,7 +85,9 @@ frontend/.vite/
 frontend/coverage/
 
 # TanStack Router temp directories (generated)
-frontend/.tanstack/tmp/
+# TanStack Router generated files and caches
+frontend/.tanstack/
+.tanstack/
 
 # Vite build artifacts
 frontend/*.timestamp-*.mjs

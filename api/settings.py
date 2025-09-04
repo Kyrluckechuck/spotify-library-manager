@@ -37,8 +37,9 @@ settings = dynaconf.DjangoDynaconf(
         "django.contrib.staticfiles",
         "django_stubs_ext",
         "bx_django_utils",
-        "huey.contrib.djhuey",
-        "huey_monitor",
+        "django_celery_results",
+        "django_celery_beat",
+        "kombu.transport.sqlalchemy",
         "library_manager",
         # Dev-only apps may be appended below when DEBUG is true
     ],
@@ -84,16 +85,26 @@ settings = dynaconf.DjangoDynaconf(
             },
         }
     },
-    # Huey: temporarily disabled for testing PostgreSQL connection
-    # HUEY={
-    #     "huey_class": "huey.SqliteHuey",
-    #     "name": "spotify_library_manager",
-    #     "filename": Path("/config/db/huey.sqlite3"),
-    #     "immediate": False,
-    #     "results": True,
-    #     "store_none": False,
-    # },
+    # Celery Configuration - SQLAlchemy + PostgreSQL broker
+    CELERY_BROKER_URL=(
+        f"sqlalchemy+postgresql://"
+        f"{os.getenv('POSTGRES_USER', 'slm_user')}:"
+        f"{os.getenv('POSTGRES_PASSWORD', 'slm_dev_password')}@"
+        f"{os.getenv('POSTGRES_HOST', 'localhost')}:"
+        f"{os.getenv('POSTGRES_PORT', '5432')}/"
+        f"{os.getenv('POSTGRES_DB', 'spotify_library_manager')}"
+    ),
+    CELERY_RESULT_BACKEND="django-db",
+    CELERY_ACCEPT_CONTENT=["json"],
+    CELERY_TASK_SERIALIZER="json",
+    CELERY_RESULT_SERIALIZER="json",
+    CELERY_TIMEZONE="UTC",
+    CELERY_TASK_TRACK_STARTED=True,
+    CELERY_TASK_TIME_LIMIT=30 * 60,  # 30 minutes
+    CELERY_BEAT_SCHEDULER="django_celery_beat.schedulers:DatabaseScheduler",
 )
+
+
 # Optionally enable dev-only Django apps when available and DEBUG is true
 if settings.DEBUG:  # type: ignore[name-defined]
     try:
@@ -176,7 +187,7 @@ LOGGING = {
             "level": "ERROR",
             "propagate": False,
         },
-        "huey": {
+        "celery": {
             "handlers": ["console"],
             "level": "WARNING",
             "propagate": False,
@@ -197,3 +208,5 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+# Note: Using STORAGES configuration above instead of deprecated DEFAULT_FILE_STORAGE and STATICFILES_STORAGE

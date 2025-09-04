@@ -13,6 +13,8 @@ services:
       - /config/db/postgres:/var/lib/postgresql/data
     networks:
       - slm_net
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-slm_user} -d ${POSTGRES_DB:-spotify_library_manager}"]
       interval: 10s
@@ -34,6 +36,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+
       - SPOTDL_CACHE_PATH=/config/spotdl_cache
       - HOME=/config
       - XDG_DATA_HOME=/config/.local/share
@@ -93,13 +96,41 @@ services:
       - HOME=/config
       - XDG_DATA_HOME=/config/.local/share
       - XDG_CACHE_HOME=/config/.cache
-    command: python manage.py run_huey
+    command: celery -A celery_app worker --loglevel=info
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - config_storage:/config
       - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
+      # Live code sync for development
+      - ./api:/app
+    restart: unless-stopped
+    networks:
+      - slm_net
+
+  beat:
+    build: .
+    image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+      - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - SPOTDL_CACHE_PATH=/config/spotdl_cache
+      - HOME=/config
+      - XDG_DATA_HOME=/config/.local/share
+      - XDG_CACHE_HOME=/config/.cache
+    command: celery -A celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - config_storage:/config
+      - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
+      # Live code sync for development
+      - ./api:/app
     restart: unless-stopped
     networks:
       - slm_net

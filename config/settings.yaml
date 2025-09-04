@@ -74,8 +74,8 @@ LOGGING:
 #   results: true
 #   store_none: false
 
-# Celery Configuration - PostgreSQL only (no Redis needed)  
-CELERY_BROKER_URL: "django-db"
+# Celery Configuration - Using PostgreSQL as broker via SQLAlchemy
+CELERY_BROKER_URL: "sqlalchemy+postgresql://slm_user:slm_dev_password@localhost:5432/spotify_library_manager"
 CELERY_RESULT_BACKEND: "django-db"
 CELERY_ACCEPT_CONTENT: ["json"]
 CELERY_TASK_SERIALIZER: "json"

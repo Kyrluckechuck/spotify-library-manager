@@ -2,8 +2,12 @@
 django==5.2.5
 django-stubs[compatible-mypy]==4.2.7
 django-stubs-ext==4.2.7
-django-huey-monitor==0.10.1
-huey[postgresql]>=2.4.5,<3.0.0
+# Celery with database broker (PostgreSQL)
+celery>=5.3.0
+django-celery-beat>=2.5.0
+django-celery-results>=2.5.0
+kombu[sqlalchemy]>=5.3.0
+sqlalchemy>=2.0.0
 bx_django_utils
 
 # Database

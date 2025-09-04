@@ -48,15 +48,15 @@ def run_frontend():
     )
     return process
 
-def run_huey_worker():
-    """Run the Huey worker for background task processing"""
+def run_celery_worker():
+    """Run the Celery worker for background task processing"""
     env = os.environ.copy()
     env["PYTHONPATH"] = "api"
     env["DJANGO_SETTINGS_MODULE"] = "settings"
     
     process = subprocess.Popen(
-        ["python", "api/manage.py", "run_huey"],
-        cwd=Path("."),
+        ["celery", "-A", "celery_app", "worker", "--loglevel=info"],
+        cwd=Path("api"),
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -107,9 +107,9 @@ def main():
     print_with_prefix("SETUP", "Starting frontend dev server...")
     frontend_process = run_frontend()
     
-    # Start Huey worker for background tasks
-    print_with_prefix("SETUP", "Starting Huey worker for background tasks...")
-    huey_process = run_huey_worker()
+    # Start Celery worker for background tasks
+    print_with_prefix("SETUP", "Starting Celery worker for background tasks...")
+    celery_worker_process = run_celery_worker()
     
     # Wait a moment for servers to start
     time.sleep(3)
@@ -117,16 +117,16 @@ def main():
     # Start output streaming threads
     api_thread = threading.Thread(target=stream_output, args=(api_process, "API"), daemon=True)
     frontend_thread = threading.Thread(target=stream_output, args=(frontend_process, "FRONTEND"), daemon=True)
-    huey_thread = threading.Thread(target=stream_output, args=(huey_process, "HUEY"), daemon=True)
+    celery_worker_thread = threading.Thread(target=stream_output, args=(celery_worker_process, "CELERY-WORKER"), daemon=True)
     
     api_thread.start()
     frontend_thread.start()
-    huey_thread.start()
+    celery_worker_thread.start()
     
     print_with_prefix("SETUP", "Development servers starting up...")
     print_with_prefix("INFO", "API will be available at: http://localhost:5000/graphql")
     print_with_prefix("INFO", "Frontend will be available at: http://localhost:3000")
-    print_with_prefix("INFO", "Huey worker is processing background tasks")
+    print_with_prefix("INFO", "Celery worker is processing background tasks")
     print_with_prefix("INFO", "Press Ctrl+C to stop all servers\n")
 
     def cleanup(signum=None, frame=None):
@@ -134,15 +134,15 @@ def main():
         try:
             api_process.terminate()
             frontend_process.terminate()
-            huey_process.terminate()
+            celery_worker_process.terminate()
             # Give processes time to shutdown gracefully
             api_process.wait(timeout=5)
             frontend_process.wait(timeout=5)
-            huey_process.wait(timeout=5)
+            celery_worker_process.wait(timeout=5)
         except subprocess.TimeoutExpired:
             api_process.kill()
             frontend_process.kill()
-            huey_process.kill()
+            celery_worker_process.kill()
         except (OSError, ValueError):
             pass
         print_with_prefix("SHUTDOWN", "All servers stopped.")
@@ -162,8 +162,8 @@ def main():
             if frontend_process.poll() is not None:
                 print_with_prefix("ERROR", "Frontend server exited unexpectedly")
                 break
-            if huey_process.poll() is not None:
-                print_with_prefix("ERROR", "Huey worker exited unexpectedly")
+            if celery_worker_process.poll() is not None:
+                print_with_prefix("ERROR", "Celery worker exited unexpectedly")
                 break
             
             time.sleep(1)

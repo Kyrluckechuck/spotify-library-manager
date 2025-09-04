@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from django.conf import settings
 
-from huey_monitor.tqdm import ProcessInfo
+# from huey_monitor.tqdm import ProcessInfo  # Removed for Celery migration
 
 
 class Config:
@@ -18,7 +18,7 @@ class Config:
         track_artists: bool = False,
         artist_to_fetch: Optional[str] = None,
         print_exceptions: bool = True,
-        process_info: Optional[ProcessInfo] = None,
+        process_info: Optional[object] = None,
         force_playlist_resync: bool = False,
     ):
         # Handle settings with defaults

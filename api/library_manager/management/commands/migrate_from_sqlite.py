@@ -240,7 +240,7 @@ class Command(BaseCommand):
                 try:
                     # Insert with original SQLite ID
                     insert_sql = """
-                        INSERT INTO albums (id, spotify_gid, artist_gid, spotify_uri, downloaded, 
+                        INSERT INTO albums (id, spotify_gid, artist_gid, spotify_uri, downloaded,
                                          total_tracks, wanted, name, failed_count, album_type, album_group)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
@@ -288,7 +288,7 @@ class Command(BaseCommand):
                 try:
                     # Insert with original SQLite ID
                     insert_sql = """
-                        INSERT INTO songs (id, name, gid, primary_artist_id, created_at, 
+                        INSERT INTO songs (id, name, gid, primary_artist_id, created_at,
                                          failed_count, bitrate, unavailable, file_path, downloaded)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """

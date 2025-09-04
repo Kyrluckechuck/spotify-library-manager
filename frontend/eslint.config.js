@@ -15,6 +15,7 @@ export default [
       'node_modules/**',
       'src/types/generated/**',
       '.vite/**',
+      '.tanstack/**',
       '*.timestamp-*.mjs',
       '*.timestamp-*.js',
     ],

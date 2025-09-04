@@ -24,7 +24,9 @@ export default defineConfig({
   },
   plugins: [
     tanstackRouter({
-      tempDir: '/tmp/tanstack-router',
+      tmpDir: '/tmp/tanstack-router',
+      routeTreeFileDir: './src',
+      routeTreeFileName: 'routeTree.gen.ts',
     }),
     react(),
     tailwindcss(),

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import strawberry
 from asgiref.sync import sync_to_async
@@ -126,7 +126,7 @@ class Mutation:
             from library_manager.helpers import enqueue_artist_sync_with_download
             from library_manager.models import Artist
 
-            tracked_artists = await sync_to_async(list)(
+            tracked_artists: list = await sync_to_async(list)(
                 Artist.objects.filter(tracked=True)
             )
 
@@ -154,7 +154,7 @@ class Mutation:
 
     @strawberry.mutation
     async def batch_artist_operations(
-        self, artist_ids: List[int], operations: List[str] = None
+        self, artist_ids: List[int], operations: Optional[List[str]] = None
     ) -> "MutationResult":
         """Perform batch operations on multiple artists using database IDs."""
         try:
@@ -165,7 +165,7 @@ class Mutation:
                 return MutationResult(success=False, message="No artist IDs provided")
 
             # Get artists by database IDs
-            artists = await sync_to_async(list)(
+            artists: list = await sync_to_async(list)(
                 Artist.objects.filter(id__in=artist_ids)
             )
 

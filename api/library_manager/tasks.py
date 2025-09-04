@@ -7,13 +7,11 @@ from django.conf import settings
 from django.db.models.functions import Now
 from django.utils import timezone
 
-import huey.contrib.djhuey as huey  # pylint: disable=no-name-in-module
+from celery.utils.log import get_task_logger
+from celery_app import app as celery_app
 from downloader.spotdl_wrapper import SpotdlWrapper
 from downloader.spotipy_tasks import track_artists_in_playlist
 from downloader.utils import sanitize_and_strip_url
-from huey import crontab
-from huey.api import Task
-from huey_monitor.tqdm import ProcessInfo
 from lib.config_class import Config
 
 from . import helpers
@@ -31,31 +29,36 @@ from .models import (
 # Initialize SpotdlWrapper
 spotdl_wrapper = SpotdlWrapper(Config())
 
+# Initialize Celery logger
+logger = get_task_logger(__name__)
+
 
 def create_task_history(
-    task: Optional[Task] = None,
+    task_id: Optional[str] = None,
     task_type: Optional[str] = None,
     entity_id: Optional[str] = None,
     entity_type: Optional[str] = None,
     task_name: Optional[str] = None,
 ) -> TaskHistory:
     """Create a task history record for tracking task execution"""
-    if task is not None:
-        # Use Huey task context
+    if task_id is None:
+        # Create task ID if not provided
         entity_type_str = entity_type or "unknown"
-        task_id = f"{task_type}-{entity_type_str.lower()}-{entity_id}"
+        if entity_id:
+            generated_task_id = f"{task_type}-{entity_type_str.lower()}-{entity_id}"
+        else:
+            generated_task_id = f"{task_name or 'unknown'}-{uuid.uuid4().hex[:8]}"
     else:
-        # Create task history without Huey context
-        task_id = f"{task_name or 'unknown'}-{uuid.uuid4().hex[:8]}"
+        generated_task_id = task_id
 
     # Check if task history already exists for this task
-    existing_task = TaskHistory.objects.filter(task_id=task_id).first()
+    existing_task = TaskHistory.objects.filter(task_id=generated_task_id).first()
     if existing_task:
         return existing_task
 
     # Create new task history record
     task_history = TaskHistory(
-        task_id=task_id,
+        task_id=generated_task_id,
         type=task_type or "UNKNOWN",
         entity_id=str(entity_id) if entity_id else "unknown",
         entity_type=entity_type or "UNKNOWN",
@@ -111,8 +114,13 @@ def check_and_update_progress(
     return False
 
 
-@huey.task(context=True, priority=3)  # type: ignore[misc]
-def fetch_all_albums_for_artist(artist_id: int, task: Task = None) -> None:
+def fetch_all_albums_for_artist_sync(artist_id: int) -> None:
+    """Synchronous wrapper for fetch_all_albums_for_artist - for direct calls."""
+    fetch_all_albums_for_artist.delay(artist_id)
+
+
+@celery_app.task(bind=True, priority=3)
+def fetch_all_albums_for_artist(self, artist_id: int) -> None:
     task_history = None
     try:
         # Check if artist exists before proceeding
@@ -122,9 +130,9 @@ def fetch_all_albums_for_artist(artist_id: int, task: Task = None) -> None:
             print(f"Artist with ID {artist_id} does not exist. Skipping task.")
             return
 
-        # Create task history record (always create, even without Huey context)
+        # Create task history record (always create, even without Celery context)
         task_history = create_task_history(
-            task=task,
+            task_id=self.request.id,
             task_type="FETCH",
             entity_id=artist.gid,
             entity_type="ARTIST",
@@ -146,11 +154,13 @@ def fetch_all_albums_for_artist(artist_id: int, task: Task = None) -> None:
         downloader_config.artist_to_fetch = artist.gid
         downloader_config.urls = []
 
-        if task is not None:
-            process_info = ProcessInfo(
-                task, desc=f"fetch all albums for artist (artist.gid: {artist.gid})"
-            )
-            downloader_config.process_info = process_info
+        # TODO: Re-enable ProcessInfo after fixing circular imports
+        # if self is not None:
+        #     from src.services.monitor import ProcessInfo
+        #     process_info = ProcessInfo(
+        #         self, desc=f"fetch all albums for artist (artist.gid: {artist.gid})"
+        #     )
+        #     downloader_config.process_info = process_info
 
         # Check for cancellation before major operation
         if check_and_update_progress(
@@ -174,10 +184,12 @@ def fetch_all_albums_for_artist(artist_id: int, task: Task = None) -> None:
         raise
 
 
-@huey.task(context=True, priority=1, retries=2, retry_delay=30)  # type: ignore[misc]
-def download_missing_albums_for_artist(
-    artist_id: int, task: Task = None, delay: int = 0
-) -> None:
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 2, "countdown": 30},
+)
+def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> None:
     task_history = None
     try:
         # Add delay (if applicable) to reduce chance of flagging when backfilling library
@@ -191,11 +203,15 @@ def download_missing_albums_for_artist(
             return
 
         # Create task history record
-        if task is not None:
-            task_history = create_task_history(task, "DOWNLOAD", artist.gid, "ARTIST")
-            update_task_progress(
-                task_history, 0.0, f"Starting download for artist {artist.name}"
-            )
+        task_history = create_task_history(
+            task_id=self.request.id,
+            task_type="DOWNLOAD",
+            entity_id=artist.gid,
+            entity_type="ARTIST",
+        )
+        update_task_progress(
+            task_history, 0.0, f"Starting download for artist {artist.name}"
+        )
 
         missing_albums = Album.objects.filter(
             artist=artist,
@@ -213,14 +229,15 @@ def download_missing_albums_for_artist(
             )
 
         downloader_config = Config()
-        if task is not None and task_history:
-            process_info = ProcessInfo(
-                task,
-                desc=f"artist missing album download (artist.gid: {artist.gid})",
-                total=1000,
-            )
-            downloader_config.process_info = process_info
-            update_task_progress(task_history, 50.0, "Preparing download configuration")
+        # TODO: Re-enable ProcessInfo after fixing circular imports
+        # if self is not None and task_history:
+        #     process_info = ProcessInfo(
+        #         self,
+        #         desc=f"artist missing album download (artist.gid: {artist.gid})",
+        #         total=1000,
+        #     )
+        #     downloader_config.process_info = process_info
+        update_task_progress(task_history, 50.0, "Preparing download configuration")
 
         downloader_config.urls = (
             []
@@ -263,14 +280,14 @@ def download_missing_albums_for_artist(
 
 
 def _sync_tracked_playlist_internal(
-    tracked_playlist: TrackedPlaylist, task: Task = None
+    tracked_playlist: TrackedPlaylist, task_id: Optional[str] = None
 ) -> None:
     """Internal function that does the actual sync work"""
     task_history = None
     try:
         # Create task history record for the sync operation
         task_history = create_task_history(
-            task=task,
+            task_id=task_id,
             task_type="SYNC",
             entity_id=str(tracked_playlist.pk),
             entity_type="PLAYLIST",
@@ -284,7 +301,7 @@ def _sync_tracked_playlist_internal(
         task_history.save()
 
         # Enqueue the actual download task
-        priority = task.priority if task else 2
+        priority = 2  # Default priority since task.priority not available in Celery
         helpers.enqueue_playlists([tracked_playlist], priority=priority)
 
         # Mark as completed since the sync operation is done (download is queued separately)
@@ -296,21 +313,47 @@ def _sync_tracked_playlist_internal(
         raise
 
 
-@huey.task(context=True, priority=2, retries=2, retry_delay=30)  # type: ignore[misc]
-def sync_tracked_playlist(tracked_playlist: TrackedPlaylist, task: Task = None) -> None:
-    """Huey task wrapper for sync_tracked_playlist"""
-    _sync_tracked_playlist_internal(tracked_playlist, task)
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 2, "countdown": 30},
+)
+def sync_tracked_playlist(
+    self, playlist_id: int, task_id: Optional[str] = None
+) -> None:
+    """Celery task wrapper for sync_tracked_playlist"""
+    # Use the Celery task ID if no task_id is provided
+    if task_id is None:
+        task_id = self.request.id
+
+    # Get the playlist object from the ID
+    try:
+        tracked_playlist = TrackedPlaylist.objects.get(id=playlist_id)
+    except TrackedPlaylist.DoesNotExist:
+        print(f"TrackedPlaylist with ID {playlist_id} does not exist. Skipping task.")
+        return
+
+    _sync_tracked_playlist_internal(tracked_playlist, task_id)
 
 
-@huey.task(context=True, priority=2, retries=2, retry_delay=30)  # type: ignore[misc]
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 2, "countdown": 30},
+)
 def download_playlist(
+    self,
     playlist_url: str,
     tracked: bool = True,
     force_playlist_resync: bool = False,
-    task: Task = None,
+    task_id: Optional[str] = None,
 ) -> None:
     task_history = None
     try:
+        # Use the Celery task ID if no task_id is provided
+        if task_id is None:
+            task_id = self.request.id
+
         playlist_url = sanitize_and_strip_url(playlist_url)
 
         # Extract playlist ID from URL for task history
@@ -318,9 +361,9 @@ def download_playlist(
             playlist_url.split(":")[-1] if ":" in playlist_url else playlist_url
         )
 
-        # Create task history record (always create, even without Huey context)
+        # Create task history record (always create, even without Celery context)
         task_history = create_task_history(
-            task=task,
+            task_id=task_id,
             task_type="DOWNLOAD",
             entity_id=playlist_id,
             entity_type="PLAYLIST",
@@ -339,9 +382,10 @@ def download_playlist(
             force_playlist_resync=force_playlist_resync,
         )
 
-        if task is not None:
-            process_info = ProcessInfo(task, desc="playlist download", total=1000)
-            downloader_config.process_info = process_info
+        # TODO: Re-enable ProcessInfo after fixing circular imports
+        # if self is not None:
+        #     process_info = ProcessInfo(self, desc="playlist download", total=1000)
+        #     downloader_config.process_info = process_info
         update_task_progress(task_history, 50.0, "Downloading playlist tracks")
 
         spotdl_wrapper.execute(downloader_config)
@@ -354,8 +398,12 @@ def download_playlist(
         raise
 
 
-@huey.task(context=True, priority=0, retries=2, retry_delay=30)  # type: ignore[misc]
-def retry_all_missing_known_songs(task: Task = None) -> None:
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 2, "countdown": 30},
+)
+def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     missing_known_songs_list = (
         Song.objects.filter(bitrate=0, unavailable=False)
         .order_by("created_at")
@@ -377,19 +425,26 @@ def retry_all_missing_known_songs(task: Task = None) -> None:
     print(f"Downloading {len(failed_song_array)} missing songs")
     downloader_config = Config(urls=failed_song_array, track_artists=False)
 
-    if task is not None:
-        process_info = ProcessInfo(
-            task, desc="missing/failed song download", total=1000
-        )
-        downloader_config.process_info = process_info
+    # TODO: Re-enable ProcessInfo after fixing circular imports
+    # if self is not None:
+    #     process_info = ProcessInfo(
+    #         self, desc="missing/failed song download", total=1000
+    #     )
+    #     downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
     # Queue up next batch after ensuring rate limit has passed
     retry_all_missing_known_songs.schedule(delay=30)
 
 
-@huey.task(context=True, priority=3, retries=2, retry_delay=30)  # type: ignore[misc]
-def download_extra_album_types_for_artist(artist_id: int, task: Task = None) -> None:
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 2, "countdown": 30},
+)
+def download_extra_album_types_for_artist(
+    self, artist_id: int, task_id: Optional[str] = None
+) -> None:
     # Check if artist exists before proceeding
     try:
         artist = Artist.objects.get(id=artist_id)
@@ -406,13 +461,14 @@ def download_extra_album_types_for_artist(artist_id: int, task: Task = None) -> 
         f"extra album missing albums search for artist {artist.gid} found {missing_albums.count()}"
     )
     downloader_config = Config()
-    if task is not None:
-        process_info = ProcessInfo(
-            task,
-            desc=f"extra album artist missing album download (artist.gid: {artist.gid})",
-            total=1000,
-        )
-        downloader_config.process_info = process_info
+    # TODO: Re-enable ProcessInfo after fixing circular imports
+    # if self is not None:
+    #     process_info = ProcessInfo(
+    #         self,
+    #         desc=f"extra album artist missing album download (artist.gid: {artist.gid})",
+    #         total=1000,
+    #     )
+    #     downloader_config.process_info = process_info
     downloader_config.urls = []  # This must be reset or it will persist between runs
     if missing_albums.count() > 0:
         for missing_album in missing_albums:
@@ -430,34 +486,36 @@ def download_extra_album_types_for_artist(artist_id: int, task: Task = None) -> 
     artist.save()
 
 
-@huey.task(context=True, priority=3)  # type: ignore[misc]
-def sync_tracked_playlist_artists(playlist: TrackedPlaylist, task: Task = None) -> None:
+@celery_app.task(bind=True)
+def sync_tracked_playlist_artists(
+    self, playlist_id: int, task_id: Optional[str] = None
+) -> None:
     # Given a playlist, track the artists without actually downloading the playlist (potentially, again)
-    track_artists_in_playlist(playlist.url, task)
+    try:
+        playlist = TrackedPlaylist.objects.get(id=playlist_id)
+    except TrackedPlaylist.DoesNotExist:
+        print(f"TrackedPlaylist with ID {playlist_id} does not exist. Skipping task.")
+        return
+
+    track_artists_in_playlist(playlist.url, task_id)
 
 
-@huey.periodic_task(crontab(minute="0", hour="*/8"), priority=1, context=True)  # type: ignore[misc]
-def update_tracked_artists(task: Task = None) -> None:
+@celery_app.task(bind=True)  # Scheduled via Celery Beat
+def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by(
         "last_synced_at", "added_at", "id"
     )
-    existing_tasks = helpers.get_all_tasks_with_name("fetch_all_albums_for_artist")
-    already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
-    # Convert to List[int] since artist IDs are integers
-    artist_ids = (
-        [int(id) for id in already_enqueued_artists]
-        if isinstance(already_enqueued_artists, list)
-        else []
-    )
+    # TODO: Implement Celery-based task deduplication
+    # For now, just process all tracked artists
     helpers.update_tracked_artists_albums(
-        artist_ids, list(all_tracked_artists), priority=task.priority
+        [], list(all_tracked_artists), priority=None  # task.priority not available
     )
 
 
 # Severely throttling automatic playlist download for tracked artists for the time being;
 # There is a high likelyhood of being flagged due to high usage at the moment and a new scalable solution needs to be investigated.
-@huey.periodic_task(crontab(minute="45", hour="*/8"), priority=0, context=True)  # type: ignore[misc]
-def download_missing_tracked_artists(task: Task = None) -> None:
+@celery_app.task(bind=True)  # Scheduled via Celery Beat
+def download_missing_tracked_artists(self, task_id: Optional[str] = None) -> None:
     if settings.disable_missing_tracked_artist_download:
         print(
             "Skipping queued missing tracked artists due to disable_missing_tracked_artist_download setting"
@@ -476,47 +534,51 @@ def download_missing_tracked_artists(task: Task = None) -> None:
         )
         return
     # Limit to only desired album types (ignoring `appears_on`), and limit results so this won't throttle
-    all_tracked_artists = (
-        Artist.objects.filter(
-            tracked=True,
-            album__downloaded=False,
-            album__wanted=True,
-            album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
-        )
-        .exclude(album__album_group__in=ALBUM_GROUPS_TO_IGNORE)
-        .distinct()
-        .order_by("last_synced_at", "added_at", "id")[:150]
-    )
-    existing_tasks = helpers.get_all_tasks_with_name(
-        "download_missing_albums_for_artist"
-    )
-    already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
-    # Convert to List[int] since artist IDs are integers
-    artist_ids = (
-        [int(id) for id in already_enqueued_artists]
-        if isinstance(already_enqueued_artists, list)
-        else []
-    )
-    helpers.download_missing_tracked_artists(
-        artist_ids, list(all_tracked_artists), priority=task.priority
-    )
+    # NOTE: Commented out temporarily until Celery-based task deduplication is implemented
+    # all_tracked_artists = (
+    #     Artist.objects.filter(
+    #         tracked=True,
+    #         album__downloaded=False,
+    #         album__wanted=True,
+    #         album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
+    #     )
+    #     .exclude(album__album_group__in=ALBUM_GROUPS_TO_IGNORE)
+    #     .distinct()
+    #     .order_by("last_synced_at", "added_at", "id")[:150]
+    # )
+    # existing_tasks = helpers.get_all_tasks_with_name(
+    #     "download_missing_albums_for_artist"
+    # )
+    # already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
+    # # Convert to List[int] since artist IDs are integers
+    # artist_ids = (
+    #     [int(id) for id in already_enqueued_artists]
+    #     if isinstance(already_enqueued_artists, list)
+    #     else []
+    # )
+    # TODO: Implement Celery-based task deduplication
+    # helpers.download_missing_tracked_artists(
+    #     artist_ids, list(all_tracked_artists), priority=None
+    # )
 
 
-@huey.periodic_task(crontab(minute="0", hour="*/4"), priority=1, context=True)  # type: ignore[misc]
-def sync_tracked_playlists(task: Task = None) -> None:
+@celery_app.task(bind=True)  # Scheduled via Celery Beat
+def sync_tracked_playlists(self, task_id: Optional[str] = None) -> None:
     all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by(
         "last_synced_at", "id"
     )
-    helpers.enqueue_playlists(list(all_enabled_playlists), priority=task.priority)
+    helpers.enqueue_playlists(
+        list(all_enabled_playlists), priority=None
+    )  # task.priority not available
 
 
-@huey.periodic_task(crontab(minute="0", hour="6"), priority=10)  # type: ignore[misc]
-def cleanup_huey_history() -> None:
+@celery_app.task(bind=True)  # Scheduled via Celery Beat
+def cleanup_huey_history(self) -> None:
     helpers.cleanup_huey_history()
 
 
-@huey.periodic_task(crontab(minute="*/5"), priority=5)  # type: ignore[misc]  # Every 5 minutes
-def cleanup_stuck_tasks_periodic() -> None:
+@celery_app.task(bind=True)  # Scheduled via Celery Beat - Every 5 minutes
+def cleanup_stuck_tasks_periodic(self) -> None:
     """Periodically clean up stuck tasks and stale artist references"""
     from library_manager.models import TaskHistory
 
@@ -524,34 +586,19 @@ def cleanup_stuck_tasks_periodic() -> None:
     if stuck_count > 0:
         print(f"Cleaned up {stuck_count} stuck task(s)")
 
-    # Clean up stale artist references in Huey queue
-    from huey.contrib.djhuey import HUEY
-
-    from library_manager.models import Artist
-
-    pending_tasks = HUEY.pending()
-    stale_tasks = []
-
-    for task in pending_tasks:
-        if task.name in [
-            "fetch_all_albums_for_artist",
-            "download_missing_albums_for_artist",
-            "download_extra_album_types_for_artist",
-        ]:
-            if task.args and len(task.args) > 0:
-                artist_id = task.args[0]
-                if not Artist.objects.filter(id=artist_id).exists():
-                    stale_tasks.append(task)
-
-    if stale_tasks:
-        print(f"Found {len(stale_tasks)} stale tasks for non-existent artists")
-        # Note: We can't easily remove individual tasks from Huey queue
-        # The queue will be cleared when the worker restarts or manually flushed
+    # Clean up stale artist references in Celery queue
+    # TODO: Implement Celery-based stale task cleanup
+    print("Celery-based stale task cleanup not yet implemented")
 
 
-@huey.task(context=True, priority=0, retries=2, retry_delay=30)  # type: ignore[misc]
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 2, "countdown": 30},
+)
 def validate_undownloaded_songs(
-    task: Task = None,
+    self,
+    task_id: Optional[str] = None,
 ) -> None:
     non_downloaded_songs_that_should_exist = Song.objects.filter(
         bitrate__gt=0, unavailable=False, downloaded=False
@@ -580,9 +627,10 @@ def validate_undownloaded_songs(
     print(f"Downloading {len(missing_song_array)} missing songs")
     downloader_config = Config(urls=missing_song_array, track_artists=False)
 
-    if task is not None:
-        process_info = ProcessInfo(task, desc="missing song download", total=1000)
-        downloader_config.process_info = process_info
+    # TODO: Re-enable ProcessInfo after fixing circular imports
+    # if self is not None:
+    #     process_info = ProcessInfo(self, desc="missing song download", total=1000)
+    #     downloader_config.process_info = process_info
     spotdl_wrapper.execute(downloader_config)
 
     # Don't call recursively if there weren't any songs that definitely should have existed
