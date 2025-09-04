@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing! This project uses a **Docker-first development approach** for consistency across all development environments.
 
+> **💡 Migrating from Previous Version?** See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for upgrading from Huey to Celery system.
+
 ## Quick Start
 
 ### Prerequisites

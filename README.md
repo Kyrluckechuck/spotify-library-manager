@@ -33,6 +33,18 @@ If there is enough desire from folks, I am happy to put more time in, and of cou
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup instructions and guidelines.
 
+## Migration from Previous Versions
+
+**⚠️ Breaking Changes**: This version includes major infrastructure changes (Huey→Celery, SQLite→PostgreSQL, Docker-first development). 
+
+### Quick Migration (Docker Users)
+```bash
+docker compose down -v && git pull && docker compose up -d
+```
+
+### Full Migration Guide
+For development setups or data preservation, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed instructions.
+
 ## TODO
 ### Features To Add:
 - [ ] Fallback to yt-dlp when no Spotify AAC
