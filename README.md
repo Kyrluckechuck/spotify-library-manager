@@ -29,6 +29,10 @@ While this has a lot of opportunity to improve, it's reached a "stable" state fo
 
 If there is enough desire from folks, I am happy to put more time in, and of course always welcome Pull Requests!
 
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup instructions and guidelines.
+
 ## TODO
 ### Features To Add:
 - [ ] Fallback to yt-dlp when no Spotify AAC

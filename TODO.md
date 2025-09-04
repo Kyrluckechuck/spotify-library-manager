@@ -1,19 +1,12 @@
 # Spotify Library Manager - TODO
 
-## ✅ Recently Completed (Current Session)
-- [x] **Celery Migration Completed** - Successfully migrated from Huey to Celery with PostgreSQL broker
-- [x] **Local Development Fixed** - Updated `dev.py` to use Celery instead of Huey
-- [x] **Testing Suite Fixed** - Configured tests to use PostgreSQL with separate test database
-- [x] **Django Deprecation Warnings Fixed** - Updated to use STORAGES instead of deprecated settings
-- [x] **TanStack Directory Sync Issues Fixed** - Enhanced .gitignore to properly exclude .tanstack/ directories
-
 ## High Priority (Immediate)
-- [ ] **Fix Makefile dev commands** - Update local development commands to be Docker-compatible
-- [ ] **Update CELERY_MIGRATION_SUMMARY.md** - Fix documentation that mentions Redis (should be PostgreSQL)
-- [ ] **Update README development section** - Clarify Docker-only approach vs local development
+- [x] **Fix Makefile dev commands** - Update local development commands to be Docker-compatible
+- [x] **Update CELERY_MIGRATION_SUMMARY.md** - Fix documentation that mentions Redis (should be PostgreSQL) - Resolved by deleting outdated file
+- [x] **Update or create documentation for contributors** - Acknowledge it's a docker-first environment
 
 ## Backend
-- [ ] **Event bus: extract album ID from task args** - Improve task event handling
+- [x] **Event bus: extract album ID from task args** - Improve task event handling
 - [ ] **Async/await cleanup where needed** - Lightweight pass through codebase
 - [ ] **API input validation for mutations** - Add incremental validation improvements
 - [ ] **Downloader fallback** - Implement `spotdl_wrapper` with settings gate
@@ -56,7 +49,5 @@
 - [ ] **Improve onboarding documentation** - Add critical first startup steps
 
 ## Notes
-- **Celery + PostgreSQL setup is working perfectly** - No Redis needed
-- **Docker-first approach is recommended** - Local development should use containers
-- **Test suite uses separate PostgreSQL database** - `test_spotify_library_manager` 
-- **TanStack Router files are now properly ignored** - No more sync conflicts
+- Priority should be given to items affecting active development workflows
+- Docker-first development approach is preferred for consistency

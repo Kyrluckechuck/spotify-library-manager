@@ -93,7 +93,23 @@ class EventBus:
                 pass
         elif "album download" in desc:
             entity_type = "ALBUM"
-            # TODO: Extract album ID from task args
+            # Attempt to extract album ID from task args (first arg is the URL/URI)
+            try:
+                if process_info.task and getattr(process_info.task, "args", None):
+                    first_arg = process_info.task.args[0]
+                    if isinstance(first_arg, str) and first_arg:
+                        # Handle Spotify URI format: "spotify:album:<id>"
+                        if first_arg.startswith("spotify:album:"):
+                            entity_id = first_arg.split(":")[-1]
+                        # Handle URL format: extract last path segment
+                        elif "/" in first_arg:
+                            entity_id = first_arg.rstrip("/").split("/")[-1]
+                        else:
+                            # Direct ID
+                            entity_id = first_arg
+            except Exception:
+                # Best-effort only; leave default on failure
+                pass
 
         progress = DownloadProgress(
             entity_id=entity_id,
