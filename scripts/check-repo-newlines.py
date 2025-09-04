@@ -23,6 +23,14 @@ EXTENSIONS = {
     '.lock', '.log'
 }
 
+# Files without extensions that should be checked
+EXTENSIONLESS_FILES = {
+    'Makefile', 'makefile', 'GNUmakefile',
+    'Dockerfile', 'Containerfile',
+    'pre-commit', 'post-commit', 'pre-push', 'post-receive',
+    'prepare-commit-msg', 'commit-msg', 'post-update', 'pre-receive'
+}
+
 # Directories to ignore
 IGNORE_DIRS = {
     'node_modules', 'dist', 'build', 'coverage', '.git',
@@ -33,16 +41,20 @@ IGNORE_DIRS = {
 
 def should_check_file(file_path: Path) -> bool:
     """Check if a file should be checked for trailing newlines."""
-    # Check if it's a file with a relevant extension
-    if file_path.suffix not in EXTENSIONS:
-        return False
-    
-    # Check if it's in an ignored directory
+    # Check if it's in an ignored directory first
     for part in file_path.parts:
         if part in IGNORE_DIRS:
             return False
     
-    return True
+    # Check if it's a file with a relevant extension
+    if file_path.suffix in EXTENSIONS:
+        return True
+    
+    # Check if it's a known extensionless file
+    if file_path.name in EXTENSIONLESS_FILES:
+        return True
+    
+    return False
 
 def check_file_newline(file_path: Path) -> bool:
     """Check if a file ends with a newline."""
