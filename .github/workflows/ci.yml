@@ -14,9 +14,7 @@ permissions:
   contents: read
   packages: write
 
-env:
-  PYTHON_DEFAULT_VERSION: '3.11'
-  NODE_VERSION: '20'
+# Note: Python and Node versions are hardcoded in jobs for clarity
 
 jobs:
   backend:
@@ -50,15 +48,15 @@ jobs:
         run: make test-api
 
   frontend:
-    name: Frontend (lint + tests) • Node ${{ env.NODE_VERSION }}
+    name: Frontend (lint + tests) • Node 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node ${{ env.NODE_VERSION }}
+      - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
 
@@ -105,10 +103,10 @@ jobs:
             if curl -fsS http://localhost:5000/healthz > /dev/null; then
               echo "API healthy"; exit 0; fi; sleep 2; done; echo "API failed to become healthy"; docker compose logs web; exit 1
 
-      - name: Set up Node ${{ env.NODE_VERSION }} for GraphQL validation
+      - name: Set up Node 20 for GraphQL validation
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
 
