@@ -9,4 +9,4 @@ from library_manager.models import Artist
 def artist_save(sender, instance: Artist, created: bool, **kwargs) -> None:
     # If it's a new artist, let's fetch all their albums
     if created:
-        tasks.fetch_all_albums_for_artist(instance.id)
+        tasks.fetch_all_albums_for_artist.delay(instance.id)

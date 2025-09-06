@@ -638,4 +638,4 @@ def validate_undownloaded_songs(
         print("All songs marked downloaded that should be!")
         return
     # Queue up next batch after ensuring rate limit has passed
-    validate_undownloaded_songs()
+    validate_undownloaded_songs.delay()

@@ -146,12 +146,12 @@ class ArtistService(BaseService[Artist]):
             django_artist = await sync_to_async(self.model.objects.get)(id=artist_db_id)
             await sync_to_async(fetch_all_albums_for_artist_sync)(django_artist.id)
             return self._to_graphql_type(django_artist)
-        except ValueError:
-            raise ValueError(f"Invalid artist ID format: {artist_id}")
-        except self.model.DoesNotExist:
-            raise ValueError(f"Artist with ID {artist_id} not found")
+        except ValueError as exc:
+            raise ValueError(f"Invalid artist ID format: {artist_id}") from exc
+        except self.model.DoesNotExist as exc:
+            raise ValueError(f"Artist with ID {artist_id} not found") from exc
         except Exception as e:
-            raise Exception(f"Error syncing artist: {str(e)}")
+            raise RuntimeError(f"Error syncing artist: {str(e)}") from e
 
     def _to_graphql_type(self, django_artist: DjangoArtist) -> Artist:
         # Some unit tests use light mocks without an `id`; be defensive here

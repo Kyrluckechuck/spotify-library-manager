@@ -11,6 +11,7 @@ import django
 from django.conf import settings as dj_settings
 from django.db import connections
 
+from asgiref.sync import sync_to_async
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
@@ -110,13 +111,21 @@ def create_app() -> FastAPI:
     @app.get("/healthz")
     async def healthcheck() -> dict[str, object]:
         """Basic health endpoint with DB check."""
-        db_ok = True
-        try:
-            with connections["default"].cursor() as cursor:
-                cursor.execute("SELECT 1")
-                cursor.fetchone()
-        except Exception:  # noqa: BLE001 - surface as boolean only
-            db_ok = False
+
+        @sync_to_async
+        def check_db() -> bool:
+            try:
+                with connections["default"].cursor() as cursor:
+                    cursor.execute("SELECT 1")
+                    cursor.fetchone()
+                return True
+            except Exception as e:
+                logging.getLogger("api.healthcheck").error(
+                    "Database health check failed: %s", e
+                )
+                return False
+
+        db_ok = await check_db()
         return {"status": "ok", "db": db_ok}
 
     @app.get("/{full_path:path}", response_model=None)

@@ -50,7 +50,7 @@ class Command(BaseCommand):
         # Always check for migration - we'll handle individual table logic in the migration itself
         return True
 
-    def _migrate_from_sqlite(self):
+    def _migrate_from_sqlite(self):  # pylint: disable=too-many-branches
         """Migrate data from SQLite to PostgreSQL."""
         sqlite_path = "/config/db/db.sqlite3"
 

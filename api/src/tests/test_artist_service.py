@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from api.src.graphql_types.models import Artist
-from api.src.services.artist import ArtistService
+from src.graphql_types.models import Artist
+from src.services.artist import ArtistService
 
 
 @pytest.fixture

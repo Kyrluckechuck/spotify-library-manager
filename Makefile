@@ -82,28 +82,28 @@ test: test-api test-frontend
 
 # Main API test command with coverage
 test-api:
-	PYTHONPATH=.:api python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
+	cd api && python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=html --cov-report=term-missing
 
 # API test variants
 test-api-unit:
-	PYTHONPATH=.:api python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
+	cd api && python -m pytest tests/unit/ src/tests/ -v -n auto -m "not integration"
 
 test-api-integration:
-	PYTHONPATH=.:api python -m pytest api/tests/integration/ -v -m integration
+	cd api && python -m pytest tests/integration/ -v -n auto -m integration
 
 # Docker-based testing - runs tests in containerized environment
 test-docker: test-api-docker test-frontend-docker
 
 # Main API test command in Docker with coverage
 test-api-docker:
-	docker compose exec web python -m pytest api/tests/ api/src/tests/ -v --cov=api/src --cov=api/library_manager --cov-report=html --cov-report=term-missing --cov-fail-under=80
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=html --cov-report=term-missing"
 
 # API test variants in Docker
 test-api-unit-docker:
-	docker compose exec web python -m pytest api/tests/unit/ api/src/tests/ -v -m "not integration"
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/unit/ src/tests/ -v -n auto -m 'not integration'"
 
 test-api-integration-docker:
-	docker compose exec web python -m pytest api/tests/integration/ -v -m integration
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/integration/ -v -n auto -m integration"
 
 
 # Frontend testing
@@ -117,7 +117,7 @@ test-frontend-coverage:
 	cd frontend && yarn test:coverage
 
 test-frontend-docker:
-	docker compose exec frontend yarn test:run
+	docker compose exec frontend-dev yarn test:run
 
 test-migrations:
 	cd api && python manage.py showmigrations

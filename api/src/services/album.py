@@ -100,12 +100,12 @@ class AlbumService(BaseService[Album]):
                     # await sync_to_async(download_missing_albums_for_artist)(django_album.artist.id)
 
             return self._to_graphql_type(django_album)
-        except ValueError:
-            raise ValueError(f"Invalid album ID format: {album_id}")
-        except self.model.DoesNotExist:
-            raise ValueError(f"Album with ID {album_id} not found")
+        except ValueError as exc:
+            raise ValueError(f"Invalid album ID format: {album_id}") from exc
+        except self.model.DoesNotExist as exc:
+            raise ValueError(f"Album with ID {album_id} not found") from exc
         except Exception as e:
-            raise Exception(f"Error updating album: {str(e)}")
+            raise RuntimeError(f"Error updating album: {str(e)}") from e
 
     async def download_album(self, album_id: str) -> Album:
         try:
@@ -127,12 +127,12 @@ class AlbumService(BaseService[Album]):
                 django_album.artist.id
             )
             return self._to_graphql_type(django_album)
-        except ValueError:
-            raise ValueError(f"Invalid album ID format: {album_id}")
-        except self.model.DoesNotExist:
-            raise ValueError(f"Album with ID {album_id} not found")
+        except ValueError as exc:
+            raise ValueError(f"Invalid album ID format: {album_id}") from exc
+        except self.model.DoesNotExist as exc:
+            raise ValueError(f"Album with ID {album_id} not found") from exc
         except Exception as e:
-            raise Exception(f"Error downloading album: {str(e)}")
+            raise RuntimeError(f"Error downloading album: {str(e)}") from e
 
     async def set_album_wanted(self, album_id: int, wanted: bool) -> MutationResult:
         try:

@@ -61,7 +61,9 @@ class EventBus:
                     # Log error but don't stop other handlers
                     print(f"Error in event handler: {e}")
 
-    def update_progress(self, process_info: ProcessInfo) -> None:
+    def update_progress(
+        self, process_info: ProcessInfo
+    ) -> None:  # pylint: disable=too-many-branches
         """Called by the task monitor when progress updates"""
         if not process_info or not process_info.task:
             return

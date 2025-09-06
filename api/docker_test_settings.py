@@ -1,12 +1,26 @@
 """Docker-specific test settings - uses postgres service name instead of localhost."""
 
+import os
+
 from settings import *  # noqa: F401,F403
+
+
+# Support for pytest-xdist parallel execution
+# Each worker gets its own test database
+def get_test_database_name():
+    """Generate unique test database name for parallel execution."""
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    if worker_id == "master":
+        return "test_spotify_library_manager"
+    else:
+        return f"test_spotify_library_manager_{worker_id}"
+
 
 # Use PostgreSQL for tests (production parity) inside Docker network
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "test_spotify_library_manager",
+        "NAME": get_test_database_name(),
         "USER": "slm_user",
         "PASSWORD": "slm_dev_password",
         "HOST": "postgres",  # Docker service name, not localhost
@@ -15,7 +29,7 @@ DATABASES = {
             "connect_timeout": 10,
         },
         "TEST": {
-            "NAME": "test_spotify_library_manager",
+            "NAME": get_test_database_name(),
         },
     }
 }

@@ -85,9 +85,9 @@ class PlaylistService(BaseService[Playlist]):
         await sync_to_async(django_playlist.save)()
 
         # Queue tasks
-        sync_tracked_playlist(django_playlist)
+        sync_tracked_playlist.delay(django_playlist.id)
         if auto_track_artists:
-            sync_tracked_playlist_artists(django_playlist)
+            sync_tracked_playlist_artists.delay(django_playlist.id)
 
         return self._to_graphql_type(django_playlist)
 
@@ -104,9 +104,9 @@ class PlaylistService(BaseService[Playlist]):
         await sync_to_async(django_playlist.save)()
 
         # Queue tasks
-        sync_tracked_playlist(django_playlist)
+        sync_tracked_playlist.delay(django_playlist.id)
         if auto_track_artists:
-            sync_tracked_playlist_artists(django_playlist)
+            sync_tracked_playlist_artists.delay(django_playlist.id)
 
         return self._to_graphql_type(django_playlist)
 
