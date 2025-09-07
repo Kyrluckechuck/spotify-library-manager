@@ -41,16 +41,27 @@ services:
       - HOME=/config
       - XDG_DATA_HOME=/config/.local/share
       - XDG_CACHE_HOME=/config/.cache
-    command: bash -c "python manage.py migrate_from_sqlite && uvicorn src.main:app --host 0.0.0.0 --port 5000"
+    command: bash -c "
+      echo '🚀 Starting web service...';
+      echo '📊 Environment check:';
+      echo 'Python version:' $(python --version);
+      echo 'Working directory:' $(pwd);
+      echo 'Available disk space:' $(df -h . | tail -1);
+      echo '🗄️ Running migrations...';
+      python manage.py migrate_from_sqlite --verbosity=2 && 
+      echo '✅ Migrations complete. Starting server...';
+      echo '🌐 Starting uvicorn server on 0.0.0.0:5000';
+      uvicorn src.main:app --host 0.0.0.0 --port 5000 --log-level info --access-log
+      "
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/healthz').read().decode())"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      test: ["CMD", "python", "scripts/health_check.py"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 30s
     restart: unless-stopped
     networks:
       - slm_net
