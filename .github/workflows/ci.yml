@@ -132,13 +132,82 @@ jobs:
           SLM_CONFIG_DIR: ${{ steps.mktemp.outputs.config-dir }}
           MUSIC_DIR: ${{ steps.mktemp.outputs.music-dir }}
         run: |
+          echo "🏗️ Building and starting Docker stack..."
+          echo "📁 Config dir: $SLM_CONFIG_DIR"
+          echo "🎵 Music dir: $MUSIC_DIR"
+          echo "🐳 Starting containers with detailed output..."
           docker compose up --build -d
+          
+          echo "📊 Container status after startup:"
+          docker compose ps
+          
+          echo "🔍 Waiting for containers to settle..."
+          sleep 10
+          
+          echo "📊 Container status after settling:"
+          docker compose ps
 
-      - name: Wait for API health
+      - name: Debug container startup
+        if: always()
         run: |
+          echo "🔍 === CONTAINER DEBUGGING ==="
+          echo "📊 All container statuses:"
+          docker compose ps
+          
+          echo ""
+          echo "🏥 Container health details:"
+          docker inspect --format='{{.State.Health.Status}}: {{range .State.Health.Log}}{{.Output}}{{end}}' $(docker compose ps -q web) || echo "No health info available"
+          
+          echo ""
+          echo "📋 Web container logs (last 50 lines):"
+          docker compose logs --tail=50 web
+          
+          echo ""
+          echo "🔍 PostgreSQL container logs (last 20 lines):"
+          docker compose logs --tail=20 postgres
+          
+          echo ""
+          echo "🌐 Network connectivity test:"
+          docker compose exec postgres pg_isready -h localhost -U slm_user -d spotify_library_manager || echo "PostgreSQL not ready"
+          
+          echo ""
+          echo "🔍 Running comprehensive diagnostic (even if container is unhealthy):"
+          docker compose exec web python scripts/debug_health_check.py || echo "Could not run comprehensive diagnostic - container may be dead"
+
+      - name: Wait for API health (with detailed debugging)
+        run: |
+          echo "⏳ Waiting for API health with detailed monitoring..."
           for i in {1..60}; do
-            if curl -fsS http://localhost:5000/healthz > /dev/null; then
-              echo "API healthy"; exit 0; fi; sleep 2; done; echo "API failed to become healthy"; docker compose logs web; exit 1
+            echo "🔍 Attempt $i/60: Testing API health..."
+            
+            # Check container status
+            WEB_STATUS=$(docker compose ps web --format=table | tail -1 | awk '{print $4}')
+            echo "📊 Web container status: $WEB_STATUS"
+            
+            # Try comprehensive diagnostic script
+            echo "🔍 Running comprehensive diagnostic script:"
+            docker compose exec web python scripts/debug_health_check.py || echo "Comprehensive diagnostic failed"
+            
+            # Also try simple health check
+            echo "🏥 Running simple health check script:"
+            docker compose exec web python scripts/health_check.py || echo "Simple health check script failed"
+            
+            # Try curl
+            echo "🌐 Testing HTTP endpoint:"
+            if curl -v http://localhost:5000/healthz 2>&1; then
+              echo "✅ API healthy on attempt $i"
+              exit 0
+            fi
+            
+            echo "⏸️ Waiting 3 seconds before next attempt..."
+            sleep 3
+          done
+          
+          echo "❌ API failed to become healthy after 60 attempts (3 minutes)"
+          echo "🔍 Final debugging info:"
+          docker compose ps
+          docker compose logs web
+          exit 1
 
       - name: Set up Node 20 for GraphQL validation
         uses: actions/setup-node@v4
