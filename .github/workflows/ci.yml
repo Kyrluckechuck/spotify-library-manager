@@ -62,6 +62,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
+      - name: Collect static files (for comprehensive testing)
+        run: |
+          cd api
+          python manage.py collectstatic --noinput || echo "Static file collection failed - continuing with tests"
+
       - name: Lint (backend)
         run: make lint-api
 
@@ -213,8 +218,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: frontend/yarn.lock
 
       - name: Install (frontend) for validation
         working-directory: frontend

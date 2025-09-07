@@ -94,7 +94,7 @@ def create_app() -> FastAPI:
 
     # Serve Django static files
     static_root = getattr(dj_settings, "STATIC_ROOT", None)
-    if static_root:
+    if static_root and Path(static_root).exists():
         app.mount("/static", StaticFiles(directory=str(static_root)), name="static")
 
     # Serve built frontend
