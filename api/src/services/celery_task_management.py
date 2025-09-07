@@ -269,7 +269,7 @@ class CeleryTaskManagementService:
                     status__in=["COMPLETED", "FAILED", "CANCELLED"],
                     completed_at__lt=cutoff_date,
                 ).delete()
-            )
+            )()
 
             # Clear from Celery results
             try:
@@ -277,7 +277,7 @@ class CeleryTaskManagementService:
                     lambda: TaskResult.objects.filter(
                         date_done__lt=cutoff_date
                     ).delete()
-                )
+                )()
                 total_deleted = deleted_count[0] + celery_deleted[0]
             except Exception:
                 total_deleted = deleted_count[0]
