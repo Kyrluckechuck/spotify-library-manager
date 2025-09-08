@@ -90,6 +90,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: false
 
       - name: Install (frontend)
         working-directory: frontend
@@ -221,6 +222,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: false
 
       - name: Install (frontend) for validation
         working-directory: frontend
