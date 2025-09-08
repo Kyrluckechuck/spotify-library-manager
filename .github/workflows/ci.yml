@@ -41,7 +41,7 @@ jobs:
       matrix:
         python-version: [ '3.11', '3.13' ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -84,10 +84,10 @@ jobs:
     name: Frontend (lint + tests) • Node 20
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'yarn'
@@ -118,7 +118,7 @@ jobs:
     name: Code quality checks (newlines + formatting)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -132,7 +132,7 @@ jobs:
     name: Docker smoke + GraphQL validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -229,7 +229,7 @@ jobs:
           exit 1
 
       - name: Set up Node 20 for GraphQL validation
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'yarn'
@@ -269,7 +269,7 @@ jobs:
     needs: [ backend, frontend ]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Lowercase repo owner
         id: owner
