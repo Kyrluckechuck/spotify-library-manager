@@ -90,7 +90,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: false
+
+      - name: Debug - Check yarn.lock location
+        run: |
+          echo "Repository root contents:"
+          ls -la
+          echo "Frontend directory contents:"
+          ls -la frontend/
+          echo "Looking for yarn.lock files:"
+          find . -name "yarn.lock" -type f
 
       - name: Install (frontend)
         working-directory: frontend
@@ -222,7 +230,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: false
+
+      - name: Debug - Check yarn.lock location (GraphQL validation)
+        run: |
+          echo "Repository root contents:"
+          ls -la
+          echo "Frontend directory contents:"
+          ls -la frontend/
+          echo "Looking for yarn.lock files:"
+          find . -name "yarn.lock" -type f
 
       - name: Install (frontend) for validation
         working-directory: frontend
