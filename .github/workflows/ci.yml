@@ -75,9 +75,13 @@ jobs:
           # Set unique temp dirs to avoid parallel execution conflicts
           TMPDIR: /tmp/pytest-${{ github.run_id }}-py${{ matrix.python-version }}
           HOME: /tmp/pytest-home-${{ github.run_id }}-py${{ matrix.python-version }}
+          # Additional isolation for spotdl and other cache directories
+          XDG_DATA_HOME: /tmp/pytest-xdg-data-${{ github.run_id }}-py${{ matrix.python-version }}
+          XDG_CACHE_HOME: /tmp/pytest-xdg-cache-${{ github.run_id }}-py${{ matrix.python-version }}
+          SPOTDL_CACHE_PATH: /tmp/pytest-spotdl-${{ github.run_id }}-py${{ matrix.python-version }}
         run: |
-          mkdir -p "$TMPDIR" "$HOME"
-          make test-api
+          mkdir -p "$TMPDIR" "$HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$SPOTDL_CACHE_PATH"
+          cd api && python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=html --cov-report=term-missing --dist worksteal
 
   frontend:
     name: Frontend (lint + tests) • Node 20

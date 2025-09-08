@@ -1,6 +1,8 @@
 """Test configuration and fixtures."""
 
 import os
+import tempfile
+from pathlib import Path
 
 import django
 
@@ -9,6 +11,46 @@ import pytest
 # Configure Django settings for testing
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "test_settings")
 django.setup()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def isolate_worker_directories(worker_id):
+    """Isolate directories for each pytest-xdist worker to prevent race conditions."""
+    if worker_id == "master":
+        # Single-threaded execution, use base directories
+        return
+
+    # Get base directories from environment or use defaults
+    base_tmpdir = os.environ.get("TMPDIR", tempfile.gettempdir())
+
+    # Create unique directories for this worker
+    worker_home = os.path.join(base_tmpdir, f"pytest-worker-{worker_id}-home")
+    worker_tmpdir = os.path.join(base_tmpdir, f"pytest-worker-{worker_id}-tmp")
+    worker_xdg_data = os.path.join(base_tmpdir, f"pytest-worker-{worker_id}-xdg-data")
+    worker_xdg_cache = os.path.join(base_tmpdir, f"pytest-worker-{worker_id}-xdg-cache")
+    worker_spotdl_cache = os.path.join(base_tmpdir, f"pytest-worker-{worker_id}-spotdl")
+
+    # Create all worker directories
+    for directory in [
+        worker_home,
+        worker_tmpdir,
+        worker_xdg_data,
+        worker_xdg_cache,
+        worker_spotdl_cache,
+    ]:
+        Path(directory).mkdir(parents=True, exist_ok=True)
+
+    # Set environment variables for this worker
+    os.environ["HOME"] = worker_home
+    os.environ["TMPDIR"] = worker_tmpdir
+    os.environ["XDG_DATA_HOME"] = worker_xdg_data
+    os.environ["XDG_CACHE_HOME"] = worker_xdg_cache
+    os.environ["SPOTDL_CACHE_PATH"] = worker_spotdl_cache
+
+    yield
+
+    # Note: We don't clean up directories as they may contain useful debug info
+    # and pytest-xdist will clean up temp directories after the session
 
 
 @pytest.fixture(autouse=True)
