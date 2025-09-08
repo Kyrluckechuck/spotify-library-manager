@@ -62,10 +62,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Collect static files (for comprehensive testing)
-        run: |
-          cd api
-          python manage.py collectstatic --noinput || echo "Static file collection failed - continuing with tests"
+      - name: Collect static files
+        working-directory: api
+        run: python manage.py collectstatic --noinput || echo "Static file collection failed - continuing with tests"
 
       - name: Lint (backend)
         run: make lint-api
@@ -93,18 +92,9 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: 'frontend/yarn.lock'
 
-      - name: Install (frontend)
-        run: |
-          echo "📁 Current working directory: $(pwd)"
-          echo "📋 Repository root contents:"
-          ls -la
-          echo "📋 Frontend directory contents:"
-          ls -la frontend/
-          echo "🔍 Looking for yarn.lock files:"
-          find . -name "yarn.lock" -type f
-          echo "📦 Installing frontend dependencies..."
-          cd frontend
-          yarn install --frozen-lockfile
+      - name: Install dependencies
+        working-directory: frontend
+        run: yarn install --frozen-lockfile
 
       - name: Lint (frontend)
         working-directory: frontend
@@ -115,21 +105,19 @@ jobs:
         run: yarn test:run
 
   code-quality:
-    name: Code quality checks (newlines + formatting)
+    name: Code quality checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Check trailing newlines
         run: python scripts/check-repo-newlines.py check
 
-  docker-smoke-and-graphql:
-    name: Docker smoke + GraphQL validation
+  docker-integration:
+    name: Docker integration tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -151,79 +139,26 @@ jobs:
           SLM_CONFIG_DIR: ${{ steps.mktemp.outputs.config-dir }}
           MUSIC_DIR: ${{ steps.mktemp.outputs.music-dir }}
         run: |
-          echo "🏗️ Building and starting Docker stack..."
-          echo "📁 Config dir: $SLM_CONFIG_DIR"
-          echo "🎵 Music dir: $MUSIC_DIR"
-          echo "🐳 Starting containers with detailed output..."
           docker compose up --build -d
-          
-          echo "📊 Container status after startup:"
-          docker compose ps
-          
-          echo "🔍 Waiting for containers to settle..."
           sleep 10
-          
-          echo "📊 Container status after settling:"
-          docker compose ps
 
       - name: Debug container startup
-        if: always()
+        if: failure()
         run: |
-          echo "🔍 === CONTAINER DEBUGGING ==="
-          echo "📊 All container statuses:"
           docker compose ps
-          
-          echo ""
-          echo "🏥 Container health details:"
-          docker inspect --format='{{.State.Health.Status}}: {{range .State.Health.Log}}{{.Output}}{{end}}' $(docker compose ps -q web) || echo "No health info available"
-          
-          echo ""
-          echo "📋 Web container logs (last 50 lines):"
-          docker compose logs --tail=50 web
-          
-          echo ""
-          echo "🔍 PostgreSQL container logs (last 20 lines):"
-          docker compose logs --tail=20 postgres
-          
-          echo ""
-          echo "🌐 Network connectivity test:"
-          docker compose exec postgres pg_isready -h localhost -U slm_user -d spotify_library_manager || echo "PostgreSQL not ready"
-          
-          echo ""
-          echo "🔍 Running comprehensive diagnostic (even if container is unhealthy):"
-          docker compose exec web python scripts/debug_health_check.py || echo "Could not run comprehensive diagnostic - container may be dead"
+          docker compose logs web
+          docker compose logs postgres
 
-      - name: Wait for API health (with detailed debugging)
+      - name: Wait for API health
         run: |
-          echo "⏳ Waiting for API health with detailed monitoring..."
-          for i in {1..60}; do
-            echo "🔍 Attempt $i/60: Testing API health..."
-            
-            # Check container status
-            WEB_STATUS=$(docker compose ps web --format=table | tail -1 | awk '{print $4}')
-            echo "📊 Web container status: $WEB_STATUS"
-            
-            # Try comprehensive diagnostic script
-            echo "🔍 Running comprehensive diagnostic script:"
-            docker compose exec web python scripts/debug_health_check.py || echo "Comprehensive diagnostic failed"
-            
-            # Also try simple health check
-            echo "🏥 Running simple health check script:"
-            docker compose exec web python scripts/health_check.py || echo "Simple health check script failed"
-            
-            # Try curl
-            echo "🌐 Testing HTTP endpoint:"
-            if curl -v http://localhost:5000/healthz 2>&1; then
-              echo "✅ API healthy on attempt $i"
+          for i in {1..30}; do
+            if curl -s http://localhost:5000/healthz > /dev/null 2>&1; then
+              echo "API healthy after $i attempts"
               exit 0
             fi
-            
-            echo "⏸️ Waiting 3 seconds before next attempt..."
             sleep 3
           done
-          
-          echo "❌ API failed to become healthy after 60 attempts (3 minutes)"
-          echo "🔍 Final debugging info:"
+          echo "API failed to become healthy"
           docker compose ps
           docker compose logs web
           exit 1
@@ -235,25 +170,15 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: 'frontend/yarn.lock'
 
-      - name: Install (frontend) for validation
-        run: |
-          echo "📁 Current working directory: $(pwd)"
-          echo "📋 Repository root contents:"
-          ls -la
-          echo "📋 Frontend directory contents:"
-          ls -la frontend/
-          echo "🔍 Looking for yarn.lock files:"
-          find . -name "yarn.lock" -type f
-          echo "📦 Installing frontend dependencies for validation..."
-          cd frontend
-          yarn install --frozen-lockfile
+      - name: Install dependencies for validation
+        working-directory: frontend
+        run: yarn install --frozen-lockfile
 
       - name: Validate GraphQL schema and operations
         working-directory: frontend
         env:
           VITE_API_URL: http://localhost:5000/graphql
-        run: |
-          yarn validate:comprehensive
+        run: yarn validate:comprehensive
 
       - name: Show docker compose logs on failure
         if: failure()
@@ -264,9 +189,9 @@ jobs:
         run: docker compose down -v
 
   docker-build-and-push:
-    name: Docker build and push (GHCR)
+    name: Build and publish Docker images
     runs-on: ubuntu-latest
-    needs: [ backend, frontend ]
+    needs: [ backend, frontend, code-quality, docker-integration ]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v5
