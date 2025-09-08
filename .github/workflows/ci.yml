@@ -90,19 +90,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Debug - Check yarn.lock location
-        run: |
-          echo "Repository root contents:"
-          ls -la
-          echo "Frontend directory contents:"
-          ls -la frontend/
-          echo "Looking for yarn.lock files:"
-          find . -name "yarn.lock" -type f
+          cache: 'yarn'
+          cache-dependency-path: 'frontend/yarn.lock'
 
       - name: Install (frontend)
-        working-directory: frontend
-        run: yarn install --frozen-lockfile
+        run: |
+          echo "📁 Current working directory: $(pwd)"
+          echo "📋 Repository root contents:"
+          ls -la
+          echo "📋 Frontend directory contents:"
+          ls -la frontend/
+          echo "🔍 Looking for yarn.lock files:"
+          find . -name "yarn.lock" -type f
+          echo "📦 Installing frontend dependencies..."
+          cd frontend
+          yarn install --frozen-lockfile
 
       - name: Lint (frontend)
         working-directory: frontend
@@ -230,19 +232,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Debug - Check yarn.lock location (GraphQL validation)
-        run: |
-          echo "Repository root contents:"
-          ls -la
-          echo "Frontend directory contents:"
-          ls -la frontend/
-          echo "Looking for yarn.lock files:"
-          find . -name "yarn.lock" -type f
+          cache: 'yarn'
+          cache-dependency-path: 'frontend/yarn.lock'
 
       - name: Install (frontend) for validation
-        working-directory: frontend
-        run: yarn install --frozen-lockfile
+        run: |
+          echo "📁 Current working directory: $(pwd)"
+          echo "📋 Repository root contents:"
+          ls -la
+          echo "📋 Frontend directory contents:"
+          ls -la frontend/
+          echo "🔍 Looking for yarn.lock files:"
+          find . -name "yarn.lock" -type f
+          echo "📦 Installing frontend dependencies for validation..."
+          cd frontend
+          yarn install --frozen-lockfile
 
       - name: Validate GraphQL schema and operations
         working-directory: frontend
