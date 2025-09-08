@@ -73,8 +73,8 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: test_settings
           # Set unique temp dirs to avoid parallel execution conflicts
-          TMPDIR: /tmp/pytest-${{ github.run_id }}
-          HOME: /tmp/pytest-home-${{ github.run_id }}
+          TMPDIR: /tmp/pytest-${{ github.run_id }}-py${{ matrix.python-version }}
+          HOME: /tmp/pytest-home-${{ github.run_id }}-py${{ matrix.python-version }}
         run: |
           mkdir -p "$TMPDIR" "$HOME"
           make test-api
