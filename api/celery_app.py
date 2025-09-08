@@ -39,6 +39,6 @@ app.conf.worker_disable_rate_limits = True
 
 
 @app.task(bind=True)  # type: ignore[misc]
-def debug_task(self) -> None:  # type: ignore[no-untyped-def]
+def debug_task(self: "Celery.Task") -> None:
     """Debug task for testing Celery configuration."""
     print(f"Request: {self.request!r}")

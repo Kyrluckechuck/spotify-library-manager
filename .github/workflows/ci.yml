@@ -73,7 +73,12 @@ jobs:
       - name: Tests (backend)
         env:
           DJANGO_SETTINGS_MODULE: test_settings
-        run: make test-api
+          # Set unique temp dirs to avoid parallel execution conflicts
+          TMPDIR: /tmp/pytest-${{ github.run_id }}
+          HOME: /tmp/pytest-home-${{ github.run_id }}
+        run: |
+          mkdir -p "$TMPDIR" "$HOME"
+          make test-api
 
   frontend:
     name: Frontend (lint + tests) • Node 20
@@ -85,8 +90,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: frontend/yarn.lock
 
       - name: Install (frontend)
         working-directory: frontend

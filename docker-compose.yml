@@ -65,6 +65,8 @@ services:
     restart: unless-stopped
     networks:
       - slm_net
+    ports:
+      - "5000:5000"  # Expose for CI health checks
     volumes:
       - config_storage:/config
       - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
