@@ -1,46 +1,59 @@
-# Development Override File - Minimal Configuration
-# This file only overrides what's absolutely necessary for development
-# All other settings are inherited from the base docker-compose.yml
+# Development Override File - Enhanced Configuration
+# This file overrides the base docker-compose.yml for local development
+# Copy this to docker-compose.override.yml to use for development
 
 services:
   web:
-    # Only override what's needed for development
-    command: bash -c "pip install -r requirements.txt -r requirements-dev.txt && python manage.py migrate_from_sqlite && uvicorn src.main:app --host 0.0.0.0 --port 5000 --reload"
+    # Build locally instead of using pre-built image
+    build: .
+    # Development command with enhanced debugging and live reload
+    command: bash -c "
+      echo '🚀 Starting web service (DEV MODE)...';
+      echo '📦 Installing dependencies...';
+      pip install -r requirements.txt -r requirements-dev.txt &&
+      echo '📊 Environment check:';
+      echo 'Python version:' $(python --version);
+      echo 'Working directory:' $(pwd);
+      echo 'Available disk space:' $(df -h . | tail -1);
+      echo '🗄️ Running migrations...';
+      python manage.py migrate_from_sqlite --verbosity=2 && 
+      echo '✅ Migrations complete. Starting development server...';
+      echo '🌐 Starting uvicorn with reload on ${HOST:-0.0.0.0}:${PORT:-5000}';
+      uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --reload --log-level info
+      "
     environment:
+      # Development environment settings
+      - DJANGO_DEBUG=True
       - INSTALL_DEV_DEPS=true
     volumes:
+      # Live code sync for development
       - ./api:/app
       - ./requirements.txt:/app/requirements.txt
       - ./requirements-dev.txt:/app/requirements-dev.txt
       - python_packages:/app/.venv
       - pip_cache:/root/.cache/pip
 
-  # Disable production frontend in development
   frontend:
-    profiles: ["prod"]
+    # Build locally instead of using pre-built image
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL:-/graphql}
 
-  # Add development frontend server
-  frontend-dev:
-    image: node:20-alpine
-    working_dir: /app
-    depends_on:
-      web:
-        condition: service_healthy
-    environment:
-      - VITE_API_URL=/graphql
-      - CHOKIDAR_USEPOLLING=${CHOKIDAR_USEPOLLING:-false}
+  worker:
+    # Build locally and add live code sync
+    build: .
     volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-      - frontend_yarn_cache:/usr/local/share/.cache/yarn
-    command: sh -c "yarn install --frozen-lockfile && yarn dev --host 0.0.0.0 --port 3000"
-    ports:
-      - "3000:3000"
-    networks:
-      - slm_net
+      # Live code sync for development
+      - ./api:/app
+
+  beat:
+    # Build locally and add live code sync  
+    build: .
+    volumes:
+      # Live code sync for development
+      - ./api:/app
 
 volumes:
-  frontend_node_modules:
-  frontend_yarn_cache:
   python_packages:
   pip_cache:

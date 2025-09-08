@@ -1,9 +1,6 @@
 name: Build Branch Images
 
 on:
-  push:
-    branches-ignore:
-      - main
   workflow_dispatch:
 
 concurrency:

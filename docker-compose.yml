@@ -1,3 +1,5 @@
+version: "3.8"
+
 networks:
   slm_net:
     name: slm_net
@@ -10,7 +12,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-slm_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-slm_dev_password}
     volumes:
-      - /config/db/postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - slm_net
     ports:
@@ -23,35 +25,26 @@ services:
     restart: unless-stopped
 
   web:
-    build: .
+    image: ${BACKEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager:latest}
     environment:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-development-only-key}
-      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
-      - HOST=0.0.0.0
-      - PORT=5000
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-5000}
       - AUTH_SECRET_KEY=${AUTH_SECRET_KEY:-change-me-in-production}
-      - INSTALL_DEV_DEPS=${INSTALL_DEV_DEPS:-false}
       - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
       - POSTGRES_USER=${POSTGRES_USER:-slm_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-
-      - SPOTDL_CACHE_PATH=/config/spotdl_cache
       - HOME=/config
-      - XDG_DATA_HOME=/config/.local/share
-      - XDG_CACHE_HOME=/config/.cache
     command: bash -c "
       echo '🚀 Starting web service...';
-      echo '📊 Environment check:';
-      echo 'Python version:' $(python --version);
-      echo 'Working directory:' $(pwd);
-      echo 'Available disk space:' $(df -h . | tail -1);
       echo '🗄️ Running migrations...';
       python manage.py migrate_from_sqlite --verbosity=2 && 
       echo '✅ Migrations complete. Starting server...';
-      echo '🌐 Starting uvicorn server on 0.0.0.0:5000';
-      uvicorn src.main:app --host 0.0.0.0 --port 5000 --log-level info --access-log
+      echo '🌐 Starting uvicorn server on ${HOST:-0.0.0.0}:${PORT:-5000}';
+      uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --log-level info --access-log
       "
     depends_on:
       postgres:
@@ -66,84 +59,64 @@ services:
     networks:
       - slm_net
     ports:
-      - "5000:5000"  # Expose for CI health checks
+      - "${WEB_PORT:-5000}:5000"
     volumes:
       - config_storage:/config
-      - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
-      # Live code sync for development
-      - ./api:/app
-      - ./requirements.txt:/app/requirements.txt
-      - ./requirements-dev.txt:/app/requirements-dev.txt
-    # No host port published; reachable only on internal network
+      - ${MUSIC_DIR:-/mnt/music_spotify}:/mnt/music_spotify
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        - VITE_API_URL=${VITE_API_URL:-/graphql}
-    image: ghcr.io/kyrluckechuck/spotify-library-manager-frontend:latest
+    image: ${FRONTEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager-frontend:latest}
     depends_on:
       web:
         condition: service_healthy
     networks:
       - slm_net
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
 
   worker:
-    build: .
-    image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
+    image: ${BACKEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager:latest}
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
       - POSTGRES_USER=${POSTGRES_USER:-slm_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - SPOTDL_CACHE_PATH=/config/spotdl_cache
       - HOME=/config
-      - XDG_DATA_HOME=/config/.local/share
-      - XDG_CACHE_HOME=/config/.cache
     command: celery -A celery_app worker --loglevel=info
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - config_storage:/config
-      - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
-      # Live code sync for development
-      - ./api:/app
+      - ${MUSIC_DIR:-/mnt/music_spotify}:/mnt/music_spotify
     restart: unless-stopped
     networks:
       - slm_net
 
   beat:
-    build: .
-    image: ghcr.io/kyrluckechuck/spotify-library-manager:latest
+    image: ${BACKEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager:latest}
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
       - POSTGRES_USER=${POSTGRES_USER:-slm_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - SPOTDL_CACHE_PATH=/config/spotdl_cache
       - HOME=/config
-      - XDG_DATA_HOME=/config/.local/share
-      - XDG_CACHE_HOME=/config/.cache
     command: celery -A celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - config_storage:/config
-      - ${MUSIC_DIR:-/mnt/some_external_nas/music_spotify}:/mnt/music_spotify
-      # Live code sync for development
-      - ./api:/app
+      - ${MUSIC_DIR:-/mnt/music_spotify}:/mnt/music_spotify
     restart: unless-stopped
     networks:
       - slm_net
@@ -155,3 +128,10 @@ volumes:
       type: 'none'
       o: 'bind'
       device: '${SLM_CONFIG_DIR:-/config}'
+  
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '${SLM_CONFIG_DIR:-/config}/db/postgres'
