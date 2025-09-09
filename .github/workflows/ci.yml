@@ -134,11 +134,46 @@ jobs:
           echo "config-dir=$CONFIG_DIR" >> "$GITHUB_OUTPUT"
           echo "music-dir=$MUSIC_DIR" >> "$GITHUB_OUTPUT"
 
+      - name: Extract branch name for image tags
+        id: branch
+        run: |
+          # Get branch name and make it safe for Docker tags
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH=${{ github.head_ref }}
+          else
+            BRANCH=${GITHUB_REF#refs/heads/}
+          fi
+          SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g' | tr '[:upper:]' '[:lower:]')
+          echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+          
+      - name: Check if branch images exist
+        id: check-images
+        run: |
+          BRANCH_TAG="${{ steps.branch.outputs.name }}"
+          
+          # Check backend image
+          if docker manifest inspect ghcr.io/kyrluckechuck/spotify-library-manager:$BRANCH_TAG >/dev/null 2>&1; then
+            echo "backend=ghcr.io/kyrluckechuck/spotify-library-manager:$BRANCH_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=ghcr.io/kyrluckechuck/spotify-library-manager:latest" >> "$GITHUB_OUTPUT"
+          fi
+          
+          # Check frontend image
+          if docker manifest inspect ghcr.io/kyrluckechuck/spotify-library-manager-frontend:$BRANCH_TAG >/dev/null 2>&1; then
+            echo "frontend=ghcr.io/kyrluckechuck/spotify-library-manager-frontend:$BRANCH_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend=ghcr.io/kyrluckechuck/spotify-library-manager-frontend:latest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and start stack
         env:
           SLM_CONFIG_DIR: ${{ steps.mktemp.outputs.config-dir }}
           MUSIC_DIR: ${{ steps.mktemp.outputs.music-dir }}
+          BACKEND_IMAGE: ${{ steps.check-images.outputs.backend }}
+          FRONTEND_IMAGE: ${{ steps.check-images.outputs.frontend }}
         run: |
+          echo "Using backend image: $BACKEND_IMAGE"
+          echo "Using frontend image: $FRONTEND_IMAGE"
           docker compose up --build -d
           sleep 10
 
