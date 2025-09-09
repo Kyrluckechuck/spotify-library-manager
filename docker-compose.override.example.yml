@@ -54,6 +54,11 @@ services:
       # Live code sync for development
       - ./api:/app
 
+  postgres:
+    # Expose PostgreSQL port for development/debugging
+    ports:
+      - "5432:5432"
+
 volumes:
   python_packages:
   pip_cache:

@@ -286,20 +286,31 @@ class Command(BaseCommand):
         with connection.cursor() as pg_cursor:
             for row in rows:
                 try:
+                    # Handle file_path deduplication
+                    file_path_ref_id = None
+                    if row["file_path"]:
+                        # Create or get FilePath object for deduplication
+                        pg_cursor.execute(
+                            "INSERT INTO file_paths (path, created_at) VALUES (%s, NOW()) ON CONFLICT (path) DO NOTHING RETURNING id",
+                            (row["file_path"],),
+                        )
+                        result = pg_cursor.fetchone()
+                        if result:
+                            file_path_ref_id = result[0]
+                        else:
+                            # Path already exists, get its ID
+                            pg_cursor.execute(
+                                "SELECT id FROM file_paths WHERE path = %s",
+                                (row["file_path"],),
+                            )
+                            file_path_ref_id = pg_cursor.fetchone()[0]
+
                     # Insert with original SQLite ID
                     insert_sql = """
                         INSERT INTO songs (id, name, gid, primary_artist_id, created_at,
-                                         failed_count, bitrate, unavailable, file_path, downloaded)
+                                         failed_count, bitrate, unavailable, file_path_ref_id, downloaded)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
-
-                    # Truncate file_path if it's too long (PostgreSQL limit is varchar(100))
-                    file_path = row["file_path"]
-                    if file_path and len(file_path) > 100:
-                        file_path = file_path[:97] + "..."
-                        self.stdout.write(
-                            f"    Warning: Truncated file_path for song {row['gid']} (was {len(row['file_path'])} chars)"
-                        )
 
                     pg_cursor.execute(
                         insert_sql,
@@ -316,7 +327,7 @@ class Command(BaseCommand):
                                 if row["unavailable"] is not None
                                 else False
                             ),
-                            file_path,
+                            file_path_ref_id,
                             (
                                 bool(row["downloaded"])
                                 if row["downloaded"] is not None

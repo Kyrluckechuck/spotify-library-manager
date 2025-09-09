@@ -37,6 +37,23 @@ ALBUM_GROUPS_TO_IGNORE = _get_setting_list("ALBUM_GROUPS_TO_IGNORE", ["appears_o
 
 
 # Create your models here.
+class FilePath(models.Model):
+    """Deduplicated file paths to save storage space."""
+
+    path = models.TextField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta(TypedModelMeta):
+        app_label = "library_manager"
+        db_table = "file_paths"
+        indexes = [
+            models.Index(fields=["path"]),
+        ]
+
+    def __str__(self) -> str:
+        return self.path
+
+
 class Artist(models.Model):
     name = models.CharField(max_length=200)
     gid = models.CharField(max_length=120, unique=True)
@@ -97,8 +114,23 @@ class Song(models.Model):
     failed_count = models.IntegerField(default=0)
     bitrate = models.IntegerField(default=0)
     unavailable = models.BooleanField(default=False)
-    file_path = models.FilePathField(null=True)
+    file_path_ref = models.ForeignKey(
+        FilePath, on_delete=models.SET_NULL, null=True, blank=True, related_name="songs"
+    )
     downloaded = models.BooleanField(default=False)
+
+    @property
+    def file_path(self) -> str | None:
+        """Get the file path string for backward compatibility."""
+        return self.file_path_ref.path if self.file_path_ref else None
+
+    def set_file_path(self, path: str | None) -> None:
+        """Set the file path, creating/reusing FilePath object."""
+        if path is None:
+            self.file_path_ref = None
+        else:
+            file_path_obj, created = FilePath.objects.get_or_create(path=path)
+            self.file_path_ref = file_path_obj
 
     @property
     def contributing_artists(self) -> "QuerySet[ContributingArtist]":
