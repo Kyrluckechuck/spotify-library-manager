@@ -37,13 +37,16 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # App source (copy only what's needed first for better caching)
 COPY ./api/src /app/src
+COPY ./api/downloader /app/downloader
+COPY ./api/lib /app/lib
 COPY ./api/library_manager /app/library_manager
+COPY ./api/celery_app.py /app/celery_app.py
+COPY ./api/celery_beat_schedule.py /app/celery_beat_schedule.py
 COPY ./api/manage.py /app/manage.py
 COPY ./api/urls.py /app/urls.py
 COPY ./api/settings.py /app/settings.py
 COPY ./api/run.py /app/run.py
 COPY ./api/scripts /app/scripts
-COPY ./api/library_manager/migrations /app/library_manager/migrations
 
 # Copy built frontend (served by FastAPI static files)
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
