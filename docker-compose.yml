@@ -34,14 +34,7 @@ services:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - HOME=/config
-    command: bash -c "
-      echo '🚀 Starting web service...';
-      echo '🗄️ Running migrations...';
-      python manage.py migrate_from_sqlite --verbosity=2 && 
-      echo '✅ Migrations complete. Starting server...';
-      echo '🌐 Starting uvicorn server on ${HOST:-0.0.0.0}:${PORT:-5000}';
-      uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --log-level info --access-log
-      "
+    command: bash scripts/startup.sh
     depends_on:
       postgres:
         condition: service_healthy

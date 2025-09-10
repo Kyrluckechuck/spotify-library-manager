@@ -131,6 +131,21 @@ jobs:
           CONFIG_DIR="${RUNNER_TEMP}/slm_config"
           MUSIC_DIR="${RUNNER_TEMP}/slm_music"
           mkdir -p "$CONFIG_DIR/db" "$MUSIC_DIR"
+          
+          # Create minimal settings.yaml for CI
+          cat > "$CONFIG_DIR/settings.yaml" << 'EOF'
+          # Minimal CI configuration
+          default:
+            cookies_location: "/config/cookies.txt"
+            final_path: "/mnt/music_spotify"
+            ALBUM_TYPES_TO_DOWNLOAD:
+              - single
+              - album
+              - compilation
+            ALBUM_GROUPS_TO_IGNORE:
+              - appears_on
+          EOF
+          
           echo "config-dir=$CONFIG_DIR" >> "$GITHUB_OUTPUT"
           echo "music-dir=$MUSIC_DIR" >> "$GITHUB_OUTPUT"
 
@@ -171,9 +186,18 @@ jobs:
           MUSIC_DIR: ${{ steps.mktemp.outputs.music-dir }}
           BACKEND_IMAGE: ${{ steps.check-images.outputs.backend }}
           FRONTEND_IMAGE: ${{ steps.check-images.outputs.frontend }}
+          # Set required environment variables for container startup
+          DJANGO_DEBUG: "False"
+          DJANGO_SECRET_KEY: "django-insecure-ci-testing-key"
+          AUTH_SECRET_KEY: "ci-testing-auth-key"
+          POSTGRES_DB: "spotify_library_manager"
+          POSTGRES_USER: "slm_user"
+          POSTGRES_PASSWORD: "slm_dev_password"
         run: |
           echo "Using backend image: $BACKEND_IMAGE"
           echo "Using frontend image: $FRONTEND_IMAGE"
+          echo "Config dir: $SLM_CONFIG_DIR"
+          echo "Music dir: $MUSIC_DIR"
           docker compose up --build -d
           echo "Waiting for containers to initialize (health check start period is 30s)..."
           sleep 35
@@ -181,9 +205,14 @@ jobs:
       - name: Debug container startup
         if: failure()
         run: |
+          echo "=== Container Status ==="
           docker compose ps
+          echo "=== Web Container Logs ==="
           docker compose logs web
+          echo "=== PostgreSQL Container Logs ==="
           docker compose logs postgres
+          echo "=== All Container Logs ==="
+          docker compose logs
 
       - name: Wait for API health
         run: |
