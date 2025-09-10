@@ -48,6 +48,9 @@ COPY ./api/settings.py /app/settings.py
 COPY ./api/run.py /app/run.py
 COPY ./api/scripts /app/scripts
 
+# Make startup script executable
+RUN chmod +x /app/scripts/startup.sh
+
 # Copy built frontend (served by FastAPI static files)
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
 

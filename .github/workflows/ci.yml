@@ -161,24 +161,20 @@ jobs:
           SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g' | tr '[:upper:]' '[:lower:]')
           echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
           
-      - name: Check if branch images exist
+      - name: Set images for local build
         id: check-images
         run: |
-          BRANCH_TAG="${{ steps.branch.outputs.name }}"
+          # Force local builds for integration testing to ensure latest changes are tested
+          echo "backend=local-backend:latest" >> "$GITHUB_OUTPUT"
+          echo "frontend=local-frontend:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build images locally
+        run: |
+          echo "🔨 Building backend image locally..."
+          docker build -t local-backend:latest .
           
-          # Check backend image
-          if docker manifest inspect ghcr.io/kyrluckechuck/spotify-library-manager:$BRANCH_TAG >/dev/null 2>&1; then
-            echo "backend=ghcr.io/kyrluckechuck/spotify-library-manager:$BRANCH_TAG" >> "$GITHUB_OUTPUT"
-          else
-            echo "backend=ghcr.io/kyrluckechuck/spotify-library-manager:latest" >> "$GITHUB_OUTPUT"
-          fi
-          
-          # Check frontend image
-          if docker manifest inspect ghcr.io/kyrluckechuck/spotify-library-manager-frontend:$BRANCH_TAG >/dev/null 2>&1; then
-            echo "frontend=ghcr.io/kyrluckechuck/spotify-library-manager-frontend:$BRANCH_TAG" >> "$GITHUB_OUTPUT"
-          else
-            echo "frontend=ghcr.io/kyrluckechuck/spotify-library-manager-frontend:latest" >> "$GITHUB_OUTPUT"
-          fi
+          echo "🔨 Building frontend image locally..."
+          docker build -t local-frontend:latest ./frontend
 
       - name: Build and start stack
         env:
@@ -198,9 +194,21 @@ jobs:
           echo "Using frontend image: $FRONTEND_IMAGE"
           echo "Config dir: $SLM_CONFIG_DIR"
           echo "Music dir: $MUSIC_DIR"
+          
+          echo "=== Starting containers ==="
           docker compose up --build -d
-          echo "Waiting for containers to initialize (health check start period is 30s)..."
-          sleep 35
+          
+          echo "=== Container status immediately after start ==="
+          docker compose ps
+          
+          echo "=== Web container logs (first 10 seconds) ==="
+          timeout 10 docker compose logs -f web || echo "10 second log capture complete"
+          
+          echo "=== Waiting for containers to initialize ==="
+          sleep 25
+          
+          echo "=== Container status after wait ==="
+          docker compose ps
 
       - name: Debug container startup
         if: failure()

@@ -22,7 +22,10 @@ services:
       echo 'Working directory:' $(pwd);
       echo 'Available disk space:' $(df -h . | tail -1);
       echo '🗄️ Running migrations...';
-      python manage.py migrate_from_sqlite --verbosity=2 && 
+      timeout 60 python manage.py migrate_from_sqlite --verbosity=2 || {
+        echo '⚠️ SQLite migration timed out or failed. Running basic migrations...';
+        python manage.py migrate --verbosity=2;
+      } &&
       echo '✅ Migrations complete. Starting development server...';
       echo '🌐 Starting uvicorn with reload on ${HOST:-0.0.0.0}:${PORT:-5000}';
       uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --reload --log-level info
