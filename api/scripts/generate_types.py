@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 
 
-def main():
+def main() -> None:
     # Ensure the output directory exists
     output_dir = Path("../frontend/src/types/generated")
     output_dir.mkdir(parents=True, exist_ok=True)

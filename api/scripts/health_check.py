@@ -11,7 +11,7 @@ from datetime import datetime
 from urllib.error import HTTPError, URLError
 
 
-def main():
+def main() -> None:
     """Run health check with detailed error reporting."""
     try:
         print("🔍 Starting health check...")

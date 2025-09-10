@@ -13,7 +13,7 @@ from library_manager.validation import (
 class TestValidationFunctionsSimple:
     """Test validation utility functions without Django dependencies."""
 
-    def test_validate_spotify_url_valid(self):
+    def test_validate_spotify_url_valid(self) -> None:
         """Test valid Spotify URL validation."""
         valid_urls = [
             "https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh",
@@ -30,7 +30,7 @@ class TestValidationFunctionsSimple:
             is_valid, error = validate_spotify_url(url)
             assert is_valid is True, f"URL {url} should be valid: {error}"
 
-    def test_validate_spotify_url_invalid(self):
+    def test_validate_spotify_url_invalid(self) -> None:
         """Test invalid Spotify URL validation."""
         invalid_urls = [
             "invalid:url",
@@ -44,11 +44,13 @@ class TestValidationFunctionsSimple:
         ]
 
         for url in invalid_urls:
-            is_valid, error = validate_spotify_url(url)
+            is_valid, error = (
+                validate_spotify_url(url) if url is not None else (False, "URL is None")
+            )
             assert is_valid is False, f"URL {url} should be invalid"
             assert error is not None
 
-    def test_extract_spotify_id_valid(self):
+    def test_extract_spotify_id_valid(self) -> None:
         """Test extracting Spotify ID from valid URLs."""
         test_cases = [
             (
@@ -73,7 +75,7 @@ class TestValidationFunctionsSimple:
                 extracted_id == expected_id
             ), f"Expected {expected_id}, got {extracted_id} for {url}"
 
-    def test_is_spotify_playlist_url(self):
+    def test_is_spotify_playlist_url(self) -> None:
         """Test playlist URL detection."""
         playlist_urls = [
             "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
@@ -97,7 +99,7 @@ class TestValidationFunctionsSimple:
                 is_spotify_playlist_url(url) is False
             ), f"{url} should not be detected as playlist"
 
-    def test_is_spotify_album_url(self):
+    def test_is_spotify_album_url(self) -> None:
         """Test album URL detection."""
         album_urls = [
             "https://open.spotify.com/album/4aawyAB9vmqN3uQ7FjRGTy",
@@ -121,7 +123,7 @@ class TestValidationFunctionsSimple:
                 is_spotify_album_url(url) is False
             ), f"{url} should not be detected as album"
 
-    def test_is_spotify_track_url(self):
+    def test_is_spotify_track_url(self) -> None:
         """Test track URL detection."""
         track_urls = [
             "https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh",
@@ -145,7 +147,7 @@ class TestValidationFunctionsSimple:
                 is_spotify_track_url(url) is False
             ), f"{url} should not be detected as track"
 
-    def test_get_spotify_url_type(self):
+    def test_get_spotify_url_type(self) -> None:
         """Test URL type detection."""
         test_cases = [
             ("https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh", "track"),

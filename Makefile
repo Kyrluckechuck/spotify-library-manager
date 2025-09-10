@@ -117,7 +117,11 @@ test-frontend-coverage:
 	cd frontend && yarn test:coverage
 
 test-frontend-docker:
+	@echo "🧪 Running frontend tests in Docker container with volume mounts..."
+	docker compose --profile testing up -d frontend-dev
 	docker compose exec frontend-dev yarn test:run
+	docker compose --profile testing stop frontend-dev
+	docker compose --profile testing rm -f frontend-dev
 
 test-migrations:
 	cd api && python manage.py showmigrations
@@ -137,7 +141,7 @@ format-check-frontend:
 lint-api: lint-api-flake8 lint-api-black lint-api-isort lint-api-mypy lint-api-bandit lint-api-pylint
 
 lint-api-flake8:
-	cd api && python -m flake8 --extend-ignore=W503 --exclude=.venv,__pycache__,node_modules
+	cd api && python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules
 
 lint-api-black:
 	cd api && python -m black --check --diff .

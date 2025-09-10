@@ -1,10 +1,7 @@
 import re
 from typing import Any, Dict, List
 
-from library_manager.models import (
-    Album,
-    Artist,
-)
+from library_manager.models import Album, Artist
 
 from . import utils
 

@@ -1,6 +1,5 @@
 # Generated migration for file path deduplication
 
-import django.db.models.deletion
 from django.db import migrations, models
 
 
@@ -37,16 +36,22 @@ class Migration(migrations.Migration):
             index=models.Index(fields=["path"], name="library_man_path_idx"),
         ),
         # Add new foreign key field (nullable initially)
-        migrations.AddField(
-            model_name="song",
-            name="file_path_ref",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="songs",
-                to="library_manager.filepath",
-            ),
+        # Using RunSQL to ensure correct table name
+        migrations.RunSQL(
+            """
+            ALTER TABLE songs
+            ADD COLUMN file_path_ref_id INTEGER;
+
+            ALTER TABLE songs
+            ADD CONSTRAINT songs_file_path_ref_id_fk
+            FOREIGN KEY (file_path_ref_id)
+            REFERENCES file_paths(id)
+            ON DELETE SET NULL;
+            """,
+            reverse_sql="""
+            ALTER TABLE songs DROP CONSTRAINT IF EXISTS songs_file_path_ref_id_fk;
+            ALTER TABLE songs DROP COLUMN IF EXISTS file_path_ref_id;
+            """,
         ),
         # Data migration to populate FilePath objects and update references
         migrations.RunSQL(
@@ -79,8 +84,13 @@ class Migration(migrations.Migration):
             """,
         ),
         # Remove old file_path field
-        migrations.RemoveField(
-            model_name="song",
-            name="file_path",
+        # Using RunSQL to ensure correct table name
+        migrations.RunSQL(
+            """
+            ALTER TABLE songs DROP COLUMN IF EXISTS file_path;
+            """,
+            reverse_sql="""
+            ALTER TABLE songs ADD COLUMN file_path TEXT;
+            """,
         ),
     ]

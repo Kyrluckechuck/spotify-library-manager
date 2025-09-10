@@ -1,6 +1,12 @@
 # Development Override File - Enhanced Configuration
 # This file overrides the base docker-compose.yml for local development
 # Copy this to docker-compose.override.yml to use for development
+#
+# Key Features:
+# - Frontend: Hot reloading Vite dev server (port 3000) with live file sync
+# - Backend: Hot reloading FastAPI server (port 5000) with live file sync  
+# - Testing: Run 'make test-docker' for complete test suite including frontend
+# - PostgreSQL: Exposed on port 5432 for direct database access
 
 services:
   web:
@@ -34,11 +40,33 @@ services:
       - pip_cache:/root/.cache/pip
 
   frontend:
-    # Build locally instead of using pre-built image
+    # Development frontend with hot reloading
     build:
       context: ./frontend
+      target: build  # Stop at the Node.js stage, don't build nginx
       args:
-        - VITE_API_URL=${VITE_API_URL:-/graphql}
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
+    command: yarn dev --host 0.0.0.0 --port 3000
+    volumes:
+      # Live code sync for development hot reloading
+      - ./frontend:/app
+      - /app/node_modules  # Prevent overwriting node_modules
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
+    ports:
+      - "3000:3000"
+
+  # Frontend development container for testing (use with --profile testing)
+  frontend-dev:
+    build:
+      context: ./frontend
+      target: build
+    command: tail -f /dev/null  # Keep container running for exec commands
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    profiles:
+      - testing  # Only started when explicitly requested
 
   worker:
     # Build locally and add live code sync

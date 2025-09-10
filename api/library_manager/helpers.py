@@ -203,7 +203,7 @@ def enqueue_batch_artist_operations(
 
     # Track already enqueued artists to avoid duplicates
     already_enqueued_artists = set()
-    operation_counts = {}
+    operation_counts: dict[str, int] = {}
 
     for artist in artists:
         # Use database ID for internal operations

@@ -86,7 +86,7 @@ class TaskManagementService:
             queryset = TaskHistory.objects.filter(
                 type__iexact=task_name.replace("_", ""), status="RUNNING"
             )
-            running_tasks: list = await sync_to_async(list)(queryset)
+            running_tasks: list = await sync_to_async(lambda: list(queryset))()
 
             cancelled_count = 0
             for task_history in running_tasks:
@@ -120,7 +120,7 @@ class TaskManagementService:
             from library_manager.models import TaskHistory
 
             queryset = TaskHistory.objects.filter(status="RUNNING")
-            running_tasks: list = await sync_to_async(list)(queryset)
+            running_tasks: list = await sync_to_async(lambda: list(queryset))()
             cancelled_running_count = 0
 
             for task_history in running_tasks:
@@ -200,7 +200,7 @@ class TaskManagementService:
             queryset = TaskResult.objects.filter(
                 status__in=["PENDING", "STARTED", "RETRY"]
             ).values("task_name")
-            task_results: list = await sync_to_async(list)(queryset)
+            task_results: list = await sync_to_async(lambda: list(queryset))()
 
             task_counts = {}
             for task in task_results:
@@ -238,11 +238,13 @@ class TaskManagementService:
 
                 for worker, tasks in pending_tasks.items():
                     for task in tasks:
-                        if task.get("id") == task_id:
+                        # task is a dict from Celery's pending task list
+                        task_dict: dict = task
+                        if task_dict.get("id") == task_id:
                             return {
                                 "task_id": task_id,
                                 "status": "PENDING",
-                                "type": task.get("name", "UNKNOWN"),
+                                "type": task_dict.get("name", "UNKNOWN"),
                                 "started_at": None,
                                 "completed_at": None,
                                 "error_message": None,

@@ -40,8 +40,9 @@ ALBUM_GROUPS_TO_IGNORE = _get_setting_list("ALBUM_GROUPS_TO_IGNORE", ["appears_o
 class FilePath(models.Model):
     """Deduplicated file paths to save storage space."""
 
-    path = models.TextField(unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    id: models.BigAutoField = models.BigAutoField(primary_key=True)
+    path: models.TextField = models.TextField(unique=True)
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
@@ -51,15 +52,16 @@ class FilePath(models.Model):
         ]
 
     def __str__(self) -> str:
-        return self.path
+        return str(self.path)
 
 
 class Artist(models.Model):
-    name = models.CharField(max_length=200)
-    gid = models.CharField(max_length=120, unique=True)
-    tracked = models.BooleanField(default=False)
-    added_at = models.DateTimeField(auto_now_add=True)
-    last_synced_at = models.DateTimeField(default=None, null=True)
+    id: models.BigAutoField = models.BigAutoField(primary_key=True)
+    name: models.CharField = models.CharField(max_length=200)
+    gid: models.CharField = models.CharField(max_length=120, unique=True)
+    tracked: models.BooleanField = models.BooleanField(default=False)
+    added_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    last_synced_at: models.DateTimeField = models.DateTimeField(default=None, null=True)
 
     @property
     def number_songs(self) -> int:
@@ -107,22 +109,30 @@ class Artist(models.Model):
 
 
 class Song(models.Model):
-    name = models.CharField(max_length=200)
-    gid = models.CharField(max_length=120, unique=True)
-    primary_artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    failed_count = models.IntegerField(default=0)
-    bitrate = models.IntegerField(default=0)
-    unavailable = models.BooleanField(default=False)
-    file_path_ref = models.ForeignKey(
+    id: models.BigAutoField = models.BigAutoField(primary_key=True)
+    name: models.CharField = models.CharField(max_length=200)
+    gid: models.CharField = models.CharField(max_length=120, unique=True)
+    primary_artist: models.ForeignKey = models.ForeignKey(
+        Artist, on_delete=models.CASCADE
+    )
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    failed_count: models.IntegerField = models.IntegerField(default=0)
+    bitrate: models.IntegerField = models.IntegerField(default=0)
+    unavailable: models.BooleanField = models.BooleanField(default=False)
+    file_path_ref: models.ForeignKey = models.ForeignKey(
         FilePath, on_delete=models.SET_NULL, null=True, blank=True, related_name="songs"
     )
-    downloaded = models.BooleanField(default=False)
+    downloaded: models.BooleanField = models.BooleanField(default=False)
 
     @property
     def file_path(self) -> str | None:
         """Get the file path string for backward compatibility."""
         return self.file_path_ref.path if self.file_path_ref else None
+
+    @file_path.setter
+    def file_path(self, path: str | None) -> None:
+        """Set the file path using the existing method."""
+        self.set_file_path(path)
 
     def set_file_path(self, path: str | None) -> None:
         """Set the file path, creating/reusing FilePath object."""
@@ -164,8 +174,8 @@ class Song(models.Model):
 
 
 class ContributingArtist(models.Model):
-    song = models.ForeignKey(Song, on_delete=models.CASCADE)
-    artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
+    song: models.ForeignKey = models.ForeignKey(Song, on_delete=models.CASCADE)
+    artist: models.ForeignKey = models.ForeignKey(Artist, on_delete=models.CASCADE)
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
@@ -180,10 +190,10 @@ class ContributingArtist(models.Model):
 
 
 class DownloadHistory(models.Model):
-    url = models.CharField(max_length=2048)
-    added_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(default=None, null=True)
-    progress = models.SmallIntegerField(
+    url: models.CharField = models.CharField(max_length=2048)
+    added_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    completed_at: models.DateTimeField = models.DateTimeField(default=None, null=True)
+    progress: models.SmallIntegerField = models.SmallIntegerField(
         default=0,
         validators=[
             django.core.validators.MinValueValidator(1),
@@ -221,19 +231,25 @@ class TaskHistory(models.Model):
         ("FAILED", "Failed"),
     ]
 
-    task_id = models.CharField(max_length=255, unique=True)
-    type = models.CharField(max_length=20, choices=TASK_TYPES)
-    entity_id = models.CharField(max_length=255)
-    entity_type = models.CharField(max_length=20, choices=ENTITY_TYPES)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
-    started_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    error_message = models.TextField(null=True, blank=True)
-    duration_seconds = models.IntegerField(null=True, blank=True)
-    progress_percentage = models.FloatField(default=0.0)
-    log_messages = models.JSONField(default=list, blank=True)
-    last_heartbeat = models.DateTimeField(auto_now_add=True)
-    timeout_minutes = models.IntegerField(default=30)  # Default 30 minute timeout
+    task_id: models.CharField = models.CharField(max_length=255, unique=True)
+    type: models.CharField = models.CharField(max_length=20, choices=TASK_TYPES)
+    entity_id: models.CharField = models.CharField(max_length=255)
+    entity_type: models.CharField = models.CharField(
+        max_length=20, choices=ENTITY_TYPES
+    )
+    status: models.CharField = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="PENDING"
+    )
+    started_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    completed_at: models.DateTimeField = models.DateTimeField(null=True, blank=True)
+    error_message: models.TextField = models.TextField(null=True, blank=True)
+    duration_seconds: models.IntegerField = models.IntegerField(null=True, blank=True)
+    progress_percentage: models.FloatField = models.FloatField(default=0.0)
+    log_messages: models.JSONField = models.JSONField(default=list, blank=True)
+    last_heartbeat: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    timeout_minutes: models.IntegerField = models.IntegerField(
+        default=30
+    )  # Default 30 minute timeout
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"
@@ -342,7 +358,9 @@ class TaskHistory(models.Model):
             last_log = max(self.log_messages, key=lambda x: x.get("timestamp", ""))
             if last_log.get("timestamp"):
                 try:
-                    last_log_dt = timezone.datetime.fromisoformat(
+                    from datetime import datetime
+
+                    last_log_dt = datetime.fromisoformat(
                         last_log["timestamp"].replace("Z", "+00:00")
                     )
                     # If no progress for 5 minutes, likely stuck
@@ -419,18 +437,18 @@ class TaskHistory(models.Model):
 
 
 class Album(models.Model):
-    spotify_gid = models.CharField(max_length=2048, unique=True)
-    artist = models.ForeignKey(
+    spotify_gid: models.CharField = models.CharField(max_length=2048, unique=True)
+    artist: models.ForeignKey = models.ForeignKey(
         Artist, on_delete=models.CASCADE, to_field="gid", db_column="artist_gid"
     )
-    spotify_uri = models.CharField(max_length=2048)
-    downloaded = models.BooleanField(default=False)
-    total_tracks = models.IntegerField(default=0)
-    wanted = models.BooleanField(default=True)
-    name = models.CharField(max_length=2048)
-    failed_count = models.IntegerField(default=0)
-    album_type = models.CharField(max_length=100, null=True)
-    album_group = models.CharField(max_length=100, null=True)
+    spotify_uri: models.CharField = models.CharField(max_length=2048)
+    downloaded: models.BooleanField = models.BooleanField(default=False)
+    total_tracks: models.IntegerField = models.IntegerField(default=0)
+    wanted: models.BooleanField = models.BooleanField(default=True)
+    name: models.CharField = models.CharField(max_length=2048)
+    failed_count: models.IntegerField = models.IntegerField(default=0)
+    album_type: models.CharField = models.CharField(max_length=100, null=True)
+    album_group: models.CharField = models.CharField(max_length=100, null=True)
 
     @property
     def desired_album_type(self) -> bool:
@@ -450,11 +468,11 @@ class Album(models.Model):
 
 
 class TrackedPlaylist(models.Model):
-    name = models.CharField(max_length=2048)
-    url = models.CharField(max_length=2048, unique=True)
-    enabled = models.BooleanField(default=True)
-    auto_track_artists = models.BooleanField(default=False)
-    last_synced_at = models.DateTimeField(default=None, null=True)
+    name: models.CharField = models.CharField(max_length=2048)
+    url: models.CharField = models.CharField(max_length=2048, unique=True)
+    enabled: models.BooleanField = models.BooleanField(default=True)
+    auto_track_artists: models.BooleanField = models.BooleanField(default=False)
+    last_synced_at: models.DateTimeField = models.DateTimeField(default=None, null=True)
 
     def __str__(self) -> str:
         return f"name: {self.name} | url: {self.url} | enabled: {self.enabled}"

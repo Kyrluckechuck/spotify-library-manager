@@ -5,11 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 from asgiref.sync import sync_to_async
-from tests.factories import (
-    CompletedTaskFactory,
-    FailedTaskFactory,
-    TaskHistoryFactory,
-)
+from tests.factories import CompletedTaskFactory, FailedTaskFactory, TaskHistoryFactory
 
 from src.graphql_types.models import EntityType, TaskStatus, TaskType
 from src.services.task_history import TaskHistoryService

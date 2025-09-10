@@ -5,11 +5,11 @@ import sys
 from importlib.metadata import distributions
 
 
-def get_installed_packages():
+def get_installed_packages() -> dict[str, str]:
     return {dist.metadata["Name"].lower(): dist.version for dist in distributions()}
 
 
-def main():
+def main() -> None:
     # Packages to uninstall (add any that might conflict)
     packages_to_uninstall = [
         "django",

@@ -91,7 +91,7 @@ class CeleryTaskManagementService:
             from library_manager.models import TaskHistory
 
             # Find running tasks with the specified name
-            running_tasks = await sync_to_async(list)(
+            running_tasks: list = await sync_to_async(list)(
                 TaskHistory.objects.filter(
                     type__iexact=task_name.replace("_", ""), status="RUNNING"
                 )
@@ -200,7 +200,9 @@ class CeleryTaskManagementService:
             from library_manager.models import TaskHistory
 
             # Use sync_to_async for Django ORM operations
-            tasks = await sync_to_async(list)(TaskHistory.objects.values("type"))
+            tasks: list = await sync_to_async(
+                lambda: list(TaskHistory.objects.values("type"))
+            )()
 
             task_counts = {}
             for task in tasks:
@@ -238,11 +240,13 @@ class CeleryTaskManagementService:
 
                 for worker, tasks in active_tasks.items():
                     for task in tasks:
-                        if task.get("id") == task_id:
+                        # task is a dict from Celery's active task list
+                        task_dict: dict = task
+                        if task_dict.get("id") == task_id:
                             return {
                                 "task_id": task_id,
                                 "status": "ACTIVE",
-                                "type": task.get("name", "UNKNOWN"),
+                                "type": task_dict.get("name", "UNKNOWN"),
                                 "worker": worker,
                                 "started_at": None,
                                 "completed_at": None,
