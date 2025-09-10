@@ -175,7 +175,8 @@ jobs:
           echo "Using backend image: $BACKEND_IMAGE"
           echo "Using frontend image: $FRONTEND_IMAGE"
           docker compose up --build -d
-          sleep 10
+          echo "Waiting for containers to initialize (health check start period is 30s)..."
+          sleep 35
 
       - name: Debug container startup
         if: failure()
@@ -186,15 +187,30 @@ jobs:
 
       - name: Wait for API health
         run: |
-          for i in {1..30}; do
-            if curl -s http://localhost:5000/healthz > /dev/null 2>&1; then
-              echo "API healthy after $i attempts"
-              exit 0
+          echo "Waiting for Docker health checks to complete..."
+          for i in {1..20}; do
+            if docker compose ps --format json | jq -r '.[] | select(.Name | contains("web")) | .Status' | grep -q "healthy"; then
+              echo "Web container healthy after $i attempts"
+              break
             fi
+            echo "Attempt $i/20: Web container not healthy yet..."
             sleep 3
           done
-          echo "API failed to become healthy"
+          
+          echo "Final container status:"
           docker compose ps
+          
+          echo "Testing API endpoint directly..."
+          for i in {1..10}; do
+            if curl -s http://localhost:5000/healthz > /dev/null 2>&1; then
+              echo "API endpoint responding after $i attempts"
+              exit 0
+            fi
+            echo "Attempt $i/10: API endpoint not responding..."
+            sleep 2
+          done
+          
+          echo "API health check failed - showing logs:"
           docker compose logs web
           exit 1
 
