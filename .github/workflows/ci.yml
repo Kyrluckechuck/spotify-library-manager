@@ -175,6 +175,9 @@ jobs:
           
           echo "🔨 Building frontend image locally..."
           docker build -t local-frontend:latest ./frontend
+          
+          echo "🏷️ Images built successfully:"
+          docker images | grep -E "(local-backend|local-frontend)"
 
       - name: Build and start stack
         env:
@@ -199,8 +202,16 @@ jobs:
           ls -la "$SLM_CONFIG_DIR"
           cat "$SLM_CONFIG_DIR/settings.yaml"
           
+          echo "=== Docker Compose configuration check ==="
+          echo "Backend image: $BACKEND_IMAGE"  
+          echo "Frontend image: $FRONTEND_IMAGE"
+          docker compose config | grep -A2 -B2 image:
+          
+          echo "=== Available local images ==="
+          docker images | grep -E "(local-backend|local-frontend)"
+          
           echo "=== Starting containers ==="
-          docker compose up -d --no-build
+          docker compose up -d
           
           echo "=== Container status immediately after start ==="
           docker compose ps
