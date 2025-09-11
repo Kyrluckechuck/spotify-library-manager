@@ -365,13 +365,35 @@ class Command(BaseCommand):
         return rows_inserted
 
     def _migrate_contributing_artists(self, sqlite_conn):
-        """Migrate contributing artists with original IDs preserved."""
+        """Migrate contributing artists with original IDs preserved, skipping orphaned records."""
         cursor = sqlite_conn.cursor()
-        cursor.execute("SELECT * FROM library_manager_contributingartist")
+        # Only select contributing artists where both song and artist exist
+        cursor.execute(
+            """
+            SELECT ca.* FROM library_manager_contributingartist ca
+            INNER JOIN library_manager_song s ON ca.song_id = s.id
+            INNER JOIN library_manager_artist a ON ca.artist_id = a.id
+        """
+        )
         rows = cursor.fetchall()
 
         if not rows:
             return 0
+
+        # Count orphaned records for reporting
+        cursor.execute(
+            """
+            SELECT COUNT(*) FROM library_manager_contributingartist ca
+            LEFT JOIN library_manager_song s ON ca.song_id = s.id
+            WHERE s.id IS NULL
+        """
+        )
+        orphaned_count = cursor.fetchone()[0]
+
+        if orphaned_count > 0:
+            self.stdout.write(
+                f"    📝 Skipping {orphaned_count} orphaned contributing artist records"
+            )
 
         rows_inserted = 0
         with connection.cursor() as pg_cursor:

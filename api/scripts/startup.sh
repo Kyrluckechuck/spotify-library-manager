@@ -44,7 +44,7 @@ done
 
 # Run migration with generous timeout for large production databases
 # SQLite migrations can take a very long time with large datasets (30+ minutes for 100k+ records)
-MIGRATION_TIMEOUT=${MIGRATION_TIMEOUT:-1800}  # Default 30 minutes, configurable via env var
+MIGRATION_TIMEOUT=${MIGRATION_TIMEOUT:-7200}  # Default 2 hours, configurable via env var
 echo "🔄 Starting SQLite migration with ${MIGRATION_TIMEOUT}s timeout..."
 
 if run_with_timeout "$MIGRATION_TIMEOUT" "python manage.py migrate_from_sqlite --verbosity=2"; then
