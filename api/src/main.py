@@ -97,13 +97,6 @@ def create_app() -> FastAPI:
     if static_root and Path(static_root).exists():
         app.mount("/static", StaticFiles(directory=str(static_root)), name="static")
 
-    # Serve built frontend
-    frontend_dir = API_DIR / "frontend-dist"
-    if frontend_dir.exists():
-        app.mount(
-            "/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend"
-        )
-
     # Run configuration validation after app is fully constructed
     # (function defined below)
     _validate_runtime_configuration()
@@ -144,16 +137,22 @@ def create_app() -> FastAPI:
     async def test_endpoint():
         return {"message": "test endpoint working"}
 
+    # Serve built frontend - AFTER all API routes are defined to avoid conflicts
+    frontend_dir = API_DIR / "frontend-dist"
+    if frontend_dir.exists():
+        app.mount(
+            "/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend"
+        )
+
+    # SPA fallback route - now only needed if frontend assets aren't available
     @app.get("/{full_path:path}", response_model=None)
     async def spa_fallback(
         full_path: str,
     ) -> PlainTextResponse | FileResponse:
+        # This should only be reached if frontend-dist doesn't exist
         # Let GraphQL routes be handled by their router; return 404 on GET if it falls through
         if full_path.startswith("graphql"):
             return PlainTextResponse("Not Found", status_code=404)
-        # Serve index.html for SPA routes only when frontend assets are present
-        if frontend_dir.exists():
-            return FileResponse(frontend_dir / "index.html")
         # In local dev (make dev), frontend runs on Vite dev server; do not error here
         return PlainTextResponse("Not Found", status_code=404)
 
