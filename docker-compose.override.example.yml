@@ -22,8 +22,9 @@ services:
       echo 'Working directory:' $(pwd);
       echo 'Available disk space:' $(df -h . | tail -1);
       echo '🗄️ Running migrations...';
-      timeout 60 python manage.py migrate_from_sqlite --verbosity=2 || {
-        echo '⚠️ SQLite migration timed out or failed. Running basic migrations...';
+      timeout \${MIGRATION_TIMEOUT:-1800} python manage.py migrate_from_sqlite --verbosity=2 || {
+        echo '⚠️ SQLite migration timed out after \${MIGRATION_TIMEOUT:-1800}s or failed. Running basic migrations...';
+        echo '⚠️ For large databases, set MIGRATION_TIMEOUT environment variable to a higher value';
         python manage.py migrate --verbosity=2;
       } &&
       echo '✅ Migrations complete. Starting development server...';

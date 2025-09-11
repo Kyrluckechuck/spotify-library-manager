@@ -42,12 +42,18 @@ except Exception as e:
     sleep 2
 done
 
-# Run migration with a timeout to prevent hanging
-if run_with_timeout 60 "python manage.py migrate_from_sqlite --verbosity=2"; then
-    echo "✅ Migrations complete."
+# Run migration with generous timeout for large production databases
+# SQLite migrations can take a very long time with large datasets (30+ minutes for 100k+ records)
+MIGRATION_TIMEOUT=${MIGRATION_TIMEOUT:-1800}  # Default 30 minutes, configurable via env var
+echo "🔄 Starting SQLite migration with ${MIGRATION_TIMEOUT}s timeout..."
+
+if run_with_timeout "$MIGRATION_TIMEOUT" "python manage.py migrate_from_sqlite --verbosity=2"; then
+    echo "✅ SQLite migration complete."
 else
-    echo "⚠️ SQLite migration timed out or failed. Running basic Django migrations instead..."
-    if run_with_timeout 60 "python manage.py migrate --verbosity=2"; then
+    echo "⚠️ SQLite migration timed out after ${MIGRATION_TIMEOUT}s or failed."
+    echo "⚠️ For very large databases, consider increasing MIGRATION_TIMEOUT environment variable."
+    echo "⚠️ Running basic Django migrations instead..."
+    if run_with_timeout 300 "python manage.py migrate --verbosity=2"; then
         echo "✅ Basic Django migrations complete."
     else
         echo "❌ All migration attempts failed!"
