@@ -198,18 +198,6 @@ jobs:
           echo "Config dir: $SLM_CONFIG_DIR"
           echo "Music dir: $MUSIC_DIR"
           
-          echo "=== Environment check ==="
-          ls -la "$SLM_CONFIG_DIR"
-          cat "$SLM_CONFIG_DIR/settings.yaml"
-          
-          echo "=== Docker Compose configuration check ==="
-          echo "Backend image: $BACKEND_IMAGE"  
-          echo "Frontend image: $FRONTEND_IMAGE"
-          docker compose config | grep -A2 -B2 image:
-          
-          echo "=== Available local images ==="
-          docker images | grep -E "(local-backend|local-frontend)"
-          
           echo "=== Starting PostgreSQL first ==="
           docker compose up -d postgres
           echo "⏰ Waiting for PostgreSQL to be healthy..."
@@ -223,60 +211,24 @@ jobs:
             sleep 2
           done
           
-          echo "=== Starting web container individually ==="
+          echo "=== Starting web container ==="
           docker compose up -d web --no-deps
-          echo "📊 Web container started, monitoring startup..."
           
-          echo "=== Container status immediately after start ==="
-          docker compose ps
-          
-          # Monitor startup more aggressively
-          echo "=== Monitoring web container startup ==="
-          echo "=== Initial web container logs ==="
-          docker compose logs web 2>/dev/null || echo "No logs yet"
-          
-          for i in {1..60}; do
-            echo "--- Check $i/60 (${i}s) ---"
-            
-            # Always show recent logs on each check
-            echo "=== Recent web logs ==="
-            docker compose logs --tail=10 web 2>/dev/null || echo "No recent logs"
-            
-            # Get container status and logs regardless of docker compose ps exit code
-            if docker compose ps web 2>/dev/null; then
-              container_status=$(docker compose ps web --format="table {{.Status}}" 2>/dev/null | tail -n +2)
-              echo "Container status: $container_status"
-              
-              if echo "$container_status" | grep -q "healthy"; then
-                echo "✅ Web container is healthy!"
-                echo "=== Web container logs (success case) ==="
-                docker compose logs web 2>/dev/null
-                exit 0
-              elif echo "$container_status" | grep -q "unhealthy"; then
-                echo "❌ Web container became unhealthy at ${i}s"
-                echo "=== Web container logs (failure case) ==="
-                docker compose logs web 2>/dev/null
-                echo "=== PostgreSQL logs ==="
-                docker compose logs postgres 2>/dev/null
-                exit 1
-              elif echo "$container_status" | grep -q -E "(starting|running)"; then
-                echo "⏳ Web container still starting..."
-              else
-                echo "🔍 Web container status: $container_status"
-              fi
-            else
-              echo "❌ Unable to get container status"
+          echo "⏰ Waiting for web container to become healthy..."
+          for i in {1..30}; do
+            if docker compose ps web --format json | jq -r '.Status' | grep -q "healthy"; then
+              echo "✅ Web container is healthy after ${i} attempts"
               break
             fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Web container failed to become healthy after 30 attempts"
+              echo "=== Container logs ==="
+              docker compose logs web
+              exit 1
+            fi
+            echo "⏳ Web container not ready yet (attempt $i/30)..."
             sleep 2
           done
-          
-          echo "❌ Timeout waiting for web container to become healthy"
-          echo "=== Final container status ==="
-          docker compose ps 2>/dev/null || true
-          echo "=== Final logs ==="
-          docker compose logs 2>/dev/null || true
-          exit 1
 
       - name: Debug container startup
         if: failure()
@@ -290,34 +242,15 @@ jobs:
           echo "=== All Container Logs ==="
           docker compose logs
 
-      - name: Wait for API health
+      - name: Test API health endpoint
         run: |
-          echo "Waiting for Docker health checks to complete..."
-          for i in {1..20}; do
-            if docker compose ps --format json | jq -r '.[] | select(.Name | contains("web")) | .Status' | grep -q "healthy"; then
-              echo "Web container healthy after $i attempts"
-              break
-            fi
-            echo "Attempt $i/20: Web container not healthy yet..."
-            sleep 3
-          done
-          
-          echo "Final container status:"
-          docker compose ps
-          
-          echo "Testing API endpoint directly..."
-          for i in {1..10}; do
-            if curl -s http://localhost:5000/healthz > /dev/null 2>&1; then
-              echo "API endpoint responding after $i attempts"
-              exit 0
-            fi
-            echo "Attempt $i/10: API endpoint not responding..."
-            sleep 2
-          done
-          
-          echo "API health check failed - showing logs:"
-          docker compose logs web
-          exit 1
+          echo "Testing API health endpoint..."
+          if curl -f http://localhost:5000/healthz; then
+            echo "✅ API health endpoint is responding"
+          else
+            echo "❌ API health endpoint failed"
+            exit 1
+          fi
 
       - name: Set up Node 20 for GraphQL validation
         uses: actions/setup-node@v5

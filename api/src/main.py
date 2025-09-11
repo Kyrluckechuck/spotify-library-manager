@@ -121,20 +121,9 @@ def create_app() -> FastAPI:
         db_ok = await check_db()
         return {"status": "ok", "db": db_ok}
 
-    # Debug: Print registered routes
-    print("🔍 FastAPI routes registered:")
-    for route in app.routes:
-        print(f"  - {route}")
-
-    print("🔍 Looking for /healthz route...")
-    healthz_routes = [
-        r for r in app.routes if hasattr(r, "path") and "/healthz" in r.path
-    ]
-    print(f"  - Found {len(healthz_routes)} healthz routes: {healthz_routes}")
-
     # Add a simple test route
     @app.get("/test")
-    async def test_endpoint():
+    async def test_endpoint() -> dict[str, str]:
         return {"message": "test endpoint working"}
 
     # Serve built frontend - AFTER all API routes are defined to avoid conflicts
