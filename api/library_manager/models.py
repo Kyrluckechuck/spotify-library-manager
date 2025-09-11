@@ -57,7 +57,7 @@ class FilePath(models.Model):
 
 class Artist(models.Model):
     id: models.BigAutoField = models.BigAutoField(primary_key=True)
-    name: models.CharField = models.CharField(max_length=200)
+    name: models.CharField = models.CharField(max_length=500)
     gid: models.CharField = models.CharField(max_length=120, unique=True)
     tracked: models.BooleanField = models.BooleanField(default=False)
     added_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
@@ -110,7 +110,7 @@ class Artist(models.Model):
 
 class Song(models.Model):
     id: models.BigAutoField = models.BigAutoField(primary_key=True)
-    name: models.CharField = models.CharField(max_length=200)
+    name: models.CharField = models.CharField(max_length=500)
     gid: models.CharField = models.CharField(max_length=120, unique=True)
     primary_artist: models.ForeignKey = models.ForeignKey(
         Artist, on_delete=models.CASCADE

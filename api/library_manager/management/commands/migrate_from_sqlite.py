@@ -66,6 +66,23 @@ class Command(BaseCommand):
             migrated_tables = 0
             total_rows = 0
 
+            # Pre-migration validation to catch potential issues
+            self.stdout.write("🔍 Running pre-migration validation...")
+            validation_errors = self._validate_sqlite_data(sqlite_conn)
+            if validation_errors:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Found {len(validation_errors)} potential issues:"
+                    )
+                )
+                for error in validation_errors[:10]:  # Show first 10 issues
+                    self.stdout.write(f"  ⚠️ {error}")
+                if len(validation_errors) > 10:
+                    self.stdout.write(
+                        f"  ... and {len(validation_errors) - 10} more issues"
+                    )
+                self.stdout.write("Attempting to proceed with data cleaning...")
+
             # Use a transaction to ensure all-or-nothing migration for the main data
             with transaction.atomic():
                 # Check what needs to be migrated and migrate accordingly
@@ -206,8 +223,10 @@ class Command(BaseCommand):
                         insert_sql,
                         (
                             row["id"],  # Preserve original ID
-                            row["name"],
-                            row["gid"],
+                            self._clean_text_field(
+                                row["name"], 500, f"Artist name '{row['gid']}'"
+                            ),
+                            self._clean_text_field(row["gid"], 120, "Artist GID"),
                             (
                                 bool(row["tracked"])
                                 if row["tracked"] is not None
@@ -316,8 +335,10 @@ class Command(BaseCommand):
                         insert_sql,
                         (
                             row["id"],  # Preserve original ID
-                            row["name"],
-                            row["gid"],
+                            self._clean_text_field(
+                                row["name"], 500, f"Song name '{row['gid']}'"
+                            ),
+                            self._clean_text_field(row["gid"], 120, "Song GID"),
                             row["primary_artist_id"],  # Use original ID
                             row["created_at"],
                             row["failed_count"] or 0,
@@ -463,3 +484,80 @@ class Command(BaseCommand):
 
         except Exception as e:
             self.stdout.write(f"    Warning: Error resetting identity columns: {e}")
+
+    def _validate_sqlite_data(self, sqlite_conn):
+        """Validate SQLite data for potential constraint violations."""
+        errors = []
+        cursor = sqlite_conn.cursor()
+
+        # Check artist name lengths
+        cursor.execute(
+            "SELECT id, name, gid FROM library_manager_artist WHERE LENGTH(name) > 500"
+        )
+        long_artist_names = cursor.fetchall()
+        for row in long_artist_names:
+            errors.append(
+                f"Artist '{row[2]}' name too long: {len(row[1])} chars > 500 limit"
+            )
+
+        # Check artist GID lengths
+        cursor.execute(
+            "SELECT id, name, gid FROM library_manager_artist WHERE LENGTH(gid) > 120"
+        )
+        long_artist_gids = cursor.fetchall()
+        for row in long_artist_gids:
+            errors.append(
+                f"Artist '{row[1]}' GID too long: {len(row[2])} chars > 120 limit"
+            )
+
+        # Check song name lengths
+        cursor.execute(
+            "SELECT id, name, gid FROM library_manager_song WHERE LENGTH(name) > 500"
+        )
+        long_song_names = cursor.fetchall()
+        for row in long_song_names:
+            errors.append(
+                f"Song '{row[2]}' name too long: {len(row[1])} chars > 500 limit"
+            )
+
+        # Check song GID lengths
+        cursor.execute(
+            "SELECT id, name, gid FROM library_manager_song WHERE LENGTH(gid) > 120"
+        )
+        long_song_gids = cursor.fetchall()
+        for row in long_song_gids:
+            errors.append(
+                f"Song '{row[1]}' GID too long: {len(row[2])} chars > 120 limit"
+            )
+
+        # Check for NULL required fields
+        cursor.execute(
+            "SELECT id FROM library_manager_artist WHERE name IS NULL OR gid IS NULL"
+        )
+        null_artists = cursor.fetchall()
+        for row in null_artists:
+            errors.append(f"Artist ID {row[0]} has NULL name or gid")
+
+        cursor.execute(
+            "SELECT id FROM library_manager_song WHERE name IS NULL OR gid IS NULL"
+        )
+        null_songs = cursor.fetchall()
+        for row in null_songs:
+            errors.append(f"Song ID {row[0]} has NULL name or gid")
+
+        return errors
+
+    def _clean_text_field(self, value, max_length, field_name="field"):
+        """Clean and truncate text fields with logging."""
+        if value is None:
+            return None
+
+        original_length = len(value)
+        if original_length > max_length:
+            truncated = value[:max_length].strip()
+            self.stdout.write(
+                f"    📝 Truncated {field_name}: {original_length} → {len(truncated)} chars"
+            )
+            return truncated
+
+        return value
