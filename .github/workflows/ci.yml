@@ -210,35 +210,73 @@ jobs:
           echo "=== Available local images ==="
           docker images | grep -E "(local-backend|local-frontend)"
           
-          echo "=== Starting containers ==="
-          docker compose up -d
+          echo "=== Starting PostgreSQL first ==="
+          docker compose up -d postgres
+          echo "⏰ Waiting for PostgreSQL to be healthy..."
+          
+          for i in {1..30}; do
+            if docker compose ps postgres | grep -q "healthy"; then
+              echo "✅ PostgreSQL is healthy after ${i} attempts"
+              break
+            fi
+            echo "⏳ PostgreSQL not ready yet (attempt $i/30)..."
+            sleep 2
+          done
+          
+          echo "=== Starting web container individually ==="
+          docker compose up -d web --no-deps
+          echo "📊 Web container started, monitoring startup..."
           
           echo "=== Container status immediately after start ==="
           docker compose ps
           
           # Monitor startup more aggressively
           echo "=== Monitoring web container startup ==="
+          echo "=== Initial web container logs ==="
+          docker compose logs web 2>/dev/null || echo "No logs yet"
+          
           for i in {1..60}; do
             echo "--- Check $i/60 (${i}s) ---"
-            docker compose ps web
-            if docker compose ps web | grep -q "healthy"; then
-              echo "✅ Web container is healthy!"
-              echo "=== Web container logs (success case) ==="
-              docker compose logs web | tail -50
-              break
-            elif docker compose ps web | grep -q "unhealthy"; then
-              echo "❌ Web container became unhealthy at ${i}s"
-              echo "=== Web container logs (failure case) ==="
-              docker compose logs web
-              break
-            elif docker compose ps web | grep -q "starting"; then
-              echo "⏳ Web container still starting..."
+            
+            # Always show recent logs on each check
+            echo "=== Recent web logs ==="
+            docker compose logs --tail=10 web 2>/dev/null || echo "No recent logs"
+            
+            # Get container status and logs regardless of docker compose ps exit code
+            if docker compose ps web 2>/dev/null; then
+              container_status=$(docker compose ps web --format="table {{.Status}}" 2>/dev/null | tail -n +2)
+              echo "Container status: $container_status"
+              
+              if echo "$container_status" | grep -q "healthy"; then
+                echo "✅ Web container is healthy!"
+                echo "=== Web container logs (success case) ==="
+                docker compose logs web 2>/dev/null
+                exit 0
+              elif echo "$container_status" | grep -q "unhealthy"; then
+                echo "❌ Web container became unhealthy at ${i}s"
+                echo "=== Web container logs (failure case) ==="
+                docker compose logs web 2>/dev/null
+                echo "=== PostgreSQL logs ==="
+                docker compose logs postgres 2>/dev/null
+                exit 1
+              elif echo "$container_status" | grep -q -E "(starting|running)"; then
+                echo "⏳ Web container still starting..."
+              else
+                echo "🔍 Web container status: $container_status"
+              fi
             else
-              echo "🔍 Web container status unknown, showing logs..."
-              docker compose logs web
+              echo "❌ Unable to get container status"
+              break
             fi
-            sleep 1
+            sleep 2
           done
+          
+          echo "❌ Timeout waiting for web container to become healthy"
+          echo "=== Final container status ==="
+          docker compose ps 2>/dev/null || true
+          echo "=== Final logs ==="
+          docker compose logs 2>/dev/null || true
+          exit 1
 
       - name: Debug container startup
         if: failure()
