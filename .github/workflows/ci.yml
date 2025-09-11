@@ -195,20 +195,39 @@ jobs:
           echo "Config dir: $SLM_CONFIG_DIR"
           echo "Music dir: $MUSIC_DIR"
           
+          echo "=== Environment check ==="
+          ls -la "$SLM_CONFIG_DIR"
+          cat "$SLM_CONFIG_DIR/settings.yaml"
+          
           echo "=== Starting containers ==="
-          docker compose up --build -d
+          docker compose up -d --no-build
           
           echo "=== Container status immediately after start ==="
           docker compose ps
           
-          echo "=== Web container logs (first 10 seconds) ==="
-          timeout 10 docker compose logs -f web || echo "10 second log capture complete"
-          
-          echo "=== Waiting for containers to initialize ==="
-          sleep 25
-          
-          echo "=== Container status after wait ==="
-          docker compose ps
+          # Monitor startup more aggressively
+          echo "=== Monitoring web container startup ==="
+          for i in {1..60}; do
+            echo "--- Check $i/60 (${i}s) ---"
+            docker compose ps web
+            if docker compose ps web | grep -q "healthy"; then
+              echo "✅ Web container is healthy!"
+              echo "=== Web container logs (success case) ==="
+              docker compose logs web | tail -50
+              break
+            elif docker compose ps web | grep -q "unhealthy"; then
+              echo "❌ Web container became unhealthy at ${i}s"
+              echo "=== Web container logs (failure case) ==="
+              docker compose logs web
+              break
+            elif docker compose ps web | grep -q "starting"; then
+              echo "⏳ Web container still starting..."
+            else
+              echo "🔍 Web container status unknown, showing logs..."
+              docker compose logs web
+            fi
+            sleep 1
+          done
 
       - name: Debug container startup
         if: failure()
