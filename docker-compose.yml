@@ -5,12 +5,13 @@ networks:
 services:
   postgres:
     image: postgres:15-alpine
+    user: root
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-spotify_library_manager}
       POSTGRES_USER: ${POSTGRES_USER:-slm_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-slm_dev_password}
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - slm_net
     healthcheck:
