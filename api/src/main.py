@@ -14,7 +14,7 @@ from django.db import connections
 from asgiref.sync import sync_to_async
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import PlainTextResponse
 from starlette.staticfiles import StaticFiles
 from strawberry.fastapi import GraphQLRouter
 
@@ -126,29 +126,18 @@ def create_app() -> FastAPI:
     async def test_endpoint() -> dict[str, str]:
         return {"message": "test endpoint working"}
 
-    # Serve built frontend - AFTER all API routes are defined to avoid conflicts
+    # Serve built frontend - only used when no separate nginx frontend service
     frontend_dir = API_DIR / "frontend-dist"
     if frontend_dir.exists():
         app.mount(
             "/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend"
         )
 
-    # SPA fallback route - serve index.html for all non-API routes
+    # Simple fallback for unmounted routes
     @app.get("/{full_path:path}", response_model=None)
-    async def spa_fallback(
+    async def catch_all(
         full_path: str,
-    ) -> PlainTextResponse | FileResponse:
-        # Don't handle GraphQL routes here
-        if full_path.startswith("graphql"):
-            return PlainTextResponse("Not Found", status_code=404)
-
-        # For SPA routes like /tasks, /artists, etc., serve index.html
-        if frontend_dir.exists():
-            index_file = frontend_dir / "index.html"
-            if index_file.exists():
-                return FileResponse(str(index_file))
-
-        # Fallback if no frontend available
+    ) -> PlainTextResponse:
         return PlainTextResponse("Not Found", status_code=404)
 
     return app
