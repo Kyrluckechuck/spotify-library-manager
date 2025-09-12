@@ -5,7 +5,7 @@ networks:
 services:
   postgres:
     image: postgres:15-alpine
-    user: root
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-spotify_library_manager}
       POSTGRES_USER: ${POSTGRES_USER:-slm_user}
@@ -130,4 +130,5 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '${SLM_CONFIG_DIR:-/config}/db'
+      # You will need to ensure this directory exists in order to start the script
+      device: '${SLM_CONFIG_DIR:-/config}/db/data'
