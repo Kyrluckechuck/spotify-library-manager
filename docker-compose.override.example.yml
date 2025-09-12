@@ -87,6 +87,8 @@ services:
       - ./api:/app
 
   postgres:
+    # Override user for development to match host user
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     # Expose PostgreSQL port for development/debugging
     ports:
       - "5432:5432"

@@ -212,8 +212,21 @@ jobs:
               break
             fi
             echo "⏳ PostgreSQL not ready yet (attempt $i/30)..."
+            if [ $i -eq 15 ]; then
+              echo "=== PostgreSQL Debug Info ==="
+              docker compose ps postgres
+              docker compose logs postgres
+            fi
             sleep 2
           done
+          
+          if ! docker compose ps postgres | grep -q "healthy"; then
+            echo "❌ PostgreSQL never became healthy"
+            echo "=== Final PostgreSQL Debug Info ==="
+            docker compose ps postgres
+            docker compose logs postgres
+            exit 1
+          fi
           
           echo "=== Starting web container ==="
           docker compose up -d web
