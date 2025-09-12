@@ -1,4 +1,4 @@
-# Generated manually for table renaming
+# Generated manually for table renaming - using proper Django operations
 
 from django.db import migrations
 
@@ -10,26 +10,32 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            # Forward SQL: rename tables
-            sql="""
-            ALTER TABLE library_manager_artist RENAME TO artists;
-            ALTER TABLE library_manager_song RENAME TO songs;
-            ALTER TABLE library_manager_contributingartist RENAME TO contributing_artists;
-            ALTER TABLE library_manager_downloadhistory RENAME TO download_history;
-            ALTER TABLE library_manager_taskhistory RENAME TO task_history;
-            ALTER TABLE library_manager_album RENAME TO albums;
-            ALTER TABLE library_manager_trackedplaylist RENAME TO playlists;
-            """,
-            # Reverse SQL: rename back
-            reverse_sql="""
-            ALTER TABLE artists RENAME TO library_manager_artist;
-            ALTER TABLE songs RENAME TO library_manager_song;
-            ALTER TABLE contributing_artists RENAME TO library_manager_contributingartist;
-            ALTER TABLE download_history RENAME TO library_manager_downloadhistory;
-            ALTER TABLE task_history RENAME TO library_manager_taskhistory;
-            ALTER TABLE albums RENAME TO library_manager_album;
-            ALTER TABLE playlists RENAME TO library_manager_trackedplaylist;
-            """,
+        migrations.AlterModelTable(
+            name="artist",
+            table="artists",
+        ),
+        migrations.AlterModelTable(
+            name="song",
+            table="songs",
+        ),
+        migrations.AlterModelTable(
+            name="contributingartist",
+            table="contributing_artists",
+        ),
+        migrations.AlterModelTable(
+            name="downloadhistory",
+            table="download_history",
+        ),
+        migrations.AlterModelTable(
+            name="taskhistory",
+            table="task_history",
+        ),
+        migrations.AlterModelTable(
+            name="album",
+            table="albums",
+        ),
+        migrations.AlterModelTable(
+            name="trackedplaylist",
+            table="playlists",
         ),
     ]

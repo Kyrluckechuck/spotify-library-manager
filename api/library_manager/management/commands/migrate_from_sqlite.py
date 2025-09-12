@@ -47,8 +47,43 @@ class Command(BaseCommand):
 
     def _should_migrate_from_sqlite(self):
         """Check if we should migrate from SQLite."""
-        # Always check for migration - we'll handle individual table logic in the migration itself
-        return True
+        sqlite_path = "/config/db/db.sqlite3"
+
+        # Condition 1: SQLite file must exist
+        if not os.path.exists(sqlite_path):
+            return False
+
+        # Condition 2: PostgreSQL tables must be empty
+        try:
+            with connection.cursor() as pg_cursor:
+                # Check if ALL main tables are empty (not just any one)
+                tables_to_check = [
+                    "artists",
+                    "albums",
+                    "songs",
+                    "contributing_artists",
+                    "download_history",
+                    "task_history",
+                    "playlists",
+                ]
+
+                for table in tables_to_check:
+                    try:
+                        pg_cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                        count = pg_cursor.fetchone()[0]
+                        if count > 0:
+                            return (
+                                False  # Found data in PostgreSQL, no migration needed
+                            )
+                    except Exception:
+                        # Table might not exist yet, continue checking
+                        continue
+
+                # Both conditions met: SQLite exists AND PostgreSQL tables are empty
+                return True
+        except Exception:
+            # If we can't check PostgreSQL, don't migrate to be safe
+            return False
 
     def _migrate_from_sqlite(self):  # pylint: disable=too-many-branches
         """Migrate data from SQLite to PostgreSQL."""
@@ -182,8 +217,10 @@ class Command(BaseCommand):
                         self.stdout.write(f"  - Skipped {new_name}: {e}")
 
             # Reset auto-increment sequences to continue from the highest IDs
-            # Do this outside the main transaction to avoid rollback issues
-            self._reset_sequences()
+            # Only do this if we actually migrated data
+            if total_rows > 0:
+                # Do this outside the main transaction to avoid rollback issues
+                self._reset_sequences()
 
             sqlite_conn.close()
 
