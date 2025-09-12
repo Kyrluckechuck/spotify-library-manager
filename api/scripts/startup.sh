@@ -29,12 +29,13 @@ try:
     print('Database connection successful')
     sys.exit(0)
 except Exception as e:
-    print(f'Database not ready (attempt {i}/30): {e}')
+    print(f'Database not ready (attempt $i/30): {e}')
     sys.exit(1)
-"; then
+" 2>/dev/null; then
         echo "✅ Database is ready!"
         break
     fi
+    echo "🔄 Database not ready yet (attempt $i/30)..."
     if [ $i -eq 30 ]; then
         echo "❌ Database failed to become ready after 30 attempts"
         exit 1

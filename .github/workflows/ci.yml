@@ -216,7 +216,7 @@ jobs:
           done
           
           echo "=== Starting web container ==="
-          docker compose up -d web --no-deps
+          docker compose up -d web
           
           echo "⏰ Waiting for web container to become healthy..."
           for i in {1..30}; do
