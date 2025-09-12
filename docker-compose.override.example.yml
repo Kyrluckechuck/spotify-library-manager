@@ -3,8 +3,8 @@
 # Copy this to docker-compose.override.yml to use for development
 #
 # Key Features:
-# - Frontend: Hot reloading Vite dev server (port 3000) with live file sync
-# - Backend: Hot reloading FastAPI server (port 5000) with live file sync  
+# - Full-stack: FastAPI server (port 5000) serves both API and frontend with live reload
+# - Frontend development: Separate Vite dev server for frontend development
 # - Testing: Run 'make test-docker' for complete test suite including frontend
 # - PostgreSQL: Exposed on port 5432 for direct database access
 
