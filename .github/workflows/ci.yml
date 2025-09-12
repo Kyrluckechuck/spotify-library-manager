@@ -198,6 +198,10 @@ jobs:
           echo "Config dir: $SLM_CONFIG_DIR"
           echo "Music dir: $MUSIC_DIR"
           
+          echo "=== Creating required directories ==="
+          mkdir -p "${SLM_CONFIG_DIR}/db/data"
+          echo "✅ Created PostgreSQL data directory"
+          
           echo "=== Starting PostgreSQL first ==="
           docker compose up -d postgres
           echo "⏰ Waiting for PostgreSQL to be healthy..."
