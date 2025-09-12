@@ -133,16 +133,22 @@ def create_app() -> FastAPI:
             "/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend"
         )
 
-    # SPA fallback route - now only needed if frontend assets aren't available
+    # SPA fallback route - serve index.html for all non-API routes
     @app.get("/{full_path:path}", response_model=None)
     async def spa_fallback(
         full_path: str,
     ) -> PlainTextResponse | FileResponse:
-        # This should only be reached if frontend-dist doesn't exist
-        # Let GraphQL routes be handled by their router; return 404 on GET if it falls through
+        # Don't handle GraphQL routes here
         if full_path.startswith("graphql"):
             return PlainTextResponse("Not Found", status_code=404)
-        # In local dev (make dev), frontend runs on Vite dev server; do not error here
+
+        # For SPA routes like /tasks, /artists, etc., serve index.html
+        if frontend_dir.exists():
+            index_file = frontend_dir / "index.html"
+            if index_file.exists():
+                return FileResponse(str(index_file))
+
+        # Fallback if no frontend available
         return PlainTextResponse("Not Found", status_code=404)
 
     return app

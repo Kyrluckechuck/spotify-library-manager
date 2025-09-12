@@ -53,24 +53,6 @@ services:
       - config_storage:/config
       - music_storage:/mnt/music_spotify
 
-  # frontend:
-  #   # Frontend is now served by the web service directly
-  #   # No separate frontend service needed
-  #   image: ${FRONTEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager-frontend:latest}
-  #   depends_on:
-  #     web:
-  #       condition: service_healthy
-  #   networks:
-  #     - slm_net
-  #   ports:
-  #     - "${FRONTEND_PORT:-5000}:80"
-  #   healthcheck:
-  #     test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 10s
-  #   restart: unless-stopped
 
   worker:
     image: ${BACKEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager:latest}
