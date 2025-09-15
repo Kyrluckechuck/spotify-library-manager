@@ -230,7 +230,7 @@ jobs:
           
           echo "=== Starting web container ==="
           docker compose up -d web
-          
+
           echo "⏰ Waiting for web container to become healthy..."
           for i in {1..30}; do
             if docker compose ps web --format json | jq -r '.Status' | grep -q "healthy"; then
@@ -247,6 +247,25 @@ jobs:
             sleep 2
           done
 
+          echo "=== Starting frontend container ==="
+          docker compose up -d frontend
+
+          echo "⏰ Waiting for frontend container to become healthy..."
+          for i in {1..30}; do
+            if docker compose ps frontend --format json | jq -r '.Status' | grep -q "healthy"; then
+              echo "✅ Frontend container is healthy after ${i} attempts"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Frontend container failed to become healthy after 30 attempts"
+              echo "=== Container logs ==="
+              docker compose logs frontend
+              exit 1
+            fi
+            echo "⏳ Frontend container not ready yet (attempt $i/30)..."
+            sleep 2
+          done
+
       - name: Debug container startup
         if: failure()
         run: |
@@ -254,6 +273,8 @@ jobs:
           docker compose ps
           echo "=== Web Container Logs ==="
           docker compose logs web
+          echo "=== Frontend Container Logs ==="
+          docker compose logs frontend
           echo "=== PostgreSQL Container Logs ==="
           docker compose logs postgres
           echo "=== All Container Logs ==="
