@@ -77,14 +77,48 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title=settings.title, version=settings.version, debug=settings.debug)
 
-    # Add CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:3001"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Add CORS middleware - simplified configuration
+    cors_origins = [
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        "http://0.0.0.0:5000",
+        "http://frontend:80",
+    ]
+
+    # Development frontend (hot reload) uses port 3000
+    if settings.debug:
+        cors_origins.extend(
+            [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://0.0.0.0:3000",
+                "http://frontend-dev:3000",
+            ]
+        )
+
+    # Allow custom origins from environment variable
+    custom_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    if custom_origins:
+        cors_origins.extend(custom_origins.split(","))
+
+    # In development, be more permissive for any IP
+    if settings.debug:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_origin_regex=r"http://.*:(3000|5000)",
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     # Local import to ensure Django setup is complete and satisfy flake8 E402
     from .schema import schema  # pylint: disable=import-error,no-name-in-module
