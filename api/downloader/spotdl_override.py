@@ -70,9 +70,16 @@ def download_song(self: "Downloader", song: Song) -> Tuple[Song, Optional[Path]]
     ### Returns
     - tuple with the song and the path to the downloaded file if successful.
     """
+    # Ensure we have a valid event loop in this thread
     try:
-        asyncio.get_event_loop()
+        current_loop = asyncio.get_event_loop()
+        if current_loop.is_closed():
+            raise RuntimeError("Current event loop is closed")
+        # Check if the loop belongs to this thread
+        if current_loop != self.loop:
+            asyncio.set_event_loop(self.loop)
     except RuntimeError:
+        # No event loop exists in this thread, set our loop
         asyncio.set_event_loop(self.loop)
 
     self.progress_handler.set_song_count(1)

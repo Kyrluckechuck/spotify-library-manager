@@ -8,6 +8,7 @@
 # - Fetch music from playlist API to validate if it needs to be downloaded
 from __future__ import annotations, division
 
+import asyncio
 import logging
 import traceback
 from argparse import Namespace
@@ -109,6 +110,19 @@ class SpotdlWrapper:
 
         spotdl_settings = generate_spotdl_settings(config)
 
+        # Create a new event loop for this Celery worker thread
+        try:
+            # Try to get existing event loop
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                raise RuntimeError("Event loop is closed")
+        except RuntimeError:
+            # Create new event loop if none exists or is closed
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Pass the event loop to Spotdl initialization
+        spotdl_settings["loop"] = loop
         self.spotdl = Spotdl(**spotdl_settings)
 
         self.spotipy_client = SpotifyClient()
