@@ -632,6 +632,7 @@ export type CreatePlaylistMutation = {
 export type UpdatePlaylistMutationVariables = Exact<{
   playlistId: Scalars['Int']['input'];
   name: Scalars['String']['input'];
+  url: Scalars['String']['input'];
   autoTrackArtists: Scalars['Boolean']['input'];
 }>;
 
@@ -1657,11 +1658,13 @@ export const UpdatePlaylistDocument = gql`
   mutation UpdatePlaylist(
     $playlistId: Int!
     $name: String!
+    $url: String!
     $autoTrackArtists: Boolean!
   ) {
     updatePlaylist(
       playlistId: $playlistId
       name: $name
+      url: $url
       autoTrackArtists: $autoTrackArtists
     ) {
       success

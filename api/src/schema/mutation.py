@@ -61,11 +61,12 @@ class Mutation:
 
     @strawberry.mutation
     async def update_playlist(
-        self, playlist_id: int, name: str, auto_track_artists: bool
+        self, playlist_id: int, name: str, url: str, auto_track_artists: bool
     ) -> "MutationResult":
         return await services.playlist.update_playlist(
             playlist_id=playlist_id,
             name=name,
+            url=url,
             auto_track_artists=auto_track_artists,
         )
 

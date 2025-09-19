@@ -114,6 +114,7 @@ class PlaylistService(BaseService[Playlist]):
         self,
         playlist_id: int,
         name: str,
+        url: str,
         auto_track_artists: bool,
     ) -> MutationResult:
         try:
@@ -122,6 +123,7 @@ class PlaylistService(BaseService[Playlist]):
             )
 
             django_playlist.name = name
+            django_playlist.url = url
             django_playlist.auto_track_artists = auto_track_artists
 
             await sync_to_async(django_playlist.save)()

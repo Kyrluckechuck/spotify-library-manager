@@ -145,6 +145,40 @@ class TestPlaylistService:
             assert result.url == "https://open.spotify.com/playlist/test123"
             assert result.auto_track_artists is True
 
+    @pytest.mark.asyncio
+    async def test_update_playlist_with_url(self, playlist_service):
+        """Test updating playlist including URL."""
+        # Mock the get operation
+        mock_playlist = Mock()
+        mock_playlist.id = 1
+        mock_playlist.name = "Original Name"
+        mock_playlist.url = "https://open.spotify.com/playlist/original"
+        mock_playlist.auto_track_artists = False
+        mock_playlist.save = Mock()
+
+        with (
+            patch("library_manager.models.TrackedPlaylist.objects.get") as mock_get,
+            patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
+        ):
+
+            # Configure mocks
+            mock_get.return_value = mock_playlist
+            mock_sync_to_async.side_effect = lambda func: AsyncMock(return_value=func())
+
+            result = await playlist_service.update_playlist(
+                playlist_id=1,
+                name="Updated Name",
+                url="https://open.spotify.com/playlist/updated",
+                auto_track_artists=True,
+            )
+
+            # Verify the playlist was updated
+            assert mock_playlist.name == "Updated Name"
+            assert mock_playlist.url == "https://open.spotify.com/playlist/updated"
+            assert mock_playlist.auto_track_artists is True
+            assert result.success is True
+            assert result.message == "Playlist updated successfully"
+
 
 @pytest.mark.django_db
 class TestDownloadHistoryService:

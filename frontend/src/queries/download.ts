@@ -62,11 +62,13 @@ export const UPDATE_PLAYLIST = gql`
   mutation UpdatePlaylist(
     $playlistId: Int!
     $name: String!
+    $url: String!
     $autoTrackArtists: Boolean!
   ) {
     updatePlaylist(
       playlistId: $playlistId
       name: $name
+      url: $url
       autoTrackArtists: $autoTrackArtists
     ) {
       success
