@@ -82,3 +82,9 @@ TEST_RUNNER = "django.test.runner.DiscoverRunner"
 DATABASES["default"]["TEST"]["OPTIONS"] = {
     "autocommit": True,
 }
+
+# Configure database cleanup for parallel testing
+DATABASES["default"]["TEST"][
+    "SERIALIZE"
+] = False  # Disable serialization for parallel tests
+DATABASES["default"]["TEST"]["KEEP_DB"] = False  # Allow database cleanup

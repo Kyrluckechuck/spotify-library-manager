@@ -1,22 +1,46 @@
-"""Integration test configuration and fixtures with proper SQLite isolation."""
+"""Integration test configuration and fixtures with proper PostgreSQL isolation."""
+
+import os
 
 from django.test import override_settings
 
 import pytest
 
 
+def get_test_database_name():
+    """Generate unique test database name for parallel execution."""
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    if worker_id == "master":
+        return "test_spotify_library_manager"
+    else:
+        return f"test_spotify_library_manager_{worker_id}"
+
+
 @pytest.fixture(scope="session")
 def django_db_setup_override():
-    """Override database settings for better test isolation."""
+    """Override database settings for better test isolation with PostgreSQL."""
     with override_settings(
         DATABASES={
             "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": ":memory:",
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": get_test_database_name(),
+                "USER": "slm_user",
+                "PASSWORD": "slm_dev_password",
+                "HOST": "postgres",
+                "PORT": "5432",
                 "OPTIONS": {
-                    "timeout": 120,  # Increased timeout
-                    "check_same_thread": False,
-                    "isolation_level": None,  # Autocommit mode
+                    "connect_timeout": 10,
+                },
+                "TEST": {
+                    "NAME": get_test_database_name(),
+                    "CREATE_DB": True,
+                    "USER": "slm_user",
+                    "PASSWORD": "slm_dev_password",
+                    "HOST": "postgres",
+                    "PORT": "5432",
+                    "OPTIONS": {
+                        "autocommit": True,
+                    },
                 },
             }
         }
