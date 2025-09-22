@@ -124,6 +124,12 @@ test-frontend-docker:
 	@echo "🧪 Running frontend tests in Docker container with volume mounts..."
 	docker compose --profile testing up -d frontend-dev
 	docker compose exec frontend-dev yarn test:run
+
+# Frontend test variant that tears down containers after testing
+test-frontend-docker-clean:
+	@echo "🧪 Running frontend tests in Docker container with volume mounts (will tear down after)..."
+	docker compose --profile testing up -d frontend-dev
+	docker compose exec frontend-dev yarn test:run
 	docker compose --profile testing stop frontend-dev
 	docker compose --profile testing rm -f frontend-dev
 

@@ -20,6 +20,7 @@ class PremiumStatus:
     max_available_bitrate: Optional[int] = None
     last_checked: Optional[float] = None
     error_message: Optional[str] = None
+    details: Optional[str] = None  # Additional details about the detection
 
 
 class PremiumDetector:
@@ -205,6 +206,21 @@ Connection: keep-alive"""
 
         self.logger.info("Detecting YouTube Music premium status...")
 
+        # If no credentials provided, return low confidence free status
+        if (
+            not self.cookies_file
+            and not self.po_token
+            and not self.ytmusic_headers_file
+        ):
+            status = PremiumStatus(
+                is_premium=False,
+                confidence=0.1,
+                detection_method="no_credentials",
+                last_checked=time.time(),
+            )
+            self._last_status = status
+            return status
+
         # Method 1: Try account info detection
         status = self._detect_via_account_info()
         if status.confidence >= 0.8:
@@ -255,6 +271,11 @@ Connection: keep-alive"""
                 confidence=confidence,
                 detection_method="account_info",
                 last_checked=time.time(),
+                details=(
+                    account_info.get("accountName", "Unknown User")
+                    if account_info
+                    else None
+                ),
             )
 
         except Exception as e:
@@ -342,7 +363,7 @@ Connection: keep-alive"""
                     if quality_info:
                         max_bitrate = max(quality_info) if quality_info else 128
                         is_premium = max_bitrate > 128
-                        confidence = 0.7 if max_bitrate > 128 else 0.6
+                        confidence = 0.7 if max_bitrate > 128 else 0.3
 
                         return PremiumStatus(
                             is_premium=is_premium,
@@ -358,7 +379,7 @@ Connection: keep-alive"""
 
             return PremiumStatus(
                 is_premium=False,
-                confidence=0.3,
+                confidence=0.1,
                 detection_method="quality_probe_inconclusive",
                 last_checked=time.time(),
             )

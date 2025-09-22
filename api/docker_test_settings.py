@@ -30,6 +30,11 @@ DATABASES = {
         },
         "TEST": {
             "NAME": get_test_database_name(),
+            "CREATE_DB": True,
+            "USER": "slm_user",
+            "PASSWORD": "slm_dev_password",
+            "HOST": "postgres",
+            "PORT": "5432",
         },
     }
 }
@@ -68,4 +73,12 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.dummy.DummyCache",
     }
+}
+
+# Better test database configuration
+TEST_RUNNER = "django.test.runner.DiscoverRunner"
+
+# Ensure proper database cleanup
+DATABASES["default"]["TEST"]["OPTIONS"] = {
+    "autocommit": True,
 }
