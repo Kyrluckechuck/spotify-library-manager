@@ -232,6 +232,7 @@ jobs:
             --cache-from type=gha,scope=backend-base \
             --cache-from type=gha,scope=backend-app \
             --cache-to type=gha,scope=backend-app,mode=max \
+            --load \
             .
           
           echo "🔨 Building frontend image with cache..."
@@ -241,6 +242,7 @@ jobs:
             --cache-from type=gha,scope=frontend-base \
             --cache-from type=gha,scope=frontend-app \
             --cache-to type=gha,scope=frontend-app,mode=max \
+            --load \
             ./frontend
           
           echo "🏷️ Images built successfully:"
