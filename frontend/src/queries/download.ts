@@ -38,7 +38,7 @@ export const DOWNLOAD_URL = gql`
 `;
 
 export const CREATE_PLAYLIST = gql`
-  mutation CreatePlaylist(
+  mutation CreatePlaylistFromDownload(
     $name: String!
     $url: String!
     $autoTrackArtists: Boolean!

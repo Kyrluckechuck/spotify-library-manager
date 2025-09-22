@@ -135,7 +135,7 @@ class Song(models.Model):
         """Get the file path as a Path object for filesystem operations."""
         return Path(self.file_path_ref.path) if self.file_path_ref else None
 
-    @file_path.setter
+    @file_path.setter  # type: ignore[no-redef,misc]
     def file_path(self, path: str | None) -> None:
         """Set the file path using the existing method."""
         self.set_file_path(path)

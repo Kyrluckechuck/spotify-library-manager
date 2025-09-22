@@ -4,6 +4,7 @@ import {
   GetPlaylistsDocument,
   TogglePlaylistDocument,
   SyncPlaylistDocument,
+  ForceSyncPlaylistDocument,
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
 import type { Playlist } from '../types/generated/graphql';
@@ -98,7 +99,7 @@ function Playlists() {
 
   const [togglePlaylist] = useMutation(TogglePlaylistDocument);
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
-  const [forceSyncPlaylist] = useMutation(SyncPlaylistDocument);
+  const [forceSyncPlaylist] = useMutation(ForceSyncPlaylistDocument);
   const [togglePlaylistAutoTrack] = useMutation(TogglePlaylistDocument);
   const [enabledMutatingIds, setEnabledMutatingIds] = useState<Set<number>>(
     new Set()
@@ -264,7 +265,7 @@ function Playlists() {
     try {
       setErrorById(prev => ({ ...prev, [playlistId]: '' }));
       setForceSyncMutatingIds(prev => new Set(prev).add(playlistId));
-      await forceSyncPlaylist({ variables: { playlistId, force: true } });
+      await forceSyncPlaylist({ variables: { playlistId } });
       toast.success('Playlist force sync started');
     } catch (error) {
       setErrorById(prev => ({

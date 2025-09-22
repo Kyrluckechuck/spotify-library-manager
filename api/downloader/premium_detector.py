@@ -1,8 +1,10 @@
 """Premium detection service for YouTube Music accounts."""
 
+import json
 import logging
 import time
 from dataclasses import dataclass
+from http.cookiejar import MozillaCookieJar
 from typing import Dict, List, Optional, Tuple
 
 from ytmusicapi import YTMusic
@@ -24,35 +26,168 @@ class PremiumDetector:
     """Detects YouTube Music premium status using multiple methods."""
 
     def __init__(
-        self, cookies_file: Optional[str] = None, po_token: Optional[str] = None
+        self,
+        cookies_file: Optional[str] = None,
+        po_token: Optional[str] = None,
+        ytmusic_headers_file: Optional[str] = None,
     ):
         """
         Initialize the premium detector.
 
         Args:
-            cookies_file: Path to YouTube cookies file
+            cookies_file: Path to YouTube cookies file (used by yt-dlp for downloads)
             po_token: YouTube po_token for authentication
+            ytmusic_headers_file: Optional path to YTMusic JSON headers file for premium detection
         """
         self.logger = logging.getLogger(__name__)
         self.cookies_file = cookies_file
         self.po_token = po_token
+        self.ytmusic_headers_file = ytmusic_headers_file
         self._ytmusic_client: Optional[YTMusic] = None
         self._last_status: Optional[PremiumStatus] = None
         self._cache_duration = 300  # 5 minutes cache
 
     def _get_ytmusic_client(self) -> Optional[YTMusic]:
-        """Get or create YTMusic client."""
-        if self._ytmusic_client is None and self.cookies_file:
+        """Get or create YTMusic client with authentication priority."""
+        if self._ytmusic_client is None:
             try:
-                # Convert Path object to string if needed
-                cookies_path = str(self.cookies_file)
-                # Initialize YTMusic with cookies for authentication
-                self._ytmusic_client = YTMusic(auth=cookies_path)
-                self.logger.debug("YTMusic client initialized successfully")
+                # Priority 1: Dedicated YTMusic headers file
+                if self.ytmusic_headers_file and self._is_json_auth_file(
+                    str(self.ytmusic_headers_file)
+                ):
+                    self._ytmusic_client = YTMusic(auth=str(self.ytmusic_headers_file))
+                    self.logger.debug(
+                        "YTMusic client initialized with dedicated headers file"
+                    )
+                    return self._ytmusic_client
+
+                # Priority 2: Check if cookies_file is actually a JSON auth file
+                elif self.cookies_file and self._is_json_auth_file(
+                    str(self.cookies_file)
+                ):
+                    self._ytmusic_client = YTMusic(auth=str(self.cookies_file))
+                    self.logger.debug(
+                        "YTMusic client initialized with JSON auth from cookies_file"
+                    )
+                    return self._ytmusic_client
+
+                # Priority 3: Try to convert cookies to headers using setup_browser
+                elif self.cookies_file:
+                    self.logger.info(
+                        "Attempting to convert cookies to YTMusic authentication..."
+                    )
+                    auth_content = self._convert_cookies_to_ytmusic_headers(
+                        str(self.cookies_file)
+                    )
+                    if auth_content:
+                        # setup_browser returns JSON string that can be used directly
+                        self._ytmusic_client = YTMusic(auth=auth_content)
+                        self.logger.info(
+                            "YTMusic client initialized with converted cookie authentication"
+                        )
+                        return self._ytmusic_client
+                    else:
+                        self.logger.warning(
+                            "Cookie conversion failed, falling back to unauthenticated client"
+                        )
+
+                # Priority 4: Unauthenticated fallback (limited premium detection)
+                self._ytmusic_client = YTMusic()
+                self.logger.info(
+                    "YTMusic client initialized without authentication (limited premium detection capabilities)"
+                )
+
             except Exception as e:
-                self.logger.error(f"Failed to initialize YTMusic client: {e}")
-                return None
+                self.logger.warning(f"Failed to initialize YTMusic client: {e}")
+                # Final fallback
+                try:
+                    self._ytmusic_client = YTMusic()
+                    self.logger.debug(
+                        "Emergency fallback to unauthenticated YTMusic client"
+                    )
+                except Exception as fallback_e:
+                    self.logger.error(
+                        f"Complete YTMusic initialization failure: {fallback_e}"
+                    )
+                    return None
         return self._ytmusic_client
+
+    def _is_json_auth_file(self, file_path: str) -> bool:
+        """Check if the file is a JSON authentication file (not Netscape cookies)."""
+        try:
+            with open(file_path, "r") as f:
+                content = f.read().strip()
+                if content.startswith("# Netscape HTTP Cookie File"):
+                    return False
+                json.loads(content)
+                return True
+        except (json.JSONDecodeError, FileNotFoundError, OSError):
+            return False
+
+    def _convert_cookies_to_ytmusic_headers(self, cookies_file: str) -> Optional[str]:
+        """Convert Netscape cookies to YTMusic-compatible headers using setup_browser method."""
+        try:
+            import json
+
+            from ytmusicapi.auth.browser import (
+                get_authorization,
+                sapisid_from_cookie,
+                setup_browser,
+            )
+
+            # Load cookies from Netscape format
+            cookie_jar = MozillaCookieJar(cookies_file)
+            cookie_jar.load(ignore_discard=True, ignore_expires=True)
+
+            # Convert cookies to cookie header string
+            cookie_header = "; ".join([f"{c.name}={c.value}" for c in cookie_jar])
+
+            if not cookie_header:
+                self.logger.warning("No cookies found in cookie file")
+                return None
+
+            # Create raw headers string in the format YTMusic setup_browser expects
+            # This mimics the headers you'd see in Firefox network inspector
+            headers_raw = f"""Host: music.youtube.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0
+Accept: */*
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/json
+x-goog-authuser: 0
+x-origin: https://music.youtube.com
+Cookie: {cookie_header}
+Connection: keep-alive"""
+
+            # Use YTMusic's setup_browser to create proper auth file
+            auth_file_content = setup_browser(headers_raw=headers_raw)
+
+            # Parse the auth file and add the authorization header for browser detection
+            auth_data = json.loads(auth_file_content)
+
+            # Extract SAPISID from cookies and generate authorization header
+            try:
+                sapisid = sapisid_from_cookie(cookie_header)
+                auth_header = get_authorization(f"{sapisid} https://music.youtube.com")
+                auth_data["authorization"] = auth_header
+
+                # Return the modified auth content
+                modified_auth_content = json.dumps(auth_data)
+                self.logger.debug(
+                    "Successfully converted cookies to YTMusic auth with authorization header"
+                )
+                return modified_auth_content
+
+            except Exception as auth_error:
+                self.logger.warning(
+                    f"Failed to generate authorization header: {auth_error}"
+                )
+                # Return original auth content without authorization
+                return auth_file_content
+
+        except Exception as e:
+            self.logger.warning(f"Failed to convert cookies to YTMusic headers: {e}")
+            return None
 
     def detect_premium_status(self, force_refresh: bool = False) -> PremiumStatus:
         """

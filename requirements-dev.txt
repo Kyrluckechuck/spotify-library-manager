@@ -7,3 +7,6 @@ pylint-django>=2.5.0
 
 # YouTube Music API for premium detection (dev dependency)
 ytmusicapi>=1.8.0
+
+# File system monitoring for development
+watchdog>=2.1.0

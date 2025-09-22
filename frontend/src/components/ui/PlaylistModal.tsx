@@ -88,6 +88,7 @@ export function PlaylistModal({
           variables: {
             playlistId: playlist?.id ?? 0,
             name: name.trim(),
+            url: url.trim(),
             autoTrackArtists,
           },
         });

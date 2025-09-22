@@ -4,7 +4,7 @@ import { gql } from '@apollo/client';
 
 // GraphQL queries for fetching entity details
 const GET_ARTIST = gql`
-  query GetArtist($id: String!) {
+  query GetArtistForDisplay($id: String!) {
     artist(id: $id) {
       id
       name
@@ -34,7 +34,7 @@ const GET_PLAYLIST = gql`
 `;
 
 const GET_SONG = gql`
-  query GetSong($id: String!) {
+  query GetSongForDisplay($id: String!) {
     song(id: $id) {
       id
       name

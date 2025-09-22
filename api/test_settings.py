@@ -22,10 +22,10 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": get_test_database_name(),
-        "USER": "slm_user",
-        "PASSWORD": "slm_dev_password",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "USER": os.getenv("POSTGRES_USER", "slm_user"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "slm_dev_password"),
+        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
         "OPTIONS": {
             "connect_timeout": 10,
         },

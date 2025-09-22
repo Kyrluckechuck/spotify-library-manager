@@ -37,7 +37,7 @@ from library_manager.models import (
 from . import __version__, spotdl_override, utils
 from .default_download_settings import DEFAULT_DOWNLOAD_SETTINGS
 from .downloader import Downloader
-from .premium_detector import PremiumDetector
+from .premium_detector import PremiumDetector, PremiumStatus
 
 
 class BitrateException(Exception):
@@ -134,7 +134,16 @@ class SpotdlWrapper:
         self.premium_detector = PremiumDetector(
             cookies_file=config.cookies_location, po_token=config.po_token
         )
-        self.premium_status = self.premium_detector.detect_premium_status()
+        try:
+            self.premium_status = self.premium_detector.detect_premium_status()
+        except Exception as e:
+            self.logger.warning(f"Premium detection failed during initialization: {e}")
+            # Create a default free status if detection fails
+            self.premium_status = PremiumStatus(
+                is_premium=False,
+                confidence=0.0,
+                detection_method="initialization_failed",
+            )
 
         self.logger.debug("Completed SpotdlWrapper Initialization")
 

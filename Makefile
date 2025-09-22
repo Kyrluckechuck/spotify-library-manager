@@ -1,4 +1,4 @@
-.PHONY: build-and-publish dev dev-container dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin
+.PHONY: build-and-publish dev dev-container dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db
 
 # Main development command - starts all services
 dev:
@@ -43,6 +43,10 @@ dev-worker:
 dev-admin:
 	cd api && python manage.py collectstatic --noinput
 	cd api && python manage.py runserver 0.0.0.0:8000
+
+# Access PostgreSQL database
+dev-db:
+	PGPASSWORD=slm_dev_password psql -h localhost -p 5432 -U slm_user -d spotify_library_manager
 
 # Celery queue management
 clear-celery-queue:
