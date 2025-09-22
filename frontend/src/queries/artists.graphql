@@ -180,3 +180,39 @@ mutation TogglePlaylist($playlistId: Int!) {
     }
   }
 }
+
+mutation ForceSyncPlaylist($playlistId: Int!) {
+  syncPlaylist(playlistId: $playlistId, force: true) {
+    success
+    message
+  }
+}
+
+mutation TogglePlaylistAutoTrack($playlistId: Int!) {
+  togglePlaylistAutoTrack(playlistId: $playlistId) {
+    success
+    message
+    playlist {
+      id
+      name
+      autoTrackArtists
+    }
+  }
+}
+
+mutation UpdatePlaylist($playlistId: Int!, $name: String!, $url: String!, $autoTrackArtists: Boolean!) {
+  updatePlaylist(playlistId: $playlistId, name: $name, url: $url, autoTrackArtists: $autoTrackArtists) {
+    success
+    message
+  }
+}
+
+mutation CreatePlaylist($name: String!, $url: String!, $autoTrackArtists: Boolean!) {
+  createPlaylist(name: $name, url: $url, autoTrackArtists: $autoTrackArtists) {
+    id
+    name
+    url
+    enabled
+    autoTrackArtists
+  }
+}

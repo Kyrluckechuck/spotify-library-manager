@@ -144,18 +144,32 @@ class PlaylistService(BaseService[Playlist]):
                 playlist=None,
             )
 
-    async def sync_playlist(self, playlist_id: int) -> MutationResult:
+    async def sync_playlist(
+        self, playlist_id: int, force: bool = False
+    ) -> MutationResult:
         try:
             django_playlist = await sync_to_async(self.model.objects.get)(
                 id=playlist_id
             )
 
-            # Trigger sync task (queue it for Celery worker)
-            await sync_to_async(sync_tracked_playlist.delay)(django_playlist.id)
+            if force:
+                # For force sync, directly queue the download_playlist task with force_playlist_resync=True
+                from library_manager.tasks import download_playlist
+
+                await sync_to_async(download_playlist.delay)(
+                    playlist_url=django_playlist.url,
+                    tracked=django_playlist.auto_track_artists,
+                    force_playlist_resync=True,
+                )
+                message = "Playlist force sync started successfully"
+            else:
+                # Trigger normal sync task (queue it for Celery worker)
+                await sync_to_async(sync_tracked_playlist.delay)(django_playlist.id)
+                message = "Playlist sync started successfully"
 
             return MutationResult(
                 success=True,
-                message="Playlist sync started successfully",
+                message=message,
                 playlist=self._to_graphql_type(django_playlist),
             )
         except self.model.DoesNotExist:

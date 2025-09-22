@@ -105,8 +105,6 @@ export type HistoryEdge = {
 
 export type Mutation = {
   cancelAllPendingTasks: MutationResult;
-  cancelAllTasks: MutationResult;
-  cancelRunningTasksByName: MutationResult;
   cancelTasksByName: MutationResult;
   createPlaylist: Playlist;
   downloadAlbum: Album;
@@ -115,17 +113,12 @@ export type Mutation = {
   syncArtist: Artist;
   syncPlaylist: MutationResult;
   togglePlaylist: MutationResult;
-  togglePlaylistAutoTrack: MutationResult;
   trackArtist: MutationResult;
   trackPlaylist: Playlist;
   untrackArtist: MutationResult;
   updateAlbum: Album;
   updateArtist: Artist;
   updatePlaylist: MutationResult;
-};
-
-export type MutationCancelRunningTasksByNameArgs = {
-  taskName: Scalars['String']['input'];
 };
 
 export type MutationCancelTasksByNameArgs = {
@@ -161,10 +154,6 @@ export type MutationSyncPlaylistArgs = {
 };
 
 export type MutationTogglePlaylistArgs = {
-  playlistId: Scalars['Int']['input'];
-};
-
-export type MutationTogglePlaylistAutoTrackArgs = {
   playlistId: Scalars['Int']['input'];
 };
 
@@ -632,7 +621,6 @@ export type CreatePlaylistMutation = {
 export type UpdatePlaylistMutationVariables = Exact<{
   playlistId: Scalars['Int']['input'];
   name: Scalars['String']['input'];
-  url: Scalars['String']['input'];
   autoTrackArtists: Scalars['Boolean']['input'];
 }>;
 
@@ -722,20 +710,6 @@ export type CancelTasksByNameMutationVariables = Exact<{
 
 export type CancelTasksByNameMutation = {
   cancelTasksByName: { success: boolean; message: string };
-};
-
-export type CancelRunningTasksByNameMutationVariables = Exact<{
-  taskName: Scalars['String']['input'];
-}>;
-
-export type CancelRunningTasksByNameMutation = {
-  cancelRunningTasksByName: { success: boolean; message: string };
-};
-
-export type CancelAllTasksMutationVariables = Exact<{ [key: string]: never }>;
-
-export type CancelAllTasksMutation = {
-  cancelAllTasks: { success: boolean; message: string };
 };
 
 export type GetTaskHistoryQueryVariables = Exact<{
@@ -1658,13 +1632,11 @@ export const UpdatePlaylistDocument = gql`
   mutation UpdatePlaylist(
     $playlistId: Int!
     $name: String!
-    $url: String!
     $autoTrackArtists: Boolean!
   ) {
     updatePlaylist(
       playlistId: $playlistId
       name: $name
-      url: $url
       autoTrackArtists: $autoTrackArtists
     ) {
       success
@@ -1716,63 +1688,6 @@ export type UpdatePlaylistMutationResult =
 export type UpdatePlaylistMutationOptions = Apollo.BaseMutationOptions<
   UpdatePlaylistMutation,
   UpdatePlaylistMutationVariables
->;
-export const TogglePlaylistAutoTrackDocument = gql`
-  mutation TogglePlaylistAutoTrack($playlistId: Int!) {
-    togglePlaylistAutoTrack(playlistId: $playlistId) {
-      success
-      message
-      playlist {
-        id
-        name
-        autoTrackArtists
-      }
-    }
-  }
-`;
-export type TogglePlaylistAutoTrackMutation = {
-  __typename?: 'Mutation';
-  togglePlaylistAutoTrack: {
-    __typename?: 'MutationResult';
-    success: boolean;
-    message: string;
-    playlist?: {
-      __typename?: 'Playlist';
-      id: number;
-      name: string;
-      autoTrackArtists: boolean;
-    } | null;
-  };
-};
-export type TogglePlaylistAutoTrackMutationVariables = Exact<{
-  playlistId: Scalars['Int']['input'];
-}>;
-
-export type TogglePlaylistAutoTrackMutationFn = Apollo.MutationFunction<
-  TogglePlaylistAutoTrackMutation,
-  TogglePlaylistAutoTrackMutationVariables
->;
-
-export function useTogglePlaylistAutoTrackMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    TogglePlaylistAutoTrackMutation,
-    TogglePlaylistAutoTrackMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    TogglePlaylistAutoTrackMutation,
-    TogglePlaylistAutoTrackMutationVariables
-  >(TogglePlaylistAutoTrackDocument, options);
-}
-export type TogglePlaylistAutoTrackMutationHookResult = ReturnType<
-  typeof useTogglePlaylistAutoTrackMutation
->;
-export type TogglePlaylistAutoTrackMutationResult =
-  Apollo.MutationResult<TogglePlaylistAutoTrackMutation>;
-export type TogglePlaylistAutoTrackMutationOptions = Apollo.BaseMutationOptions<
-  TogglePlaylistAutoTrackMutation,
-  TogglePlaylistAutoTrackMutationVariables
 >;
 export const GetSongsDocument = gql`
   query GetSongs(
@@ -2148,108 +2063,6 @@ export type CancelTasksByNameMutationResult =
 export type CancelTasksByNameMutationOptions = Apollo.BaseMutationOptions<
   CancelTasksByNameMutation,
   CancelTasksByNameMutationVariables
->;
-export const CancelRunningTasksByNameDocument = gql`
-  mutation CancelRunningTasksByName($taskName: String!) {
-    cancelRunningTasksByName(taskName: $taskName) {
-      success
-      message
-    }
-  }
-`;
-export type CancelRunningTasksByNameMutationFn = Apollo.MutationFunction<
-  CancelRunningTasksByNameMutation,
-  CancelRunningTasksByNameMutationVariables
->;
-
-/**
- * __useCancelRunningTasksByNameMutation__
- *
- * To run a mutation, you first call `useCancelRunningTasksByNameMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCancelRunningTasksByNameMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [cancelRunningTasksByNameMutation, { data, loading, error }] = useCancelRunningTasksByNameMutation({
- *   variables: {
- *      taskName: // value for 'taskName'
- *   },
- * });
- */
-export function useCancelRunningTasksByNameMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    CancelRunningTasksByNameMutation,
-    CancelRunningTasksByNameMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    CancelRunningTasksByNameMutation,
-    CancelRunningTasksByNameMutationVariables
-  >(CancelRunningTasksByNameDocument, options);
-}
-export type CancelRunningTasksByNameMutationHookResult = ReturnType<
-  typeof useCancelRunningTasksByNameMutation
->;
-export type CancelRunningTasksByNameMutationResult =
-  Apollo.MutationResult<CancelRunningTasksByNameMutation>;
-export type CancelRunningTasksByNameMutationOptions =
-  Apollo.BaseMutationOptions<
-    CancelRunningTasksByNameMutation,
-    CancelRunningTasksByNameMutationVariables
-  >;
-export const CancelAllTasksDocument = gql`
-  mutation CancelAllTasks {
-    cancelAllTasks {
-      success
-      message
-    }
-  }
-`;
-export type CancelAllTasksMutationFn = Apollo.MutationFunction<
-  CancelAllTasksMutation,
-  CancelAllTasksMutationVariables
->;
-
-/**
- * __useCancelAllTasksMutation__
- *
- * To run a mutation, you first call `useCancelAllTasksMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCancelAllTasksMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [cancelAllTasksMutation, { data, loading, error }] = useCancelAllTasksMutation({
- *   variables: {
- *   },
- * });
- */
-export function useCancelAllTasksMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    CancelAllTasksMutation,
-    CancelAllTasksMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
-    CancelAllTasksMutation,
-    CancelAllTasksMutationVariables
-  >(CancelAllTasksDocument, options);
-}
-export type CancelAllTasksMutationHookResult = ReturnType<
-  typeof useCancelAllTasksMutation
->;
-export type CancelAllTasksMutationResult =
-  Apollo.MutationResult<CancelAllTasksMutation>;
-export type CancelAllTasksMutationOptions = Apollo.BaseMutationOptions<
-  CancelAllTasksMutation,
-  CancelAllTasksMutationVariables
 >;
 export const GetTaskHistoryDocument = gql`
   query GetTaskHistory(

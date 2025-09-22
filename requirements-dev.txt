@@ -4,3 +4,6 @@
 django-debug-toolbar>=4.0.0
 django-extensions>=3.2.0
 pylint-django>=2.5.0
+
+# YouTube Music API for premium detection (dev dependency)
+ytmusicapi>=1.8.0

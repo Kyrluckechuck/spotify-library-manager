@@ -26,6 +26,9 @@ pydantic-settings>=2.0.0
 strawberry-graphql>=0.278.0
 strawberry-graphql-django>=0.65.0
 
+# YouTube Music API for premium detection
+ytmusicapi>=1.8.0
+
 # FastAPI and related (exactly matching spotdl 4.2.11)
 fastapi>=0.103.0,<0.104.0
 uvicorn>=0.23.2,<0.24.0

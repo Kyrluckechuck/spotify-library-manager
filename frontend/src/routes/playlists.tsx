@@ -4,7 +4,6 @@ import {
   GetPlaylistsDocument,
   TogglePlaylistDocument,
   SyncPlaylistDocument,
-  TogglePlaylistAutoTrackDocument,
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
 import type { Playlist } from '../types/generated/graphql';
@@ -99,9 +98,8 @@ function Playlists() {
 
   const [togglePlaylist] = useMutation(TogglePlaylistDocument);
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
-  const [togglePlaylistAutoTrack] = useMutation(
-    TogglePlaylistAutoTrackDocument
-  );
+  const [forceSyncPlaylist] = useMutation(SyncPlaylistDocument);
+  const [togglePlaylistAutoTrack] = useMutation(TogglePlaylistDocument);
   const [enabledMutatingIds, setEnabledMutatingIds] = useState<Set<number>>(
     new Set()
   );
@@ -109,6 +107,9 @@ function Playlists() {
     new Set()
   );
   const [syncMutatingIds, setSyncMutatingIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [forceSyncMutatingIds, setForceSyncMutatingIds] = useState<Set<number>>(
     new Set()
   );
   const [enabledPulseIds, setEnabledPulseIds] = useState<Set<number>>(
@@ -259,6 +260,26 @@ function Playlists() {
     });
   };
 
+  const handleForceSyncPlaylist = async (playlistId: number) => {
+    try {
+      setErrorById(prev => ({ ...prev, [playlistId]: '' }));
+      setForceSyncMutatingIds(prev => new Set(prev).add(playlistId));
+      await forceSyncPlaylist({ variables: { playlistId, force: true } });
+      toast.success('Playlist force sync started');
+    } catch (error) {
+      setErrorById(prev => ({
+        ...prev,
+        [playlistId]:
+          error instanceof Error ? error.message : 'Force sync failed',
+      }));
+    }
+    setForceSyncMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(playlistId);
+      return next;
+    });
+  };
+
   const handleToggleAutoTrack = async (playlist: Playlist) => {
     try {
       setErrorById(prev => ({ ...prev, [playlist.id]: '' }));
@@ -402,11 +423,13 @@ function Playlists() {
           onToggleEnabled={handleTogglePlaylist}
           onToggleAutoTrack={handleToggleAutoTrack}
           onSyncPlaylist={handleSyncPlaylist}
+          onForceSyncPlaylist={handleForceSyncPlaylist}
           onEditPlaylist={handleEditPlaylist}
           loading={loading}
           enabledMutatingIds={enabledMutatingIds}
           autoMutatingIds={autoMutatingIds}
           syncMutatingIds={syncMutatingIds}
+          forceSyncMutatingIds={forceSyncMutatingIds}
           enabledPulseIds={enabledPulseIds}
           autoPulseIds={autoPulseIds}
           errorById={errorById}

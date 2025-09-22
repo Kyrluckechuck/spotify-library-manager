@@ -16,11 +16,13 @@ interface PlaylistsTableProps {
   onToggleEnabled: (playlist: Playlist) => void;
   onToggleAutoTrack: (playlist: Playlist) => void;
   onSyncPlaylist: (playlistId: number) => void;
+  onForceSyncPlaylist?: (playlistId: number) => void;
   onEditPlaylist?: (playlist: Playlist) => void;
   loading?: boolean;
   enabledMutatingIds?: Set<number>;
   autoMutatingIds?: Set<number>;
   syncMutatingIds?: Set<number>;
+  forceSyncMutatingIds?: Set<number>;
   enabledPulseIds?: Set<number>;
   autoPulseIds?: Set<number>;
   errorById?: Record<number, string>;
@@ -34,11 +36,13 @@ export function PlaylistsTable({
   onToggleEnabled,
   onToggleAutoTrack,
   onSyncPlaylist,
+  onForceSyncPlaylist,
   onEditPlaylist,
   loading = false,
   enabledMutatingIds,
   autoMutatingIds,
   syncMutatingIds,
+  forceSyncMutatingIds,
   enabledPulseIds,
   autoPulseIds,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -280,7 +284,10 @@ export function PlaylistsTable({
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
                   <button
                     onClick={() => onSyncPlaylist(playlist.id)}
-                    disabled={syncMutatingIds?.has(playlist.id)}
+                    disabled={
+                      syncMutatingIds?.has(playlist.id) ||
+                      forceSyncMutatingIds?.has(playlist.id)
+                    }
                     className='px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors'
                   >
                     {syncMutatingIds?.has(playlist.id) ? (
@@ -292,6 +299,26 @@ export function PlaylistsTable({
                       'Sync Now'
                     )}
                   </button>
+                  {onForceSyncPlaylist && (
+                    <button
+                      onClick={() => onForceSyncPlaylist(playlist.id)}
+                      disabled={
+                        syncMutatingIds?.has(playlist.id) ||
+                        forceSyncMutatingIds?.has(playlist.id)
+                      }
+                      className='px-3 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800 hover:bg-orange-200 transition-colors'
+                      title='Force sync will re-download all tracks, ignoring existing ones'
+                    >
+                      {forceSyncMutatingIds?.has(playlist.id) ? (
+                        <span className='inline-flex items-center gap-2'>
+                          <span className='w-3 h-3 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin' />
+                          <span>Force Syncing…</span>
+                        </span>
+                      ) : (
+                        'Force Sync'
+                      )}
+                    </button>
+                  )}
                   {onEditPlaylist && (
                     <button
                       onClick={() => onEditPlaylist(playlist)}

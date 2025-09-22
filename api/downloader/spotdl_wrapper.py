@@ -37,6 +37,7 @@ from library_manager.models import (
 from . import __version__, spotdl_override, utils
 from .default_download_settings import DEFAULT_DOWNLOAD_SETTINGS
 from .downloader import Downloader
+from .premium_detector import PremiumDetector
 
 
 class BitrateException(Exception):
@@ -128,6 +129,13 @@ class SpotdlWrapper:
         self.spotipy_client = SpotifyClient()
 
         self.downloader = Downloader(self.spotipy_client)
+
+        # Initialize premium detector for quality validation
+        self.premium_detector = PremiumDetector(
+            cookies_file=config.cookies_location, po_token=config.po_token
+        )
+        self.premium_status = self.premium_detector.detect_premium_status()
+
         self.logger.debug("Completed SpotdlWrapper Initialization")
 
     def execute(self, config: Config) -> int:
@@ -292,14 +300,31 @@ class SpotdlWrapper:
                         self.logger.debug(f"output_path: {output_path}")
                         raise SpotdlDownloadError("Failed to download correctly")
 
-                    # Validate the song is in the correct audio bitrate
-                    # Validate premium successfully applied, for example
-                    expected_bitrate = (
-                        255
-                        if config.cookies_location is not None
-                        and config.po_token is not None
-                        else 127
+                    # Validate the song is in the correct audio bitrate using premium detection
+                    spotify_url = track["external_urls"]["spotify"]
+
+                    # Get actual available qualities for this specific song
+                    available_qualities = (
+                        self.premium_detector.get_song_available_qualities(spotify_url)
                     )
+                    max_available = (
+                        max([q[0] for q in available_qualities])
+                        if available_qualities
+                        else 128
+                    )
+
+                    # Set expectation based on premium status AND song availability
+                    if (
+                        self.premium_status.is_premium
+                        and self.premium_status.confidence > 0.7
+                    ):
+                        expected_bitrate = min(
+                            255, max_available
+                        )  # Premium: up to 256kbps or song max
+                    else:
+                        expected_bitrate = min(
+                            127, max_available
+                        )  # Free: up to 128kbps or song max
 
                     media_info = MediaInfo.parse(output_path)
                     audio_track = None
@@ -321,11 +346,39 @@ class SpotdlWrapper:
                             raise BitrateException(
                                 f"File was downloaded successfully, but no audio track existed | output_path: {output_path}"
                             )
-                        self.logger.error(
+                        # Check if this indicates premium expiry
+                        is_expired, expiry_reason = (
+                            self.premium_detector.is_premium_expired(
+                                downloaded_bitrate=int(bit_rate),
+                                expected_premium_bitrate=255,
+                            )
+                        )
+
+                        error_msg = (
                             f"File was downloaded successfully but not in the correct bitrate "
                             f"({bit_rate} found, but {expected_bitrate} is minimum expected) | "
                             f"output_path: {output_path}"
                         )
+
+                        if is_expired:
+                            self.logger.warning(
+                                f"🚨 PREMIUM EXPIRED: {expiry_reason} | "
+                                f"Available qualities for this song: {available_qualities} | "
+                                f"Consider refreshing your YouTube cookies/po_token | {error_msg}"
+                            )
+                            # Refresh premium status for next songs
+                            self.premium_status = (
+                                self.premium_detector.detect_premium_status(
+                                    force_refresh=True
+                                )
+                            )
+                        else:
+                            self.logger.error(error_msg)
+                            self.logger.info(
+                                f"Premium status: {self.premium_status.is_premium} "
+                                f"(confidence: {self.premium_status.confidence}) | "
+                                f"Available qualities: {available_qualities}"
+                            )
                 except SpotdlDownloadError as exception:
                     error_count += 1
                     self.logger.error(
