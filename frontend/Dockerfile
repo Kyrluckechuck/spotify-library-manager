@@ -1,25 +1,48 @@
+# Optimized frontend Dockerfile with better caching
 ARG VITE_API_URL
 
-FROM node:20-alpine AS build
+# =============================================================================
+# Stage 1: Base Node setup (cached unless Node version changes)
+# =============================================================================
+FROM node:20-alpine AS node-base
 WORKDIR /app
 RUN apk add --no-cache yarn
+
+# =============================================================================
+# Stage 2: Dependencies (cached unless package files change)
+# =============================================================================
+FROM node-base AS deps
 COPY package.json yarn.lock ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 RUN yarn install --frozen-lockfile
+
+# =============================================================================
+# Stage 3: Source code (rebuilds when source changes)
+# =============================================================================
+FROM deps AS source
 COPY . .
 
-# Test stage - can be used for running tests
-FROM build AS test
+# =============================================================================
+# Stage 4: Test (for CI/CD)
+# =============================================================================
+FROM source AS test
 RUN yarn test:run
 
-# Build stage - continues from build
-FROM build AS build-dist
+# =============================================================================
+# Stage 5: Build (for production)
+# =============================================================================
+FROM source AS build
 RUN yarn build
 
-# Production stage
-FROM nginx:alpine
-COPY --from=build-dist /app/dist /usr/share/nginx/html
+# =============================================================================
+# Stage 6: Production (nginx serving)
+# =============================================================================
+FROM nginx:alpine AS production
+COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+
+# Default target
+FROM production

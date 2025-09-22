@@ -1,4 +1,4 @@
-name: CI
+name: CI Optimized
 
 on:
   push:
@@ -14,12 +14,72 @@ permissions:
   contents: read
   packages: write
 
-# Note: Python and Node versions are hardcoded in jobs for clarity
-
 jobs:
+  # =============================================================================
+  # Job 1: Build and cache base images (runs first)
+  # =============================================================================
+  build-base-images:
+    name: Build and cache base images
+    runs-on: ubuntu-latest
+    outputs:
+      backend-cache-key: ${{ steps.backend-cache.outputs.cache-key }}
+      frontend-cache-key: ${{ steps.frontend-cache.outputs.cache-key }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lowercase repo owner
+        id: owner
+        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and cache backend base image
+        id: backend-cache
+        run: |
+          # Create cache key based on requirements files
+          BACKEND_CACHE_KEY="backend-base-$(sha256sum requirements.txt requirements-dev.txt | sha256sum | cut -d' ' -f1)"
+          echo "cache-key=$BACKEND_CACHE_KEY" >> $GITHUB_OUTPUT
+          
+          # Build and push base image with cache
+          docker buildx build \
+            --target python-deps \
+            --tag ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:base-${{ github.sha }} \
+            --cache-from type=gha,scope=backend-base \
+            --cache-to type=gha,scope=backend-base,mode=max \
+            --push \
+            .
+
+      - name: Build and cache frontend base image
+        id: frontend-cache
+        run: |
+          # Create cache key based on package files
+          FRONTEND_CACHE_KEY="frontend-base-$(sha256sum frontend/package.json frontend/yarn.lock | sha256sum | cut -d' ' -f1)"
+          echo "cache-key=$FRONTEND_CACHE_KEY" >> $GITHUB_OUTPUT
+          
+          # Build and push base image with cache
+          docker buildx build \
+            --target deps \
+            --tag ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:base-${{ github.sha }} \
+            --cache-from type=gha,scope=frontend-base \
+            --cache-to type=gha,scope=frontend-base,mode=max \
+            --push \
+            ./frontend
+
+  # =============================================================================
+  # Job 2: Backend tests (runs in parallel with frontend)
+  # =============================================================================
   backend:
     name: Backend (lint + tests) • Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    needs: build-base-images
     
     services:
       postgres:
@@ -72,16 +132,19 @@ jobs:
       - name: Tests (backend)
         env:
           DJANGO_SETTINGS_MODULE: test_settings
-          # Set unique base temp dirs for each Python version
           TMPDIR: /tmp/pytest-${{ github.run_id }}-py${{ matrix.python-version }}
           HOME: /tmp/pytest-home-${{ github.run_id }}-py${{ matrix.python-version }}
         run: |
           mkdir -p "$TMPDIR" "$HOME"
           make test-api
 
+  # =============================================================================
+  # Job 3: Frontend tests (runs in parallel with backend)
+  # =============================================================================
   frontend:
     name: Frontend (lint + tests) • Node 20
     runs-on: ubuntu-latest
+    needs: build-base-images
     steps:
       - uses: actions/checkout@v5
 
@@ -104,6 +167,9 @@ jobs:
         working-directory: frontend
         run: yarn test:run
 
+  # =============================================================================
+  # Job 4: Code quality checks (runs in parallel)
+  # =============================================================================
   code-quality:
     name: Code quality checks
     runs-on: ubuntu-latest
@@ -116,14 +182,22 @@ jobs:
       - name: Check trailing newlines
         run: python scripts/check-repo-newlines.py check
 
+  # =============================================================================
+  # Job 5: Docker integration tests (runs after base images are built)
+  # =============================================================================
   docker-integration:
     name: Docker integration tests
     runs-on: ubuntu-latest
+    needs: [build-base-images, backend, frontend, code-quality]
     steps:
       - uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Lowercase repo owner
+        id: owner
+        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
       - name: Create temp dirs for volumes
         id: mktemp
@@ -149,32 +223,25 @@ jobs:
           echo "config-dir=$CONFIG_DIR" >> "$GITHUB_OUTPUT"
           echo "music-dir=$MUSIC_DIR" >> "$GITHUB_OUTPUT"
 
-      - name: Extract branch name for image tags
-        id: branch
+      - name: Build images with cache
         run: |
-          # Get branch name and make it safe for Docker tags
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BRANCH=${{ github.head_ref }}
-          else
-            BRANCH=${GITHUB_REF#refs/heads/}
-          fi
-          SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g' | tr '[:upper:]' '[:lower:]')
-          echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "🔨 Building backend image with cache..."
+          docker buildx build \
+            --target backend-prod \
+            --tag local-backend:latest \
+            --cache-from type=gha,scope=backend-base \
+            --cache-from type=gha,scope=backend-app \
+            --cache-to type=gha,scope=backend-app,mode=max \
+            .
           
-      - name: Set images for local build
-        id: check-images
-        run: |
-          # Force local builds for integration testing to ensure latest changes are tested
-          echo "backend=local-backend:latest" >> "$GITHUB_OUTPUT"
-          echo "frontend=local-frontend:latest" >> "$GITHUB_OUTPUT"
-
-      - name: Build images locally
-        run: |
-          echo "🔨 Building backend image locally..."
-          docker build -t local-backend:latest .
-          
-          echo "🔨 Building frontend image locally..."
-          docker build -t local-frontend:latest ./frontend
+          echo "🔨 Building frontend image with cache..."
+          docker buildx build \
+            --target production \
+            --tag local-frontend:latest \
+            --cache-from type=gha,scope=frontend-base \
+            --cache-from type=gha,scope=frontend-app \
+            --cache-to type=gha,scope=frontend-app,mode=max \
+            ./frontend
           
           echo "🏷️ Images built successfully:"
           docker images | grep -E "(local-backend|local-frontend)"
@@ -183,9 +250,8 @@ jobs:
         env:
           SLM_CONFIG_DIR: ${{ steps.mktemp.outputs.config-dir }}
           MUSIC_DIR: ${{ steps.mktemp.outputs.music-dir }}
-          BACKEND_IMAGE: ${{ steps.check-images.outputs.backend }}
-          FRONTEND_IMAGE: ${{ steps.check-images.outputs.frontend }}
-          # Set required environment variables for container startup
+          BACKEND_IMAGE: local-backend:latest
+          FRONTEND_IMAGE: local-frontend:latest
           DJANGO_DEBUG: "False"
           DJANGO_SECRET_KEY: "django-insecure-ci-testing-key"
           AUTH_SECRET_KEY: "ci-testing-auth-key"
@@ -266,20 +332,6 @@ jobs:
             sleep 2
           done
 
-      - name: Debug container startup
-        if: failure()
-        run: |
-          echo "=== Container Status ==="
-          docker compose ps
-          echo "=== Web Container Logs ==="
-          docker compose logs web
-          echo "=== Frontend Container Logs ==="
-          docker compose logs frontend
-          echo "=== PostgreSQL Container Logs ==="
-          docker compose logs postgres
-          echo "=== All Container Logs ==="
-          docker compose logs
-
       - name: Test API health endpoint
         run: |
           echo "Testing API health endpoint..."
@@ -315,10 +367,13 @@ jobs:
         if: always()
         run: docker compose down -v
 
+  # =============================================================================
+  # Job 6: Build and publish Docker images (runs only on main branch)
+  # =============================================================================
   docker-build-and-push:
     name: Build and publish Docker images
     runs-on: ubuntu-latest
-    needs: [ backend, frontend, code-quality, docker-integration ]
+    needs: [backend, frontend, code-quality, docker-integration]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v5
@@ -342,25 +397,27 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          target: backend-prod
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest
             ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            INSTALL_DEV_DEPS=false
+          cache-from: type=gha,scope=backend-base
+          cache-from: type=gha,scope=backend-app
+          cache-to: type=gha,scope=backend-app,mode=max
 
       - name: Build and push frontend image (multi-arch)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
+          target: production
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest
             ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend-base
+          cache-from: type=gha,scope=frontend-app
+          cache-to: type=gha,scope=frontend-app,mode=max

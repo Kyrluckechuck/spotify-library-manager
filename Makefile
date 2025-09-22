@@ -203,7 +203,19 @@ build-frontend:
 
 # Docker commands
 docker-build:
-	docker build -t spotify-library-manager .
+	@echo "🔨 Building production Docker images..."
+	docker build --target backend-prod -t spotify-library-manager:latest .
+	docker build --target production -t spotify-library-manager-frontend:latest ./frontend
+
+docker-build-dev:
+	@echo "🔨 Building development Docker images..."
+	docker build --target backend-dev -t spotify-library-manager:dev .
+	docker build --target production -t spotify-library-manager-frontend:dev ./frontend
+
+docker-build-test:
+	@echo "🔨 Building test Docker images..."
+	docker build --target backend-test -t spotify-library-manager:test .
+	docker build --target test -t spotify-library-manager-frontend:test ./frontend
 
 # Use dev-container and dev-container-down instead
 docker-up:

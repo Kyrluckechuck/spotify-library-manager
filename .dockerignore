@@ -1,32 +1,117 @@
-__pycache__
-*.exe
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and editor files
 .vscode/
-node_modules/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Testing and coverage
 htmlcov/
-reports/
+.coverage
+.coverage.*
+.cache
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.venv/
-venv/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
 
-# User Configs
+# Node.js (for frontend builds)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/dist/
+frontend/build/
+
+# User Configs and secrets (but keep essential config files)
 client*.bin
 cookies*.txt
 urls*.txt
 *.pem
 *.wvd
 .secrets.yaml
+# Note: .env files and settings.yaml are needed by containers, so not ignored
 
-# No executables
+# Executables and binaries
 *.exe
 bin/
+*.dll
+*.so
+*.dylib
 
+# Application data
 db/
 Spotify/
 temp/
 *.log
+logs/
 
 # TanStack Router generated files
 frontend/.tanstack/
 .tanstack/
+
+# Git and version control
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Docker files (avoid recursive copying)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
