@@ -1,17 +1,22 @@
-.PHONY: build-and-publish dev dev-container dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db
+.PHONY: build-and-publish dev dev-container dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db
 
 # Main development command - starts all services
 dev:
 	python dev.py
 
-# Dev container: run compose with optional local override if present
+# Dev container: run compose with optional local override if present (detached)
 dev-container:
 	@if [ -f docker-compose.override.yml ]; then \
-		docker compose up --build; \
+		docker compose up --build -d; \
 	else \
 		cp docker-compose.override.example.yml docker-compose.override.yml && echo "Created local override from example"; \
-		docker compose up --build; \
+		docker compose up --build -d; \
 	fi
+	@echo "✅ Containers started in detached mode. Use 'make dev-container-logs' to view logs."
+
+# Attach to the running dev container logs
+dev-container-attach:
+	docker compose logs -f
 
 dev-container-down:
 	docker compose down

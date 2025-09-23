@@ -24,13 +24,20 @@ FROM deps AS source
 COPY . .
 
 # =============================================================================
-# Stage 4: Test (for CI/CD)
+# Stage 4: Development (for local dev - no build step)
+# =============================================================================
+FROM source AS development
+# Don't run build - this avoids GraphQL circular dependency issues
+# The dev server will serve files directly from source
+
+# =============================================================================
+# Stage 5: Test (for CI/CD)
 # =============================================================================
 FROM source AS test
 RUN yarn test:run
 
 # =============================================================================
-# Stage 5: Build (for production)
+# Stage 6: Build (for production)
 # =============================================================================
 FROM source AS build
 RUN yarn build
