@@ -189,16 +189,20 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "🚀 Main branch push - building multi-arch images for production"
             PLATFORMS="linux/amd64,linux/arm64"
-            BACKEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
-            FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
+            BACKEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest"
+            BACKEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
+            FRONTEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest"
+            FRONTEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
             PUSH_FLAG="--push"
           else
             echo "🔨 PR - building multi-arch images for testing"
             PLATFORMS="linux/amd64,linux/arm64"
             # Use safe branch name for tags
             BRANCH_NAME="${{ steps.branch.outputs.name }}"
-            BACKEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:$BRANCH_NAME,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
-            FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:$BRANCH_NAME,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
+            BACKEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:$BRANCH_NAME"
+            BACKEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
+            FRONTEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:$BRANCH_NAME"
+            FRONTEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
             PUSH_FLAG="--push"
           fi
           
@@ -206,7 +210,8 @@ jobs:
           docker buildx build \
             --target backend-prod \
             --platform $PLATFORMS \
-            --tag $BACKEND_TAGS \
+            --tag $BACKEND_TAG1 \
+            --tag $BACKEND_TAG2 \
             --cache-from type=gha,scope=backend-app \
             --cache-to type=gha,scope=backend-app,mode=max \
             $PUSH_FLAG \
@@ -216,7 +221,8 @@ jobs:
           docker buildx build \
             --target production \
             --platform $PLATFORMS \
-            --tag $FRONTEND_TAGS \
+            --tag $FRONTEND_TAG1 \
+            --tag $FRONTEND_TAG2 \
             --cache-from type=gha,scope=frontend-app \
             --cache-to type=gha,scope=frontend-app,mode=max \
             $PUSH_FLAG \
@@ -244,8 +250,8 @@ jobs:
           docker images | grep -E "(local-backend|local-frontend)"
           
           # Output image tags for reference
-          echo "::notice title=Images Built::Backend: $BACKEND_TAGS"
-          echo "::notice title=Images Built::Frontend: $FRONTEND_TAGS"
+          echo "::notice title=Images Built::Backend: $BACKEND_TAG1, $BACKEND_TAG2"
+          echo "::notice title=Images Built::Frontend: $FRONTEND_TAG1, $FRONTEND_TAG2"
           echo "Built from branch: ${{ steps.branch.outputs.original }}"
 
       - name: Build and start stack
