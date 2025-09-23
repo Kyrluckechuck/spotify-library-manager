@@ -354,7 +354,7 @@ jobs:
       - name: Cleanup old branch images
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          echo "🧹 Cleaning up old branch images (keeping last 3 per branch)..."
+          echo "🧹 Cleaning up images for merged/deleted branches..."
           
           # Function to cleanup old images for a given package
           cleanup_package() {
@@ -370,19 +370,55 @@ jobs:
               "/user/packages/container/$PACKAGE_NAME/versions" \
               --paginate > /tmp/all_versions.json
             
-            # Extract branch images and group by branch name
+            # Get all current branch names from the repository
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/${{ github.repository }}/branches" \
+              --jq '.[].name' > /tmp/current_branches.txt
+            
+            # Extract branch images from package versions
             cat /tmp/all_versions.json | jq -r '
               .[] | 
               select(.metadata.container.tags[]? | test("^branch-")) |
               .metadata.container.tags[] |
               select(test("^branch-")) |
               sub("^branch-"; "")
-            ' | sort | uniq > /tmp/branch_names.txt
+            ' | sort | uniq > /tmp/image_branches.txt
             
-            # For each branch, keep only the last 3 images
+            # Find branches that have images but no longer exist in the repo
+            comm -23 /tmp/image_branches.txt /tmp/current_branches.txt > /tmp/deleted_branches.txt
+            
+            # Clean up images for deleted branches
             while IFS= read -r branch_name; do
               if [ -n "$branch_name" ]; then
-                echo "🔍 Processing branch: $branch_name"
+                echo "🗑️ Cleaning up images for deleted branch: $branch_name"
+                
+                # Get all image IDs for this deleted branch
+                cat /tmp/all_versions.json | jq -r --arg branch "branch-$branch_name" '
+                  .[] |
+                  select(.metadata.container.tags[]? == $branch) |
+                  .id
+                ' > /tmp/to_delete.txt
+                
+                # Delete all images for this deleted branch
+                while IFS= read -r image_id; do
+                  if [ -n "$image_id" ]; then
+                    echo "  🗑️ Deleting image ID: $image_id"
+                    gh api \
+                      -X DELETE \
+                      -H "Accept: application/vnd.github+json" \
+                      -H "X-GitHub-Api-Version: 2022-11-28" \
+                      "/user/packages/container/$PACKAGE_NAME/versions/$image_id" || echo "Failed to delete image $image_id"
+                  fi
+                done < /tmp/to_delete.txt
+              fi
+            done < /tmp/deleted_branches.txt
+            
+            # Also clean up old images for active branches (keep last 3)
+            while IFS= read -r branch_name; do
+              if [ -n "$branch_name" ]; then
+                echo "🔍 Cleaning up old images for active branch: $branch_name (keeping last 3)"
                 
                 # Get image IDs for this branch, sorted by creation date (oldest first)
                 cat /tmp/all_versions.json | jq -r --arg branch "branch-$branch_name" '
@@ -394,10 +430,10 @@ jobs:
                   @tsv
                 ' | sort | head -n -3 | cut -f2 > /tmp/to_delete.txt
                 
-                # Delete old images for this branch
+                # Delete old images for this active branch
                 while IFS= read -r image_id; do
                   if [ -n "$image_id" ]; then
-                    echo "🗑️ Deleting old image ID: $image_id (branch: $branch_name)"
+                    echo "  🗑️ Deleting old image ID: $image_id"
                     gh api \
                       -X DELETE \
                       -H "Accept: application/vnd.github+json" \
@@ -406,9 +442,9 @@ jobs:
                   fi
                 done < /tmp/to_delete.txt
               fi
-            done < /tmp/branch_names.txt
+            done < /tmp/current_branches.txt
             
-            rm -f /tmp/all_versions.json /tmp/branch_names.txt /tmp/to_delete.txt
+            rm -f /tmp/all_versions.json /tmp/current_branches.txt /tmp/image_branches.txt /tmp/deleted_branches.txt /tmp/to_delete.txt
           }
           
           # Cleanup both backend and frontend packages
