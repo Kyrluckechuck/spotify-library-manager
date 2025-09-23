@@ -113,7 +113,7 @@ function Albums() {
 
   // Fetch artist details if filtering by artist
   const { data: artistData } = useQuery(GetArtistDocument, {
-    variables: { id: artistId ?? 0 },
+    variables: { id: artistId?.toString() ?? '0' },
     skip: !artistId,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',

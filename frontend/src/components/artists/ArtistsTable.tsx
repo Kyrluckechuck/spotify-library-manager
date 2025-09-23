@@ -89,7 +89,16 @@ export function ArtistsTable({
                     {artist.name}
                   </div>
                   <div className='text-sm text-gray-500'>
-                    DB ID: {artist.id} | Spotify: {artist.gid}
+                    DB ID: {artist.id} | Spotify:{' '}
+                    <a
+                      href={`https://open.spotify.com/artist/${artist.gid}`}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      title='Open Spotify'
+                      className='text-indigo-600 hover:text-indigo-900 hover:underline'
+                    >
+                      {artist.gid}
+                    </a>
                   </div>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
