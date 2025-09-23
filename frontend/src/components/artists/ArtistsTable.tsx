@@ -11,9 +11,11 @@ interface ArtistsTableProps {
   onSort: (field: SortField) => void;
   onTrackToggle: (artist: Artist) => void;
   onSyncArtist: (artistId: number) => void;
+  onDownloadArtist: (artistId: number) => void;
   loading?: boolean;
   mutatingIds?: Set<number>;
   syncMutatingIds?: Set<number>;
+  downloadMutatingIds?: Set<number>;
   errorById?: Record<number, string>;
   pulseIds?: Set<number>;
 }
@@ -25,9 +27,11 @@ export function ArtistsTable({
   onSort,
   onTrackToggle,
   onSyncArtist,
+  onDownloadArtist,
   loading = false,
   mutatingIds,
   syncMutatingIds,
+  downloadMutatingIds,
   errorById,
   pulseIds,
 }: ArtistsTableProps) {
@@ -195,7 +199,29 @@ export function ArtistsTable({
                         <span>Syncing…</span>
                       </span>
                     ) : (
-                      'Sync Now'
+                      '📄 Sync Library'
+                    )}
+                  </button>
+                  <button
+                    onClick={() => onDownloadArtist(artist.id)}
+                    disabled={
+                      downloadMutatingIds?.has(artist.id) ||
+                      artist.undownloadedCount === 0
+                    }
+                    className='px-3 py-1 rounded text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors disabled:opacity-60'
+                    title={
+                      artist.undownloadedCount === 0
+                        ? 'No undownloaded albums'
+                        : `Download ${artist.undownloadedCount} missing albums/singles`
+                    }
+                  >
+                    {downloadMutatingIds?.has(artist.id) ? (
+                      <span className='inline-flex items-center gap-2'>
+                        <span className='w-3 h-3 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin' />
+                        <span>Downloading…</span>
+                      </span>
+                    ) : (
+                      `⬇️ Download (${artist.undownloadedCount})`
                     )}
                   </button>
                   <Link

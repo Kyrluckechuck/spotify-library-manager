@@ -7,6 +7,7 @@ query GetArtist($id: String!) {
     isTracked
     addedAt
     lastSynced
+    undownloadedCount
   }
 }
 
@@ -37,6 +38,7 @@ query GetArtists(
       isTracked
       addedAt
       lastSynced
+      undownloadedCount
     }
   }
 }
@@ -126,6 +128,14 @@ mutation SyncArtist($artistId: String!) {
     isTracked
     addedAt
     lastSynced
+    undownloadedCount
+  }
+}
+
+mutation DownloadArtist($artistId: String!) {
+  downloadArtist(artistId: $artistId) {
+    success
+    message
   }
 }
 

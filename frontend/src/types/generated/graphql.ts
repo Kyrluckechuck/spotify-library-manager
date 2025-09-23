@@ -58,6 +58,7 @@ export type Artist = {
   lastSynced?: Maybe<Scalars['DateTime']['output']>;
   name: Scalars['String']['output'];
   spotifyUri: Scalars['String']['output'];
+  undownloadedCount: Scalars['Int']['output'];
 };
 
 export type ArtistConnection = {
@@ -112,6 +113,7 @@ export type Mutation = {
   cancelTasksByName: MutationResult;
   createPlaylist: Playlist;
   downloadAlbum: Album;
+  downloadArtist: MutationResult;
   downloadUrl: MutationResult;
   setAlbumWanted: MutationResult;
   syncAllTrackedArtists: MutationResult;
@@ -148,6 +150,10 @@ export type MutationCreatePlaylistArgs = {
 
 export type MutationDownloadAlbumArgs = {
   albumId: Scalars['String']['input'];
+};
+
+export type MutationDownloadArtistArgs = {
+  artistId: Scalars['String']['input'];
 };
 
 export type MutationDownloadUrlArgs = {
@@ -454,6 +460,7 @@ export type GetArtistQuery = {
     isTracked: boolean;
     addedAt?: string | null;
     lastSynced?: string | null;
+    undownloadedCount: number;
   } | null;
 };
 
@@ -481,6 +488,7 @@ export type GetArtistsQuery = {
       isTracked: boolean;
       addedAt?: string | null;
       lastSynced?: string | null;
+      undownloadedCount: number;
     }>;
   };
 };
@@ -562,7 +570,16 @@ export type SyncArtistMutation = {
     isTracked: boolean;
     addedAt?: string | null;
     lastSynced?: string | null;
+    undownloadedCount: number;
   };
+};
+
+export type DownloadArtistMutationVariables = Exact<{
+  artistId: Scalars['String']['input'];
+}>;
+
+export type DownloadArtistMutation = {
+  downloadArtist: { success: boolean; message: string };
 };
 
 export type SyncPlaylistMutationVariables = Exact<{
@@ -1222,6 +1239,7 @@ export const GetArtistDocument = gql`
       isTracked
       addedAt
       lastSynced
+      undownloadedCount
     }
   }
 `;
@@ -1320,6 +1338,7 @@ export const GetArtistsDocument = gql`
         isTracked
         addedAt
         lastSynced
+        undownloadedCount
       }
     }
   }
@@ -1627,6 +1646,7 @@ export const SyncArtistDocument = gql`
       isTracked
       addedAt
       lastSynced
+      undownloadedCount
     }
   }
 `;
@@ -1672,6 +1692,57 @@ export type SyncArtistMutationResult =
 export type SyncArtistMutationOptions = Apollo.BaseMutationOptions<
   SyncArtistMutation,
   SyncArtistMutationVariables
+>;
+export const DownloadArtistDocument = gql`
+  mutation DownloadArtist($artistId: String!) {
+    downloadArtist(artistId: $artistId) {
+      success
+      message
+    }
+  }
+`;
+export type DownloadArtistMutationFn = Apollo.MutationFunction<
+  DownloadArtistMutation,
+  DownloadArtistMutationVariables
+>;
+
+/**
+ * __useDownloadArtistMutation__
+ *
+ * To run a mutation, you first call `useDownloadArtistMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDownloadArtistMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [downloadArtistMutation, { data, loading, error }] = useDownloadArtistMutation({
+ *   variables: {
+ *      artistId: // value for 'artistId'
+ *   },
+ * });
+ */
+export function useDownloadArtistMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    DownloadArtistMutation,
+    DownloadArtistMutationVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<
+    DownloadArtistMutation,
+    DownloadArtistMutationVariables
+  >(DownloadArtistDocument, options);
+}
+export type DownloadArtistMutationHookResult = ReturnType<
+  typeof useDownloadArtistMutation
+>;
+export type DownloadArtistMutationResult =
+  Apollo.MutationResult<DownloadArtistMutation>;
+export type DownloadArtistMutationOptions = Apollo.BaseMutationOptions<
+  DownloadArtistMutation,
+  DownloadArtistMutationVariables
 >;
 export const SyncPlaylistDocument = gql`
   mutation SyncPlaylist($playlistId: Int!) {

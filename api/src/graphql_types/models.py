@@ -47,6 +47,7 @@ class Artist:
     is_tracked: bool
     last_synced: Optional[DateTime]
     added_at: Optional[DateTime] = None
+    undownloaded_count: int = 0
 
 
 @strawberry.type

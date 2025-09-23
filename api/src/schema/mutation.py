@@ -75,6 +75,10 @@ class Mutation:
         return await services.artist.sync_artist(artist_id)
 
     @strawberry.mutation
+    async def download_artist(self, artist_id: str) -> "MutationResult":
+        return await services.artist.download_artist(artist_id)
+
+    @strawberry.mutation
     async def sync_playlist(
         self, playlist_id: int, force: bool = False
     ) -> "MutationResult":

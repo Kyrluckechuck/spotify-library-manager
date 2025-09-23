@@ -6,6 +6,7 @@ import {
   TrackArtistDocument,
   UntrackArtistDocument,
   SyncArtistDocument,
+  DownloadArtistDocument,
 } from '../types/generated/graphql';
 import { useState, useMemo } from 'react';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
@@ -100,8 +101,12 @@ function Artists() {
   const [trackArtist] = useMutation(TrackArtistDocument);
   const [untrackArtist] = useMutation(UntrackArtistDocument);
   const [syncArtist] = useMutation(SyncArtistDocument);
+  const [downloadArtist] = useMutation(DownloadArtistDocument);
   const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
   const [syncMutatingIds, setSyncMutatingIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [downloadMutatingIds, setDownloadMutatingIds] = useState<Set<number>>(
     new Set()
   );
   const [errorById, setErrorById] = useState<Record<number, string>>({});
@@ -182,6 +187,35 @@ function Artists() {
     });
   };
 
+  const handleDownloadArtist = async (artistId: number) => {
+    try {
+      setErrorById(prev => ({ ...prev, [artistId]: '' }));
+      setDownloadMutatingIds(prev => new Set(prev).add(artistId));
+      const result = await downloadArtist({
+        variables: { artistId: artistId.toString() },
+      });
+
+      if (result.data?.downloadArtist?.success) {
+        toast.success('Artist download started');
+      } else {
+        const errorMessage =
+          result.data?.downloadArtist?.message || 'Download failed';
+        setErrorById(prev => ({ ...prev, [artistId]: errorMessage }));
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Download failed';
+      setErrorById(prev => ({ ...prev, [artistId]: errorMessage }));
+      toast.error(errorMessage);
+    }
+    setDownloadMutatingIds(prev => {
+      const next = new Set(prev);
+      next.delete(artistId);
+      return next;
+    });
+  };
+
   const handleLoadMore = () => {
     if (data?.artists.pageInfo.hasNextPage) {
       fetchMore({
@@ -241,9 +275,11 @@ function Artists() {
           onSort={handleSort}
           onTrackToggle={handleTrackToggle}
           onSyncArtist={handleSyncArtist}
+          onDownloadArtist={handleDownloadArtist}
           loading={loading}
           mutatingIds={mutatingIds}
           syncMutatingIds={syncMutatingIds}
+          downloadMutatingIds={downloadMutatingIds}
           errorById={errorById}
           pulseIds={pulseIds}
         />
