@@ -280,18 +280,18 @@ jobs:
           docker compose up -d postgres
           echo "⏰ Waiting for PostgreSQL to be healthy..."
           
-          for i in {1..30}; do
+          for i in {1..45}; do
             if docker compose ps postgres | grep -q "healthy"; then
               echo "✅ PostgreSQL is healthy after ${i} attempts"
               break
             fi
-            echo "⏳ PostgreSQL not ready yet (attempt $i/30)..."
-            if [ $i -eq 15 ]; then
+            echo "⏳ PostgreSQL not ready yet (attempt $i/45)..."
+            if [ $i -eq 20 ]; then
               echo "=== PostgreSQL Debug Info ==="
               docker compose ps postgres
               docker compose logs postgres
             fi
-            sleep 2
+            sleep 3
           done
           
           if ! docker compose ps postgres | grep -q "healthy"; then
@@ -306,38 +306,38 @@ jobs:
           docker compose up -d web
 
           echo "⏰ Waiting for web container to become healthy..."
-          for i in {1..30}; do
+          for i in {1..45}; do
             if docker compose ps web --format json | jq -r '.Status' | grep -q "healthy"; then
               echo "✅ Web container is healthy after ${i} attempts"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Web container failed to become healthy after 30 attempts"
+            if [ $i -eq 45 ]; then
+              echo "❌ Web container failed to become healthy after 45 attempts"
               echo "=== Container logs ==="
               docker compose logs web
               exit 1
             fi
-            echo "⏳ Web container not ready yet (attempt $i/30)..."
-            sleep 2
+            echo "⏳ Web container not ready yet (attempt $i/45)..."
+            sleep 3
           done
 
           echo "=== Starting frontend container ==="
           docker compose up -d frontend
 
           echo "⏰ Waiting for frontend container to become healthy..."
-          for i in {1..30}; do
+          for i in {1..45}; do
             if docker compose ps frontend --format json | jq -r '.Status' | grep -q "healthy"; then
               echo "✅ Frontend container is healthy after ${i} attempts"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Frontend container failed to become healthy after 30 attempts"
+            if [ $i -eq 45 ]; then
+              echo "❌ Frontend container failed to become healthy after 45 attempts"
               echo "=== Container logs ==="
               docker compose logs frontend
               exit 1
             fi
-            echo "⏳ Frontend container not ready yet (attempt $i/30)..."
-            sleep 2
+            echo "⏳ Frontend container not ready yet (attempt $i/45)..."
+            sleep 3
           done
 
       - name: Test API health endpoint
