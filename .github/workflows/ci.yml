@@ -2,7 +2,7 @@ name: CI Optimized
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ main ]
   pull_request:
     branches: [ "**" ]
 
@@ -185,15 +185,15 @@ jobs:
 
       - name: Build and push images with cache
         run: |
-          # Determine if this is a main branch push or PR/branch
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          # Determine if this is a main branch push or PR
+          if [ "${{ github.event_name }}" = "push" ]; then
             echo "🚀 Main branch push - building multi-arch images for production"
             PLATFORMS="linux/amd64,linux/arm64"
             BACKEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
             FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
             PUSH_FLAG="--push"
           else
-            echo "🔨 PR/Branch push - building multi-arch images for testing"
+            echo "🔨 PR - building multi-arch images for testing"
             PLATFORMS="linux/amd64,linux/arm64"
             # Use safe branch name for tags
             BRANCH_NAME="${{ steps.branch.outputs.name }}"
