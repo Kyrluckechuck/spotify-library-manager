@@ -2,7 +2,7 @@ name: CI Optimized
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]
   pull_request:
     branches: [ "**" ]
 
@@ -170,9 +170,22 @@ jobs:
           echo "config-dir=$CONFIG_DIR" >> "$GITHUB_OUTPUT"
           echo "music-dir=$MUSIC_DIR" >> "$GITHUB_OUTPUT"
 
+      - name: Extract branch name
+        id: branch
+        run: |
+          # Get branch name and make it safe for Docker tags
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH=${GITHUB_REF#refs/heads/}
+          fi
+          SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g' | tr '[:upper:]' '[:lower:]')
+          echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "original=$BRANCH" >> "$GITHUB_OUTPUT"
+
       - name: Build and push images with cache
         run: |
-          # Determine if this is a main branch push or PR
+          # Determine if this is a main branch push or PR/branch
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "🚀 Main branch push - building multi-arch images for production"
             PLATFORMS="linux/amd64,linux/arm64"
@@ -180,12 +193,12 @@ jobs:
             FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
             PUSH_FLAG="--push"
           else
-            echo "🔨 PR/Branch push - building single-arch images for testing"
-            PLATFORMS="linux/amd64"
-            # Use branch name for PRs, or ref name for other branches
-            BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-            BACKEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:branch-$BRANCH_NAME"
-            FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:branch-$BRANCH_NAME"
+            echo "🔨 PR/Branch push - building multi-arch images for testing"
+            PLATFORMS="linux/amd64,linux/arm64"
+            # Use safe branch name for tags
+            BRANCH_NAME="${{ steps.branch.outputs.name }}"
+            BACKEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:$BRANCH_NAME,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
+            FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:$BRANCH_NAME,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
             PUSH_FLAG="--push"
           fi
           
@@ -229,6 +242,11 @@ jobs:
           
           echo "✅ Images ready for testing:"
           docker images | grep -E "(local-backend|local-frontend)"
+          
+          # Output image tags for reference
+          echo "::notice title=Images Built::Backend: $BACKEND_TAGS"
+          echo "::notice title=Images Built::Frontend: $FRONTEND_TAGS"
+          echo "Built from branch: ${{ steps.branch.outputs.original }}"
 
       - name: Build and start stack
         env:
@@ -377,13 +395,13 @@ jobs:
               "/repos/${{ github.repository }}/branches" \
               --jq '.[].name' > /tmp/current_branches.txt
             
-            # Extract branch images from package versions
+            # Extract branch images from package versions (both branch-* and direct branch names)
             cat /tmp/all_versions.json | jq -r '
               .[] | 
-              select(.metadata.container.tags[]? | test("^branch-")) |
+              select(.metadata.container.tags[]? | test("^branch-") or (test("^[a-z0-9._-]+$") and (. != "latest"))) |
               .metadata.container.tags[] |
-              select(test("^branch-")) |
-              sub("^branch-"; "")
+              select(test("^branch-") or (test("^[a-z0-9._-]+$") and (. != "latest"))) |
+              if test("^branch-") then sub("^branch-"; "") else . end
             ' | sort | uniq > /tmp/image_branches.txt
             
             # Find branches that have images but no longer exist in the repo
@@ -394,10 +412,10 @@ jobs:
               if [ -n "$branch_name" ]; then
                 echo "🗑️ Cleaning up images for deleted branch: $branch_name"
                 
-                # Get all image IDs for this deleted branch
-                cat /tmp/all_versions.json | jq -r --arg branch "branch-$branch_name" '
+                # Get all image IDs for this deleted branch (check both branch-* and direct branch names)
+                cat /tmp/all_versions.json | jq -r --arg branch "$branch_name" '
                   .[] |
-                  select(.metadata.container.tags[]? == $branch) |
+                  select(.metadata.container.tags[]? == $branch or .metadata.container.tags[]? == ("branch-" + $branch)) |
                   .id
                 ' > /tmp/to_delete.txt
                 
@@ -421,9 +439,9 @@ jobs:
                 echo "🔍 Cleaning up old images for active branch: $branch_name (keeping last 3)"
                 
                 # Get image IDs for this branch, sorted by creation date (oldest first)
-                cat /tmp/all_versions.json | jq -r --arg branch "branch-$branch_name" '
+                cat /tmp/all_versions.json | jq -r --arg branch "$branch_name" '
                   .[] |
-                  select(.metadata.container.tags[]? == $branch) |
+                  select(.metadata.container.tags[]? == $branch or .metadata.container.tags[]? == ("branch-" + $branch)) |
                   .id as $id |
                   .created_at as $date |
                   [$date, $id] |
