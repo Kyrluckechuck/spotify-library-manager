@@ -21,6 +21,7 @@ export const createMockArtist = (overrides = {}) => ({
   id: 1,
   name: 'Test Artist',
   gid: 'test-gid-123',
+  spotifyUri: 'test-spotify-uri-123',
   isTracked: true,
   addedAt: '2024-01-01T00:00:00Z',
   lastSynced: '2024-01-01T00:00:00Z',

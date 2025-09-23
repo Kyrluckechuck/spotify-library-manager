@@ -93,11 +93,9 @@ frontend/.tanstack/
 frontend/*.timestamp-*.mjs
 frontend/*.timestamp-*.js
 
-# Generated files (can be regenerated)
-frontend/src/types/generated/
+# Generated files (can be regenerated) - but commit GraphQL types to avoid circular dependency
+# frontend/src/types/generated/
 frontend/src/graphql/generated/
-# But allow GraphQL schema and type definitions
-!frontend/src/types/generated/graphql.ts
 !frontend/src/graphql/
 !frontend/src/queries/
 !frontend/src/schema/

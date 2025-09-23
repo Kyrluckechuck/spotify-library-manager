@@ -15,7 +15,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
-const API_URL = 'http://localhost:5000/graphql';
+const API_URL =
+  process.env.GRAPHQL_CODEGEN_ENDPOINT || 'http://localhost:5000/graphql';
 const QUERIES_DIR = path.join(__dirname, '../src/queries');
 
 /**

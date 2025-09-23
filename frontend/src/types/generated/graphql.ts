@@ -57,6 +57,7 @@ export type Artist = {
   isTracked: Scalars['Boolean']['output'];
   lastSynced?: Maybe<Scalars['DateTime']['output']>;
   name: Scalars['String']['output'];
+  spotifyUri: Scalars['String']['output'];
 };
 
 export type ArtistConnection = {
@@ -449,6 +450,7 @@ export type GetArtistQuery = {
     id: number;
     name: string;
     gid: string;
+    spotifyUri: string;
     isTracked: boolean;
     addedAt?: string | null;
     lastSynced?: string | null;
@@ -475,6 +477,7 @@ export type GetArtistsQuery = {
       id: number;
       name: string;
       gid: string;
+      spotifyUri: string;
       isTracked: boolean;
       addedAt?: string | null;
       lastSynced?: string | null;
@@ -555,6 +558,7 @@ export type SyncArtistMutation = {
     id: number;
     name: string;
     gid: string;
+    spotifyUri: string;
     isTracked: boolean;
     addedAt?: string | null;
     lastSynced?: string | null;
@@ -853,6 +857,33 @@ export type GetTaskHistoryQuery = {
         progressPercentage?: number | null;
         logMessages: Array<string>;
       };
+    }>;
+  };
+};
+
+export type GetArtistsTestQueryVariables = Exact<{
+  isTracked?: InputMaybe<Scalars['Boolean']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type GetArtistsTestQuery = {
+  artists: {
+    totalCount: number;
+    pageInfo: {
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string | null;
+      endCursor?: string | null;
+    };
+    edges: Array<{
+      id: number;
+      name: string;
+      gid: string;
+      isTracked: boolean;
+      addedAt?: string | null;
+      lastSynced?: string | null;
     }>;
   };
 };
@@ -1187,6 +1218,7 @@ export const GetArtistDocument = gql`
       id
       name
       gid
+      spotifyUri
       isTracked
       addedAt
       lastSynced
@@ -1284,6 +1316,7 @@ export const GetArtistsDocument = gql`
         id
         name
         gid
+        spotifyUri
         isTracked
         addedAt
         lastSynced
@@ -1590,6 +1623,7 @@ export const SyncArtistDocument = gql`
       id
       name
       gid
+      spotifyUri
       isTracked
       addedAt
       lastSynced
@@ -2891,4 +2925,109 @@ export type GetTaskHistorySuspenseQueryHookResult = ReturnType<
 export type GetTaskHistoryQueryResult = Apollo.QueryResult<
   GetTaskHistoryQuery,
   GetTaskHistoryQueryVariables
+>;
+export const GetArtistsTestDocument = gql`
+  query GetArtistsTest(
+    $isTracked: Boolean
+    $first: Int = 20
+    $after: String
+    $search: String
+  ) {
+    artists(
+      isTracked: $isTracked
+      first: $first
+      after: $after
+      search: $search
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      edges {
+        id
+        name
+        gid
+        isTracked
+        addedAt
+        lastSynced
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetArtistsTestQuery__
+ *
+ * To run a query within a React component, call `useGetArtistsTestQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetArtistsTestQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetArtistsTestQuery({
+ *   variables: {
+ *      isTracked: // value for 'isTracked'
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useGetArtistsTestQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    GetArtistsTestQuery,
+    GetArtistsTestQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<GetArtistsTestQuery, GetArtistsTestQueryVariables>(
+    GetArtistsTestDocument,
+    options
+  );
+}
+export function useGetArtistsTestLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    GetArtistsTestQuery,
+    GetArtistsTestQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<GetArtistsTestQuery, GetArtistsTestQueryVariables>(
+    GetArtistsTestDocument,
+    options
+  );
+}
+export function useGetArtistsTestSuspenseQuery(
+  baseOptions?:
+    | Apollo.SkipToken
+    | Apollo.SuspenseQueryHookOptions<
+        GetArtistsTestQuery,
+        GetArtistsTestQueryVariables
+      >
+) {
+  const options =
+    baseOptions === Apollo.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<
+    GetArtistsTestQuery,
+    GetArtistsTestQueryVariables
+  >(GetArtistsTestDocument, options);
+}
+export type GetArtistsTestQueryHookResult = ReturnType<
+  typeof useGetArtistsTestQuery
+>;
+export type GetArtistsTestLazyQueryHookResult = ReturnType<
+  typeof useGetArtistsTestLazyQuery
+>;
+export type GetArtistsTestSuspenseQueryHookResult = ReturnType<
+  typeof useGetArtistsTestSuspenseQuery
+>;
+export type GetArtistsTestQueryResult = Apollo.QueryResult<
+  GetArtistsTestQuery,
+  GetArtistsTestQueryVariables
 >;

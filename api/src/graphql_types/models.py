@@ -43,6 +43,7 @@ class Artist:
     id: int
     name: str
     gid: str
+    spotify_uri: str
     is_tracked: bool
     last_synced: Optional[DateTime]
     added_at: Optional[DateTime] = None

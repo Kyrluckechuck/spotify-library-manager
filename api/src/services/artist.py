@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Tuple
 from django.db.models import Q
 
 from asgiref.sync import sync_to_async
+from downloader import utils
 
 from library_manager.models import Artist as DjangoArtist
 from library_manager.tasks import (
@@ -157,10 +158,15 @@ class ArtistService(BaseService[Artist]):
         # Some unit tests use light mocks without an `id`; be defensive here
         raw_id = getattr(django_artist, "id", None)
         safe_id: int = int(raw_id) if isinstance(raw_id, (int, str)) else 0
+
+        # Convert GID to Spotify URI for proper URL generation
+        spotify_uri = utils.gid_to_uri(django_artist.gid)
+
         return Artist(
             id=safe_id,
             name=django_artist.name,
             gid=django_artist.gid,
+            spotify_uri=spotify_uri,
             is_tracked=django_artist.tracked,
             last_synced=(
                 django_artist.last_synced_at.isoformat()

@@ -91,7 +91,7 @@ export function ArtistsTable({
                   <div className='text-sm text-gray-500'>
                     DB ID: {artist.id} | Spotify:{' '}
                     <a
-                      href={`https://open.spotify.com/artist/${artist.gid}`}
+                      href={`https://open.spotify.com/artist/${artist.spotifyUri}`}
                       target='_blank'
                       rel='noopener noreferrer'
                       title='Open Spotify'

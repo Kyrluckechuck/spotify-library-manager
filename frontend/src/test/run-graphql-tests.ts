@@ -39,7 +39,7 @@ const testQueries = [
   {
     name: 'GetArtists',
     query: gql`
-      query GetArtists(
+      query GetArtistsTest(
         $isTracked: Boolean
         $first: Int = 20
         $after: String

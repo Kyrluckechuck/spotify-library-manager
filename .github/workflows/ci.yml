@@ -99,6 +99,10 @@ jobs:
         working-directory: frontend
         run: yarn install --frozen-lockfile
 
+      - name: Validate GraphQL types
+        working-directory: frontend
+        run: yarn validate-types
+
       - name: Lint (frontend)
         working-directory: frontend
         run: yarn lint
@@ -364,7 +368,7 @@ jobs:
       - name: Validate GraphQL schema and operations
         working-directory: frontend
         env:
-          VITE_API_URL: http://localhost:5000/graphql
+          GRAPHQL_CODEGEN_ENDPOINT: http://localhost:5000/graphql
         run: yarn validate:comprehensive
 
       - name: Show docker compose logs on failure
