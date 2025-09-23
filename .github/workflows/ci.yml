@@ -16,70 +16,11 @@ permissions:
 
 jobs:
   # =============================================================================
-  # Job 1: Build and cache base images (runs first)
-  # =============================================================================
-  build-base-images:
-    name: Build and cache base images
-    runs-on: ubuntu-latest
-    outputs:
-      backend-cache-key: ${{ steps.backend-cache.outputs.cache-key }}
-      frontend-cache-key: ${{ steps.frontend-cache.outputs.cache-key }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Lowercase repo owner
-        id: owner
-        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and cache backend base image
-        id: backend-cache
-        run: |
-          # Create cache key based on requirements files
-          BACKEND_CACHE_KEY="backend-base-$(sha256sum requirements.txt requirements-dev.txt | sha256sum | cut -d' ' -f1)"
-          echo "cache-key=$BACKEND_CACHE_KEY" >> $GITHUB_OUTPUT
-          
-          # Build and push base image with cache
-          docker buildx build \
-            --target python-deps \
-            --tag ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:base-${{ github.sha }} \
-            --cache-from type=gha,scope=backend-base \
-            --cache-to type=gha,scope=backend-base,mode=max \
-            --push \
-            .
-
-      - name: Build and cache frontend base image
-        id: frontend-cache
-        run: |
-          # Create cache key based on package files
-          FRONTEND_CACHE_KEY="frontend-base-$(sha256sum frontend/package.json frontend/yarn.lock | sha256sum | cut -d' ' -f1)"
-          echo "cache-key=$FRONTEND_CACHE_KEY" >> $GITHUB_OUTPUT
-          
-          # Build and push base image with cache
-          docker buildx build \
-            --target deps \
-            --tag ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:base-${{ github.sha }} \
-            --cache-from type=gha,scope=frontend-base \
-            --cache-to type=gha,scope=frontend-base,mode=max \
-            --push \
-            ./frontend
-
-  # =============================================================================
-  # Job 2: Backend tests (runs in parallel with frontend)
+  # Job 1: Backend tests (runs in parallel with frontend)
   # =============================================================================
   backend:
     name: Backend (lint + tests) • Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    needs: build-base-images
     
     services:
       postgres:
@@ -139,12 +80,11 @@ jobs:
           make test-api
 
   # =============================================================================
-  # Job 3: Frontend tests (runs in parallel with backend)
+  # Job 2: Frontend tests (runs in parallel with backend)
   # =============================================================================
   frontend:
     name: Frontend (lint + tests) • Node 20
     runs-on: ubuntu-latest
-    needs: build-base-images
     steps:
       - uses: actions/checkout@v4
 
@@ -168,7 +108,7 @@ jobs:
         run: yarn test:run
 
   # =============================================================================
-  # Job 4: Code quality checks (runs in parallel)
+  # Job 3: Code quality checks (runs in parallel)
   # =============================================================================
   code-quality:
     name: Code quality checks
@@ -183,12 +123,12 @@ jobs:
         run: python scripts/check-repo-newlines.py check
 
   # =============================================================================
-  # Job 5: Docker integration tests (runs after base images are built)
+  # Job 4: Docker build, test, and publish (runs after all tests pass)
   # =============================================================================
-  docker-integration:
-    name: Docker integration tests
+  docker-build-test-publish:
+    name: Docker build, test, and publish
     runs-on: ubuntu-latest
-    needs: [build-base-images, backend, frontend, code-quality]
+    needs: [backend, frontend, code-quality]
     steps:
       - uses: actions/checkout@v4
 
@@ -198,6 +138,13 @@ jobs:
       - name: Lowercase repo owner
         id: owner
         run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create temp dirs for volumes
         id: mktemp
@@ -223,29 +170,64 @@ jobs:
           echo "config-dir=$CONFIG_DIR" >> "$GITHUB_OUTPUT"
           echo "music-dir=$MUSIC_DIR" >> "$GITHUB_OUTPUT"
 
-      - name: Build images with cache
+      - name: Build and push images with cache
         run: |
+          # Determine if this is a main branch push or PR
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "🚀 Main branch push - building multi-arch images for production"
+            PLATFORMS="linux/amd64,linux/arm64"
+            BACKEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
+            FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest,ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
+            PUSH_FLAG="--push"
+          else
+            echo "🔨 PR/Branch push - building single-arch images for testing"
+            PLATFORMS="linux/amd64"
+            # Use branch name for PRs, or ref name for other branches
+            BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+            BACKEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:branch-$BRANCH_NAME"
+            FRONTEND_TAGS="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:branch-$BRANCH_NAME"
+            PUSH_FLAG="--push"
+          fi
+          
           echo "🔨 Building backend image with cache..."
           docker buildx build \
             --target backend-prod \
-            --tag local-backend:latest \
-            --cache-from type=gha,scope=backend-base \
+            --platform $PLATFORMS \
+            --tag $BACKEND_TAGS \
             --cache-from type=gha,scope=backend-app \
             --cache-to type=gha,scope=backend-app,mode=max \
-            --load \
+            $PUSH_FLAG \
             .
           
           echo "🔨 Building frontend image with cache..."
           docker buildx build \
             --target production \
-            --tag local-frontend:latest \
-            --cache-from type=gha,scope=frontend-base \
+            --platform $PLATFORMS \
+            --tag $FRONTEND_TAGS \
             --cache-from type=gha,scope=frontend-app \
             --cache-to type=gha,scope=frontend-app,mode=max \
+            $PUSH_FLAG \
+            ./frontend
+          
+          echo "🏷️ Images built and pushed successfully"
+          
+          # For testing, also load images locally
+          echo "📦 Loading images locally for testing..."
+          docker buildx build \
+            --target backend-prod \
+            --tag local-backend:latest \
+            --cache-from type=gha,scope=backend-app \
+            --load \
+            .
+          
+          docker buildx build \
+            --target production \
+            --tag local-frontend:latest \
+            --cache-from type=gha,scope=frontend-app \
             --load \
             ./frontend
           
-          echo "🏷️ Images built successfully:"
+          echo "✅ Images ready for testing:"
           docker images | grep -E "(local-backend|local-frontend)"
 
       - name: Build and start stack
@@ -369,59 +351,68 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # =============================================================================
-  # Job 6: Build and publish Docker images (runs only on main branch)
-  # =============================================================================
-  docker-build-and-push:
-    name: Build and publish Docker images
-    runs-on: ubuntu-latest
-    needs: [backend, frontend, code-quality, docker-integration]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Lowercase repo owner
-        id: owner
-        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push backend image (multi-arch)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          target: backend-prod
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest
-            ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}
-          cache-from: |
-            type=gha,scope=backend-base
-            type=gha,scope=backend-app
-          cache-to: type=gha,scope=backend-app,mode=max
-
-      - name: Build and push frontend image (multi-arch)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          target: production
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest
-            ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}
-          cache-from: |
-            type=gha,scope=frontend-base
-            type=gha,scope=frontend-app
-          cache-to: type=gha,scope=frontend-app,mode=max
+      - name: Cleanup old branch images
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "🧹 Cleaning up old branch images (keeping last 3 per branch)..."
+          
+          # Function to cleanup old images for a given package
+          cleanup_package() {
+            local PACKAGE_NAME=$1
+            local IMAGE_TYPE=$2
+            
+            echo "📦 Cleaning up $IMAGE_TYPE images for package: $PACKAGE_NAME"
+            
+            # Get all package versions
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/user/packages/container/$PACKAGE_NAME/versions" \
+              --paginate > /tmp/all_versions.json
+            
+            # Extract branch images and group by branch name
+            cat /tmp/all_versions.json | jq -r '
+              .[] | 
+              select(.metadata.container.tags[]? | test("^branch-")) |
+              .metadata.container.tags[] |
+              select(test("^branch-")) |
+              sub("^branch-"; "")
+            ' | sort | uniq > /tmp/branch_names.txt
+            
+            # For each branch, keep only the last 3 images
+            while IFS= read -r branch_name; do
+              if [ -n "$branch_name" ]; then
+                echo "🔍 Processing branch: $branch_name"
+                
+                # Get image IDs for this branch, sorted by creation date (oldest first)
+                cat /tmp/all_versions.json | jq -r --arg branch "branch-$branch_name" '
+                  .[] |
+                  select(.metadata.container.tags[]? == $branch) |
+                  .id as $id |
+                  .created_at as $date |
+                  [$date, $id] |
+                  @tsv
+                ' | sort | head -n -3 | cut -f2 > /tmp/to_delete.txt
+                
+                # Delete old images for this branch
+                while IFS= read -r image_id; do
+                  if [ -n "$image_id" ]; then
+                    echo "🗑️ Deleting old image ID: $image_id (branch: $branch_name)"
+                    gh api \
+                      -X DELETE \
+                      -H "Accept: application/vnd.github+json" \
+                      -H "X-GitHub-Api-Version: 2022-11-28" \
+                      "/user/packages/container/$PACKAGE_NAME/versions/$image_id" || echo "Failed to delete image $image_id"
+                  fi
+                done < /tmp/to_delete.txt
+              fi
+            done < /tmp/branch_names.txt
+            
+            rm -f /tmp/all_versions.json /tmp/branch_names.txt /tmp/to_delete.txt
+          }
+          
+          # Cleanup both backend and frontend packages
+          cleanup_package "spotify-library-manager" "backend"
+          cleanup_package "spotify-library-manager-frontend" "frontend"
+          
+          echo "✅ Cleanup completed"
