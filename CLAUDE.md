@@ -193,7 +193,11 @@ This is a **full-stack Spotify library management application** with the followi
 - `docker compose exec web bash` - Shell into web container
 - `docker compose logs -f <service>` - View logs for specific service
 
-### Future Automation
+### Code Quality & Linting
+- **Local linting is available and preferred** - Run linting locally instead of in containers when possible:
+  - Python (from `/api` directory): `python3 -m flake8 <file>`, `python3 -m black <file>`, `python3 -m isort <file>`
+  - Frontend: Use `yarn lint`, `yarn format`, etc. from `/frontend` directory
+- Container-based linting is also available but local is faster and more reliable
 - In future you can use the existing cleanup tasks that are used by the CI to perform "easy" fixes for python such as flake8 black and isort, and similarly there are some for yarn/javascript
 
 # important-instruction-reminders
