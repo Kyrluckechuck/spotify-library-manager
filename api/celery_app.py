@@ -37,8 +37,12 @@ app.conf.worker_prefetch_multiplier = 1
 app.conf.task_acks_late = True
 app.conf.worker_disable_rate_limits = True
 
+# Ensure all task results include task names
+app.conf.result_extended = True
+app.conf.task_track_started = True
 
-@app.task(bind=True)  # type: ignore[misc]
+
+@app.task(bind=True, name="celery_app.debug_task")  # type: ignore[misc]
 def debug_task(self: "Celery.Task") -> None:
     """Debug task for testing Celery configuration."""
     print(f"Request: {self.request!r}")

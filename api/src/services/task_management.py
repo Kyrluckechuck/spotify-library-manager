@@ -205,6 +205,9 @@ class TaskManagementService:
             task_counts = {}
             for task in task_results:
                 task_name = task["task_name"]
+                # Skip tasks with null or empty task names
+                if not task_name:
+                    continue
                 if task_name not in task_counts:
                     task_counts[task_name] = 0
                 task_counts[task_name] += 1

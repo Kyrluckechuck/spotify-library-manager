@@ -100,8 +100,17 @@ settings = dynaconf.DjangoDynaconf(
     CELERY_RESULT_SERIALIZER="json",
     CELERY_TIMEZONE="UTC",
     CELERY_TASK_TRACK_STARTED=True,
+    CELERY_RESULT_EXTENDED=True,
     CELERY_TASK_TIME_LIMIT=30 * 60,  # 30 minutes
     CELERY_BEAT_SCHEDULER="django_celery_beat.schedulers:DatabaseScheduler",
+    # Store additional task metadata
+    CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS={
+        "master_name": "mymaster",
+        "visibility_timeout": 3600,
+        "retry_policy": {
+            "timeout": 5.0,
+        },
+    },
 )
 
 

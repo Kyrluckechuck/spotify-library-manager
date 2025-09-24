@@ -233,9 +233,11 @@ class Query:
         status = await services.task_management.get_queue_status()
 
         # Convert the task_counts dict to a list of TaskCount objects
+        # Filter out any null or empty task names as an additional safety measure
         task_counts = [
             TaskCount(task_name=name, count=count)
             for name, count in status["task_counts"].items()
+            if name  # Skip null or empty names
         ]
 
         return QueueStatus(

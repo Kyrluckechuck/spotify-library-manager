@@ -119,7 +119,9 @@ def fetch_all_albums_for_artist_sync(artist_id: int) -> None:
     fetch_all_albums_for_artist.delay(artist_id)
 
 
-@celery_app.task(bind=True, priority=3)
+@celery_app.task(
+    bind=True, priority=3, name="library_manager.tasks.fetch_all_albums_for_artist"
+)
 def fetch_all_albums_for_artist(self, artist_id: int) -> None:
     task_history = None
     try:
@@ -188,6 +190,7 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
+    name="library_manager.tasks.download_missing_albums_for_artist",
 )
 def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> None:
     task_history = None
@@ -317,6 +320,7 @@ def _sync_tracked_playlist_internal(
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
+    name="library_manager.tasks.sync_tracked_playlist",
 )
 def sync_tracked_playlist(
     self, playlist_id: int, task_id: Optional[str] = None
@@ -340,6 +344,7 @@ def sync_tracked_playlist(
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
+    name="library_manager.tasks.download_playlist",
 )
 def download_playlist(
     self,
@@ -402,6 +407,7 @@ def download_playlist(
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
+    name="library_manager.tasks.retry_all_missing_known_songs",
 )
 def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     missing_known_songs_list = (
@@ -441,6 +447,7 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
+    name="library_manager.tasks.download_extra_album_types_for_artist",
 )
 def download_extra_album_types_for_artist(
     self, artist_id: int, task_id: Optional[str] = None
@@ -486,7 +493,7 @@ def download_extra_album_types_for_artist(
     artist.save()
 
 
-@celery_app.task(bind=True)
+@celery_app.task(bind=True, name="library_manager.tasks.sync_tracked_playlist_artists")
 def sync_tracked_playlist_artists(
     self, playlist_id: int, task_id: Optional[str] = None
 ) -> None:
@@ -500,7 +507,9 @@ def sync_tracked_playlist_artists(
     track_artists_in_playlist(playlist.url, task_id)
 
 
-@celery_app.task(bind=True)  # Scheduled via Celery Beat
+@celery_app.task(
+    bind=True, name="library_manager.tasks.update_tracked_artists"
+)  # Scheduled via Celery Beat
 def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by(
         "last_synced_at", "added_at", "id"
@@ -514,7 +523,9 @@ def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
 
 # Severely throttling automatic playlist download for tracked artists for the time being;
 # There is a high likelyhood of being flagged due to high usage at the moment and a new scalable solution needs to be investigated.
-@celery_app.task(bind=True)  # Scheduled via Celery Beat
+@celery_app.task(
+    bind=True, name="library_manager.tasks.download_missing_tracked_artists"
+)  # Scheduled via Celery Beat
 def download_missing_tracked_artists(self, task_id: Optional[str] = None) -> None:
     if settings.disable_missing_tracked_artist_download:
         print(
@@ -562,7 +573,9 @@ def download_missing_tracked_artists(self, task_id: Optional[str] = None) -> Non
     # )
 
 
-@celery_app.task(bind=True)  # Scheduled via Celery Beat
+@celery_app.task(
+    bind=True, name="library_manager.tasks.sync_tracked_playlists"
+)  # Scheduled via Celery Beat
 def sync_tracked_playlists(self, task_id: Optional[str] = None) -> None:
     all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by(
         "last_synced_at", "id"
@@ -572,12 +585,16 @@ def sync_tracked_playlists(self, task_id: Optional[str] = None) -> None:
     )  # task.priority not available
 
 
-@celery_app.task(bind=True)  # Scheduled via Celery Beat
+@celery_app.task(
+    bind=True, name="library_manager.tasks.cleanup_huey_history"
+)  # Scheduled via Celery Beat
 def cleanup_huey_history(self) -> None:
     helpers.cleanup_huey_history()
 
 
-@celery_app.task(bind=True)  # Scheduled via Celery Beat - Every 5 minutes
+@celery_app.task(
+    bind=True, name="library_manager.tasks.cleanup_stuck_tasks_periodic"
+)  # Scheduled via Celery Beat - Every 5 minutes
 def cleanup_stuck_tasks_periodic(self) -> None:
     """Periodically clean up stuck tasks and stale artist references"""
     from library_manager.models import TaskHistory
@@ -595,6 +612,7 @@ def cleanup_stuck_tasks_periodic(self) -> None:
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
+    name="library_manager.tasks.validate_undownloaded_songs",
 )
 def validate_undownloaded_songs(
     self,
