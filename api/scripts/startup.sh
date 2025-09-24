@@ -3,6 +3,16 @@ set -e
 
 echo "🚀 Starting web service..."
 
+# Auto-update yt-dlp if enabled and not in production
+if [[ "${AUTO_UPDATE_YT_DLP:-true}" == "true" && "${DJANGO_ENVIRONMENT:-development}" != "production" ]]; then
+    echo "🔄 Checking for yt-dlp updates..."
+    if pip install --upgrade yt-dlp --quiet; then
+        echo "✅ yt-dlp updated successfully"
+    else
+        echo "⚠️ Failed to update yt-dlp, continuing with existing version"
+    fi
+fi
+
 # Function to handle timeouts
 run_with_timeout() {
     local timeout=$1
