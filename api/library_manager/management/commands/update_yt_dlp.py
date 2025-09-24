@@ -30,7 +30,7 @@ class Command(BaseCommand):
             if options["to_master"]:
                 self.stdout.write("📡 Updating to bleeding edge master branch...")
                 # Install directly from GitHub master branch
-                result = subprocess.run(
+                subprocess.run(
                     [
                         sys.executable,
                         "-m",
@@ -45,7 +45,7 @@ class Command(BaseCommand):
                 )
             else:
                 self.stdout.write("📦 Updating to latest stable release...")
-                result = subprocess.run(
+                subprocess.run(
                     [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
                     capture_output=True,
                     text=True,
@@ -63,6 +63,7 @@ class Command(BaseCommand):
                 ],
                 capture_output=True,
                 text=True,
+                check=False,
             )
             if version_result.returncode == 0:
                 self.stdout.write(f"📋 New version: {version_result.stdout.strip()}")
