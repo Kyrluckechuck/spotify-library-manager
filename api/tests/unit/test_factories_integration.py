@@ -138,7 +138,9 @@ class TestFactoryBoyIntegration:
 
         assert artist.name == "Custom Artist Name"
         assert artist.tracked is True
-        assert artist.gid.startswith("artist_")  # Factory handles this
+        assert len(artist.gid) == 32 and all(
+            c in "0123456789abcdef" for c in artist.gid
+        )  # Factory generates hex GIDs
         assert artist.added_at is not None  # Factory handles this too
 
     def test_batch_creation_performance(self):
@@ -148,7 +150,10 @@ class TestFactoryBoyIntegration:
 
         assert len(artists) == 10
         assert all(artist.name is not None for artist in artists)
-        assert all(artist.gid.startswith("artist_") for artist in artists)
+        assert all(
+            len(artist.gid) == 32 and all(c in "0123456789abcdef" for c in artist.gid)
+            for artist in artists
+        )
 
         # Create 5 albums with artists efficiently
         albums = AlbumFactory.create_batch(5)

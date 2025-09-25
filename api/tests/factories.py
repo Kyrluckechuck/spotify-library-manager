@@ -22,7 +22,7 @@ class ArtistFactory(DjangoModelFactory):
         model = Artist
 
     name = Faker("name")
-    gid = Sequence(lambda n: f"artist_{n}")
+    gid = Sequence(lambda n: f"{n:032x}")  # Generate proper hexadecimal GIDs
     tracked = Faker("boolean")
     added_at = Faker("date_time", tzinfo=timezone.utc)
     last_synced_at = Faker("date_time", tzinfo=timezone.utc)

@@ -21,6 +21,7 @@ def mock_django_artist() -> Mock:
     mock_artist.tracked = True
     mock_artist.last_synced_at = datetime.now()
     mock_artist.added_at = datetime.now()
+    mock_artist.spotify_uri = "spotify:artist:test_id"
     return mock_artist
 
 
@@ -28,10 +29,16 @@ def mock_django_artist() -> Mock:
 async def test_get_by_id(
     artist_service: ArtistService, mock_django_artist: Mock
 ) -> None:
-    with patch(
-        "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
-    ) as mock_aget:
+    with (
+        patch(
+            "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+        ) as mock_aget,
+        patch.object(
+            artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+        ) as mock_undownloaded_count,
+    ):
         mock_aget.return_value = mock_django_artist
+        mock_undownloaded_count.return_value = 5
         result = await artist_service.get_by_id("test_id")
 
         assert isinstance(result, Artist)
@@ -54,7 +61,12 @@ async def test_get_by_id_not_found(artist_service: ArtistService) -> None:
 async def test_get_connection(
     artist_service: ArtistService, mock_django_artist: Mock
 ) -> None:
-    with patch("library_manager.models.Artist.objects.all") as mock_all:
+    with (
+        patch("library_manager.models.Artist.objects.all") as mock_all,
+        patch.object(
+            artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+        ) as mock_undownloaded_count,
+    ):
         mock_queryset = Mock()
         mock_queryset.filter.return_value = mock_queryset
         mock_queryset.count = Mock(return_value=1)
@@ -62,6 +74,7 @@ async def test_get_connection(
         mock_queryset.__getitem__ = Mock(return_value=[mock_django_artist])
 
         mock_all.return_value = mock_queryset
+        mock_undownloaded_count.return_value = 3
 
         items, has_next, total = await artist_service.get_connection(
             first=10, is_tracked=True

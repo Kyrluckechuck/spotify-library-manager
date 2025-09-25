@@ -22,16 +22,23 @@ class TestArtistService:
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, artist_service):
         """Test successful artist retrieval by ID."""
-        with patch(
-            "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
-        ) as mock_aget:
+        with (
+            patch(
+                "library_manager.models.Artist.objects.aget", new_callable=AsyncMock
+            ) as mock_aget,
+            patch.object(
+                artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+            ) as mock_undownloaded_count,
+        ):
             mock_artist = Mock()
             mock_artist.gid = "test123"
             mock_artist.name = "Test Artist"
             mock_artist.tracked = True
             mock_artist.last_synced_at = datetime.now()
             mock_artist.id = 1  # Set the Django model ID
+            mock_artist.spotify_uri = "spotify:artist:test123"
             mock_aget.return_value = mock_artist
+            mock_undownloaded_count.return_value = 5  # Mock undownloaded count
 
             result = await artist_service.get_by_id("test123")
 
@@ -55,21 +62,33 @@ class TestArtistService:
     @pytest.mark.asyncio
     async def test_get_connection_with_filters(self, artist_service):
         """Test getting artist connection with filters."""
-        with patch("library_manager.models.Artist.objects.all") as mock_all:
+        with (
+            patch("library_manager.models.Artist.objects.all") as mock_all,
+            patch.object(
+                artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+            ) as mock_undownloaded_count,
+        ):
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
             mock_queryset.count = Mock(return_value=5)
             mock_queryset.order_by.return_value = mock_queryset
 
             # Return 4 items when first=3 to test has_next logic
-            mock_artists = [
-                Mock(gid=f"artist{i}", name=f"Artist {i}", tracked=True)
-                for i in range(4)
-            ]
+            mock_artists = []
+            for i in range(4):
+                mock_artist = Mock()
+                mock_artist.gid = f"artist{i}"
+                mock_artist.name = f"Artist {i}"
+                mock_artist.tracked = True
+                mock_artist.spotify_uri = f"spotify:artist:artist{i}"
+                mock_artists.append(mock_artist)
 
             # Slicing returns a list directly which will be cast via list(...)
             mock_queryset.__getitem__ = Mock(return_value=mock_artists)
             mock_all.return_value = mock_queryset
+            mock_undownloaded_count.return_value = (
+                2  # Mock undownloaded count for each artist
+            )
 
             items, has_next, total = await artist_service.get_connection(
                 first=3, is_tracked=True, search="Artist"

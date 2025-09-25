@@ -5,7 +5,6 @@ from django.conf import settings
 from django.db.models import Q
 
 from asgiref.sync import sync_to_async
-from downloader import utils
 
 from library_manager.models import Album
 from library_manager.models import Artist as DjangoArtist
@@ -216,7 +215,7 @@ class ArtistService(BaseService[Artist]):
         safe_id: int = int(raw_id) if isinstance(raw_id, (int, str)) else 0
 
         # Convert GID to Spotify URI for proper URL generation
-        spotify_uri = utils.gid_to_uri(django_artist.gid)
+        spotify_uri = django_artist.spotify_uri
 
         # Calculate undownloaded count asynchronously
         undownloaded_count = await self._get_undownloaded_count(django_artist)
@@ -247,7 +246,7 @@ class ArtistService(BaseService[Artist]):
         safe_id: int = int(raw_id) if isinstance(raw_id, (int, str)) else 0
 
         # Convert GID to Spotify URI for proper URL generation
-        spotify_uri = utils.gid_to_uri(django_artist.gid)
+        spotify_uri = django_artist.spotify_uri
 
         return Artist(
             id=safe_id,

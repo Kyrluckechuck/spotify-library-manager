@@ -24,7 +24,9 @@ class TestFactoryBoyUsage:
         artist = ArtistFactory()
 
         assert artist.name is not None
-        assert artist.gid.startswith("artist_")
+        assert len(artist.gid) == 32 and all(
+            c in "0123456789abcdef" for c in artist.gid
+        )
         assert isinstance(artist.tracked, bool)
         assert artist.added_at is not None
 
@@ -107,7 +109,9 @@ class TestFactoryBoyUsage:
 
         assert len(artists) == 5
         for artist in artists:
-            assert artist.gid.startswith("artist_")
+            assert len(artist.gid) == 32 and all(
+                c in "0123456789abcdef" for c in artist.gid
+            )
             assert artist.name is not None
 
     def test_complex_relationship_creation(self):
@@ -127,7 +131,9 @@ class TestFactoryBoyUsage:
 
         assert artist.name == "Custom Artist"
         assert artist.tracked is True
-        assert artist.gid.startswith("artist_")  # Still uses factory for other fields
+        assert len(artist.gid) == 32 and all(
+            c in "0123456789abcdef" for c in artist.gid
+        )  # Still uses factory for other fields
 
     def test_factory_creates_unique_objects(self):
         """Test that factories create unique objects."""
