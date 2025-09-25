@@ -78,6 +78,25 @@ def django_db_setup(django_db_setup, django_db_blocker):
         call_command("migrate", verbosity=0)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def close_db_connections():
+    """Ensure all database connections are closed after test session."""
+    yield  # Run all tests first
+    # Cleanup: close all database connections and force close any remaining
+    from django.db import connections
+
+    try:
+        for alias in connections:
+            conn = connections[alias]
+            conn.close()
+    except Exception:
+        # If normal close fails, try forced cleanup
+        pass
+
+    # Force close all connections
+    connections.close_all()
+
+
 @pytest.fixture
 def db_access_without_rollback_and_truncate(django_db_setup, django_db_blocker):
     """Provide database access without rollback and truncate."""

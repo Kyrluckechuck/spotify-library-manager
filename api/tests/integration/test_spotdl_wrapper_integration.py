@@ -138,8 +138,11 @@ class TestSpotdlWrapperIntegration:
         # so we don't require each thread to have a unique event loop.
         # We just verify that all threads can successfully create SpotdlWrapper instances.
 
+    @patch("downloader.spotdl_wrapper.SpotifyClient")
     @patch("downloader.spotdl_wrapper.Spotdl")
-    def test_event_loop_reuse_when_valid(self, mock_spotdl, mock_config):
+    def test_event_loop_reuse_when_valid(
+        self, mock_spotdl, mock_spotify_client, mock_config
+    ):
         """Test that existing valid event loops are reused."""
         # Create and set an event loop
         existing_loop = asyncio.new_event_loop()
@@ -157,8 +160,11 @@ class TestSpotdlWrapperIntegration:
             # Clean up
             existing_loop.close()
 
+    @patch("downloader.spotdl_wrapper.SpotifyClient")
     @patch("downloader.spotdl_wrapper.Spotdl")
-    def test_event_loop_replacement_when_closed(self, mock_spotdl, mock_config):
+    def test_event_loop_replacement_when_closed(
+        self, mock_spotdl, mock_spotify_client, mock_config
+    ):
         """Test that closed event loops are replaced with new ones."""
         # Create and close an event loop
         closed_loop = asyncio.new_event_loop()
