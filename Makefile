@@ -1,4 +1,4 @@
-.PHONY: build-and-publish dev dev-container dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db
+.PHONY: build-and-publish dev dev-container dev-container-update dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db
 
 # Main development command - starts all services
 dev:
@@ -13,6 +13,23 @@ dev-container:
 		docker compose up --build -d; \
 	fi
 	@echo "✅ Containers started in detached mode. Use 'make dev-container-logs' to view logs."
+
+# Dev container update: rebuild and restart app services, keep postgres running for speed
+dev-container-update:
+	@echo "🔄 Stopping app containers (keeping postgres running)..."
+	@docker compose stop web frontend-dev worker beat || true
+	@echo "🏗️  Rebuilding and starting app containers..."
+	@if [ -f docker-compose.override.yml ]; then \
+		docker compose up --build -d web frontend-dev worker beat; \
+	else \
+		cp docker-compose.override.example.yml docker-compose.override.yml && echo "Created local override from example"; \
+		docker compose up --build -d web frontend-dev worker beat; \
+	fi
+	@echo "🔄 Installing updated requirements in containers..."
+	@docker compose exec web pip install -r requirements.txt --quiet || echo "⚠️ Web requirements update failed"
+	@docker compose exec worker pip install -r requirements.txt --quiet || echo "⚠️ Worker requirements update failed"
+	@docker compose exec beat pip install -r requirements.txt --quiet || echo "⚠️ Beat requirements update failed"
+	@echo "✅ App containers updated and running with latest dependencies. Use 'make dev-container-logs' to view logs."
 
 # Attach to the running dev container logs
 dev-container-attach:
