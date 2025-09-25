@@ -16,7 +16,7 @@ from ..services import services
 
 
 @strawberry.type
-class Mutation:
+class Mutation:  # pylint: disable=too-many-public-methods
     @strawberry.mutation
     async def track_artist(self, artist_id: int) -> "MutationResult":
         return await services.artist.track_artist(artist_id=artist_id)

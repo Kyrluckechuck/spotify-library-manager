@@ -191,10 +191,10 @@ class ArtistService(BaseService[Artist]):
 
     async def _get_undownloaded_count(self, django_artist: DjangoArtist) -> int:
         """Calculate undownloaded count for an artist asynchronously."""
-        ALBUM_TYPES_TO_DOWNLOAD = getattr(
+        album_types_to_download = getattr(
             settings, "ALBUM_TYPES_TO_DOWNLOAD", ["single", "album", "compilation"]
         )
-        ALBUM_GROUPS_TO_IGNORE = getattr(
+        album_groups_to_ignore = getattr(
             settings, "ALBUM_GROUPS_TO_IGNORE", ["appears_on"]
         )
 
@@ -203,9 +203,9 @@ class ArtistService(BaseService[Artist]):
                 artist=django_artist,
                 downloaded=False,
                 wanted=True,
-                album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
+                album_type__in=album_types_to_download,
             )
-            .exclude(album_group__in=ALBUM_GROUPS_TO_IGNORE)
+            .exclude(album_group__in=album_groups_to_ignore)
             .count()
         )()
 
