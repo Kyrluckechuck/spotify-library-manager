@@ -120,6 +120,27 @@ def create_app() -> FastAPI:
             allow_headers=["*"],
         )
 
+    @app.on_event("startup")
+    async def startup_event() -> None:
+        """Run startup tasks including orphaned task cleanup."""
+
+        @sync_to_async
+        def cleanup_orphaned_tasks() -> None:
+            try:
+                from library_manager.models import TaskHistory
+
+                stuck_count = TaskHistory.cleanup_stuck_tasks()
+                if stuck_count > 0:
+                    logging.getLogger("api.startup").info(
+                        f"Cleaned up {stuck_count} orphaned task(s) on startup"
+                    )
+            except Exception as e:
+                logging.getLogger("api.startup").error(
+                    f"Failed to cleanup orphaned tasks on startup: {e}"
+                )
+
+        await cleanup_orphaned_tasks()
+
     # Local import to ensure Django setup is complete and satisfy flake8 E402
     from .schema import schema  # pylint: disable=import-error,no-name-in-module
 

@@ -13,12 +13,16 @@
 - [x] **Fix Django 5.1 deprecation warnings** - No deprecation warnings found in testing
 - [ ] **Implement downloader fallback (`spotdl_wrapper`)** - Add fallback to yt-dlp when no Spotify AAC
 - [ ] **Task visualization dashboard** - Show scheduled tasks (beat periodic tasks + ad-hoc queued tasks)
+- [x] **Add periodic heartbeat updates during long downloads** - Implemented progress callbacks in spotdl_wrapper every 5 songs
 
 ## Frontend
-- [ ] **Add `useRequestState` helper** - Wire to routes for better request handling
-- [ ] **Implement retries and optimistic updates** - For key mutations
+- [x] **Add `useRequestState` helper** - Wire to routes for better request handling
 - [ ] **Spotify search feature** - Add search for artists, albums, songs, playlists
 - [ ] **Add search UI components** - Frontend components for search functionality
+
+## Frontend (Rejected Ideas - Do Not Implement)
+- **Retries for mutations** - Most mutations either succeed or indicate real problems (DB/auth issues). Task operations enqueue jobs, don't need retries.
+- **Optimistic updates** - Library management requires accuracy over perceived speed. False states confuse users about tracking/sync status.
 
 ## CI/CD and Operations
 - [ ] **Monitor CI on main after merge** - Address any flakes that arise

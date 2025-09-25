@@ -147,7 +147,7 @@ class SpotdlWrapper:
 
         self.logger.debug("Completed SpotdlWrapper Initialization")
 
-    def execute(self, config: Config) -> int:
+    def execute(self, config: Config, task_progress_callback=None) -> int:
         download_queue = []
         download_queue_urls: list[str] = []
         error_count = 0
@@ -255,6 +255,17 @@ class SpotdlWrapper:
                         + round(track_index / len(queue_item), 3) * one_queue_increment
                     ),
                 )
+                # Periodic task progress updates every 5 songs
+                if task_progress_callback and track_index % 5 == 0:
+                    progress_pct = (
+                        main_queue_progress
+                        + (track_index / len(queue_item)) * one_queue_increment
+                    ) / 10
+                    task_progress_callback(
+                        progress_pct,
+                        f"Downloaded {track_index}/{len(queue_item)} songs from queue {queue_item_index}/{len(download_queue)}",
+                    )
+
                 try:
                     self.logger.info(f'({current_track}) Downloading "{track["name"]}"')
                     primary_artist = track["artists"][0]
@@ -417,6 +428,14 @@ class SpotdlWrapper:
                 if track_index == len(queue_item):
                     download_queue_item.completed_at = Now()
                     download_queue_item.save()
+
+                    # Final progress update for this queue
+                    if task_progress_callback:
+                        progress_pct = (main_queue_progress + one_queue_increment) / 10
+                        task_progress_callback(
+                            progress_pct,
+                            f"Completed queue {queue_item_index}/{len(download_queue)} ({len(queue_item)} songs)",
+                        )
 
                     if download_queue_url.startswith("spotify:album:"):
                         try:

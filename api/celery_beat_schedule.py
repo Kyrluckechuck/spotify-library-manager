@@ -26,7 +26,7 @@ CELERY_BEAT_SCHEDULE = {
         "options": {"priority": 10},
     },
     "cleanup-stale-tasks": {
-        "task": "library_manager.tasks.cleanup_stale_tasks",
+        "task": "library_manager.tasks.cleanup_stuck_tasks_periodic",
         "schedule": crontab(minute="*/5"),  # Every 5 minutes
         "options": {"priority": 5},
     },

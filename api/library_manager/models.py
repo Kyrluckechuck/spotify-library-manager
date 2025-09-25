@@ -322,15 +322,17 @@ class TaskHistory(models.Model):
     def get_expected_duration_minutes(self) -> int:
         """Get expected duration based on task type and entity"""
         if self.type == "SYNC":
-            return 5  # Sync operations should be quick
+            return 15  # Sync operations can take time with large discographies
         if self.type == "DOWNLOAD":
             if self.entity_type == "PLAYLIST":
-                return 15  # Playlist downloads can take longer
+                return 120  # Playlists can have hundreds of songs - 2 hours
             if self.entity_type == "ALBUM":
-                return 10  # Album downloads
+                return 60  # Albums can be large/slow downloads - 1 hour
+            if self.entity_type == "ARTIST":
+                return 180  # Artist downloads can be massive - 3 hours
         if self.type == "FETCH":
-            return 3  # Fetch operations should be fast
-        return 30  # Default fallback
+            return 10  # Fetch operations should be fast but API can be slow
+        return 120  # Default fallback - 2 hours for unknown tasks
 
     def is_stuck(self) -> bool:
         """Check if the task is stuck using multiple detection methods"""
@@ -353,13 +355,13 @@ class TaskHistory(models.Model):
         except Exception:
             pass
 
-        # Method 2: Task-specific timeout
+        # Method 2: Heartbeat timeout (only for very long timeouts - indicates dead container)
         expected_duration = self.get_expected_duration_minutes()
         timeout_threshold = timezone.now() - timedelta(minutes=expected_duration)
         if self.last_heartbeat < timeout_threshold:
             return True
 
-        # Method 3: Progress-based detection
+        # Method 3: Progress-based detection (more sensitive - indicates stuck process)
         if self.log_messages:
             last_log = max(self.log_messages, key=lambda x: x.get("timestamp", ""))
             if last_log.get("timestamp"):
@@ -369,11 +371,23 @@ class TaskHistory(models.Model):
                     last_log_dt = datetime.fromisoformat(
                         last_log["timestamp"].replace("Z", "+00:00")
                     )
-                    # If no progress for 5 minutes, likely stuck
-                    if timezone.now() - last_log_dt > timedelta(minutes=5):
-                        return True
+                    # If no progress for 30 minutes, check if heartbeat is more recent
+                    progress_gap = timezone.now() - last_log_dt
+                    if progress_gap > timedelta(minutes=30):
+                        # But if heartbeat is recent (within 45 min), give benefit of doubt
+                        heartbeat_gap = timezone.now() - self.last_heartbeat
+                        if heartbeat_gap > timedelta(minutes=45):
+                            return True  # Both progress and heartbeat are stale
+                        # Otherwise: old progress but recent heartbeat - probably long download
                 except Exception:
                     pass
+
+        # Method 4: Very old tasks without any progress logs (dead on arrival)
+        if not self.log_messages and self.started_at:
+            time_since_start = timezone.now() - self.started_at
+            # If task has been running for 1 hour without any logs, it's probably dead
+            if time_since_start > timedelta(hours=1):
+                return True
 
         return False
 

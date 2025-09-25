@@ -171,7 +171,17 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
             print(f"Task cancelled during Spotify fetch for artist {artist.name}")
             return
 
-        spotdl_wrapper.execute(downloader_config)
+        # Create callback to update task progress during fetch (if task_history exists)
+        if task_history:
+
+            def fetch_progress_callback(progress_pct: float, message: str):
+                update_task_progress(task_history, progress_pct, message)
+
+            spotdl_wrapper.execute(
+                downloader_config, task_progress_callback=fetch_progress_callback
+            )
+        else:
+            spotdl_wrapper.execute(downloader_config)
 
         # Final cancellation check before completion
         if check_task_cancellation(task_history):
@@ -258,7 +268,14 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
                     75.0,
                     f"Downloading {len(downloader_config.urls)} albums",
                 )
-            spotdl_wrapper.execute(downloader_config)
+            # Create callback to update task progress during long downloads
+
+            def progress_callback(progress_pct: float, message: str):
+                update_task_progress(task_history, progress_pct, message)
+
+            spotdl_wrapper.execute(
+                downloader_config, task_progress_callback=progress_callback
+            )
         else:
             print(
                 f"missing albums search for artist {artist.gid} is skipping since there are none missing"
@@ -393,7 +410,15 @@ def download_playlist(
         #     downloader_config.process_info = process_info
         update_task_progress(task_history, 50.0, "Downloading playlist tracks")
 
-        spotdl_wrapper.execute(downloader_config)
+        # Create callback to update task progress during playlist download
+        def playlist_progress_callback(progress_pct: float, message: str):
+            update_task_progress(
+                task_history, 50.0 + (progress_pct / 2), message
+            )  # Scale to 50-100%
+
+        spotdl_wrapper.execute(
+            downloader_config, task_progress_callback=playlist_progress_callback
+        )
 
         complete_task(task_history, success=True)
 
@@ -437,7 +462,19 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     #         self, desc="missing/failed song download", total=1000
     #     )
     #     downloader_config.process_info = process_info
-    spotdl_wrapper.execute(downloader_config)
+
+    # Create progress callback if task history is available
+    task_progress_callback = None
+    if hasattr(self, "request") and self.request.id:
+        task_history = TaskHistory.objects.filter(task_id=self.request.id).first()
+        if task_history:
+
+            def update_task_progress_callback(progress_pct, message):
+                task_history.update_progress(progress_pct, message)
+
+            task_progress_callback = update_task_progress_callback
+
+    spotdl_wrapper.execute(downloader_config, task_progress_callback)
 
     # Queue up next batch after ensuring rate limit has passed
     retry_all_missing_known_songs.schedule(delay=30)
@@ -484,7 +521,19 @@ def download_extra_album_types_for_artist(
         print(
             f"extra album missing albums search for artist {artist.gid} kicking off {len(downloader_config.urls)}"
         )
-        spotdl_wrapper.execute(downloader_config)
+
+        # Create progress callback if task history is available
+        task_progress_callback = None
+        if task_id:
+            task_history = TaskHistory.objects.filter(task_id=task_id).first()
+            if task_history:
+
+                def update_task_progress_callback(progress_pct, message):
+                    task_history.update_progress(progress_pct, message)
+
+                task_progress_callback = update_task_progress_callback
+
+        spotdl_wrapper.execute(downloader_config, task_progress_callback)
     else:
         print(
             f"extra album missing albums search for artist {artist.gid} is skipping since there are none missing"
@@ -649,7 +698,19 @@ def validate_undownloaded_songs(
     # if self is not None:
     #     process_info = ProcessInfo(self, desc="missing song download", total=1000)
     #     downloader_config.process_info = process_info
-    spotdl_wrapper.execute(downloader_config)
+
+    # Create progress callback if task history is available
+    task_progress_callback = None
+    if hasattr(self, "request") and self.request.id:
+        task_history = TaskHistory.objects.filter(task_id=self.request.id).first()
+        if task_history:
+
+            def update_task_progress_callback(progress_pct, message):
+                task_history.update_progress(progress_pct, message)
+
+            task_progress_callback = update_task_progress_callback
+
+    spotdl_wrapper.execute(downloader_config, task_progress_callback)
 
     # Don't call recursively if there weren't any songs that definitely should have existed
     if non_downloaded_songs_that_should_exist_count == 0:

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import type { TaskCount } from '../types/common';
 import { SearchInput } from '../components/ui/SearchInput';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
-// import { useRequestState } from '../hooks/useRequestState';
+import { useRequestState } from '../hooks/useRequestState';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import {
@@ -52,6 +52,7 @@ function Tasks() {
     loading: historyLoading,
     error: historyError,
     fetchMore,
+    networkStatus: historyNetworkStatus,
   } = useQuery(GetTaskHistoryDocument, {
     variables: {
       status: historyFilter === 'all' ? undefined : historyFilter,
@@ -62,7 +63,7 @@ function Tasks() {
       first: pageSize,
     },
     fetchPolicy: 'cache-first',
-    notifyOnNetworkStatusChange: false,
+    notifyOnNetworkStatusChange: true,
     pollInterval: 8000,
   });
 
@@ -73,6 +74,9 @@ function Tasks() {
   } = useQuery(GetQueueStatusDocument, {
     pollInterval: 5000,
   });
+
+  const { isRefreshing: isHistoryRefreshing } =
+    useRequestState(historyNetworkStatus);
 
   const historyNodes: TaskHistory[] =
     historyData?.taskHistory?.edges?.map(
@@ -601,7 +605,11 @@ function Tasks() {
           {historyLoading ? (
             <div className='text-center py-8'>
               <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto' />
-              <p className='mt-2 text-gray-600'>Loading task history...</p>
+              <p className='mt-2 text-gray-600'>
+                {isHistoryRefreshing
+                  ? 'Refreshing task history...'
+                  : 'Loading task history...'}
+              </p>
             </div>
           ) : historyError ? (
             <div className='text-center py-8 text-red-600'>
