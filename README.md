@@ -140,7 +140,7 @@ An example compose setup is included. Follow these steps:
 > This setup is optimized for development with proper async processing and background task handling.
 
 ### Prerequisites
-1. Install Python 3.11 or higher
+1. Install Python 3.13 or higher
 2. Install Node.js and Yarn
 3. Place your cookies in `/config/` as `cookies.txt`
    * You can export your cookies by using this Google Chrome extension on Spotify website: https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc. Make sure to be logged in.

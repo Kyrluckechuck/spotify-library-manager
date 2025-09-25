@@ -1,4 +1,6 @@
+import re
 from typing import List, Optional
+from urllib.parse import urlparse
 
 import strawberry
 from asgiref.sync import sync_to_async
@@ -13,6 +15,58 @@ from ..graphql_types.models import (
     UpdateArtistInput,
 )
 from ..services import services
+
+
+def validate_url(url: str) -> MutationResult:
+    """Validate URL format and scheme."""
+    if not url or not url.strip():
+        return MutationResult(success=False, message="URL cannot be empty")
+
+    try:
+        parsed = urlparse(url.strip())
+        if not parsed.scheme or not parsed.netloc:
+            return MutationResult(success=False, message="Invalid URL format")
+        if parsed.scheme not in ("http", "https"):
+            return MutationResult(
+                success=False, message="URL must use http or https scheme"
+            )
+        return MutationResult(success=True, message="URL valid")
+    except Exception:
+        return MutationResult(success=False, message="Invalid URL format")
+
+
+def validate_name(name: str, field_name: str = "Name") -> MutationResult:
+    """Validate name length and content."""
+    if not name or not name.strip():
+        return MutationResult(success=False, message=f"{field_name} cannot be empty")
+
+    name = name.strip()
+    if len(name) > 255:
+        return MutationResult(
+            success=False, message=f"{field_name} cannot exceed 255 characters"
+        )
+    if len(name) < 1:
+        return MutationResult(
+            success=False, message=f"{field_name} must be at least 1 character"
+        )
+
+    return MutationResult(success=True, message=f"{field_name} valid")
+
+
+def validate_task_name(task_name: str) -> MutationResult:
+    """Validate task name format."""
+    if not task_name or not task_name.strip():
+        return MutationResult(success=False, message="Task name cannot be empty")
+
+    task_name = task_name.strip()
+    # Allow alphanumeric, dots, underscores, and hyphens
+    if not re.match(r"^[a-zA-Z0-9._-]+$", task_name):
+        return MutationResult(
+            success=False,
+            message="Task name can only contain letters, numbers, dots, underscores, and hyphens",
+        )
+
+    return MutationResult(success=True, message="Task name valid")
 
 
 @strawberry.type
@@ -63,10 +117,18 @@ class Mutation:  # pylint: disable=too-many-public-methods
     async def update_playlist(
         self, playlist_id: int, name: str, url: str, auto_track_artists: bool
     ) -> "MutationResult":
+        name_validation = validate_name(name, "Playlist name")
+        if not name_validation.success:
+            return name_validation
+
+        url_validation = validate_url(url)
+        if not url_validation.success:
+            return url_validation
+
         return await services.playlist.update_playlist(
             playlist_id=playlist_id,
-            name=name,
-            url=url,
+            name=name.strip(),
+            url=url.strip(),
             auto_track_artists=auto_track_artists,
         )
 
@@ -92,16 +154,29 @@ class Mutation:  # pylint: disable=too-many-public-methods
     async def download_url(
         self, url: str, auto_track_artists: bool = False
     ) -> "MutationResult":
+        validation_result = validate_url(url)
+        if not validation_result.success:
+            return validation_result
+
         return await services.downloader.download_url(
-            url=url, auto_track_artists=auto_track_artists
+            url=url.strip(), auto_track_artists=auto_track_artists
         )
 
     @strawberry.mutation
     async def create_playlist(
         self, name: str, url: str, auto_track_artists: bool = False
     ) -> Playlist:
+        name_validation = validate_name(name, "Playlist name")
+        if not name_validation.success:
+            # Return a failure result as a Playlist-like response (this will need error handling)
+            raise ValueError(name_validation.message)
+
+        url_validation = validate_url(url)
+        if not url_validation.success:
+            raise ValueError(url_validation.message)
+
         return await services.playlist.create_playlist(
-            name=name, url=url, auto_track_artists=auto_track_artists
+            name=name.strip(), url=url.strip(), auto_track_artists=auto_track_artists
         )
 
     @strawberry.mutation
@@ -112,13 +187,23 @@ class Mutation:  # pylint: disable=too-many-public-methods
     @strawberry.mutation
     async def cancel_tasks_by_name(self, task_name: str) -> "MutationResult":
         """Cancel all pending tasks with a specific name."""
-        return await services.task_management.cancel_tasks_by_name(task_name=task_name)
+        validation_result = validate_task_name(task_name)
+        if not validation_result.success:
+            return validation_result
+
+        return await services.task_management.cancel_tasks_by_name(
+            task_name=task_name.strip()
+        )
 
     @strawberry.mutation
     async def cancel_running_tasks_by_name(self, task_name: str) -> "MutationResult":
         """Cancel running tasks with a specific name."""
+        validation_result = validate_task_name(task_name)
+        if not validation_result.success:
+            return validation_result
+
         return await services.task_management.cancel_running_tasks_by_name(
-            task_name=task_name
+            task_name=task_name.strip()
         )
 
     @strawberry.mutation

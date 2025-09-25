@@ -7,11 +7,12 @@
 
 ## Backend
 - [x] **Event bus: extract album ID from task args** - Improve task event handling
-- [ ] **Async/await cleanup where needed** - Lightweight pass through codebase
-- [ ] **API input validation for mutations** - Add incremental validation improvements
+- [x] **Async/await cleanup where needed** - Lightweight pass through codebase
+- [x] **API input validation for mutations** - Add incremental validation improvements
 - [ ] **Downloader fallback** - Implement `spotdl_wrapper` with settings gate
-- [ ] **Fix Django 5.1 deprecation warnings** - Already partially addressed, may need more
+- [x] **Fix Django 5.1 deprecation warnings** - No deprecation warnings found in testing
 - [ ] **Implement downloader fallback (`spotdl_wrapper`)** - Add fallback to yt-dlp when no Spotify AAC
+- [ ] **Task visualization dashboard** - Show scheduled tasks (beat periodic tasks + ad-hoc queued tasks)
 
 ## Frontend
 - [ ] **Add `useRequestState` helper** - Wire to routes for better request handling
@@ -30,7 +31,7 @@
 
 ## Repository Hygiene and Developer Experience
 - [ ] **Unify Node package manager** - Standardize on Yarn, remove package-lock.json
-- [ ] **Align Python version requirements** - README vs pyproject.toml consistency (3.11+ vs 3.13+)
+- [x] **Align Python version requirements** - All components now use Python 3.13+
 - [ ] **Documentation and onboarding improvements**:
   - [ ] Finish migration notes for settings.yaml
   - [ ] Update README onboarding (first run, required env vars, cookie export, device.wvd)
