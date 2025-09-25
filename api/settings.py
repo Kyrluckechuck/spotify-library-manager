@@ -219,3 +219,4 @@ STORAGES = {
 }
 
 # Note: Using STORAGES configuration above instead of deprecated DEFAULT_FILE_STORAGE and STATICFILES_STORAGE
+# The Django deprecation warnings for these settings are unavoidable in Django 5.0 when using dynaconf

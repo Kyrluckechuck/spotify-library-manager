@@ -111,18 +111,22 @@ class SpotdlWrapper:
 
         spotdl_settings = generate_spotdl_settings(config)
 
-        # Create a new event loop for this Celery worker thread
+        # Ensure we have a valid event loop and reuse an existing set loop when present
         try:
-            # Try to get the running event loop first (modern approach)
+            # Prefer the currently running loop when available
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            # No running loop, check if there's a set loop to reuse
+            # No running loop; try to reuse a previously set loop without emitting deprecation warnings
             try:
-                loop = asyncio.get_event_loop_policy().get_event_loop()
+                import warnings
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", DeprecationWarning)
+                    loop = asyncio.get_event_loop_policy().get_event_loop()
                 if loop.is_closed():
                     raise RuntimeError("Event loop is closed")
-            except RuntimeError:
-                # No valid loop exists, create and set a new one
+            except Exception:
+                # No valid loop exists; create and set a fresh one for this thread
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
 
