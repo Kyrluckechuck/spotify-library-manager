@@ -112,7 +112,7 @@ validate-types:
 
 # Main API test command with coverage
 test-api:
-	cd api && python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=html --cov-report=term-missing
+	cd api && python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=term-missing
 
 # API test variants
 test-api-unit:

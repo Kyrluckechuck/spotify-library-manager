@@ -177,11 +177,16 @@ class TestPlaylistService:
 
         with (
             patch("library_manager.models.TrackedPlaylist.objects.get") as mock_get,
+            patch(
+                "library_manager.models.TrackedPlaylist.objects.filter"
+            ) as mock_filter,
             patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
         ):
 
             # Configure mocks
             mock_get.return_value = mock_playlist
+            # Mock the duplicate check filter to return no existing playlists
+            mock_filter.return_value.exclude.return_value.first.return_value = None
             mock_sync_to_async.side_effect = lambda func: AsyncMock(return_value=func())
 
             result = await playlist_service.update_playlist(
@@ -193,10 +198,173 @@ class TestPlaylistService:
 
             # Verify the playlist was updated
             assert mock_playlist.name == "Updated Name"
-            assert mock_playlist.url == "https://open.spotify.com/playlist/updated"
+            assert (
+                mock_playlist.url == "spotify:playlist:updated"
+            )  # URL should be normalized
             assert mock_playlist.auto_track_artists is True
             assert result.success is True
             assert result.message == "Playlist updated successfully"
+
+    @pytest.mark.asyncio
+    async def test_create_playlist_deduplication(self, playlist_service):
+        """Test that create_playlist handles URL deduplication correctly."""
+        # Mock existing playlist with normalized URL
+        mock_existing_playlist = Mock()
+        mock_existing_playlist.id = 1
+        mock_existing_playlist.name = "Existing Playlist"
+        mock_existing_playlist.url = "spotify:playlist:12345"
+
+        with (
+            patch(
+                "library_manager.models.TrackedPlaylist.objects.filter"
+            ) as mock_filter,
+            patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
+        ):
+            # Configure mocks to return existing playlist
+            mock_filter.return_value.first.return_value = mock_existing_playlist
+            mock_sync_to_async.side_effect = lambda func: AsyncMock(return_value=func())
+
+            result = await playlist_service.create_playlist(
+                name="New Playlist",
+                url="https://open.spotify.com/playlist/12345?si=tracking_param",
+                auto_track_artists=False,
+            )
+
+            # Should return existing playlist, not create new one
+            assert result.id == 1
+            assert result.name == "Existing Playlist"
+            # Verify URL was normalized for lookup
+            mock_filter.assert_called_once_with(url="spotify:playlist:12345")
+
+    @pytest.mark.asyncio
+    async def test_update_playlist_duplicate_detection(self, playlist_service):
+        """Test that update_playlist detects duplicates correctly."""
+        # Mock the current playlist
+        mock_current_playlist = Mock()
+        mock_current_playlist.id = 1
+        mock_current_playlist.url = "spotify:playlist:original"
+
+        # Mock existing duplicate playlist
+        mock_duplicate_playlist = Mock()
+        mock_duplicate_playlist.id = 2
+        mock_duplicate_playlist.name = "Existing Duplicate"
+
+        with (
+            patch("library_manager.models.TrackedPlaylist.objects.get") as mock_get,
+            patch(
+                "library_manager.models.TrackedPlaylist.objects.filter"
+            ) as mock_filter,
+            patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
+        ):
+            # Configure mocks
+            mock_get.return_value = mock_current_playlist
+            mock_filter.return_value.exclude.return_value.first.return_value = (
+                mock_duplicate_playlist
+            )
+            mock_sync_to_async.side_effect = lambda func: AsyncMock(return_value=func())
+
+            result = await playlist_service.update_playlist(
+                playlist_id=1,
+                name="Updated Name",
+                url="https://open.spotify.com/playlist/duplicate?si=param",
+                auto_track_artists=False,
+            )
+
+            # Should fail due to duplicate
+            assert result.success is False
+            assert "already exists" in result.message
+            assert "Existing Duplicate" in result.message
+
+    def test_normalize_spotify_url(self, playlist_service):
+        """Test URL normalization with various formats."""
+        # Test web URL with tracking parameters
+        url1 = (
+            "https://open.spotify.com/playlist/12345?si=tracking_param&utm_source=web"
+        )
+        normalized1 = playlist_service._normalize_spotify_url(url1)
+        assert normalized1 == "spotify:playlist:12345"
+
+        # Test web URL without parameters
+        url2 = "https://open.spotify.com/playlist/67890"
+        normalized2 = playlist_service._normalize_spotify_url(url2)
+        assert normalized2 == "spotify:playlist:67890"
+
+        # Test already normalized URI
+        url3 = "spotify:playlist:abcdef"
+        normalized3 = playlist_service._normalize_spotify_url(url3)
+        assert normalized3 == "spotify:playlist:abcdef"
+
+        # Test other content types
+        url4 = "https://open.spotify.com/artist/artist123?si=param"
+        normalized4 = playlist_service._normalize_spotify_url(url4)
+        assert normalized4 == "spotify:artist:artist123"
+
+    @pytest.mark.asyncio
+    async def test_create_playlist_detects_http_url_duplicates(self, playlist_service):
+        """Test that create_playlist detects duplicates when existing playlist has HTTP URL."""
+        # Mock existing playlist with HTTP URL (like existing data)
+        mock_existing_playlist = Mock()
+        mock_existing_playlist.id = 1
+        mock_existing_playlist.name = "Existing HTTP Playlist"
+        mock_existing_playlist.url = (
+            "https://open.spotify.com/playlist/12345?si=old_param"
+        )
+
+        with (
+            patch.object(
+                playlist_service, "_find_duplicate_playlist"
+            ) as mock_find_duplicate,
+            patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
+        ):
+            # Configure mock to return existing playlist
+            mock_find_duplicate.return_value = mock_existing_playlist
+            mock_sync_to_async.side_effect = lambda func: AsyncMock(return_value=func())
+
+            result = await playlist_service.create_playlist(
+                name="New Playlist",
+                url="https://open.spotify.com/playlist/12345?si=new_param",
+                auto_track_artists=False,
+            )
+
+            # Should return existing playlist
+            assert result.id == 1
+            assert result.name == "Existing HTTP Playlist"
+            # Verify _find_duplicate_playlist was called with normalized URI
+            mock_find_duplicate.assert_called_once_with("spotify:playlist:12345")
+
+    def test_find_duplicate_playlist_cross_format_detection(self, playlist_service):
+        """Test that _find_duplicate_playlist detects duplicates across HTTP/URI formats."""
+        # Test with a normalized URI input, should find HTTP format existing playlist
+        with (
+            patch(
+                "library_manager.models.TrackedPlaylist.objects.filter"
+            ) as mock_filter,
+        ):
+            # Mock the QuerySet chain for exact match (returns None)
+            mock_exact_queryset = Mock()
+            mock_exact_queryset.first.return_value = None
+
+            # Mock the QuerySet chain for HTTP format match (returns existing)
+            mock_existing_playlist = Mock()
+            mock_existing_playlist.id = 1
+            mock_http_queryset = Mock()
+            mock_http_queryset.first.return_value = mock_existing_playlist
+
+            # Configure filter calls
+            def filter_side_effect(*args, **kwargs):
+                if "url" in kwargs:
+                    return mock_exact_queryset
+                else:
+                    # This is the Q() filter for HTTP URLs
+                    return mock_http_queryset
+
+            mock_filter.side_effect = filter_side_effect
+
+            result = playlist_service._find_duplicate_playlist("spotify:playlist:12345")
+
+            assert result == mock_existing_playlist
+            # Should have tried exact match first, then HTTP format
+            assert mock_filter.call_count == 2
 
 
 @pytest.mark.django_db

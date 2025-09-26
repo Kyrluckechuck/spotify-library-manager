@@ -1,5 +1,6 @@
 # mypy: disable-error-code=attr-defined
-from typing import Any, List, Optional, Tuple
+import re
+from typing import Any, List, Optional, Tuple, cast
 
 from django.db.models import Q
 
@@ -16,6 +17,97 @@ class PlaylistService(BaseService[Playlist]):
     def __init__(self) -> None:
         super().__init__()
         self.model = DjangoPlaylist
+
+    def _normalize_spotify_url(self, url: str) -> str:
+        """Convert various Spotify URL formats to a standard format, stripping tracking parameters."""
+        # Handle spotify: URIs (already normalized)
+        if url.startswith("spotify:"):
+            return url
+
+        # Handle web URLs - extract content type and ID, ignoring parameters
+        if "open.spotify.com" in url:
+            match = re.search(r"open\.spotify\.com/([^/?]+)/([^/?]+)", url)
+            if match:
+                content_type, content_id = match.groups()
+                return f"spotify:{content_type}:{content_id}"
+
+        return url
+
+    def _find_duplicate_playlist(self, normalized_url: str) -> Optional[DjangoPlaylist]:
+        """Find existing playlist that matches the normalized URL in either format."""
+        # First check for exact match with normalized URL
+        existing = cast(
+            Optional[DjangoPlaylist],
+            self.model.objects.filter(url=normalized_url).first(),
+        )
+        if existing:
+            return existing
+
+        # If normalized_url is a URI, also check for HTTP format
+        if normalized_url.startswith("spotify:"):
+            # Convert URI back to HTTP format to check existing HTTP URLs
+            parts = normalized_url.split(":")
+            if len(parts) == 3:
+                content_type, content_id = parts[1], parts[2]
+                http_url = f"https://open.spotify.com/{content_type}/{content_id}"
+
+                # Check for HTTP URLs with various parameter patterns
+                existing = cast(
+                    Optional[DjangoPlaylist],
+                    self.model.objects.filter(
+                        Q(url=http_url)
+                        | Q(
+                            url__startswith=f"{http_url}?"
+                        )  # Match URLs with parameters
+                    ).first(),
+                )
+                if existing:
+                    return existing
+
+        return None
+
+    def _find_duplicate_playlist_excluding(
+        self, normalized_url: str, exclude_id: int
+    ) -> Optional[DjangoPlaylist]:
+        """Find existing playlist that matches the normalized URL, excluding the specified ID."""
+        # First check for exact match with normalized URL
+        existing = cast(
+            Optional[DjangoPlaylist],
+            (
+                self.model.objects.filter(url=normalized_url)
+                .exclude(id=exclude_id)
+                .first()
+            ),
+        )
+        if existing:
+            return existing
+
+        # If normalized_url is a URI, also check for HTTP format
+        if normalized_url.startswith("spotify:"):
+            # Convert URI back to HTTP format to check existing HTTP URLs
+            parts = normalized_url.split(":")
+            if len(parts) == 3:
+                content_type, content_id = parts[1], parts[2]
+                http_url = f"https://open.spotify.com/{content_type}/{content_id}"
+
+                # Check for HTTP URLs with various parameter patterns
+                existing = cast(
+                    Optional[DjangoPlaylist],
+                    (
+                        self.model.objects.filter(
+                            Q(url=http_url)
+                            | Q(
+                                url__startswith=f"{http_url}?"
+                            )  # Match URLs with parameters
+                        )
+                        .exclude(id=exclude_id)
+                        .first()
+                    ),
+                )
+                if existing:
+                    return existing
+
+        return None
 
     async def get_by_id(self, id: str) -> Optional[Playlist]:
         try:
@@ -94,10 +186,22 @@ class PlaylistService(BaseService[Playlist]):
     async def create_playlist(
         self, name: str, url: str, auto_track_artists: bool = False
     ) -> Playlist:
-        """Create a new playlist."""
+        """Create a new playlist, checking for duplicates using normalized URLs."""
+        # Normalize the URL to strip tracking parameters for deduplication
+        normalized_url = self._normalize_spotify_url(url)
+
+        # Check for duplicates against both normalized URI and potential HTTP format
+        existing_playlist = await sync_to_async(
+            lambda: self._find_duplicate_playlist(normalized_url)
+        )()
+
+        if existing_playlist:
+            # Return the existing playlist instead of creating a duplicate
+            return self._to_graphql_type(existing_playlist)
+
         django_playlist = self.model(
             name=name,
-            url=url,
+            url=normalized_url,  # Store the normalized URL
             enabled=True,
             auto_track_artists=auto_track_artists,
         )
@@ -122,8 +226,27 @@ class PlaylistService(BaseService[Playlist]):
                 id=playlist_id
             )
 
+            # Normalize the URL to strip tracking parameters
+            normalized_url = self._normalize_spotify_url(url)
+
+            # Check if another playlist already has this normalized URL
+            # Only check if the URL is actually changing
+            current_normalized = self._normalize_spotify_url(django_playlist.url)
+            if normalized_url != current_normalized:
+                existing_playlist = await sync_to_async(
+                    lambda: self._find_duplicate_playlist_excluding(
+                        normalized_url, playlist_id
+                    )
+                )()
+
+                if existing_playlist:
+                    return MutationResult(
+                        success=False,
+                        message=f"A playlist with this URL already exists: {existing_playlist.name}",
+                    )
+
             django_playlist.name = name
-            django_playlist.url = url
+            django_playlist.url = normalized_url
             django_playlist.auto_track_artists = auto_track_artists
 
             await sync_to_async(django_playlist.save)()
