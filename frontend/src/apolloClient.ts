@@ -10,14 +10,25 @@ const httpLink = createHttpLink({
   uri: import.meta.env.VITE_API_URL ?? '/graphql',
 });
 
-const errorLink = onError(({ graphQLErrors, networkError }) => {
-  if (graphQLErrors)
-    graphQLErrors.forEach(({ message, locations, path }) =>
+const errorLink = onError(context => {
+  // Apollo Client v4 error handling
+  const errorContext = context as {
+    graphQLErrors?: Array<{
+      message: string;
+      locations?: Array<{ line: number; column: number }>;
+      path?: string[];
+    }>;
+    networkError?: Error;
+  };
+
+  if (errorContext.graphQLErrors)
+    errorContext.graphQLErrors.forEach(({ message, locations, path }) =>
       console.error(
         `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
       )
     );
-  if (networkError) console.error(`[Network error]: ${networkError}`);
+  if (errorContext.networkError)
+    console.error(`[Network error]: ${errorContext.networkError}`);
 });
 
 const link = from([errorLink, httpLink]);

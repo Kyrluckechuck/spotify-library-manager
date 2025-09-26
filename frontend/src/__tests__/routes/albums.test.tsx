@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client/react';
 import type {
   TestAlbum,
   MockUseQuery,
@@ -19,7 +19,7 @@ import {
 } from '../../test/graphql-mocks';
 
 // Mock the GraphQL hooks
-vi.mock('@apollo/client', () => ({
+vi.mock('@apollo/client/react', () => ({
   useQuery: vi.fn(),
   useMutation: vi.fn(),
   useApolloClient: vi.fn(() => ({
@@ -30,6 +30,10 @@ vi.mock('@apollo/client', () => ({
       modify: vi.fn(),
     },
   })),
+}));
+
+vi.mock('@apollo/client', () => ({
+  gql: vi.fn(),
 }));
 
 // Mock the TanStack Router

@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
-import * as Apollo from '@apollo/client';
+import * as ApolloReactCommon from '@apollo/client';
+import * as ApolloReactHooks from '@apollo/client/react';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = {
@@ -932,7 +933,7 @@ export const GetArtistForDisplayDocument = gql`
  * });
  */
 export function useGetArtistForDisplayQuery(
-  baseOptions: Apollo.QueryHookOptions<
+  baseOptions: ApolloReactHooks.QueryHookOptions<
     GetArtistForDisplayQuery,
     GetArtistForDisplayQueryVariables
   > &
@@ -942,36 +943,36 @@ export function useGetArtistForDisplayQuery(
     )
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<
+  return ApolloReactHooks.useQuery<
     GetArtistForDisplayQuery,
     GetArtistForDisplayQueryVariables
   >(GetArtistForDisplayDocument, options);
 }
 export function useGetArtistForDisplayLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetArtistForDisplayQuery,
     GetArtistForDisplayQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<
+  return ApolloReactHooks.useLazyQuery<
     GetArtistForDisplayQuery,
     GetArtistForDisplayQueryVariables
   >(GetArtistForDisplayDocument, options);
 }
 export function useGetArtistForDisplaySuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetArtistForDisplayQuery,
         GetArtistForDisplayQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetArtistForDisplayQuery,
     GetArtistForDisplayQueryVariables
   >(GetArtistForDisplayDocument, options);
@@ -985,7 +986,7 @@ export type GetArtistForDisplayLazyQueryHookResult = ReturnType<
 export type GetArtistForDisplaySuspenseQueryHookResult = ReturnType<
   typeof useGetArtistForDisplaySuspenseQuery
 >;
-export type GetArtistForDisplayQueryResult = Apollo.QueryResult<
+export type GetArtistForDisplayQueryResult = ApolloReactCommon.QueryResult<
   GetArtistForDisplayQuery,
   GetArtistForDisplayQueryVariables
 >;
@@ -1016,40 +1017,46 @@ export const GetAlbumDocument = gql`
  * });
  */
 export function useGetAlbumQuery(
-  baseOptions: Apollo.QueryHookOptions<GetAlbumQuery, GetAlbumQueryVariables> &
+  baseOptions: ApolloReactHooks.QueryHookOptions<
+    GetAlbumQuery,
+    GetAlbumQueryVariables
+  > &
     ({ variables: GetAlbumQueryVariables; skip?: boolean } | { skip: boolean })
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetAlbumQuery, GetAlbumQueryVariables>(
+  return ApolloReactHooks.useQuery<GetAlbumQuery, GetAlbumQueryVariables>(
     GetAlbumDocument,
     options
   );
 }
 export function useGetAlbumLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetAlbumQuery,
     GetAlbumQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetAlbumQuery, GetAlbumQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<GetAlbumQuery, GetAlbumQueryVariables>(
     GetAlbumDocument,
     options
   );
 }
 export function useGetAlbumSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetAlbumQuery, GetAlbumQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetAlbumQuery,
+        GetAlbumQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetAlbumQuery, GetAlbumQueryVariables>(
-    GetAlbumDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetAlbumQuery,
+    GetAlbumQueryVariables
+  >(GetAlbumDocument, options);
 }
 export type GetAlbumQueryHookResult = ReturnType<typeof useGetAlbumQuery>;
 export type GetAlbumLazyQueryHookResult = ReturnType<
@@ -1058,7 +1065,7 @@ export type GetAlbumLazyQueryHookResult = ReturnType<
 export type GetAlbumSuspenseQueryHookResult = ReturnType<
   typeof useGetAlbumSuspenseQuery
 >;
-export type GetAlbumQueryResult = Apollo.QueryResult<
+export type GetAlbumQueryResult = ApolloReactCommon.QueryResult<
   GetAlbumQuery,
   GetAlbumQueryVariables
 >;
@@ -1089,7 +1096,7 @@ export const GetPlaylistDocument = gql`
  * });
  */
 export function useGetPlaylistQuery(
-  baseOptions: Apollo.QueryHookOptions<
+  baseOptions: ApolloReactHooks.QueryHookOptions<
     GetPlaylistQuery,
     GetPlaylistQueryVariables
   > &
@@ -1099,39 +1106,39 @@ export function useGetPlaylistQuery(
     )
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetPlaylistQuery, GetPlaylistQueryVariables>(
+  return ApolloReactHooks.useQuery<GetPlaylistQuery, GetPlaylistQueryVariables>(
     GetPlaylistDocument,
     options
   );
 }
 export function useGetPlaylistLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetPlaylistQuery,
     GetPlaylistQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetPlaylistQuery, GetPlaylistQueryVariables>(
-    GetPlaylistDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetPlaylistQuery,
+    GetPlaylistQueryVariables
+  >(GetPlaylistDocument, options);
 }
 export function useGetPlaylistSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetPlaylistQuery,
         GetPlaylistQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetPlaylistQuery, GetPlaylistQueryVariables>(
-    GetPlaylistDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetPlaylistQuery,
+    GetPlaylistQueryVariables
+  >(GetPlaylistDocument, options);
 }
 export type GetPlaylistQueryHookResult = ReturnType<typeof useGetPlaylistQuery>;
 export type GetPlaylistLazyQueryHookResult = ReturnType<
@@ -1140,7 +1147,7 @@ export type GetPlaylistLazyQueryHookResult = ReturnType<
 export type GetPlaylistSuspenseQueryHookResult = ReturnType<
   typeof useGetPlaylistSuspenseQuery
 >;
-export type GetPlaylistQueryResult = Apollo.QueryResult<
+export type GetPlaylistQueryResult = ApolloReactCommon.QueryResult<
   GetPlaylistQuery,
   GetPlaylistQueryVariables
 >;
@@ -1172,7 +1179,7 @@ export const GetSongForDisplayDocument = gql`
  * });
  */
 export function useGetSongForDisplayQuery(
-  baseOptions: Apollo.QueryHookOptions<
+  baseOptions: ApolloReactHooks.QueryHookOptions<
     GetSongForDisplayQuery,
     GetSongForDisplayQueryVariables
   > &
@@ -1182,36 +1189,36 @@ export function useGetSongForDisplayQuery(
     )
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<
+  return ApolloReactHooks.useQuery<
     GetSongForDisplayQuery,
     GetSongForDisplayQueryVariables
   >(GetSongForDisplayDocument, options);
 }
 export function useGetSongForDisplayLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetSongForDisplayQuery,
     GetSongForDisplayQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<
+  return ApolloReactHooks.useLazyQuery<
     GetSongForDisplayQuery,
     GetSongForDisplayQueryVariables
   >(GetSongForDisplayDocument, options);
 }
 export function useGetSongForDisplaySuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetSongForDisplayQuery,
         GetSongForDisplayQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetSongForDisplayQuery,
     GetSongForDisplayQueryVariables
   >(GetSongForDisplayDocument, options);
@@ -1225,7 +1232,7 @@ export type GetSongForDisplayLazyQueryHookResult = ReturnType<
 export type GetSongForDisplaySuspenseQueryHookResult = ReturnType<
   typeof useGetSongForDisplaySuspenseQuery
 >;
-export type GetSongForDisplayQueryResult = Apollo.QueryResult<
+export type GetSongForDisplayQueryResult = ApolloReactCommon.QueryResult<
   GetSongForDisplayQuery,
   GetSongForDisplayQueryVariables
 >;
@@ -1261,43 +1268,46 @@ export const GetArtistDocument = gql`
  * });
  */
 export function useGetArtistQuery(
-  baseOptions: Apollo.QueryHookOptions<
+  baseOptions: ApolloReactHooks.QueryHookOptions<
     GetArtistQuery,
     GetArtistQueryVariables
   > &
     ({ variables: GetArtistQueryVariables; skip?: boolean } | { skip: boolean })
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistQuery, GetArtistQueryVariables>(
+  return ApolloReactHooks.useQuery<GetArtistQuery, GetArtistQueryVariables>(
     GetArtistDocument,
     options
   );
 }
 export function useGetArtistLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetArtistQuery,
     GetArtistQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistQuery, GetArtistQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<GetArtistQuery, GetArtistQueryVariables>(
     GetArtistDocument,
     options
   );
 }
 export function useGetArtistSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetArtistQuery, GetArtistQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetArtistQuery,
+        GetArtistQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetArtistQuery, GetArtistQueryVariables>(
-    GetArtistDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetArtistQuery,
+    GetArtistQueryVariables
+  >(GetArtistDocument, options);
 }
 export type GetArtistQueryHookResult = ReturnType<typeof useGetArtistQuery>;
 export type GetArtistLazyQueryHookResult = ReturnType<
@@ -1306,7 +1316,7 @@ export type GetArtistLazyQueryHookResult = ReturnType<
 export type GetArtistSuspenseQueryHookResult = ReturnType<
   typeof useGetArtistSuspenseQuery
 >;
-export type GetArtistQueryResult = Apollo.QueryResult<
+export type GetArtistQueryResult = ApolloReactCommon.QueryResult<
   GetArtistQuery,
   GetArtistQueryVariables
 >;
@@ -1364,42 +1374,45 @@ export const GetArtistsDocument = gql`
  * });
  */
 export function useGetArtistsQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetArtistsQuery,
     GetArtistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistsQuery, GetArtistsQueryVariables>(
+  return ApolloReactHooks.useQuery<GetArtistsQuery, GetArtistsQueryVariables>(
     GetArtistsDocument,
     options
   );
 }
 export function useGetArtistsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetArtistsQuery,
     GetArtistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistsQuery, GetArtistsQueryVariables>(
-    GetArtistsDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetArtistsQuery,
+    GetArtistsQueryVariables
+  >(GetArtistsDocument, options);
 }
 export function useGetArtistsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetArtistsQuery, GetArtistsQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetArtistsQuery,
+        GetArtistsQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetArtistsQuery, GetArtistsQueryVariables>(
-    GetArtistsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetArtistsQuery,
+    GetArtistsQueryVariables
+  >(GetArtistsDocument, options);
 }
 export type GetArtistsQueryHookResult = ReturnType<typeof useGetArtistsQuery>;
 export type GetArtistsLazyQueryHookResult = ReturnType<
@@ -1408,7 +1421,7 @@ export type GetArtistsLazyQueryHookResult = ReturnType<
 export type GetArtistsSuspenseQueryHookResult = ReturnType<
   typeof useGetArtistsSuspenseQuery
 >;
-export type GetArtistsQueryResult = Apollo.QueryResult<
+export type GetArtistsQueryResult = ApolloReactCommon.QueryResult<
   GetArtistsQuery,
   GetArtistsQueryVariables
 >;
@@ -1480,39 +1493,45 @@ export const GetAlbumsDocument = gql`
  * });
  */
 export function useGetAlbumsQuery(
-  baseOptions?: Apollo.QueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
-    GetAlbumsDocument,
-    options
-  );
-}
-export function useGetAlbumsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetAlbumsQuery,
     GetAlbumsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
+  return ApolloReactHooks.useQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
+    GetAlbumsDocument,
+    options
+  );
+}
+export function useGetAlbumsLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetAlbumsQuery,
+    GetAlbumsQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
     GetAlbumsDocument,
     options
   );
 }
 export function useGetAlbumsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetAlbumsQuery,
+        GetAlbumsQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
-    GetAlbumsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetAlbumsQuery,
+    GetAlbumsQueryVariables
+  >(GetAlbumsDocument, options);
 }
 export type GetAlbumsQueryHookResult = ReturnType<typeof useGetAlbumsQuery>;
 export type GetAlbumsLazyQueryHookResult = ReturnType<
@@ -1521,7 +1540,7 @@ export type GetAlbumsLazyQueryHookResult = ReturnType<
 export type GetAlbumsSuspenseQueryHookResult = ReturnType<
   typeof useGetAlbumsSuspenseQuery
 >;
-export type GetAlbumsQueryResult = Apollo.QueryResult<
+export type GetAlbumsQueryResult = ApolloReactCommon.QueryResult<
   GetAlbumsQuery,
   GetAlbumsQueryVariables
 >;
@@ -1583,45 +1602,45 @@ export const GetPlaylistsDocument = gql`
  * });
  */
 export function useGetPlaylistsQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetPlaylistsQuery,
     GetPlaylistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetPlaylistsQuery,
+    GetPlaylistsQueryVariables
+  >(GetPlaylistsDocument, options);
 }
 export function useGetPlaylistsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetPlaylistsQuery,
     GetPlaylistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetPlaylistsQuery,
+    GetPlaylistsQueryVariables
+  >(GetPlaylistsDocument, options);
 }
 export function useGetPlaylistsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetPlaylistsQuery,
         GetPlaylistsQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetPlaylistsQuery,
+    GetPlaylistsQueryVariables
+  >(GetPlaylistsDocument, options);
 }
 export type GetPlaylistsQueryHookResult = ReturnType<
   typeof useGetPlaylistsQuery
@@ -1632,7 +1651,7 @@ export type GetPlaylistsLazyQueryHookResult = ReturnType<
 export type GetPlaylistsSuspenseQueryHookResult = ReturnType<
   typeof useGetPlaylistsSuspenseQuery
 >;
-export type GetPlaylistsQueryResult = Apollo.QueryResult<
+export type GetPlaylistsQueryResult = ApolloReactCommon.QueryResult<
   GetPlaylistsQuery,
   GetPlaylistsQueryVariables
 >;
@@ -1650,7 +1669,7 @@ export const SyncArtistDocument = gql`
     }
   }
 `;
-export type SyncArtistMutationFn = Apollo.MutationFunction<
+export type SyncArtistMutationFn = ApolloReactCommon.MutationFunction<
   SyncArtistMutation,
   SyncArtistMutationVariables
 >;
@@ -1673,23 +1692,23 @@ export type SyncArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSyncArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SyncArtistMutation,
     SyncArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<SyncArtistMutation, SyncArtistMutationVariables>(
-    SyncArtistDocument,
-    options
-  );
+  return ApolloReactHooks.useMutation<
+    SyncArtistMutation,
+    SyncArtistMutationVariables
+  >(SyncArtistDocument, options);
 }
 export type SyncArtistMutationHookResult = ReturnType<
   typeof useSyncArtistMutation
 >;
 export type SyncArtistMutationResult =
-  Apollo.MutationResult<SyncArtistMutation>;
-export type SyncArtistMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<SyncArtistMutation>;
+export type SyncArtistMutationOptions = ApolloReactCommon.BaseMutationOptions<
   SyncArtistMutation,
   SyncArtistMutationVariables
 >;
@@ -1701,7 +1720,7 @@ export const DownloadArtistDocument = gql`
     }
   }
 `;
-export type DownloadArtistMutationFn = Apollo.MutationFunction<
+export type DownloadArtistMutationFn = ApolloReactCommon.MutationFunction<
   DownloadArtistMutation,
   DownloadArtistMutationVariables
 >;
@@ -1724,13 +1743,13 @@ export type DownloadArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useDownloadArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     DownloadArtistMutation,
     DownloadArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     DownloadArtistMutation,
     DownloadArtistMutationVariables
   >(DownloadArtistDocument, options);
@@ -1739,11 +1758,12 @@ export type DownloadArtistMutationHookResult = ReturnType<
   typeof useDownloadArtistMutation
 >;
 export type DownloadArtistMutationResult =
-  Apollo.MutationResult<DownloadArtistMutation>;
-export type DownloadArtistMutationOptions = Apollo.BaseMutationOptions<
-  DownloadArtistMutation,
-  DownloadArtistMutationVariables
->;
+  ApolloReactCommon.MutationResult<DownloadArtistMutation>;
+export type DownloadArtistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    DownloadArtistMutation,
+    DownloadArtistMutationVariables
+  >;
 export const SyncPlaylistDocument = gql`
   mutation SyncPlaylist($playlistId: Int!) {
     syncPlaylist(playlistId: $playlistId) {
@@ -1752,7 +1772,7 @@ export const SyncPlaylistDocument = gql`
     }
   }
 `;
-export type SyncPlaylistMutationFn = Apollo.MutationFunction<
+export type SyncPlaylistMutationFn = ApolloReactCommon.MutationFunction<
   SyncPlaylistMutation,
   SyncPlaylistMutationVariables
 >;
@@ -1775,13 +1795,13 @@ export type SyncPlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSyncPlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SyncPlaylistMutation,
     SyncPlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     SyncPlaylistMutation,
     SyncPlaylistMutationVariables
   >(SyncPlaylistDocument, options);
@@ -1790,8 +1810,8 @@ export type SyncPlaylistMutationHookResult = ReturnType<
   typeof useSyncPlaylistMutation
 >;
 export type SyncPlaylistMutationResult =
-  Apollo.MutationResult<SyncPlaylistMutation>;
-export type SyncPlaylistMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<SyncPlaylistMutation>;
+export type SyncPlaylistMutationOptions = ApolloReactCommon.BaseMutationOptions<
   SyncPlaylistMutation,
   SyncPlaylistMutationVariables
 >;
@@ -1808,7 +1828,7 @@ export const TrackArtistDocument = gql`
     }
   }
 `;
-export type TrackArtistMutationFn = Apollo.MutationFunction<
+export type TrackArtistMutationFn = ApolloReactCommon.MutationFunction<
   TrackArtistMutation,
   TrackArtistMutationVariables
 >;
@@ -1831,23 +1851,23 @@ export type TrackArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useTrackArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     TrackArtistMutation,
     TrackArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<TrackArtistMutation, TrackArtistMutationVariables>(
-    TrackArtistDocument,
-    options
-  );
+  return ApolloReactHooks.useMutation<
+    TrackArtistMutation,
+    TrackArtistMutationVariables
+  >(TrackArtistDocument, options);
 }
 export type TrackArtistMutationHookResult = ReturnType<
   typeof useTrackArtistMutation
 >;
 export type TrackArtistMutationResult =
-  Apollo.MutationResult<TrackArtistMutation>;
-export type TrackArtistMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<TrackArtistMutation>;
+export type TrackArtistMutationOptions = ApolloReactCommon.BaseMutationOptions<
   TrackArtistMutation,
   TrackArtistMutationVariables
 >;
@@ -1864,7 +1884,7 @@ export const UntrackArtistDocument = gql`
     }
   }
 `;
-export type UntrackArtistMutationFn = Apollo.MutationFunction<
+export type UntrackArtistMutationFn = ApolloReactCommon.MutationFunction<
   UntrackArtistMutation,
   UntrackArtistMutationVariables
 >;
@@ -1887,13 +1907,13 @@ export type UntrackArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useUntrackArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     UntrackArtistMutation,
     UntrackArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     UntrackArtistMutation,
     UntrackArtistMutationVariables
   >(UntrackArtistDocument, options);
@@ -1902,11 +1922,12 @@ export type UntrackArtistMutationHookResult = ReturnType<
   typeof useUntrackArtistMutation
 >;
 export type UntrackArtistMutationResult =
-  Apollo.MutationResult<UntrackArtistMutation>;
-export type UntrackArtistMutationOptions = Apollo.BaseMutationOptions<
-  UntrackArtistMutation,
-  UntrackArtistMutationVariables
->;
+  ApolloReactCommon.MutationResult<UntrackArtistMutation>;
+export type UntrackArtistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    UntrackArtistMutation,
+    UntrackArtistMutationVariables
+  >;
 export const SetAlbumWantedDocument = gql`
   mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
     setAlbumWanted(albumId: $albumId, wanted: $wanted) {
@@ -1920,7 +1941,7 @@ export const SetAlbumWantedDocument = gql`
     }
   }
 `;
-export type SetAlbumWantedMutationFn = Apollo.MutationFunction<
+export type SetAlbumWantedMutationFn = ApolloReactCommon.MutationFunction<
   SetAlbumWantedMutation,
   SetAlbumWantedMutationVariables
 >;
@@ -1944,13 +1965,13 @@ export type SetAlbumWantedMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSetAlbumWantedMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SetAlbumWantedMutation,
     SetAlbumWantedMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     SetAlbumWantedMutation,
     SetAlbumWantedMutationVariables
   >(SetAlbumWantedDocument, options);
@@ -1959,11 +1980,12 @@ export type SetAlbumWantedMutationHookResult = ReturnType<
   typeof useSetAlbumWantedMutation
 >;
 export type SetAlbumWantedMutationResult =
-  Apollo.MutationResult<SetAlbumWantedMutation>;
-export type SetAlbumWantedMutationOptions = Apollo.BaseMutationOptions<
-  SetAlbumWantedMutation,
-  SetAlbumWantedMutationVariables
->;
+  ApolloReactCommon.MutationResult<SetAlbumWantedMutation>;
+export type SetAlbumWantedMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    SetAlbumWantedMutation,
+    SetAlbumWantedMutationVariables
+  >;
 export const TogglePlaylistDocument = gql`
   mutation TogglePlaylist($playlistId: Int!) {
     togglePlaylist(playlistId: $playlistId) {
@@ -1977,7 +1999,7 @@ export const TogglePlaylistDocument = gql`
     }
   }
 `;
-export type TogglePlaylistMutationFn = Apollo.MutationFunction<
+export type TogglePlaylistMutationFn = ApolloReactCommon.MutationFunction<
   TogglePlaylistMutation,
   TogglePlaylistMutationVariables
 >;
@@ -2000,13 +2022,13 @@ export type TogglePlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useTogglePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     TogglePlaylistMutation,
     TogglePlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     TogglePlaylistMutation,
     TogglePlaylistMutationVariables
   >(TogglePlaylistDocument, options);
@@ -2015,11 +2037,12 @@ export type TogglePlaylistMutationHookResult = ReturnType<
   typeof useTogglePlaylistMutation
 >;
 export type TogglePlaylistMutationResult =
-  Apollo.MutationResult<TogglePlaylistMutation>;
-export type TogglePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  TogglePlaylistMutation,
-  TogglePlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<TogglePlaylistMutation>;
+export type TogglePlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    TogglePlaylistMutation,
+    TogglePlaylistMutationVariables
+  >;
 export const ForceSyncPlaylistDocument = gql`
   mutation ForceSyncPlaylist($playlistId: Int!) {
     syncPlaylist(playlistId: $playlistId, force: true) {
@@ -2028,7 +2051,7 @@ export const ForceSyncPlaylistDocument = gql`
     }
   }
 `;
-export type ForceSyncPlaylistMutationFn = Apollo.MutationFunction<
+export type ForceSyncPlaylistMutationFn = ApolloReactCommon.MutationFunction<
   ForceSyncPlaylistMutation,
   ForceSyncPlaylistMutationVariables
 >;
@@ -2051,13 +2074,13 @@ export type ForceSyncPlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useForceSyncPlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     ForceSyncPlaylistMutation,
     ForceSyncPlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     ForceSyncPlaylistMutation,
     ForceSyncPlaylistMutationVariables
   >(ForceSyncPlaylistDocument, options);
@@ -2066,11 +2089,12 @@ export type ForceSyncPlaylistMutationHookResult = ReturnType<
   typeof useForceSyncPlaylistMutation
 >;
 export type ForceSyncPlaylistMutationResult =
-  Apollo.MutationResult<ForceSyncPlaylistMutation>;
-export type ForceSyncPlaylistMutationOptions = Apollo.BaseMutationOptions<
-  ForceSyncPlaylistMutation,
-  ForceSyncPlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<ForceSyncPlaylistMutation>;
+export type ForceSyncPlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    ForceSyncPlaylistMutation,
+    ForceSyncPlaylistMutationVariables
+  >;
 export const TogglePlaylistAutoTrackDocument = gql`
   mutation TogglePlaylistAutoTrack($playlistId: Int!) {
     togglePlaylistAutoTrack(playlistId: $playlistId) {
@@ -2084,10 +2108,11 @@ export const TogglePlaylistAutoTrackDocument = gql`
     }
   }
 `;
-export type TogglePlaylistAutoTrackMutationFn = Apollo.MutationFunction<
-  TogglePlaylistAutoTrackMutation,
-  TogglePlaylistAutoTrackMutationVariables
->;
+export type TogglePlaylistAutoTrackMutationFn =
+  ApolloReactCommon.MutationFunction<
+    TogglePlaylistAutoTrackMutation,
+    TogglePlaylistAutoTrackMutationVariables
+  >;
 
 /**
  * __useTogglePlaylistAutoTrackMutation__
@@ -2107,13 +2132,13 @@ export type TogglePlaylistAutoTrackMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useTogglePlaylistAutoTrackMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     TogglePlaylistAutoTrackMutation,
     TogglePlaylistAutoTrackMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     TogglePlaylistAutoTrackMutation,
     TogglePlaylistAutoTrackMutationVariables
   >(TogglePlaylistAutoTrackDocument, options);
@@ -2122,11 +2147,12 @@ export type TogglePlaylistAutoTrackMutationHookResult = ReturnType<
   typeof useTogglePlaylistAutoTrackMutation
 >;
 export type TogglePlaylistAutoTrackMutationResult =
-  Apollo.MutationResult<TogglePlaylistAutoTrackMutation>;
-export type TogglePlaylistAutoTrackMutationOptions = Apollo.BaseMutationOptions<
-  TogglePlaylistAutoTrackMutation,
-  TogglePlaylistAutoTrackMutationVariables
->;
+  ApolloReactCommon.MutationResult<TogglePlaylistAutoTrackMutation>;
+export type TogglePlaylistAutoTrackMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    TogglePlaylistAutoTrackMutation,
+    TogglePlaylistAutoTrackMutationVariables
+  >;
 export const UpdatePlaylistDocument = gql`
   mutation UpdatePlaylist(
     $playlistId: Int!
@@ -2145,7 +2171,7 @@ export const UpdatePlaylistDocument = gql`
     }
   }
 `;
-export type UpdatePlaylistMutationFn = Apollo.MutationFunction<
+export type UpdatePlaylistMutationFn = ApolloReactCommon.MutationFunction<
   UpdatePlaylistMutation,
   UpdatePlaylistMutationVariables
 >;
@@ -2171,13 +2197,13 @@ export type UpdatePlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useUpdatePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     UpdatePlaylistMutation,
     UpdatePlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     UpdatePlaylistMutation,
     UpdatePlaylistMutationVariables
   >(UpdatePlaylistDocument, options);
@@ -2186,11 +2212,12 @@ export type UpdatePlaylistMutationHookResult = ReturnType<
   typeof useUpdatePlaylistMutation
 >;
 export type UpdatePlaylistMutationResult =
-  Apollo.MutationResult<UpdatePlaylistMutation>;
-export type UpdatePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  UpdatePlaylistMutation,
-  UpdatePlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<UpdatePlaylistMutation>;
+export type UpdatePlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    UpdatePlaylistMutation,
+    UpdatePlaylistMutationVariables
+  >;
 export const CreatePlaylistDocument = gql`
   mutation CreatePlaylist(
     $name: String!
@@ -2210,7 +2237,7 @@ export const CreatePlaylistDocument = gql`
     }
   }
 `;
-export type CreatePlaylistMutationFn = Apollo.MutationFunction<
+export type CreatePlaylistMutationFn = ApolloReactCommon.MutationFunction<
   CreatePlaylistMutation,
   CreatePlaylistMutationVariables
 >;
@@ -2235,13 +2262,13 @@ export type CreatePlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCreatePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CreatePlaylistMutation,
     CreatePlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CreatePlaylistMutation,
     CreatePlaylistMutationVariables
   >(CreatePlaylistDocument, options);
@@ -2250,11 +2277,12 @@ export type CreatePlaylistMutationHookResult = ReturnType<
   typeof useCreatePlaylistMutation
 >;
 export type CreatePlaylistMutationResult =
-  Apollo.MutationResult<CreatePlaylistMutation>;
-export type CreatePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  CreatePlaylistMutation,
-  CreatePlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<CreatePlaylistMutation>;
+export type CreatePlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CreatePlaylistMutation,
+    CreatePlaylistMutationVariables
+  >;
 export const DownloadUrlDocument = gql`
   mutation DownloadUrl($url: String!, $autoTrackArtists: Boolean) {
     downloadUrl(url: $url, autoTrackArtists: $autoTrackArtists) {
@@ -2291,7 +2319,7 @@ export const DownloadUrlDocument = gql`
     }
   }
 `;
-export type DownloadUrlMutationFn = Apollo.MutationFunction<
+export type DownloadUrlMutationFn = ApolloReactCommon.MutationFunction<
   DownloadUrlMutation,
   DownloadUrlMutationVariables
 >;
@@ -2315,23 +2343,23 @@ export type DownloadUrlMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useDownloadUrlMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     DownloadUrlMutation,
     DownloadUrlMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<DownloadUrlMutation, DownloadUrlMutationVariables>(
-    DownloadUrlDocument,
-    options
-  );
+  return ApolloReactHooks.useMutation<
+    DownloadUrlMutation,
+    DownloadUrlMutationVariables
+  >(DownloadUrlDocument, options);
 }
 export type DownloadUrlMutationHookResult = ReturnType<
   typeof useDownloadUrlMutation
 >;
 export type DownloadUrlMutationResult =
-  Apollo.MutationResult<DownloadUrlMutation>;
-export type DownloadUrlMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<DownloadUrlMutation>;
+export type DownloadUrlMutationOptions = ApolloReactCommon.BaseMutationOptions<
   DownloadUrlMutation,
   DownloadUrlMutationVariables
 >;
@@ -2355,10 +2383,11 @@ export const CreatePlaylistFromDownloadDocument = gql`
     }
   }
 `;
-export type CreatePlaylistFromDownloadMutationFn = Apollo.MutationFunction<
-  CreatePlaylistFromDownloadMutation,
-  CreatePlaylistFromDownloadMutationVariables
->;
+export type CreatePlaylistFromDownloadMutationFn =
+  ApolloReactCommon.MutationFunction<
+    CreatePlaylistFromDownloadMutation,
+    CreatePlaylistFromDownloadMutationVariables
+  >;
 
 /**
  * __useCreatePlaylistFromDownloadMutation__
@@ -2380,13 +2409,13 @@ export type CreatePlaylistFromDownloadMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCreatePlaylistFromDownloadMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CreatePlaylistFromDownloadMutation,
     CreatePlaylistFromDownloadMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CreatePlaylistFromDownloadMutation,
     CreatePlaylistFromDownloadMutationVariables
   >(CreatePlaylistFromDownloadDocument, options);
@@ -2395,9 +2424,9 @@ export type CreatePlaylistFromDownloadMutationHookResult = ReturnType<
   typeof useCreatePlaylistFromDownloadMutation
 >;
 export type CreatePlaylistFromDownloadMutationResult =
-  Apollo.MutationResult<CreatePlaylistFromDownloadMutation>;
+  ApolloReactCommon.MutationResult<CreatePlaylistFromDownloadMutation>;
 export type CreatePlaylistFromDownloadMutationOptions =
-  Apollo.BaseMutationOptions<
+  ApolloReactCommon.BaseMutationOptions<
     CreatePlaylistFromDownloadMutation,
     CreatePlaylistFromDownloadMutationVariables
   >;
@@ -2471,39 +2500,45 @@ export const GetSongsDocument = gql`
  * });
  */
 export function useGetSongsQuery(
-  baseOptions?: Apollo.QueryHookOptions<GetSongsQuery, GetSongsQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetSongsQuery, GetSongsQueryVariables>(
-    GetSongsDocument,
-    options
-  );
-}
-export function useGetSongsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetSongsQuery,
     GetSongsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetSongsQuery, GetSongsQueryVariables>(
+  return ApolloReactHooks.useQuery<GetSongsQuery, GetSongsQueryVariables>(
+    GetSongsDocument,
+    options
+  );
+}
+export function useGetSongsLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetSongsQuery,
+    GetSongsQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetSongsQuery, GetSongsQueryVariables>(
     GetSongsDocument,
     options
   );
 }
 export function useGetSongsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetSongsQuery, GetSongsQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetSongsQuery,
+        GetSongsQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetSongsQuery, GetSongsQueryVariables>(
-    GetSongsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetSongsQuery,
+    GetSongsQueryVariables
+  >(GetSongsDocument, options);
 }
 export type GetSongsQueryHookResult = ReturnType<typeof useGetSongsQuery>;
 export type GetSongsLazyQueryHookResult = ReturnType<
@@ -2512,7 +2547,7 @@ export type GetSongsLazyQueryHookResult = ReturnType<
 export type GetSongsSuspenseQueryHookResult = ReturnType<
   typeof useGetSongsSuspenseQuery
 >;
-export type GetSongsQueryResult = Apollo.QueryResult<
+export type GetSongsQueryResult = ApolloReactCommon.QueryResult<
   GetSongsQuery,
   GetSongsQueryVariables
 >;
@@ -2552,34 +2587,43 @@ export const GetSongDocument = gql`
  * });
  */
 export function useGetSongQuery(
-  baseOptions: Apollo.QueryHookOptions<GetSongQuery, GetSongQueryVariables> &
+  baseOptions: ApolloReactHooks.QueryHookOptions<
+    GetSongQuery,
+    GetSongQueryVariables
+  > &
     ({ variables: GetSongQueryVariables; skip?: boolean } | { skip: boolean })
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetSongQuery, GetSongQueryVariables>(
+  return ApolloReactHooks.useQuery<GetSongQuery, GetSongQueryVariables>(
     GetSongDocument,
     options
   );
 }
 export function useGetSongLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<GetSongQuery, GetSongQueryVariables>
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetSongQuery,
+    GetSongQueryVariables
+  >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetSongQuery, GetSongQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<GetSongQuery, GetSongQueryVariables>(
     GetSongDocument,
     options
   );
 }
 export function useGetSongSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetSongQuery, GetSongQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetSongQuery,
+        GetSongQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetSongQuery, GetSongQueryVariables>(
+  return ApolloReactHooks.useSuspenseQuery<GetSongQuery, GetSongQueryVariables>(
     GetSongDocument,
     options
   );
@@ -2589,7 +2633,7 @@ export type GetSongLazyQueryHookResult = ReturnType<typeof useGetSongLazyQuery>;
 export type GetSongSuspenseQueryHookResult = ReturnType<
   typeof useGetSongSuspenseQuery
 >;
-export type GetSongQueryResult = Apollo.QueryResult<
+export type GetSongQueryResult = ApolloReactCommon.QueryResult<
   GetSongQuery,
   GetSongQueryVariables
 >;
@@ -2622,42 +2666,42 @@ export const GetQueueStatusDocument = gql`
  * });
  */
 export function useGetQueueStatusQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetQueueStatusQuery,
     GetQueueStatusQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetQueueStatusQuery, GetQueueStatusQueryVariables>(
-    GetQueueStatusDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetQueueStatusQuery,
+    GetQueueStatusQueryVariables
+  >(GetQueueStatusDocument, options);
 }
 export function useGetQueueStatusLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetQueueStatusQuery,
     GetQueueStatusQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetQueueStatusQuery, GetQueueStatusQueryVariables>(
-    GetQueueStatusDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetQueueStatusQuery,
+    GetQueueStatusQueryVariables
+  >(GetQueueStatusDocument, options);
 }
 export function useGetQueueStatusSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetQueueStatusQuery,
         GetQueueStatusQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetQueueStatusQuery,
     GetQueueStatusQueryVariables
   >(GetQueueStatusDocument, options);
@@ -2671,7 +2715,7 @@ export type GetQueueStatusLazyQueryHookResult = ReturnType<
 export type GetQueueStatusSuspenseQueryHookResult = ReturnType<
   typeof useGetQueueStatusSuspenseQuery
 >;
-export type GetQueueStatusQueryResult = Apollo.QueryResult<
+export type GetQueueStatusQueryResult = ApolloReactCommon.QueryResult<
   GetQueueStatusQuery,
   GetQueueStatusQueryVariables
 >;
@@ -2683,10 +2727,11 @@ export const CancelAllPendingTasksDocument = gql`
     }
   }
 `;
-export type CancelAllPendingTasksMutationFn = Apollo.MutationFunction<
-  CancelAllPendingTasksMutation,
-  CancelAllPendingTasksMutationVariables
->;
+export type CancelAllPendingTasksMutationFn =
+  ApolloReactCommon.MutationFunction<
+    CancelAllPendingTasksMutation,
+    CancelAllPendingTasksMutationVariables
+  >;
 
 /**
  * __useCancelAllPendingTasksMutation__
@@ -2705,13 +2750,13 @@ export type CancelAllPendingTasksMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelAllPendingTasksMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelAllPendingTasksMutation,
     CancelAllPendingTasksMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelAllPendingTasksMutation,
     CancelAllPendingTasksMutationVariables
   >(CancelAllPendingTasksDocument, options);
@@ -2720,11 +2765,12 @@ export type CancelAllPendingTasksMutationHookResult = ReturnType<
   typeof useCancelAllPendingTasksMutation
 >;
 export type CancelAllPendingTasksMutationResult =
-  Apollo.MutationResult<CancelAllPendingTasksMutation>;
-export type CancelAllPendingTasksMutationOptions = Apollo.BaseMutationOptions<
-  CancelAllPendingTasksMutation,
-  CancelAllPendingTasksMutationVariables
->;
+  ApolloReactCommon.MutationResult<CancelAllPendingTasksMutation>;
+export type CancelAllPendingTasksMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CancelAllPendingTasksMutation,
+    CancelAllPendingTasksMutationVariables
+  >;
 export const CancelTasksByNameDocument = gql`
   mutation CancelTasksByName($taskName: String!) {
     cancelTasksByName(taskName: $taskName) {
@@ -2733,7 +2779,7 @@ export const CancelTasksByNameDocument = gql`
     }
   }
 `;
-export type CancelTasksByNameMutationFn = Apollo.MutationFunction<
+export type CancelTasksByNameMutationFn = ApolloReactCommon.MutationFunction<
   CancelTasksByNameMutation,
   CancelTasksByNameMutationVariables
 >;
@@ -2756,13 +2802,13 @@ export type CancelTasksByNameMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelTasksByNameMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelTasksByNameMutation,
     CancelTasksByNameMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelTasksByNameMutation,
     CancelTasksByNameMutationVariables
   >(CancelTasksByNameDocument, options);
@@ -2771,11 +2817,12 @@ export type CancelTasksByNameMutationHookResult = ReturnType<
   typeof useCancelTasksByNameMutation
 >;
 export type CancelTasksByNameMutationResult =
-  Apollo.MutationResult<CancelTasksByNameMutation>;
-export type CancelTasksByNameMutationOptions = Apollo.BaseMutationOptions<
-  CancelTasksByNameMutation,
-  CancelTasksByNameMutationVariables
->;
+  ApolloReactCommon.MutationResult<CancelTasksByNameMutation>;
+export type CancelTasksByNameMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CancelTasksByNameMutation,
+    CancelTasksByNameMutationVariables
+  >;
 export const CancelRunningTasksByNameDocument = gql`
   mutation CancelRunningTasksByName($taskName: String!) {
     cancelRunningTasksByName(taskName: $taskName) {
@@ -2784,10 +2831,11 @@ export const CancelRunningTasksByNameDocument = gql`
     }
   }
 `;
-export type CancelRunningTasksByNameMutationFn = Apollo.MutationFunction<
-  CancelRunningTasksByNameMutation,
-  CancelRunningTasksByNameMutationVariables
->;
+export type CancelRunningTasksByNameMutationFn =
+  ApolloReactCommon.MutationFunction<
+    CancelRunningTasksByNameMutation,
+    CancelRunningTasksByNameMutationVariables
+  >;
 
 /**
  * __useCancelRunningTasksByNameMutation__
@@ -2807,13 +2855,13 @@ export type CancelRunningTasksByNameMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelRunningTasksByNameMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelRunningTasksByNameMutation,
     CancelRunningTasksByNameMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelRunningTasksByNameMutation,
     CancelRunningTasksByNameMutationVariables
   >(CancelRunningTasksByNameDocument, options);
@@ -2822,9 +2870,9 @@ export type CancelRunningTasksByNameMutationHookResult = ReturnType<
   typeof useCancelRunningTasksByNameMutation
 >;
 export type CancelRunningTasksByNameMutationResult =
-  Apollo.MutationResult<CancelRunningTasksByNameMutation>;
+  ApolloReactCommon.MutationResult<CancelRunningTasksByNameMutation>;
 export type CancelRunningTasksByNameMutationOptions =
-  Apollo.BaseMutationOptions<
+  ApolloReactCommon.BaseMutationOptions<
     CancelRunningTasksByNameMutation,
     CancelRunningTasksByNameMutationVariables
   >;
@@ -2836,7 +2884,7 @@ export const CancelAllTasksDocument = gql`
     }
   }
 `;
-export type CancelAllTasksMutationFn = Apollo.MutationFunction<
+export type CancelAllTasksMutationFn = ApolloReactCommon.MutationFunction<
   CancelAllTasksMutation,
   CancelAllTasksMutationVariables
 >;
@@ -2858,13 +2906,13 @@ export type CancelAllTasksMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelAllTasksMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelAllTasksMutation,
     CancelAllTasksMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelAllTasksMutation,
     CancelAllTasksMutationVariables
   >(CancelAllTasksDocument, options);
@@ -2873,11 +2921,12 @@ export type CancelAllTasksMutationHookResult = ReturnType<
   typeof useCancelAllTasksMutation
 >;
 export type CancelAllTasksMutationResult =
-  Apollo.MutationResult<CancelAllTasksMutation>;
-export type CancelAllTasksMutationOptions = Apollo.BaseMutationOptions<
-  CancelAllTasksMutation,
-  CancelAllTasksMutationVariables
->;
+  ApolloReactCommon.MutationResult<CancelAllTasksMutation>;
+export type CancelAllTasksMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CancelAllTasksMutation,
+    CancelAllTasksMutationVariables
+  >;
 export const GetTaskHistoryDocument = gql`
   query GetTaskHistory(
     $first: Int = 20
@@ -2944,42 +2993,42 @@ export const GetTaskHistoryDocument = gql`
  * });
  */
 export function useGetTaskHistoryQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetTaskHistoryQuery,
     GetTaskHistoryQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(
-    GetTaskHistoryDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetTaskHistoryQuery,
+    GetTaskHistoryQueryVariables
+  >(GetTaskHistoryDocument, options);
 }
 export function useGetTaskHistoryLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetTaskHistoryQuery,
     GetTaskHistoryQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(
-    GetTaskHistoryDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetTaskHistoryQuery,
+    GetTaskHistoryQueryVariables
+  >(GetTaskHistoryDocument, options);
 }
 export function useGetTaskHistorySuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetTaskHistoryQuery,
         GetTaskHistoryQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetTaskHistoryQuery,
     GetTaskHistoryQueryVariables
   >(GetTaskHistoryDocument, options);
@@ -2993,7 +3042,7 @@ export type GetTaskHistoryLazyQueryHookResult = ReturnType<
 export type GetTaskHistorySuspenseQueryHookResult = ReturnType<
   typeof useGetTaskHistorySuspenseQuery
 >;
-export type GetTaskHistoryQueryResult = Apollo.QueryResult<
+export type GetTaskHistoryQueryResult = ApolloReactCommon.QueryResult<
   GetTaskHistoryQuery,
   GetTaskHistoryQueryVariables
 >;
@@ -3049,42 +3098,42 @@ export const GetArtistsTestDocument = gql`
  * });
  */
 export function useGetArtistsTestQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetArtistsTestQuery,
     GetArtistsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistsTestQuery, GetArtistsTestQueryVariables>(
-    GetArtistsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetArtistsTestQuery,
+    GetArtistsTestQueryVariables
+  >(GetArtistsTestDocument, options);
 }
 export function useGetArtistsTestLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetArtistsTestQuery,
     GetArtistsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistsTestQuery, GetArtistsTestQueryVariables>(
-    GetArtistsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetArtistsTestQuery,
+    GetArtistsTestQueryVariables
+  >(GetArtistsTestDocument, options);
 }
 export function useGetArtistsTestSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetArtistsTestQuery,
         GetArtistsTestQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetArtistsTestQuery,
     GetArtistsTestQueryVariables
   >(GetArtistsTestDocument, options);
@@ -3098,7 +3147,7 @@ export type GetArtistsTestLazyQueryHookResult = ReturnType<
 export type GetArtistsTestSuspenseQueryHookResult = ReturnType<
   typeof useGetArtistsTestSuspenseQuery
 >;
-export type GetArtistsTestQueryResult = Apollo.QueryResult<
+export type GetArtistsTestQueryResult = ApolloReactCommon.QueryResult<
   GetArtistsTestQuery,
   GetArtistsTestQueryVariables
 >;

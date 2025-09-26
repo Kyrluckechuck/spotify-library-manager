@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMutation, useQuery, useApolloClient } from '@apollo/client';
+import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import {
   GetPlaylistsDocument,
   TogglePlaylistDocument,

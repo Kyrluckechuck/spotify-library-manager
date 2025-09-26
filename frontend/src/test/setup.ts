@@ -3,16 +3,12 @@ import { vi } from 'vitest';
 import React from 'react';
 import type { ApolloErrorOptions } from '../types/common';
 
-// Mock Apollo Client
+// Mock Apollo Client core
 vi.mock('@apollo/client', async importOriginal => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    useQuery: vi.fn(),
-    useMutation: vi.fn(),
-    useApolloClient: vi.fn(),
     gql: vi.fn(),
-    ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
     ApolloError: class ApolloError extends Error {
       constructor(options: ApolloErrorOptions) {
         super(
@@ -25,6 +21,14 @@ vi.mock('@apollo/client', async importOriginal => {
     },
   };
 });
+
+// Mock Apollo Client React hooks
+vi.mock('@apollo/client/react', () => ({
+  useQuery: vi.fn(),
+  useMutation: vi.fn(),
+  useApolloClient: vi.fn(),
+  ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 // Mock TanStack Router
 vi.mock('@tanstack/react-router', () => ({

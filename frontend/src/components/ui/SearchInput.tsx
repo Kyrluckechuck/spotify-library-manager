@@ -18,7 +18,9 @@ export function SearchInput({
   const [searchTerm, setSearchTerm] = useState(initialValue);
 
   // Use a ref to store the timeout ID for proper debouncing
-  const timeoutRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
 
   const debouncedSearchWithRef = useCallback(
     (query: string) => {

@@ -94,3 +94,8 @@ export interface ApolloErrorOptions {
   graphQLErrors?: GraphQLError[];
   networkError?: { message: string };
 }
+
+export interface ApolloError extends Error {
+  graphQLErrors?: GraphQLError[];
+  networkError?: Error | null;
+}

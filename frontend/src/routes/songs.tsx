@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { useState, useMemo } from 'react';
 import { GetSongsDocument } from '../types/generated/graphql';
 import type { Song } from '../types/common';

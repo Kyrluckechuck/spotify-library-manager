@@ -1,12 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMutation, useQuery, useApolloClient } from '@apollo/client';
+import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import {
   GetAlbumsDocument,
   SetAlbumWantedDocument,
   GetArtistDocument,
   type GetAlbumsQuery,
 } from '../types/generated/graphql';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 
 // Components
 import { AlbumFilters } from '../components/albums/AlbumFilters';
@@ -74,40 +74,6 @@ function Albums() {
       errorPolicy: 'all',
       // Keep previous data while loading
       returnPartialData: true,
-      onCompleted: data => {
-        // Pre-fetch other filter combinations
-        if (data && networkStatus !== 3) {
-          // Not refetching
-          const baseVariables = {
-            artistId: artistId || undefined,
-            first: pageSize,
-            sortBy: sortField,
-            sortDirection: sortDirection,
-            search: searchQuery || undefined,
-          };
-
-          // Pre-fetch wanted/unwanted and downloaded/pending filter combinations
-          ['wanted', 'unwanted'].forEach(wantedFilter => {
-            ['downloaded', 'pending'].forEach(downloadFilter => {
-              const variables = {
-                ...baseVariables,
-                wanted: wantedFilter === 'wanted' ? true : false,
-                downloaded: downloadFilter === 'downloaded' ? true : false,
-              };
-
-              client
-                .query({
-                  query: GetAlbumsDocument,
-                  variables,
-                  fetchPolicy: 'cache-first',
-                })
-                .catch(() => {
-                  // Ignore pre-fetch errors
-                });
-            });
-          });
-        }
-      },
     }
   );
 
@@ -125,6 +91,50 @@ function Albums() {
   const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
   const [pulseIds, setPulseIds] = useState<Set<number>>(new Set());
   const [errorById, setErrorById] = useState<Record<number, string>>({});
+
+  // Pre-fetch other filter combinations when data loads (replaces onCompleted)
+  useEffect(() => {
+    if (data && networkStatus !== 3) {
+      // Not refetching
+      const baseVariables = {
+        artistId: artistId || undefined,
+        first: pageSize,
+        sortBy: sortField,
+        sortDirection: sortDirection,
+        search: searchQuery || undefined,
+      };
+
+      // Pre-fetch wanted/unwanted and downloaded/pending filter combinations
+      ['wanted', 'unwanted'].forEach(wantedFilter => {
+        ['downloaded', 'pending'].forEach(downloadFilter => {
+          const variables = {
+            ...baseVariables,
+            wanted: wantedFilter === 'wanted' ? true : false,
+            downloaded: downloadFilter === 'downloaded' ? true : false,
+          };
+
+          client
+            .query({
+              query: GetAlbumsDocument,
+              variables,
+              fetchPolicy: 'cache-first',
+            })
+            .catch(() => {
+              // Ignore pre-fetch errors
+            });
+        });
+      });
+    }
+  }, [
+    data,
+    networkStatus,
+    artistId,
+    pageSize,
+    sortField,
+    sortDirection,
+    searchQuery,
+    client,
+  ]);
 
   const handleWantedFilterChange = (
     newFilter: 'all' | 'wanted' | 'unwanted'

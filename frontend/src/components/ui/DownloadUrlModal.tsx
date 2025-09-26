@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { DOWNLOAD_URL } from '../../queries/download';
 
 interface DownloadUrlModalProps {

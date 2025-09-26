@@ -1,4 +1,4 @@
-import type { ApolloError } from '@apollo/client';
+import type { ApolloError } from '../types/common';
 import type {
   GetArtistsQuery,
   GetAlbumsQuery,

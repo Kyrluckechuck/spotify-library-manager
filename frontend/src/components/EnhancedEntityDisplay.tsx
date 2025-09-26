@@ -1,48 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
-
-// GraphQL queries for fetching entity details
-const GET_ARTIST = gql`
-  query GetArtistForDisplay($id: String!) {
-    artist(id: $id) {
-      id
-      name
-      gid
-    }
-  }
-`;
-
-const GET_ALBUM = gql`
-  query GetAlbum($id: String!) {
-    album(id: $id) {
-      id
-      name
-      spotifyGid
-    }
-  }
-`;
-
-const GET_PLAYLIST = gql`
-  query GetPlaylist($id: String!) {
-    playlist(id: $id) {
-      id
-      name
-      url
-    }
-  }
-`;
-
-const GET_SONG = gql`
-  query GetSongForDisplay($id: String!) {
-    song(id: $id) {
-      id
-      name
-      gid
-      primaryArtist
-    }
-  }
-`;
+import {
+  useGetArtistForDisplayQuery,
+  useGetAlbumQuery,
+  useGetPlaylistQuery,
+  useGetSongQuery,
+} from '../types/generated/graphql';
 
 interface EnhancedEntityDisplayProps {
   entityType: string;
@@ -89,73 +51,96 @@ const EnhancedEntityDisplay: React.FC<EnhancedEntityDisplayProps> = ({
     return isSpotifyUrl(id) || isTestName(id);
   };
 
-  // Determine which query to use based on entity type and ID format
-  const getQueryAndVariables = () => {
-    const upperEntityType = entityType.toUpperCase();
+  const shouldSkip = shouldSkipGraphQL(entityId);
+  const upperEntityType = entityType.toUpperCase();
 
-    // Skip GraphQL queries for certain ID formats that won't work
-    if (shouldSkipGraphQL(entityId)) {
-      return null;
-    }
-
-    switch (upperEntityType) {
-      case 'ARTIST':
-        return { query: GET_ARTIST, variables: { id: entityId } };
-      case 'ALBUM':
-        return { query: GET_ALBUM, variables: { id: entityId } };
-      case 'PLAYLIST':
-        return { query: GET_PLAYLIST, variables: { id: entityId } };
-      case 'TRACK':
-        return { query: GET_SONG, variables: { id: entityId } };
-      default:
-        return null;
-    }
-  };
-
-  const queryConfig = getQueryAndVariables();
-
-  // Use the appropriate query if available
-  const { data, loading } = useQuery(queryConfig?.query || GET_ARTIST, {
-    variables: queryConfig?.variables || { id: entityId },
-    skip: !queryConfig,
+  // Use typed hooks based on entity type
+  const artistQuery = useGetArtistForDisplayQuery({
+    variables: { id: entityId },
+    skip: shouldSkip || upperEntityType !== 'ARTIST',
     fetchPolicy: 'cache-first',
-    errorPolicy: 'ignore', // Don't show errors for ID format mismatches
+    errorPolicy: 'ignore',
   });
+
+  const albumQuery = useGetAlbumQuery({
+    variables: { id: entityId },
+    skip: shouldSkip || upperEntityType !== 'ALBUM',
+    fetchPolicy: 'cache-first',
+    errorPolicy: 'ignore',
+  });
+
+  const playlistQuery = useGetPlaylistQuery({
+    variables: { id: entityId },
+    skip: shouldSkip || upperEntityType !== 'PLAYLIST',
+    fetchPolicy: 'cache-first',
+    errorPolicy: 'ignore',
+  });
+
+  const songQuery = useGetSongQuery({
+    variables: { id: entityId },
+    skip: shouldSkip || upperEntityType !== 'TRACK',
+    fetchPolicy: 'cache-first',
+    errorPolicy: 'ignore',
+  });
+
+  // Determine which query result to use
+  const activeQuery =
+    upperEntityType === 'ARTIST'
+      ? artistQuery
+      : upperEntityType === 'ALBUM'
+        ? albumQuery
+        : upperEntityType === 'PLAYLIST'
+          ? playlistQuery
+          : upperEntityType === 'TRACK'
+            ? songQuery
+            : { data: undefined, loading: false };
+
+  const { data, loading } = activeQuery;
 
   useEffect(() => {
     if (data) {
       let entity: EntityData | null = null;
 
-      if (data.artist) {
+      if (upperEntityType === 'ARTIST' && artistQuery.data?.artist) {
         entity = {
-          id: data.artist.id,
-          name: data.artist.name,
-          gid: data.artist.gid,
+          id: artistQuery.data.artist.id.toString(),
+          name: artistQuery.data.artist.name,
+          gid: artistQuery.data.artist.gid,
         };
-      } else if (data.album) {
+      } else if (upperEntityType === 'ALBUM' && albumQuery.data?.album) {
         entity = {
-          id: data.album.id,
-          name: data.album.name,
-          gid: data.album.spotifyGid,
+          id: albumQuery.data.album.id.toString(),
+          name: albumQuery.data.album.name,
+          gid: albumQuery.data.album.spotifyGid,
         };
-      } else if (data.playlist) {
+      } else if (
+        upperEntityType === 'PLAYLIST' &&
+        playlistQuery.data?.playlist
+      ) {
         entity = {
-          id: data.playlist.id,
-          name: data.playlist.name,
-          url: data.playlist.url,
+          id: playlistQuery.data.playlist.id.toString(),
+          name: playlistQuery.data.playlist.name,
+          url: playlistQuery.data.playlist.url,
         };
-      } else if (data.song) {
+      } else if (upperEntityType === 'TRACK' && songQuery.data?.song) {
         entity = {
-          id: data.song.id,
-          name: data.song.name,
-          gid: data.song.gid,
-          primaryArtist: data.song.primaryArtist,
+          id: songQuery.data.song.id.toString(),
+          name: songQuery.data.song.name,
+          gid: songQuery.data.song.gid,
+          primaryArtist: songQuery.data.song.primaryArtist,
         };
       }
 
       setEntityData(entity);
     }
-  }, [data]);
+  }, [
+    data,
+    upperEntityType,
+    artistQuery.data,
+    albumQuery.data,
+    playlistQuery.data,
+    songQuery.data,
+  ]);
 
   // Helper function to get the appropriate icon and color based on entity type and task type
   const getEntityDisplay = () => {

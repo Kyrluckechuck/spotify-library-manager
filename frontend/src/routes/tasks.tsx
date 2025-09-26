@@ -1,6 +1,6 @@
 import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { useState } from 'react';
 import type { TaskCount } from '../types/common';
 import { SearchInput } from '../components/ui/SearchInput';
