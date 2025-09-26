@@ -206,3 +206,4 @@ NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 - Local testing needs to test port 3000, always
+- Do not kill my servers -- I leave them running on purpose. Only restart/update them when the changes actually require it, and don't shut them down when you're done unless I ask. If you have a good reason to do it, you can ask first.

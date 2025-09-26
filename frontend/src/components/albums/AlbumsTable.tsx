@@ -79,6 +79,9 @@ export function AlbumsTable({
               >
                 Artist
               </SortableTableHeader>
+              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                ID
+              </th>
               <SortableTableHeader
                 field='album_type'
                 currentSortField={sortField}
@@ -125,14 +128,6 @@ export function AlbumsTable({
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               >
-                Spotify ID
-              </SortableTableHeader>
-              <SortableTableHeader
-                field={null}
-                currentSortField={sortField}
-                currentSortDirection={sortDirection}
-                onSort={onSort}
-              >
                 Actions
               </SortableTableHeader>
             </tr>
@@ -141,17 +136,25 @@ export function AlbumsTable({
             {albums.map(album => (
               <tr key={album.id} className='hover:bg-gray-50'>
                 <td className='px-6 py-4 whitespace-nowrap'>
-                  <div className='text-sm font-medium text-gray-900'>
-                    {album.name}
+                  <div className='text-sm font-medium'>
+                    <a
+                      href={`https://open.spotify.com/album/${album.spotifyGid}`}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='text-green-600 hover:text-green-800 hover:underline'
+                      title={`Open ${album.name} on Spotify`}
+                    >
+                      {album.name}
+                    </a>
                   </div>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
-                  <div className='text-sm text-gray-900'>
+                  <div className='text-sm font-medium'>
                     {album.artist && album.artistId ? (
                       <Link
                         to='/artists'
                         search={{ search: String(album.artistId) }}
-                        className='text-indigo-600 hover:text-indigo-900 hover:underline font-medium'
+                        className='text-blue-600 hover:text-blue-900 hover:underline'
                       >
                         {album.artist}
                       </Link>
@@ -161,6 +164,9 @@ export function AlbumsTable({
                       </span>
                     )}
                   </div>
+                </td>
+                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                  {album.id}
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
                   <div className='text-sm text-gray-500'>
@@ -234,27 +240,7 @@ export function AlbumsTable({
                     )}
                   </button>
                 </td>
-                <td className='px-6 py-4 whitespace-nowrap text-sm'>
-                  <a
-                    href={`https://open.spotify.com/album/${album.spotifyGid}`}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    title='Open Spotify'
-                    className='text-indigo-600 hover:text-indigo-900 hover:underline'
-                  >
-                    {album.spotifyGid}
-                  </a>
-                </td>
-                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>
-                  {album.artistId && (
-                    <Link
-                      to='/artists'
-                      search={{ search: String(album.artistId) }}
-                      className='text-blue-600 hover:text-blue-900 underline'
-                    >
-                      View Artist
-                    </Link>
-                  )}
+                <td className='px-6 py-4 whitespace-nowrap text-sm font-medium'>
                   <Link
                     to='/songs'
                     search={{

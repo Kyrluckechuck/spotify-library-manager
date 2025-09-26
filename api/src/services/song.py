@@ -126,6 +126,12 @@ class SongService(BaseService[Song]):
             lambda: django_song.primary_artist.name
         )()
         primary_artist_id = await sync_to_async(lambda: django_song.primary_artist.id)()
+        primary_artist_gid = await sync_to_async(
+            lambda: django_song.primary_artist.gid
+        )()
+
+        # Use sync_to_async for file_path property which accesses file_path_ref
+        file_path = await sync_to_async(lambda: django_song.file_path)()
 
         return Song(
             id=int(django_song.id),
@@ -133,11 +139,12 @@ class SongService(BaseService[Song]):
             gid=django_song.gid,
             primary_artist=primary_artist_name,
             primary_artist_id=primary_artist_id,
+            primary_artist_gid=primary_artist_gid,
             created_at=django_song.created_at.isoformat(),
             failed_count=django_song.failed_count,
             bitrate=django_song.bitrate,
             unavailable=django_song.unavailable,
-            file_path=django_song.file_path,
+            file_path=file_path,
             downloaded=django_song.downloaded,
             spotify_uri=django_song.spotify_uri,
         )

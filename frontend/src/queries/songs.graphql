@@ -24,6 +24,7 @@ query GetSongs(
       gid
       primaryArtist
       primaryArtistId
+      primaryArtistGid
       createdAt
       failedCount
       bitrate

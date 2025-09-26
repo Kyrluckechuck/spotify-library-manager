@@ -175,4 +175,5 @@ class AlbumService(BaseService[Album]):
             album_group=django_album.album_group,
             artist=django_album.artist.name if django_album.artist else None,
             artist_id=django_album.artist.id if django_album.artist else None,
+            artist_gid=django_album.artist.gid if django_album.artist else None,
         )

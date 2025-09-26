@@ -59,6 +59,9 @@ export function ArtistsTable({
               >
                 Artist
               </SortableTableHeader>
+              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                ID
+              </th>
               <SortableTableHeader
                 field='isTracked'
                 currentSortField={sortField}
@@ -89,21 +92,20 @@ export function ArtistsTable({
             {artists.map(artist => (
               <tr key={artist.id} className='hover:bg-gray-50'>
                 <td className='px-6 py-4 whitespace-nowrap'>
-                  <div className='text-sm font-medium text-gray-900'>
-                    {artist.name}
-                  </div>
-                  <div className='text-sm text-gray-500'>
-                    DB ID: {artist.id} | Spotify:{' '}
+                  <div className='text-sm font-medium'>
                     <a
-                      href={`https://open.spotify.com/artist/${artist.spotifyUri}`}
+                      href={`https://open.spotify.com/artist/${artist.gid}`}
                       target='_blank'
                       rel='noopener noreferrer'
-                      title='Open Spotify'
-                      className='text-indigo-600 hover:text-indigo-900 hover:underline'
+                      className='text-green-600 hover:text-green-800 hover:underline'
+                      title={`Open ${artist.name} on Spotify`}
                     >
-                      {artist.gid}
+                      {artist.name}
                     </a>
                   </div>
+                </td>
+                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                  {artist.id}
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap'>
                   <button

@@ -14,6 +14,7 @@ interface Song {
   gid: string;
   primaryArtist: string;
   primaryArtistId: number;
+  primaryArtistGid: string;
   createdAt: string;
   failedCount: number;
   bitrate: number;
@@ -46,7 +47,7 @@ export const SongsTable: React.FC<SongsTableProps> = ({
 
   const formatBitrate = (bitrate: number) => {
     if (bitrate === 0) return 'N/A';
-    return `${Math.round(bitrate / 1000)} kbps`;
+    return `${bitrate} kbps`;
   };
 
   const getStatusIcon = (song: Song) => {
@@ -68,7 +69,7 @@ export const SongsTable: React.FC<SongsTableProps> = ({
       return (
         <span
           className='text-yellow-500'
-          title={`Failed ${song.failedCount} times`}
+          title={`Download failed ${song.failedCount} time${song.failedCount === 1 ? '' : 's'}`}
         >
           ⚠️
         </span>
@@ -135,7 +136,7 @@ export const SongsTable: React.FC<SongsTableProps> = ({
   }
 
   return (
-    <div className='bg-white shadow overflow-hidden sm:rounded-md'>
+    <div className='bg-white shadow overflow-hidden sm:rounded-md overflow-x-auto'>
       <table className='min-w-full divide-y divide-gray-200'>
         <thead className='bg-gray-50'>
           <tr>
@@ -167,14 +168,26 @@ export const SongsTable: React.FC<SongsTableProps> = ({
                 </div>
               </td>
               <td className='px-6 py-4 whitespace-nowrap'>
-                <div className='text-sm font-medium text-gray-900'>
-                  {song.name}
+                <div className='text-sm font-medium'>
+                  <a
+                    href={song.spotifyUri.replace(
+                      'spotify:track:',
+                      'https://open.spotify.com/track/'
+                    )}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-green-600 hover:text-green-800 hover:underline'
+                    title={`Open ${song.name} on Spotify`}
+                  >
+                    {song.name}
+                  </a>
                 </div>
                 <div className='text-sm text-gray-500'>
                   DB ID: {song.id} | Spotify: {song.gid}
                 </div>
               </td>
               <td className='px-6 py-4 whitespace-nowrap'>
+                {/* TODO: Create dedicated artist page with albums/singles and replace this with proper artist link */}
                 <Link
                   to='/artists'
                   className='text-sm font-medium text-blue-600 hover:text-blue-900'
@@ -189,10 +202,10 @@ export const SongsTable: React.FC<SongsTableProps> = ({
               <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                 {formatBitrate(song.bitrate)}
               </td>
-              <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+              <td className='px-6 py-4 text-sm text-gray-500 min-w-0'>
                 {song.filePath ? (
                   <span
-                    className='truncate max-w-xs block'
+                    className='truncate max-w-md block'
                     title={song.filePath}
                   >
                     {song.filePath}

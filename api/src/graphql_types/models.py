@@ -62,6 +62,7 @@ class Album:
     album_group: Optional[str]
     artist: Optional[str]
     artist_id: Optional[int]
+    artist_gid: Optional[str]
 
 
 @strawberry.type
@@ -71,6 +72,7 @@ class Song:
     gid: str
     primary_artist: str
     primary_artist_id: int
+    primary_artist_gid: str
     created_at: DateTime
     failed_count: int
     bitrate: int
