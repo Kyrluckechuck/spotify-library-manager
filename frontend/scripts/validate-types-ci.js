@@ -73,7 +73,7 @@ function validateTypeScriptCompilation() {
 
   try {
     // Run TypeScript compiler on generated types only
-    execSync(`npx tsc --noEmit --skipLibCheck ${GENERATED_TYPES_PATH}`, {
+    execSync(`npx tsc --noEmit --skipLibCheck -p tsconfig.types.json`, {
       stdio: 'pipe',
       cwd: path.join(__dirname, '..'),
     });

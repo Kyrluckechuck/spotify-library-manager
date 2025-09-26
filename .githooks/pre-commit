@@ -24,10 +24,19 @@ if [ -d "frontend" ]; then
     FE_LINT_FILES=$(printf "%s\n" "$STAGED_FILES" | grep -E '^frontend/.*\.(ts|tsx|js|jsx)$' | sed 's:^frontend/::' | tr '\n' ' ' || true)
     FE_PRETTIER_FILES=$(printf "%s\n" "$STAGED_FILES" | grep -E '^frontend/.*\.(ts|tsx|js|jsx|json|md|css|scss|html)$' | sed 's:^frontend/::' | tr '\n' ' ' || true)
 
-    if [ -n "$FE_TS_FILES" ] || [ -n "$FE_LINT_FILES" ] || [ -n "$FE_PRETTIER_FILES" ]; then
+    # Detect GraphQL generated types or query changes
+    FE_GQL_TYPES=$(printf "%s\n" "$STAGED_FILES" | grep -E '^frontend/src/types/generated/graphql\.ts$' || true)
+    FE_GQL_QUERIES=$(printf "%s\n" "$STAGED_FILES" | grep -E '^frontend/src/queries/.*\.(ts|graphql)$' || true)
+
+    if [ -n "$FE_TS_FILES" ] || [ -n "$FE_LINT_FILES" ] || [ -n "$FE_PRETTIER_FILES" ] || [ -n "$FE_GQL_TYPES" ] || [ -n "$FE_GQL_QUERIES" ]; then
         echo "🔧 Running frontend checks on staged files..."
         (
             cd frontend || exit 1
+            # GraphQL generated types validation when queries/types changed
+            if [ -n "$FE_GQL_TYPES" ] || [ -n "$FE_GQL_QUERIES" ]; then
+                echo "🔎 GraphQL generated types validation..."
+                yarn -s validate-types >/dev/null 2>&1 || { echo "❌ GraphQL types validation failed."; exit 1; }
+            fi
             # TypeScript type check only if TS files changed
             if [ -n "$FE_TS_FILES" ]; then
                 echo "📝 TypeScript type check (changed TS only)..."

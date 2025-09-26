@@ -16,5 +16,6 @@ generates:
       reactApolloVersion: 4
       apolloReactHooksImportFrom: '@apollo/client/react'
       apolloReactCommonImportFrom: '@apollo/client'
+      useTypeImports: false
       scalars:
         DateTime: string
