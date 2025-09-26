@@ -196,8 +196,10 @@ class PlaylistService(BaseService[Playlist]):
         )()
 
         if existing_playlist:
-            # Return the existing playlist instead of creating a duplicate
-            return self._to_graphql_type(existing_playlist)
+            # Raise an error including the duplicate playlist name for clearer UX
+            raise ValueError(
+                f"A playlist with this URL already exists: {existing_playlist.name}"
+            )
 
         django_playlist = self.model(
             name=name,
