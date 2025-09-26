@@ -24,9 +24,13 @@ vi.mock('@apollo/client', async importOriginal => {
 
 // Mock Apollo Client React hooks
 vi.mock('@apollo/client/react', () => ({
-  useQuery: vi.fn(),
-  useMutation: vi.fn(),
-  useApolloClient: vi.fn(),
+  useQuery: vi.fn(() => ({
+    data: undefined,
+    loading: false,
+    error: undefined,
+  })),
+  useMutation: vi.fn(() => [vi.fn(), { loading: false, error: undefined }]),
+  useApolloClient: vi.fn(() => ({ query: vi.fn() })),
   ApolloProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
