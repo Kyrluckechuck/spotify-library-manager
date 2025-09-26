@@ -33,6 +33,30 @@ If there is enough desire from folks, I am happy to put more time in, and of cou
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup instructions and guidelines.
 
+## Security & Authentication
+
+**⚠️ Important Security Notice**: This application **does not include built-in authentication**. It is designed for personal use in trusted environments.
+
+### If You Need Authentication
+
+If you plan to expose this application externally or want to add authentication, consider:
+
+- **Reverse proxy with authentication**: Use [Traefik](https://traefik.io/) with auth middleware, [nginx](https://nginx.org/) with auth modules, or [Caddy](https://caddyserver.com/) with auth plugins
+- **Authentication gateways**:
+  - [Authentik](https://goauthentik.io/) - Self-hosted identity provider
+  - [Authelia](https://www.authelia.com/) - Lightweight authentication and authorization server
+  - [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/) - OAuth2 and OIDC authentication proxy
+- **VPN access**: Keep the application internal and access via VPN (WireGuard, OpenVPN, etc.)
+- **Network-level protection**: Firewall rules, VPC isolation, or private networks only
+
+### Security Best Practices
+
+- **Never expose this application directly to the internet** without proper authentication
+- **Use HTTPS** in production environments with proper TLS certificates
+- **Keep the application updated** and monitor for security advisories
+- **Limit network access** to trusted users and networks only
+- **Regular backups** of your configuration and database
+
 ## Migration from Previous Versions
 
 **⚠️ Breaking Changes**: This version includes major infrastructure changes (Huey→Celery, SQLite→PostgreSQL, Docker-first development). 
@@ -94,7 +118,7 @@ Quick start:
 
 Notes:
 - You can also set environment variables to override YAML at runtime.
-- Secrets like `AUTH_SECRET_KEY` and `DJANGO_SECRET_KEY` should be set via env vars.
+- Secrets like `DJANGO_SECRET_KEY` should be set via env vars.
 
 ## Running From Docker (recommended)
 An example compose setup is included. Follow these steps:

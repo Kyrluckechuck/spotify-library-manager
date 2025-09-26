@@ -126,7 +126,7 @@ test-docker: test-api-docker test-frontend-docker
 
 # Main API test command in Docker with coverage
 test-api-docker:
-	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=html --cov-report=term-missing --reuse-db --nomigrations"
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=term-missing --reuse-db --nomigrations"
 
 # API test variants in Docker
 test-api-unit-docker:
