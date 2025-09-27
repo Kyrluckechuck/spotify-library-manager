@@ -36,6 +36,7 @@ export type Album = {
   albumGroup?: Maybe<Scalars['String']['output']>;
   albumType?: Maybe<Scalars['String']['output']>;
   artist?: Maybe<Scalars['String']['output']>;
+  artistGid?: Maybe<Scalars['String']['output']>;
   artistId?: Maybe<Scalars['Int']['output']>;
   downloaded: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
@@ -341,6 +342,7 @@ export type Song = {
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   primaryArtist: Scalars['String']['output'];
+  primaryArtistGid: Scalars['String']['output'];
   primaryArtistId: Scalars['Int']['output'];
   spotifyUri: Scalars['String']['output'];
   unavailable: Scalars['Boolean']['output'];
@@ -488,6 +490,7 @@ export type GetAlbumsQuery = {
       albumGroup?: string | null;
       artist?: string | null;
       artistId?: number | null;
+      artistGid?: string | null;
     }>;
   };
 };
@@ -727,6 +730,7 @@ export type GetSongsQuery = {
       gid: string;
       primaryArtist: string;
       primaryArtistId: number;
+      primaryArtistGid: string;
       createdAt: string;
       failedCount: number;
       bitrate: number;
@@ -866,6 +870,78 @@ export type GetArtistsTestQuery = {
       addedAt?: string | null;
       lastSynced?: string | null;
     }>;
+  };
+};
+
+export type GetAlbumsTestQueryVariables = Exact<{
+  artistId?: InputMaybe<Scalars['Int']['input']>;
+  wanted?: InputMaybe<Scalars['Boolean']['input']>;
+  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type GetAlbumsTestQuery = {
+  albums: {
+    totalCount: number;
+    pageInfo: {
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string | null;
+      endCursor?: string | null;
+    };
+    edges: Array<{
+      id: number;
+      name: string;
+      spotifyGid: string;
+      totalTracks: number;
+      wanted: boolean;
+      downloaded: boolean;
+      albumType?: string | null;
+      albumGroup?: string | null;
+      artist?: string | null;
+      artistId?: number | null;
+    }>;
+  };
+};
+
+export type GetSongsTestQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  artistId?: InputMaybe<Scalars['Int']['input']>;
+  downloaded?: InputMaybe<Scalars['Boolean']['input']>;
+  unavailable?: InputMaybe<Scalars['Boolean']['input']>;
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type GetSongsTestQuery = {
+  songs: {
+    totalCount: number;
+    edges: Array<{
+      id: number;
+      name: string;
+      gid: string;
+      primaryArtist: string;
+      primaryArtistId: number;
+      createdAt: string;
+      failedCount: number;
+      bitrate: number;
+      unavailable: boolean;
+      filePath?: string | null;
+      downloaded: boolean;
+      spotifyUri: string;
+    }>;
+    pageInfo: {
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string | null;
+      endCursor?: string | null;
+    };
   };
 };
 
@@ -1097,6 +1173,7 @@ export const GetAlbumsDocument = gql`
         albumGroup
         artist
         artistId
+        artistGid
       }
     }
   }
@@ -2090,6 +2167,7 @@ export const GetSongsDocument = gql`
         gid
         primaryArtist
         primaryArtistId
+        primaryArtistGid
         createdAt
         failedCount
         bitrate
@@ -2783,4 +2861,248 @@ export type GetArtistsTestSuspenseQueryHookResult = ReturnType<
 export type GetArtistsTestQueryResult = ApolloReactCommon.QueryResult<
   GetArtistsTestQuery,
   GetArtistsTestQueryVariables
+>;
+export const GetAlbumsTestDocument = gql`
+  query GetAlbumsTest(
+    $artistId: Int
+    $wanted: Boolean
+    $downloaded: Boolean
+    $first: Int = 20
+    $after: String
+    $sortBy: String
+    $sortDirection: String
+    $search: String
+  ) {
+    albums(
+      artistId: $artistId
+      wanted: $wanted
+      downloaded: $downloaded
+      first: $first
+      after: $after
+      sortBy: $sortBy
+      sortDirection: $sortDirection
+      search: $search
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      edges {
+        id
+        name
+        spotifyGid
+        totalTracks
+        wanted
+        downloaded
+        albumType
+        albumGroup
+        artist
+        artistId
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetAlbumsTestQuery__
+ *
+ * To run a query within a React component, call `useGetAlbumsTestQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAlbumsTestQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAlbumsTestQuery({
+ *   variables: {
+ *      artistId: // value for 'artistId'
+ *      wanted: // value for 'wanted'
+ *      downloaded: // value for 'downloaded'
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *      sortBy: // value for 'sortBy'
+ *      sortDirection: // value for 'sortDirection'
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useGetAlbumsTestQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetAlbumsTestQuery,
+    GetAlbumsTestQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<
+    GetAlbumsTestQuery,
+    GetAlbumsTestQueryVariables
+  >(GetAlbumsTestDocument, options);
+}
+export function useGetAlbumsTestLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetAlbumsTestQuery,
+    GetAlbumsTestQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<
+    GetAlbumsTestQuery,
+    GetAlbumsTestQueryVariables
+  >(GetAlbumsTestDocument, options);
+}
+export function useGetAlbumsTestSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetAlbumsTestQuery,
+        GetAlbumsTestQueryVariables
+      >
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    GetAlbumsTestQuery,
+    GetAlbumsTestQueryVariables
+  >(GetAlbumsTestDocument, options);
+}
+export type GetAlbumsTestQueryHookResult = ReturnType<
+  typeof useGetAlbumsTestQuery
+>;
+export type GetAlbumsTestLazyQueryHookResult = ReturnType<
+  typeof useGetAlbumsTestLazyQuery
+>;
+export type GetAlbumsTestSuspenseQueryHookResult = ReturnType<
+  typeof useGetAlbumsTestSuspenseQuery
+>;
+export type GetAlbumsTestQueryResult = ApolloReactCommon.QueryResult<
+  GetAlbumsTestQuery,
+  GetAlbumsTestQueryVariables
+>;
+export const GetSongsTestDocument = gql`
+  query GetSongsTest(
+    $first: Int
+    $after: String
+    $artistId: Int
+    $downloaded: Boolean
+    $unavailable: Boolean
+    $sortBy: String
+    $sortDirection: String
+    $search: String
+  ) {
+    songs(
+      first: $first
+      after: $after
+      artistId: $artistId
+      downloaded: $downloaded
+      unavailable: $unavailable
+      sortBy: $sortBy
+      sortDirection: $sortDirection
+      search: $search
+    ) {
+      edges {
+        id
+        name
+        gid
+        primaryArtist
+        primaryArtistId
+        createdAt
+        failedCount
+        bitrate
+        unavailable
+        filePath
+        downloaded
+        spotifyUri
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      totalCount
+    }
+  }
+`;
+
+/**
+ * __useGetSongsTestQuery__
+ *
+ * To run a query within a React component, call `useGetSongsTestQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSongsTestQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSongsTestQuery({
+ *   variables: {
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *      artistId: // value for 'artistId'
+ *      downloaded: // value for 'downloaded'
+ *      unavailable: // value for 'unavailable'
+ *      sortBy: // value for 'sortBy'
+ *      sortDirection: // value for 'sortDirection'
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useGetSongsTestQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >(GetSongsTestDocument, options);
+}
+export function useGetSongsTestLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >(GetSongsTestDocument, options);
+}
+export function useGetSongsTestSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetSongsTestQuery,
+        GetSongsTestQueryVariables
+      >
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >(GetSongsTestDocument, options);
+}
+export type GetSongsTestQueryHookResult = ReturnType<
+  typeof useGetSongsTestQuery
+>;
+export type GetSongsTestLazyQueryHookResult = ReturnType<
+  typeof useGetSongsTestLazyQuery
+>;
+export type GetSongsTestSuspenseQueryHookResult = ReturnType<
+  typeof useGetSongsTestSuspenseQuery
+>;
+export type GetSongsTestQueryResult = ApolloReactCommon.QueryResult<
+  GetSongsTestQuery,
+  GetSongsTestQueryVariables
 >;

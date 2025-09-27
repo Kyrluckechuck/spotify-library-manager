@@ -59,6 +59,7 @@ export const createMockSong = (overrides = {}) => ({
   gid: 'song-gid-123',
   primaryArtist: 'Test Artist',
   primaryArtistId: 1,
+  primaryArtistGid: 'artist-gid-123',
   createdAt: '2024-01-01T00:00:00Z',
   failedCount: 0,
   bitrate: 320,

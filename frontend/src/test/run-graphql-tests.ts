@@ -74,7 +74,7 @@ const testQueries = [
   {
     name: 'GetAlbums',
     query: gql`
-      query GetAlbums(
+      query GetAlbumsTest(
         $artistId: Int
         $wanted: Boolean
         $downloaded: Boolean
@@ -160,7 +160,7 @@ const testQueries = [
   {
     name: 'GetSongs',
     query: gql`
-      query GetSongs(
+      query GetSongsTest(
         $first: Int
         $after: String
         $artistId: Int

@@ -44,9 +44,9 @@ describe('Navbar', () => {
     const nav = screen.getByRole('navigation');
     expect(nav).toBeInTheDocument();
 
-    // Check that nav links are anchor elements (5 links + 1 title link)
+    // Check that nav links are anchor elements (6 links + 1 title link)
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(6); // Title + 5 nav links (Home, Artists, Albums, Playlists, Tasks)
+    expect(links).toHaveLength(7); // Title + 6 nav links (Home, Artists, Albums, Songs, Playlists, Tasks)
 
     // Check that download button exists
     const downloadButton = screen.getByRole('button', { name: /download/i });
