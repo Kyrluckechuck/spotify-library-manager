@@ -13,9 +13,9 @@ generates:
       withHOC: false
       skipTypename: true
       enumsAsTypes: true
-      reactApolloVersion: 3
-      apolloReactHooksImportFrom: '@apollo/client'
-      apolloReactCommonImportFrom: '@apollo/client'
-      useTypeImports: false
+      futureProofUnions: true
+      avoidOptionals: false
+      maybeValue: T | null
+      inputMaybeValue: T | null | undefined
       scalars:
         DateTime: string
