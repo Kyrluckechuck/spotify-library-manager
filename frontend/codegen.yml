@@ -13,8 +13,8 @@ generates:
       withHOC: false
       skipTypename: true
       enumsAsTypes: true
-      reactApolloVersion: 4
-      apolloReactHooksImportFrom: '@apollo/client/react'
+      reactApolloVersion: 3
+      apolloReactHooksImportFrom: '@apollo/client'
       apolloReactCommonImportFrom: '@apollo/client'
       useTypeImports: false
       scalars:
