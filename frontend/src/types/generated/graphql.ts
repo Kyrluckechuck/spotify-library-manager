@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import * as Apollo from '@apollo/client';
+import * as ApolloReactCommon from '@apollo/client/react';
 import * as ApolloReactHooks from '@apollo/client/react';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null | undefined;
@@ -23,16 +23,16 @@ export type Incremental<T> =
     };
 const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
-export type Scalars = {
+export interface Scalars {
   ID: { input: string; output: string };
   String: { input: string; output: string };
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
   DateTime: { input: string; output: string };
-};
+}
 
-export type Album = {
+export interface Album {
   albumGroup?: Maybe<Scalars['String']['output']>;
   albumType?: Maybe<Scalars['String']['output']>;
   artist?: Maybe<Scalars['String']['output']>;
@@ -44,15 +44,15 @@ export type Album = {
   spotifyGid: Scalars['String']['output'];
   totalTracks: Scalars['Int']['output'];
   wanted: Scalars['Boolean']['output'];
-};
+}
 
-export type AlbumConnection = {
+export interface AlbumConnection {
   edges: Array<Album>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
-};
+}
 
-export type Artist = {
+export interface Artist {
   addedAt?: Maybe<Scalars['DateTime']['output']>;
   gid: Scalars['String']['output'];
   id: Scalars['Int']['output'];
@@ -61,15 +61,15 @@ export type Artist = {
   name: Scalars['String']['output'];
   spotifyUri: Scalars['String']['output'];
   undownloadedCount: Scalars['Int']['output'];
-};
+}
 
-export type ArtistConnection = {
+export interface ArtistConnection {
   edges: Array<Artist>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
-};
+}
 
-export type DownloadHistory = {
+export interface DownloadHistory {
   completedAt?: Maybe<Scalars['DateTime']['output']>;
   entityId: Scalars['String']['output'];
   entityType: Scalars['String']['output'];
@@ -77,15 +77,15 @@ export type DownloadHistory = {
   id: Scalars['String']['output'];
   startedAt: Scalars['DateTime']['output'];
   status: DownloadStatus;
-};
+}
 
-export type DownloadProgress = {
+export interface DownloadProgress {
   entityId: Scalars['String']['output'];
   entityType: Scalars['String']['output'];
   message: Scalars['String']['output'];
   progress: Scalars['Float']['output'];
   status: DownloadStatus;
-};
+}
 
 export type DownloadStatus =
   | 'COMPLETED'
@@ -96,18 +96,18 @@ export type DownloadStatus =
 
 export type EntityType = 'ALBUM' | 'ARTIST' | 'PLAYLIST' | 'TRACK';
 
-export type HistoryConnection = {
+export interface HistoryConnection {
   edges: Array<HistoryEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
-};
+}
 
-export type HistoryEdge = {
+export interface HistoryEdge {
   cursor: Scalars['String']['output'];
   node: DownloadHistory;
-};
+}
 
-export type Mutation = {
+export interface Mutation {
   batchArtistOperations: MutationResult;
   cancelAllPendingTasks: MutationResult;
   cancelAllTasks: MutationResult;
@@ -129,120 +129,120 @@ export type Mutation = {
   updateAlbum: Album;
   updateArtist: Artist;
   updatePlaylist: MutationResult;
-};
+}
 
-export type MutationBatchArtistOperationsArgs = {
+export interface MutationBatchArtistOperationsArgs {
   artistIds: Array<Scalars['Int']['input']>;
   operations?: InputMaybe<Array<Scalars['String']['input']>>;
-};
+}
 
-export type MutationCancelRunningTasksByNameArgs = {
+export interface MutationCancelRunningTasksByNameArgs {
   taskName: Scalars['String']['input'];
-};
+}
 
-export type MutationCancelTasksByNameArgs = {
+export interface MutationCancelTasksByNameArgs {
   taskName: Scalars['String']['input'];
-};
+}
 
-export type MutationCreatePlaylistArgs = {
+export interface MutationCreatePlaylistArgs {
   autoTrackArtists?: Scalars['Boolean']['input'];
   name: Scalars['String']['input'];
   url: Scalars['String']['input'];
-};
+}
 
-export type MutationDownloadAlbumArgs = {
+export interface MutationDownloadAlbumArgs {
   albumId: Scalars['String']['input'];
-};
+}
 
-export type MutationDownloadArtistArgs = {
+export interface MutationDownloadArtistArgs {
   artistId: Scalars['String']['input'];
-};
+}
 
-export type MutationDownloadUrlArgs = {
+export interface MutationDownloadUrlArgs {
   autoTrackArtists?: Scalars['Boolean']['input'];
   url: Scalars['String']['input'];
-};
+}
 
-export type MutationSetAlbumWantedArgs = {
+export interface MutationSetAlbumWantedArgs {
   albumId: Scalars['Int']['input'];
   wanted: Scalars['Boolean']['input'];
-};
+}
 
-export type MutationSyncArtistArgs = {
+export interface MutationSyncArtistArgs {
   artistId: Scalars['String']['input'];
-};
+}
 
-export type MutationSyncPlaylistArgs = {
+export interface MutationSyncPlaylistArgs {
   force?: Scalars['Boolean']['input'];
   playlistId: Scalars['Int']['input'];
-};
+}
 
-export type MutationTogglePlaylistArgs = {
+export interface MutationTogglePlaylistArgs {
   playlistId: Scalars['Int']['input'];
-};
+}
 
-export type MutationTogglePlaylistAutoTrackArgs = {
+export interface MutationTogglePlaylistAutoTrackArgs {
   playlistId: Scalars['Int']['input'];
-};
+}
 
-export type MutationTrackArtistArgs = {
+export interface MutationTrackArtistArgs {
   artistId: Scalars['Int']['input'];
-};
+}
 
-export type MutationTrackPlaylistArgs = {
+export interface MutationTrackPlaylistArgs {
   input: TrackPlaylistInput;
-};
+}
 
-export type MutationUntrackArtistArgs = {
+export interface MutationUntrackArtistArgs {
   artistId: Scalars['Int']['input'];
-};
+}
 
-export type MutationUpdateAlbumArgs = {
+export interface MutationUpdateAlbumArgs {
   input: UpdateAlbumInput;
-};
+}
 
-export type MutationUpdateArtistArgs = {
+export interface MutationUpdateArtistArgs {
   input: UpdateArtistInput;
-};
+}
 
-export type MutationUpdatePlaylistArgs = {
+export interface MutationUpdatePlaylistArgs {
   autoTrackArtists: Scalars['Boolean']['input'];
   name: Scalars['String']['input'];
   playlistId: Scalars['Int']['input'];
   url: Scalars['String']['input'];
-};
+}
 
-export type MutationResult = {
+export interface MutationResult {
   album?: Maybe<Album>;
   artist?: Maybe<Artist>;
   message: Scalars['String']['output'];
   playlist?: Maybe<Playlist>;
   success: Scalars['Boolean']['output'];
-};
+}
 
-export type PageInfo = {
+export interface PageInfo {
   endCursor?: Maybe<Scalars['String']['output']>;
   hasNextPage: Scalars['Boolean']['output'];
   hasPreviousPage: Scalars['Boolean']['output'];
   startCursor?: Maybe<Scalars['String']['output']>;
-};
+}
 
-export type Playlist = {
+export interface Playlist {
   autoTrackArtists: Scalars['Boolean']['output'];
   enabled: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   lastSyncedAt?: Maybe<Scalars['DateTime']['output']>;
   name: Scalars['String']['output'];
   url: Scalars['String']['output'];
-};
+}
 
-export type PlaylistConnection = {
+export interface PlaylistConnection {
   edges: Array<Playlist>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
-};
+}
 
-export type Query = {
+export interface Query {
   album?: Maybe<Album>;
   albums: AlbumConnection;
   artist?: Maybe<Artist>;
@@ -254,13 +254,13 @@ export type Query = {
   song?: Maybe<Song>;
   songs: SongConnection;
   taskHistory: TaskHistoryConnection;
-};
+}
 
-export type QueryAlbumArgs = {
+export interface QueryAlbumArgs {
   id: Scalars['String']['input'];
-};
+}
 
-export type QueryAlbumsArgs = {
+export interface QueryAlbumsArgs {
   after?: InputMaybe<Scalars['String']['input']>;
   artistId?: InputMaybe<Scalars['Int']['input']>;
   downloaded?: InputMaybe<Scalars['Boolean']['input']>;
@@ -269,44 +269,44 @@ export type QueryAlbumsArgs = {
   sortBy?: InputMaybe<Scalars['String']['input']>;
   sortDirection?: InputMaybe<Scalars['String']['input']>;
   wanted?: InputMaybe<Scalars['Boolean']['input']>;
-};
+}
 
-export type QueryArtistArgs = {
+export interface QueryArtistArgs {
   id: Scalars['String']['input'];
-};
+}
 
-export type QueryArtistsArgs = {
+export interface QueryArtistsArgs {
   after?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   isTracked?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
-};
+}
 
-export type QueryDownloadHistoryArgs = {
+export interface QueryDownloadHistoryArgs {
   after?: InputMaybe<Scalars['String']['input']>;
   entityType?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
-};
+}
 
-export type QueryPlaylistArgs = {
+export interface QueryPlaylistArgs {
   id: Scalars['String']['input'];
-};
+}
 
-export type QueryPlaylistsArgs = {
+export interface QueryPlaylistsArgs {
   after?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sortBy?: InputMaybe<Scalars['String']['input']>;
   sortDirection?: InputMaybe<Scalars['String']['input']>;
-};
+}
 
-export type QuerySongArgs = {
+export interface QuerySongArgs {
   id: Scalars['String']['input'];
-};
+}
 
-export type QuerySongsArgs = {
+export interface QuerySongsArgs {
   after?: InputMaybe<Scalars['String']['input']>;
   artistId?: InputMaybe<Scalars['Int']['input']>;
   downloaded?: InputMaybe<Scalars['Boolean']['input']>;
@@ -315,24 +315,24 @@ export type QuerySongsArgs = {
   sortBy?: InputMaybe<Scalars['String']['input']>;
   sortDirection?: InputMaybe<Scalars['String']['input']>;
   unavailable?: InputMaybe<Scalars['Boolean']['input']>;
-};
+}
 
-export type QueryTaskHistoryArgs = {
+export interface QueryTaskHistoryArgs {
   after?: InputMaybe<Scalars['String']['input']>;
   entityType?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
   type?: InputMaybe<Scalars['String']['input']>;
-};
+}
 
-export type QueueStatus = {
+export interface QueueStatus {
   queueSize: Scalars['Int']['output'];
   taskCounts: Array<TaskCount>;
   totalPendingTasks: Scalars['Int']['output'];
-};
+}
 
-export type Song = {
+export interface Song {
   bitrate: Scalars['Int']['output'];
   createdAt: Scalars['DateTime']['output'];
   downloaded: Scalars['Boolean']['output'];
@@ -346,29 +346,29 @@ export type Song = {
   primaryArtistId: Scalars['Int']['output'];
   spotifyUri: Scalars['String']['output'];
   unavailable: Scalars['Boolean']['output'];
-};
+}
 
-export type SongConnection = {
+export interface SongConnection {
   edges: Array<Song>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
-};
+}
 
-export type Subscription = {
+export interface Subscription {
   allDownloadProgress: DownloadProgress;
   downloadProgress: DownloadProgress;
-};
+}
 
-export type SubscriptionDownloadProgressArgs = {
+export interface SubscriptionDownloadProgressArgs {
   entityId: Scalars['String']['input'];
-};
+}
 
-export type TaskCount = {
+export interface TaskCount {
   count: Scalars['Int']['output'];
   taskName: Scalars['String']['output'];
-};
+}
 
-export type TaskHistory = {
+export interface TaskHistory {
   completedAt?: Maybe<Scalars['DateTime']['output']>;
   durationSeconds?: Maybe<Scalars['Int']['output']>;
   entityId: Scalars['String']['output'];
@@ -380,38 +380,38 @@ export type TaskHistory = {
   status: TaskStatus;
   taskId: Scalars['String']['output'];
   type: TaskType;
-};
+}
 
-export type TaskHistoryConnection = {
+export interface TaskHistoryConnection {
   edges: Array<TaskHistoryEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
-};
+}
 
-export type TaskHistoryEdge = {
+export interface TaskHistoryEdge {
   cursor: Scalars['String']['output'];
   node: TaskHistory;
-};
+}
 
 export type TaskStatus = 'COMPLETED' | 'FAILED' | 'PENDING' | 'RUNNING';
 
 export type TaskType = 'DOWNLOAD' | 'FETCH' | 'SYNC';
 
-export type TrackPlaylistInput = {
+export interface TrackPlaylistInput {
   autoTrackArtists?: Scalars['Boolean']['input'];
   playlistId: Scalars['String']['input'];
-};
+}
 
-export type UpdateAlbumInput = {
+export interface UpdateAlbumInput {
   albumId: Scalars['String']['input'];
   isWanted?: InputMaybe<Scalars['Boolean']['input']>;
-};
+}
 
-export type UpdateArtistInput = {
+export interface UpdateArtistInput {
   artistId: Scalars['String']['input'];
   autoDownload?: InputMaybe<Scalars['Boolean']['input']>;
   isTracked?: InputMaybe<Scalars['Boolean']['input']>;
-};
+}
 
 export type GetArtistQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -1025,7 +1025,7 @@ export type GetArtistLazyQueryHookResult = ReturnType<
 export type GetArtistSuspenseQueryHookResult = ReturnType<
   typeof useGetArtistSuspenseQuery
 >;
-export type GetArtistQueryResult = Apollo.QueryResult<
+export type GetArtistQueryResult = ApolloReactCommon.QueryResult<
   GetArtistQuery,
   GetArtistQueryVariables
 >;
@@ -1130,7 +1130,7 @@ export type GetArtistsLazyQueryHookResult = ReturnType<
 export type GetArtistsSuspenseQueryHookResult = ReturnType<
   typeof useGetArtistsSuspenseQuery
 >;
-export type GetArtistsQueryResult = Apollo.QueryResult<
+export type GetArtistsQueryResult = ApolloReactCommon.QueryResult<
   GetArtistsQuery,
   GetArtistsQueryVariables
 >;
@@ -1250,7 +1250,7 @@ export type GetAlbumsLazyQueryHookResult = ReturnType<
 export type GetAlbumsSuspenseQueryHookResult = ReturnType<
   typeof useGetAlbumsSuspenseQuery
 >;
-export type GetAlbumsQueryResult = Apollo.QueryResult<
+export type GetAlbumsQueryResult = ApolloReactCommon.QueryResult<
   GetAlbumsQuery,
   GetAlbumsQueryVariables
 >;
@@ -1361,7 +1361,7 @@ export type GetPlaylistsLazyQueryHookResult = ReturnType<
 export type GetPlaylistsSuspenseQueryHookResult = ReturnType<
   typeof useGetPlaylistsSuspenseQuery
 >;
-export type GetPlaylistsQueryResult = Apollo.QueryResult<
+export type GetPlaylistsQueryResult = ApolloReactCommon.QueryResult<
   GetPlaylistsQuery,
   GetPlaylistsQueryVariables
 >;
@@ -1413,8 +1413,8 @@ export type SyncArtistMutationHookResult = ReturnType<
   typeof useSyncArtistMutation
 >;
 export type SyncArtistMutationResult =
-  Apollo.MutationResult<SyncArtistMutation>;
-export type SyncArtistMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<SyncArtistMutation>;
+export type SyncArtistMutationOptions = ApolloReactCommon.BaseMutationOptions<
   SyncArtistMutation,
   SyncArtistMutationVariables
 >;
@@ -1460,11 +1460,12 @@ export type DownloadArtistMutationHookResult = ReturnType<
   typeof useDownloadArtistMutation
 >;
 export type DownloadArtistMutationResult =
-  Apollo.MutationResult<DownloadArtistMutation>;
-export type DownloadArtistMutationOptions = Apollo.BaseMutationOptions<
-  DownloadArtistMutation,
-  DownloadArtistMutationVariables
->;
+  ApolloReactCommon.MutationResult<DownloadArtistMutation>;
+export type DownloadArtistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    DownloadArtistMutation,
+    DownloadArtistMutationVariables
+  >;
 export const SyncPlaylistDocument = gql`
   mutation SyncPlaylist($playlistId: Int!) {
     syncPlaylist(playlistId: $playlistId) {
@@ -1507,8 +1508,8 @@ export type SyncPlaylistMutationHookResult = ReturnType<
   typeof useSyncPlaylistMutation
 >;
 export type SyncPlaylistMutationResult =
-  Apollo.MutationResult<SyncPlaylistMutation>;
-export type SyncPlaylistMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<SyncPlaylistMutation>;
+export type SyncPlaylistMutationOptions = ApolloReactCommon.BaseMutationOptions<
   SyncPlaylistMutation,
   SyncPlaylistMutationVariables
 >;
@@ -1559,8 +1560,8 @@ export type TrackArtistMutationHookResult = ReturnType<
   typeof useTrackArtistMutation
 >;
 export type TrackArtistMutationResult =
-  Apollo.MutationResult<TrackArtistMutation>;
-export type TrackArtistMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<TrackArtistMutation>;
+export type TrackArtistMutationOptions = ApolloReactCommon.BaseMutationOptions<
   TrackArtistMutation,
   TrackArtistMutationVariables
 >;
@@ -1611,11 +1612,12 @@ export type UntrackArtistMutationHookResult = ReturnType<
   typeof useUntrackArtistMutation
 >;
 export type UntrackArtistMutationResult =
-  Apollo.MutationResult<UntrackArtistMutation>;
-export type UntrackArtistMutationOptions = Apollo.BaseMutationOptions<
-  UntrackArtistMutation,
-  UntrackArtistMutationVariables
->;
+  ApolloReactCommon.MutationResult<UntrackArtistMutation>;
+export type UntrackArtistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    UntrackArtistMutation,
+    UntrackArtistMutationVariables
+  >;
 export const SetAlbumWantedDocument = gql`
   mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
     setAlbumWanted(albumId: $albumId, wanted: $wanted) {
@@ -1664,11 +1666,12 @@ export type SetAlbumWantedMutationHookResult = ReturnType<
   typeof useSetAlbumWantedMutation
 >;
 export type SetAlbumWantedMutationResult =
-  Apollo.MutationResult<SetAlbumWantedMutation>;
-export type SetAlbumWantedMutationOptions = Apollo.BaseMutationOptions<
-  SetAlbumWantedMutation,
-  SetAlbumWantedMutationVariables
->;
+  ApolloReactCommon.MutationResult<SetAlbumWantedMutation>;
+export type SetAlbumWantedMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    SetAlbumWantedMutation,
+    SetAlbumWantedMutationVariables
+  >;
 export const TogglePlaylistDocument = gql`
   mutation TogglePlaylist($playlistId: Int!) {
     togglePlaylist(playlistId: $playlistId) {
@@ -1716,11 +1719,12 @@ export type TogglePlaylistMutationHookResult = ReturnType<
   typeof useTogglePlaylistMutation
 >;
 export type TogglePlaylistMutationResult =
-  Apollo.MutationResult<TogglePlaylistMutation>;
-export type TogglePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  TogglePlaylistMutation,
-  TogglePlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<TogglePlaylistMutation>;
+export type TogglePlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    TogglePlaylistMutation,
+    TogglePlaylistMutationVariables
+  >;
 export const ForceSyncPlaylistDocument = gql`
   mutation ForceSyncPlaylist($playlistId: Int!) {
     syncPlaylist(playlistId: $playlistId, force: true) {
@@ -1763,11 +1767,12 @@ export type ForceSyncPlaylistMutationHookResult = ReturnType<
   typeof useForceSyncPlaylistMutation
 >;
 export type ForceSyncPlaylistMutationResult =
-  Apollo.MutationResult<ForceSyncPlaylistMutation>;
-export type ForceSyncPlaylistMutationOptions = Apollo.BaseMutationOptions<
-  ForceSyncPlaylistMutation,
-  ForceSyncPlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<ForceSyncPlaylistMutation>;
+export type ForceSyncPlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    ForceSyncPlaylistMutation,
+    ForceSyncPlaylistMutationVariables
+  >;
 export const TogglePlaylistAutoTrackDocument = gql`
   mutation TogglePlaylistAutoTrack($playlistId: Int!) {
     togglePlaylistAutoTrack(playlistId: $playlistId) {
@@ -1815,11 +1820,12 @@ export type TogglePlaylistAutoTrackMutationHookResult = ReturnType<
   typeof useTogglePlaylistAutoTrackMutation
 >;
 export type TogglePlaylistAutoTrackMutationResult =
-  Apollo.MutationResult<TogglePlaylistAutoTrackMutation>;
-export type TogglePlaylistAutoTrackMutationOptions = Apollo.BaseMutationOptions<
-  TogglePlaylistAutoTrackMutation,
-  TogglePlaylistAutoTrackMutationVariables
->;
+  ApolloReactCommon.MutationResult<TogglePlaylistAutoTrackMutation>;
+export type TogglePlaylistAutoTrackMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    TogglePlaylistAutoTrackMutation,
+    TogglePlaylistAutoTrackMutationVariables
+  >;
 export const UpdatePlaylistDocument = gql`
   mutation UpdatePlaylist(
     $playlistId: Int!
@@ -1875,11 +1881,12 @@ export type UpdatePlaylistMutationHookResult = ReturnType<
   typeof useUpdatePlaylistMutation
 >;
 export type UpdatePlaylistMutationResult =
-  Apollo.MutationResult<UpdatePlaylistMutation>;
-export type UpdatePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  UpdatePlaylistMutation,
-  UpdatePlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<UpdatePlaylistMutation>;
+export type UpdatePlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    UpdatePlaylistMutation,
+    UpdatePlaylistMutationVariables
+  >;
 export const CreatePlaylistDocument = gql`
   mutation CreatePlaylist(
     $name: String!
@@ -1935,11 +1942,12 @@ export type CreatePlaylistMutationHookResult = ReturnType<
   typeof useCreatePlaylistMutation
 >;
 export type CreatePlaylistMutationResult =
-  Apollo.MutationResult<CreatePlaylistMutation>;
-export type CreatePlaylistMutationOptions = Apollo.BaseMutationOptions<
-  CreatePlaylistMutation,
-  CreatePlaylistMutationVariables
->;
+  ApolloReactCommon.MutationResult<CreatePlaylistMutation>;
+export type CreatePlaylistMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CreatePlaylistMutation,
+    CreatePlaylistMutationVariables
+  >;
 export const DownloadUrlDocument = gql`
   mutation DownloadUrl($url: String!, $autoTrackArtists: Boolean) {
     downloadUrl(url: $url, autoTrackArtists: $autoTrackArtists) {
@@ -2011,8 +2019,8 @@ export type DownloadUrlMutationHookResult = ReturnType<
   typeof useDownloadUrlMutation
 >;
 export type DownloadUrlMutationResult =
-  Apollo.MutationResult<DownloadUrlMutation>;
-export type DownloadUrlMutationOptions = Apollo.BaseMutationOptions<
+  ApolloReactCommon.MutationResult<DownloadUrlMutation>;
+export type DownloadUrlMutationOptions = ApolloReactCommon.BaseMutationOptions<
   DownloadUrlMutation,
   DownloadUrlMutationVariables
 >;
@@ -2072,9 +2080,9 @@ export type CreatePlaylistFromDownloadMutationHookResult = ReturnType<
   typeof useCreatePlaylistFromDownloadMutation
 >;
 export type CreatePlaylistFromDownloadMutationResult =
-  Apollo.MutationResult<CreatePlaylistFromDownloadMutation>;
+  ApolloReactCommon.MutationResult<CreatePlaylistFromDownloadMutation>;
 export type CreatePlaylistFromDownloadMutationOptions =
-  Apollo.BaseMutationOptions<
+  ApolloReactCommon.BaseMutationOptions<
     CreatePlaylistFromDownloadMutation,
     CreatePlaylistFromDownloadMutationVariables
   >;
@@ -2196,7 +2204,7 @@ export type GetSongsLazyQueryHookResult = ReturnType<
 export type GetSongsSuspenseQueryHookResult = ReturnType<
   typeof useGetSongsSuspenseQuery
 >;
-export type GetSongsQueryResult = Apollo.QueryResult<
+export type GetSongsQueryResult = ApolloReactCommon.QueryResult<
   GetSongsQuery,
   GetSongsQueryVariables
 >;
@@ -2282,7 +2290,7 @@ export type GetSongLazyQueryHookResult = ReturnType<typeof useGetSongLazyQuery>;
 export type GetSongSuspenseQueryHookResult = ReturnType<
   typeof useGetSongSuspenseQuery
 >;
-export type GetSongQueryResult = Apollo.QueryResult<
+export type GetSongQueryResult = ApolloReactCommon.QueryResult<
   GetSongQuery,
   GetSongQueryVariables
 >;
@@ -2364,7 +2372,7 @@ export type GetQueueStatusLazyQueryHookResult = ReturnType<
 export type GetQueueStatusSuspenseQueryHookResult = ReturnType<
   typeof useGetQueueStatusSuspenseQuery
 >;
-export type GetQueueStatusQueryResult = Apollo.QueryResult<
+export type GetQueueStatusQueryResult = ApolloReactCommon.QueryResult<
   GetQueueStatusQuery,
   GetQueueStatusQueryVariables
 >;
@@ -2409,11 +2417,12 @@ export type CancelAllPendingTasksMutationHookResult = ReturnType<
   typeof useCancelAllPendingTasksMutation
 >;
 export type CancelAllPendingTasksMutationResult =
-  Apollo.MutationResult<CancelAllPendingTasksMutation>;
-export type CancelAllPendingTasksMutationOptions = Apollo.BaseMutationOptions<
-  CancelAllPendingTasksMutation,
-  CancelAllPendingTasksMutationVariables
->;
+  ApolloReactCommon.MutationResult<CancelAllPendingTasksMutation>;
+export type CancelAllPendingTasksMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CancelAllPendingTasksMutation,
+    CancelAllPendingTasksMutationVariables
+  >;
 export const CancelTasksByNameDocument = gql`
   mutation CancelTasksByName($taskName: String!) {
     cancelTasksByName(taskName: $taskName) {
@@ -2456,11 +2465,12 @@ export type CancelTasksByNameMutationHookResult = ReturnType<
   typeof useCancelTasksByNameMutation
 >;
 export type CancelTasksByNameMutationResult =
-  Apollo.MutationResult<CancelTasksByNameMutation>;
-export type CancelTasksByNameMutationOptions = Apollo.BaseMutationOptions<
-  CancelTasksByNameMutation,
-  CancelTasksByNameMutationVariables
->;
+  ApolloReactCommon.MutationResult<CancelTasksByNameMutation>;
+export type CancelTasksByNameMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CancelTasksByNameMutation,
+    CancelTasksByNameMutationVariables
+  >;
 export const CancelRunningTasksByNameDocument = gql`
   mutation CancelRunningTasksByName($taskName: String!) {
     cancelRunningTasksByName(taskName: $taskName) {
@@ -2503,9 +2513,9 @@ export type CancelRunningTasksByNameMutationHookResult = ReturnType<
   typeof useCancelRunningTasksByNameMutation
 >;
 export type CancelRunningTasksByNameMutationResult =
-  Apollo.MutationResult<CancelRunningTasksByNameMutation>;
+  ApolloReactCommon.MutationResult<CancelRunningTasksByNameMutation>;
 export type CancelRunningTasksByNameMutationOptions =
-  Apollo.BaseMutationOptions<
+  ApolloReactCommon.BaseMutationOptions<
     CancelRunningTasksByNameMutation,
     CancelRunningTasksByNameMutationVariables
   >;
@@ -2550,11 +2560,12 @@ export type CancelAllTasksMutationHookResult = ReturnType<
   typeof useCancelAllTasksMutation
 >;
 export type CancelAllTasksMutationResult =
-  Apollo.MutationResult<CancelAllTasksMutation>;
-export type CancelAllTasksMutationOptions = Apollo.BaseMutationOptions<
-  CancelAllTasksMutation,
-  CancelAllTasksMutationVariables
->;
+  ApolloReactCommon.MutationResult<CancelAllTasksMutation>;
+export type CancelAllTasksMutationOptions =
+  ApolloReactCommon.BaseMutationOptions<
+    CancelAllTasksMutation,
+    CancelAllTasksMutationVariables
+  >;
 export const GetTaskHistoryDocument = gql`
   query GetTaskHistory(
     $first: Int = 20
@@ -2670,7 +2681,7 @@ export type GetTaskHistoryLazyQueryHookResult = ReturnType<
 export type GetTaskHistorySuspenseQueryHookResult = ReturnType<
   typeof useGetTaskHistorySuspenseQuery
 >;
-export type GetTaskHistoryQueryResult = Apollo.QueryResult<
+export type GetTaskHistoryQueryResult = ApolloReactCommon.QueryResult<
   GetTaskHistoryQuery,
   GetTaskHistoryQueryVariables
 >;
@@ -2775,7 +2786,7 @@ export type GetArtistsTestLazyQueryHookResult = ReturnType<
 export type GetArtistsTestSuspenseQueryHookResult = ReturnType<
   typeof useGetArtistsTestSuspenseQuery
 >;
-export type GetArtistsTestQueryResult = Apollo.QueryResult<
+export type GetArtistsTestQueryResult = ApolloReactCommon.QueryResult<
   GetArtistsTestQuery,
   GetArtistsTestQueryVariables
 >;
@@ -2896,7 +2907,7 @@ export type GetAlbumsTestLazyQueryHookResult = ReturnType<
 export type GetAlbumsTestSuspenseQueryHookResult = ReturnType<
   typeof useGetAlbumsTestSuspenseQuery
 >;
-export type GetAlbumsTestQueryResult = Apollo.QueryResult<
+export type GetAlbumsTestQueryResult = ApolloReactCommon.QueryResult<
   GetAlbumsTestQuery,
   GetAlbumsTestQueryVariables
 >;
@@ -3019,7 +3030,7 @@ export type GetSongsTestLazyQueryHookResult = ReturnType<
 export type GetSongsTestSuspenseQueryHookResult = ReturnType<
   typeof useGetSongsTestSuspenseQuery
 >;
-export type GetSongsTestQueryResult = Apollo.QueryResult<
+export type GetSongsTestQueryResult = ApolloReactCommon.QueryResult<
   GetSongsTestQuery,
   GetSongsTestQueryVariables
 >;
