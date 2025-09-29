@@ -1,11 +1,12 @@
 overwrite: true
-schema: '${GRAPHQL_CODEGEN_ENDPOINT:-http://localhost:5000/graphql}'
+schema: '${GRAPHQL_CODEGEN_ENDPOINT:-http://localhost:3000/graphql}'
 documents: 'src/**/*.{ts,tsx,graphql}'
 generates:
   src/types/generated/graphql.ts:
     plugins:
       - 'typescript'
       - 'typescript-operations'
+      - 'typescript-react-apollo'
     config:
       skipTypename: true
       enumsAsTypes: true
@@ -15,3 +16,9 @@ generates:
       inputMaybeValue: T | null | undefined
       scalars:
         DateTime: string
+      gqlImport: '@apollo/client#gql'
+      apolloReactHooksImportFrom: '@apollo/client/react'
+      withHooks: true
+      withHOC: false
+      withComponent: false
+      withMutationFn: false

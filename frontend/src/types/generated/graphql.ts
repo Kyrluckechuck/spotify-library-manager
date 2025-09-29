@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
+import * as ApolloReactHooks from '@apollo/client/react';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null | undefined;
 export type Exact<T extends { [key: string]: unknown }> = {
@@ -976,43 +977,46 @@ export const GetArtistDocument = gql`
  * });
  */
 export function useGetArtistQuery(
-  baseOptions: Apollo.QueryHookOptions<
+  baseOptions: ApolloReactHooks.QueryHookOptions<
     GetArtistQuery,
     GetArtistQueryVariables
   > &
     ({ variables: GetArtistQueryVariables; skip?: boolean } | { skip: boolean })
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistQuery, GetArtistQueryVariables>(
+  return ApolloReactHooks.useQuery<GetArtistQuery, GetArtistQueryVariables>(
     GetArtistDocument,
     options
   );
 }
 export function useGetArtistLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetArtistQuery,
     GetArtistQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistQuery, GetArtistQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<GetArtistQuery, GetArtistQueryVariables>(
     GetArtistDocument,
     options
   );
 }
 export function useGetArtistSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetArtistQuery, GetArtistQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetArtistQuery,
+        GetArtistQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetArtistQuery, GetArtistQueryVariables>(
-    GetArtistDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetArtistQuery,
+    GetArtistQueryVariables
+  >(GetArtistDocument, options);
 }
 export type GetArtistQueryHookResult = ReturnType<typeof useGetArtistQuery>;
 export type GetArtistLazyQueryHookResult = ReturnType<
@@ -1079,42 +1083,45 @@ export const GetArtistsDocument = gql`
  * });
  */
 export function useGetArtistsQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetArtistsQuery,
     GetArtistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistsQuery, GetArtistsQueryVariables>(
+  return ApolloReactHooks.useQuery<GetArtistsQuery, GetArtistsQueryVariables>(
     GetArtistsDocument,
     options
   );
 }
 export function useGetArtistsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetArtistsQuery,
     GetArtistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistsQuery, GetArtistsQueryVariables>(
-    GetArtistsDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetArtistsQuery,
+    GetArtistsQueryVariables
+  >(GetArtistsDocument, options);
 }
 export function useGetArtistsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetArtistsQuery, GetArtistsQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetArtistsQuery,
+        GetArtistsQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetArtistsQuery, GetArtistsQueryVariables>(
-    GetArtistsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetArtistsQuery,
+    GetArtistsQueryVariables
+  >(GetArtistsDocument, options);
 }
 export type GetArtistsQueryHookResult = ReturnType<typeof useGetArtistsQuery>;
 export type GetArtistsLazyQueryHookResult = ReturnType<
@@ -1196,39 +1203,45 @@ export const GetAlbumsDocument = gql`
  * });
  */
 export function useGetAlbumsQuery(
-  baseOptions?: Apollo.QueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
-    GetAlbumsDocument,
-    options
-  );
-}
-export function useGetAlbumsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetAlbumsQuery,
     GetAlbumsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
+  return ApolloReactHooks.useQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
+    GetAlbumsDocument,
+    options
+  );
+}
+export function useGetAlbumsLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetAlbumsQuery,
+    GetAlbumsQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
     GetAlbumsDocument,
     options
   );
 }
 export function useGetAlbumsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetAlbumsQuery, GetAlbumsQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetAlbumsQuery,
+        GetAlbumsQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetAlbumsQuery, GetAlbumsQueryVariables>(
-    GetAlbumsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetAlbumsQuery,
+    GetAlbumsQueryVariables
+  >(GetAlbumsDocument, options);
 }
 export type GetAlbumsQueryHookResult = ReturnType<typeof useGetAlbumsQuery>;
 export type GetAlbumsLazyQueryHookResult = ReturnType<
@@ -1299,45 +1312,45 @@ export const GetPlaylistsDocument = gql`
  * });
  */
 export function useGetPlaylistsQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetPlaylistsQuery,
     GetPlaylistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetPlaylistsQuery,
+    GetPlaylistsQueryVariables
+  >(GetPlaylistsDocument, options);
 }
 export function useGetPlaylistsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetPlaylistsQuery,
     GetPlaylistsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetPlaylistsQuery,
+    GetPlaylistsQueryVariables
+  >(GetPlaylistsDocument, options);
 }
 export function useGetPlaylistsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetPlaylistsQuery,
         GetPlaylistsQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetPlaylistsQuery, GetPlaylistsQueryVariables>(
-    GetPlaylistsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetPlaylistsQuery,
+    GetPlaylistsQueryVariables
+  >(GetPlaylistsDocument, options);
 }
 export type GetPlaylistsQueryHookResult = ReturnType<
   typeof useGetPlaylistsQuery
@@ -1366,10 +1379,6 @@ export const SyncArtistDocument = gql`
     }
   }
 `;
-export type SyncArtistMutationFn = Apollo.MutationFunction<
-  SyncArtistMutation,
-  SyncArtistMutationVariables
->;
 
 /**
  * __useSyncArtistMutation__
@@ -1389,16 +1398,16 @@ export type SyncArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSyncArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SyncArtistMutation,
     SyncArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<SyncArtistMutation, SyncArtistMutationVariables>(
-    SyncArtistDocument,
-    options
-  );
+  return ApolloReactHooks.useMutation<
+    SyncArtistMutation,
+    SyncArtistMutationVariables
+  >(SyncArtistDocument, options);
 }
 export type SyncArtistMutationHookResult = ReturnType<
   typeof useSyncArtistMutation
@@ -1417,10 +1426,6 @@ export const DownloadArtistDocument = gql`
     }
   }
 `;
-export type DownloadArtistMutationFn = Apollo.MutationFunction<
-  DownloadArtistMutation,
-  DownloadArtistMutationVariables
->;
 
 /**
  * __useDownloadArtistMutation__
@@ -1440,13 +1445,13 @@ export type DownloadArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useDownloadArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     DownloadArtistMutation,
     DownloadArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     DownloadArtistMutation,
     DownloadArtistMutationVariables
   >(DownloadArtistDocument, options);
@@ -1468,10 +1473,6 @@ export const SyncPlaylistDocument = gql`
     }
   }
 `;
-export type SyncPlaylistMutationFn = Apollo.MutationFunction<
-  SyncPlaylistMutation,
-  SyncPlaylistMutationVariables
->;
 
 /**
  * __useSyncPlaylistMutation__
@@ -1491,13 +1492,13 @@ export type SyncPlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSyncPlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SyncPlaylistMutation,
     SyncPlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     SyncPlaylistMutation,
     SyncPlaylistMutationVariables
   >(SyncPlaylistDocument, options);
@@ -1524,10 +1525,6 @@ export const TrackArtistDocument = gql`
     }
   }
 `;
-export type TrackArtistMutationFn = Apollo.MutationFunction<
-  TrackArtistMutation,
-  TrackArtistMutationVariables
->;
 
 /**
  * __useTrackArtistMutation__
@@ -1547,16 +1544,16 @@ export type TrackArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useTrackArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     TrackArtistMutation,
     TrackArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<TrackArtistMutation, TrackArtistMutationVariables>(
-    TrackArtistDocument,
-    options
-  );
+  return ApolloReactHooks.useMutation<
+    TrackArtistMutation,
+    TrackArtistMutationVariables
+  >(TrackArtistDocument, options);
 }
 export type TrackArtistMutationHookResult = ReturnType<
   typeof useTrackArtistMutation
@@ -1580,10 +1577,6 @@ export const UntrackArtistDocument = gql`
     }
   }
 `;
-export type UntrackArtistMutationFn = Apollo.MutationFunction<
-  UntrackArtistMutation,
-  UntrackArtistMutationVariables
->;
 
 /**
  * __useUntrackArtistMutation__
@@ -1603,13 +1596,13 @@ export type UntrackArtistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useUntrackArtistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     UntrackArtistMutation,
     UntrackArtistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     UntrackArtistMutation,
     UntrackArtistMutationVariables
   >(UntrackArtistDocument, options);
@@ -1636,10 +1629,6 @@ export const SetAlbumWantedDocument = gql`
     }
   }
 `;
-export type SetAlbumWantedMutationFn = Apollo.MutationFunction<
-  SetAlbumWantedMutation,
-  SetAlbumWantedMutationVariables
->;
 
 /**
  * __useSetAlbumWantedMutation__
@@ -1660,13 +1649,13 @@ export type SetAlbumWantedMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useSetAlbumWantedMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     SetAlbumWantedMutation,
     SetAlbumWantedMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     SetAlbumWantedMutation,
     SetAlbumWantedMutationVariables
   >(SetAlbumWantedDocument, options);
@@ -1693,10 +1682,6 @@ export const TogglePlaylistDocument = gql`
     }
   }
 `;
-export type TogglePlaylistMutationFn = Apollo.MutationFunction<
-  TogglePlaylistMutation,
-  TogglePlaylistMutationVariables
->;
 
 /**
  * __useTogglePlaylistMutation__
@@ -1716,13 +1701,13 @@ export type TogglePlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useTogglePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     TogglePlaylistMutation,
     TogglePlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     TogglePlaylistMutation,
     TogglePlaylistMutationVariables
   >(TogglePlaylistDocument, options);
@@ -1744,10 +1729,6 @@ export const ForceSyncPlaylistDocument = gql`
     }
   }
 `;
-export type ForceSyncPlaylistMutationFn = Apollo.MutationFunction<
-  ForceSyncPlaylistMutation,
-  ForceSyncPlaylistMutationVariables
->;
 
 /**
  * __useForceSyncPlaylistMutation__
@@ -1767,13 +1748,13 @@ export type ForceSyncPlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useForceSyncPlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     ForceSyncPlaylistMutation,
     ForceSyncPlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     ForceSyncPlaylistMutation,
     ForceSyncPlaylistMutationVariables
   >(ForceSyncPlaylistDocument, options);
@@ -1800,10 +1781,6 @@ export const TogglePlaylistAutoTrackDocument = gql`
     }
   }
 `;
-export type TogglePlaylistAutoTrackMutationFn = Apollo.MutationFunction<
-  TogglePlaylistAutoTrackMutation,
-  TogglePlaylistAutoTrackMutationVariables
->;
 
 /**
  * __useTogglePlaylistAutoTrackMutation__
@@ -1823,13 +1800,13 @@ export type TogglePlaylistAutoTrackMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useTogglePlaylistAutoTrackMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     TogglePlaylistAutoTrackMutation,
     TogglePlaylistAutoTrackMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     TogglePlaylistAutoTrackMutation,
     TogglePlaylistAutoTrackMutationVariables
   >(TogglePlaylistAutoTrackDocument, options);
@@ -1861,10 +1838,6 @@ export const UpdatePlaylistDocument = gql`
     }
   }
 `;
-export type UpdatePlaylistMutationFn = Apollo.MutationFunction<
-  UpdatePlaylistMutation,
-  UpdatePlaylistMutationVariables
->;
 
 /**
  * __useUpdatePlaylistMutation__
@@ -1887,13 +1860,13 @@ export type UpdatePlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useUpdatePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     UpdatePlaylistMutation,
     UpdatePlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     UpdatePlaylistMutation,
     UpdatePlaylistMutationVariables
   >(UpdatePlaylistDocument, options);
@@ -1926,10 +1899,6 @@ export const CreatePlaylistDocument = gql`
     }
   }
 `;
-export type CreatePlaylistMutationFn = Apollo.MutationFunction<
-  CreatePlaylistMutation,
-  CreatePlaylistMutationVariables
->;
 
 /**
  * __useCreatePlaylistMutation__
@@ -1951,13 +1920,13 @@ export type CreatePlaylistMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCreatePlaylistMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CreatePlaylistMutation,
     CreatePlaylistMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CreatePlaylistMutation,
     CreatePlaylistMutationVariables
   >(CreatePlaylistDocument, options);
@@ -2007,10 +1976,6 @@ export const DownloadUrlDocument = gql`
     }
   }
 `;
-export type DownloadUrlMutationFn = Apollo.MutationFunction<
-  DownloadUrlMutation,
-  DownloadUrlMutationVariables
->;
 
 /**
  * __useDownloadUrlMutation__
@@ -2031,16 +1996,16 @@ export type DownloadUrlMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useDownloadUrlMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     DownloadUrlMutation,
     DownloadUrlMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<DownloadUrlMutation, DownloadUrlMutationVariables>(
-    DownloadUrlDocument,
-    options
-  );
+  return ApolloReactHooks.useMutation<
+    DownloadUrlMutation,
+    DownloadUrlMutationVariables
+  >(DownloadUrlDocument, options);
 }
 export type DownloadUrlMutationHookResult = ReturnType<
   typeof useDownloadUrlMutation
@@ -2071,10 +2036,6 @@ export const CreatePlaylistFromDownloadDocument = gql`
     }
   }
 `;
-export type CreatePlaylistFromDownloadMutationFn = Apollo.MutationFunction<
-  CreatePlaylistFromDownloadMutation,
-  CreatePlaylistFromDownloadMutationVariables
->;
 
 /**
  * __useCreatePlaylistFromDownloadMutation__
@@ -2096,13 +2057,13 @@ export type CreatePlaylistFromDownloadMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCreatePlaylistFromDownloadMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CreatePlaylistFromDownloadMutation,
     CreatePlaylistFromDownloadMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CreatePlaylistFromDownloadMutation,
     CreatePlaylistFromDownloadMutationVariables
   >(CreatePlaylistFromDownloadDocument, options);
@@ -2188,39 +2149,45 @@ export const GetSongsDocument = gql`
  * });
  */
 export function useGetSongsQuery(
-  baseOptions?: Apollo.QueryHookOptions<GetSongsQuery, GetSongsQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetSongsQuery, GetSongsQueryVariables>(
-    GetSongsDocument,
-    options
-  );
-}
-export function useGetSongsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetSongsQuery,
     GetSongsQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetSongsQuery, GetSongsQueryVariables>(
+  return ApolloReactHooks.useQuery<GetSongsQuery, GetSongsQueryVariables>(
+    GetSongsDocument,
+    options
+  );
+}
+export function useGetSongsLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetSongsQuery,
+    GetSongsQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetSongsQuery, GetSongsQueryVariables>(
     GetSongsDocument,
     options
   );
 }
 export function useGetSongsSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetSongsQuery, GetSongsQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetSongsQuery,
+        GetSongsQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetSongsQuery, GetSongsQueryVariables>(
-    GetSongsDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetSongsQuery,
+    GetSongsQueryVariables
+  >(GetSongsDocument, options);
 }
 export type GetSongsQueryHookResult = ReturnType<typeof useGetSongsQuery>;
 export type GetSongsLazyQueryHookResult = ReturnType<
@@ -2269,34 +2236,43 @@ export const GetSongDocument = gql`
  * });
  */
 export function useGetSongQuery(
-  baseOptions: Apollo.QueryHookOptions<GetSongQuery, GetSongQueryVariables> &
+  baseOptions: ApolloReactHooks.QueryHookOptions<
+    GetSongQuery,
+    GetSongQueryVariables
+  > &
     ({ variables: GetSongQueryVariables; skip?: boolean } | { skip: boolean })
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetSongQuery, GetSongQueryVariables>(
+  return ApolloReactHooks.useQuery<GetSongQuery, GetSongQueryVariables>(
     GetSongDocument,
     options
   );
 }
 export function useGetSongLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<GetSongQuery, GetSongQueryVariables>
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetSongQuery,
+    GetSongQueryVariables
+  >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetSongQuery, GetSongQueryVariables>(
+  return ApolloReactHooks.useLazyQuery<GetSongQuery, GetSongQueryVariables>(
     GetSongDocument,
     options
   );
 }
 export function useGetSongSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<GetSongQuery, GetSongQueryVariables>
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetSongQuery,
+        GetSongQueryVariables
+      >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetSongQuery, GetSongQueryVariables>(
+  return ApolloReactHooks.useSuspenseQuery<GetSongQuery, GetSongQueryVariables>(
     GetSongDocument,
     options
   );
@@ -2339,42 +2315,42 @@ export const GetQueueStatusDocument = gql`
  * });
  */
 export function useGetQueueStatusQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetQueueStatusQuery,
     GetQueueStatusQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetQueueStatusQuery, GetQueueStatusQueryVariables>(
-    GetQueueStatusDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetQueueStatusQuery,
+    GetQueueStatusQueryVariables
+  >(GetQueueStatusDocument, options);
 }
 export function useGetQueueStatusLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetQueueStatusQuery,
     GetQueueStatusQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetQueueStatusQuery, GetQueueStatusQueryVariables>(
-    GetQueueStatusDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetQueueStatusQuery,
+    GetQueueStatusQueryVariables
+  >(GetQueueStatusDocument, options);
 }
 export function useGetQueueStatusSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetQueueStatusQuery,
         GetQueueStatusQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetQueueStatusQuery,
     GetQueueStatusQueryVariables
   >(GetQueueStatusDocument, options);
@@ -2400,10 +2376,6 @@ export const CancelAllPendingTasksDocument = gql`
     }
   }
 `;
-export type CancelAllPendingTasksMutationFn = Apollo.MutationFunction<
-  CancelAllPendingTasksMutation,
-  CancelAllPendingTasksMutationVariables
->;
 
 /**
  * __useCancelAllPendingTasksMutation__
@@ -2422,13 +2394,13 @@ export type CancelAllPendingTasksMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelAllPendingTasksMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelAllPendingTasksMutation,
     CancelAllPendingTasksMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelAllPendingTasksMutation,
     CancelAllPendingTasksMutationVariables
   >(CancelAllPendingTasksDocument, options);
@@ -2450,10 +2422,6 @@ export const CancelTasksByNameDocument = gql`
     }
   }
 `;
-export type CancelTasksByNameMutationFn = Apollo.MutationFunction<
-  CancelTasksByNameMutation,
-  CancelTasksByNameMutationVariables
->;
 
 /**
  * __useCancelTasksByNameMutation__
@@ -2473,13 +2441,13 @@ export type CancelTasksByNameMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelTasksByNameMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelTasksByNameMutation,
     CancelTasksByNameMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelTasksByNameMutation,
     CancelTasksByNameMutationVariables
   >(CancelTasksByNameDocument, options);
@@ -2501,10 +2469,6 @@ export const CancelRunningTasksByNameDocument = gql`
     }
   }
 `;
-export type CancelRunningTasksByNameMutationFn = Apollo.MutationFunction<
-  CancelRunningTasksByNameMutation,
-  CancelRunningTasksByNameMutationVariables
->;
 
 /**
  * __useCancelRunningTasksByNameMutation__
@@ -2524,13 +2488,13 @@ export type CancelRunningTasksByNameMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelRunningTasksByNameMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelRunningTasksByNameMutation,
     CancelRunningTasksByNameMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelRunningTasksByNameMutation,
     CancelRunningTasksByNameMutationVariables
   >(CancelRunningTasksByNameDocument, options);
@@ -2553,10 +2517,6 @@ export const CancelAllTasksDocument = gql`
     }
   }
 `;
-export type CancelAllTasksMutationFn = Apollo.MutationFunction<
-  CancelAllTasksMutation,
-  CancelAllTasksMutationVariables
->;
 
 /**
  * __useCancelAllTasksMutation__
@@ -2575,13 +2535,13 @@ export type CancelAllTasksMutationFn = Apollo.MutationFunction<
  * });
  */
 export function useCancelAllTasksMutation(
-  baseOptions?: Apollo.MutationHookOptions<
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
     CancelAllTasksMutation,
     CancelAllTasksMutationVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useMutation<
+  return ApolloReactHooks.useMutation<
     CancelAllTasksMutation,
     CancelAllTasksMutationVariables
   >(CancelAllTasksDocument, options);
@@ -2661,42 +2621,42 @@ export const GetTaskHistoryDocument = gql`
  * });
  */
 export function useGetTaskHistoryQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetTaskHistoryQuery,
     GetTaskHistoryQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(
-    GetTaskHistoryDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetTaskHistoryQuery,
+    GetTaskHistoryQueryVariables
+  >(GetTaskHistoryDocument, options);
 }
 export function useGetTaskHistoryLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetTaskHistoryQuery,
     GetTaskHistoryQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetTaskHistoryQuery, GetTaskHistoryQueryVariables>(
-    GetTaskHistoryDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetTaskHistoryQuery,
+    GetTaskHistoryQueryVariables
+  >(GetTaskHistoryDocument, options);
 }
 export function useGetTaskHistorySuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetTaskHistoryQuery,
         GetTaskHistoryQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetTaskHistoryQuery,
     GetTaskHistoryQueryVariables
   >(GetTaskHistoryDocument, options);
@@ -2766,42 +2726,42 @@ export const GetArtistsTestDocument = gql`
  * });
  */
 export function useGetArtistsTestQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetArtistsTestQuery,
     GetArtistsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetArtistsTestQuery, GetArtistsTestQueryVariables>(
-    GetArtistsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetArtistsTestQuery,
+    GetArtistsTestQueryVariables
+  >(GetArtistsTestDocument, options);
 }
 export function useGetArtistsTestLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetArtistsTestQuery,
     GetArtistsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetArtistsTestQuery, GetArtistsTestQueryVariables>(
-    GetArtistsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetArtistsTestQuery,
+    GetArtistsTestQueryVariables
+  >(GetArtistsTestDocument, options);
 }
 export function useGetArtistsTestSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetArtistsTestQuery,
         GetArtistsTestQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetArtistsTestQuery,
     GetArtistsTestQueryVariables
   >(GetArtistsTestDocument, options);
@@ -2887,42 +2847,42 @@ export const GetAlbumsTestDocument = gql`
  * });
  */
 export function useGetAlbumsTestQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetAlbumsTestQuery,
     GetAlbumsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetAlbumsTestQuery, GetAlbumsTestQueryVariables>(
-    GetAlbumsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetAlbumsTestQuery,
+    GetAlbumsTestQueryVariables
+  >(GetAlbumsTestDocument, options);
 }
 export function useGetAlbumsTestLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetAlbumsTestQuery,
     GetAlbumsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetAlbumsTestQuery, GetAlbumsTestQueryVariables>(
-    GetAlbumsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetAlbumsTestQuery,
+    GetAlbumsTestQueryVariables
+  >(GetAlbumsTestDocument, options);
 }
 export function useGetAlbumsTestSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetAlbumsTestQuery,
         GetAlbumsTestQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<
+  return ApolloReactHooks.useSuspenseQuery<
     GetAlbumsTestQuery,
     GetAlbumsTestQueryVariables
   >(GetAlbumsTestDocument, options);
@@ -3010,45 +2970,45 @@ export const GetSongsTestDocument = gql`
  * });
  */
 export function useGetSongsTestQuery(
-  baseOptions?: Apollo.QueryHookOptions<
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
     GetSongsTestQuery,
     GetSongsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useQuery<GetSongsTestQuery, GetSongsTestQueryVariables>(
-    GetSongsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >(GetSongsTestDocument, options);
 }
 export function useGetSongsTestLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
     GetSongsTestQuery,
     GetSongsTestQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return Apollo.useLazyQuery<GetSongsTestQuery, GetSongsTestQueryVariables>(
-    GetSongsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useLazyQuery<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >(GetSongsTestDocument, options);
 }
 export function useGetSongsTestSuspenseQuery(
   baseOptions?:
-    | Apollo.SkipToken
-    | Apollo.SuspenseQueryHookOptions<
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
         GetSongsTestQuery,
         GetSongsTestQueryVariables
       >
 ) {
   const options =
-    baseOptions === Apollo.skipToken
+    baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return Apollo.useSuspenseQuery<GetSongsTestQuery, GetSongsTestQueryVariables>(
-    GetSongsTestDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetSongsTestQuery,
+    GetSongsTestQueryVariables
+  >(GetSongsTestDocument, options);
 }
 export type GetSongsTestQueryHookResult = ReturnType<
   typeof useGetSongsTestQuery
