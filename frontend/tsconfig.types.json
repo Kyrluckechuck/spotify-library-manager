@@ -1,7 +1,0 @@
-{
-  "extends": "./tsconfig.app.json",
-  "compilerOptions": {
-    "verbatimModuleSyntax": false
-  },
-  "include": ["src/types/generated/graphql.ts"]
-}

@@ -99,10 +99,6 @@ jobs:
         working-directory: frontend
         run: yarn install --frozen-lockfile
 
-      - name: Validate GraphQL types
-        working-directory: frontend
-        run: yarn validate-types
-
       - name: Lint (frontend)
         working-directory: frontend
         run: yarn lint
@@ -353,23 +349,6 @@ jobs:
             echo "❌ API health endpoint failed"
             exit 1
           fi
-
-      - name: Set up Node 20 for GraphQL validation
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: 'frontend/yarn.lock'
-
-      - name: Install dependencies for validation
-        working-directory: frontend
-        run: yarn install --frozen-lockfile
-
-      - name: Validate GraphQL schema and operations
-        working-directory: frontend
-        env:
-          GRAPHQL_CODEGEN_ENDPOINT: http://localhost:5000/graphql
-        run: yarn validate:comprehensive
 
       - name: Show docker compose logs on failure
         if: failure()

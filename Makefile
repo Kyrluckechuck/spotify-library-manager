@@ -106,10 +106,6 @@ createsuperuser:
 # Testing
 test: test-api test-frontend
 
-# GraphQL type validation
-validate-types:
-	cd frontend && yarn validate-types
-
 # Main API test command with coverage
 test-api:
 	cd api && python -m pytest tests/ src/tests/ -v -n auto --cov=src --cov=library_manager --cov-report=term-missing

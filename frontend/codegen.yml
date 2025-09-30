@@ -14,16 +14,7 @@ generates:
       avoidOptionals: false
       maybeValue: T | null
       inputMaybeValue: T | null | undefined
+      apolloReactHooksImportFrom: '@apollo/client/react'
+      apolloReactCommonImportFrom: '@apollo/client'
       scalars:
         DateTime: string
-      gqlImport: '@apollo/client#gql'
-      apolloReactHooksImportFrom: '@apollo/client'
-      withHooks: true
-      withHOC: false
-      withComponent: false
-      withMutationFn: false
-      withResultType: false
-      withMutationOptionsType: false
-      withQueryHooksOptions: false
-      withMutationHooksOptions: false
-      reactApolloVersion: 4

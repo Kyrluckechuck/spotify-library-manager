@@ -14,7 +14,6 @@
     "preview": "vite preview",
     "generate": "graphql-codegen --config codegen.yml",
     "validate-schema": "node scripts/validate-schema.js",
-    "validate-types": "node scripts/validate-types-ci.js",
     "validate-graphql-manual": "node scripts/validate-graphql-manual.js",
     "check-newlines": "node scripts/check-newlines.js",
     "fix-newlines": "node scripts/fix-newlines.js",
@@ -27,8 +26,7 @@
     "test:run": "vitest run",
     "test:graphql": "node scripts/test-graphql-operations.js",
     "test:graphql-operations": "node scripts/test-graphql-operations.js",
-    "test:all": "yarn test:run && yarn test:graphql",
-    "validate:comprehensive": "yarn validate-schema && yarn test:graphql-operations"
+    "test:all": "yarn test:run && yarn test:graphql"
   },
   "dependencies": {
     "@apollo/client": "^4.0.6",

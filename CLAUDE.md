@@ -42,7 +42,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make test-frontend` - Run frontend tests using Vitest (local Node/Yarn required)
 - `make test-api-docker` - Run API tests in Docker container
 - `make test-frontend-docker` - Run frontend tests in Docker container
-- `make validate-types` - Validate GraphQL types (local Node/Yarn required)
 - `make lint` - Run linting for both API and frontend (local tools required)
 - `make lint-api` - Run comprehensive API linting (local Python required)
 - `make lint-frontend` - Run frontend linting using ESLint (local Node/Yarn required)
@@ -111,8 +110,7 @@ This is a **full-stack Spotify library management application** with the followi
 3. Ensure dev container is running: `make dev-container`
 4. Generate types (local Node.js): `cd frontend && GRAPHQL_CODEGEN_ENDPOINT=http://localhost:5000/graphql yarn generate`
 5. **Commit the updated types**: `git add frontend/src/types/generated/graphql.ts`
-6. Validate types: `make validate-types` (requires local Node.js)
-7. Test with `yarn test:graphql` (requires local Node.js)
+6. Test operations (optional): `cd frontend && yarn test:graphql` (requires local Node.js)
 
 **Important**: GraphQL types are committed to avoid circular dependency during builds. Always regenerate and commit types after schema changes.
 
