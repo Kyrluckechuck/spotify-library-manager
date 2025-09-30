@@ -17,13 +17,13 @@ generates:
       scalars:
         DateTime: string
       gqlImport: '@apollo/client#gql'
-      apolloReactCommonImportFrom: '@apollo/client'
-      apolloReactHooksImportFrom: '@apollo/client/react'
+      apolloReactHooksImportFrom: '@apollo/client'
       withHooks: true
       withHOC: false
       withComponent: false
       withMutationFn: false
-      withMutationOptions: false
-      withQueryOptions: false
       withResultType: false
+      withMutationOptionsType: false
+      withQueryHooksOptions: false
+      withMutationHooksOptions: false
       reactApolloVersion: 4

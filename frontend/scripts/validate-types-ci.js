@@ -16,6 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,21 +74,32 @@ function validateGeneratedTypes() {
 function validateTypeScriptCompilation() {
   console.log('🔍 Validating TypeScript compilation...');
 
-  // Skip TypeScript compilation in early CI validation
-  // This avoids environment-specific Apollo Client type issues
-  // The comprehensive validation later will catch real schema problems
-  console.log(
-    '⚠️ Skipping TypeScript compilation of generated types in early validation'
-  );
-  console.log(
-    'ℹ️ Generated types will be validated against live backend in comprehensive validation'
-  );
-  console.log('ℹ️ This avoids false failures from environment differences');
-  console.log(
-    '✅ Type compilation validation deferred to comprehensive validation'
-  );
+  try {
+    // Try TypeScript compilation with aggressive error recovery
+    execSync(
+      `npx tsc --noEmit --skipLibCheck --allowJs -p tsconfig.types.json`,
+      {
+        stdio: 'pipe',
+        cwd: path.join(__dirname, '..'),
+      }
+    );
+    console.log('✅ Generated types compile successfully');
+    return true;
+  } catch (error) {
+    const errorOutput = error.stdout?.toString() || error.stderr?.toString();
 
-  return true;
+    console.log('⚠️ TypeScript compilation encountered issues:');
+    console.log(errorOutput);
+
+    // For now, we'll be permissive but report the issue
+    // TODO: Fix the root cause of Apollo Client type resolution differences
+    console.log('⚠️ Continuing validation despite compilation issues');
+    console.log(
+      'ℹ️ These types will be re-validated in comprehensive validation with live backend'
+    );
+
+    return true; // Temporarily permissive while we investigate the root cause
+  }
 }
 
 /**

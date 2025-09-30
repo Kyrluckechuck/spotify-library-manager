@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
-import * as ApolloReactCommon from '@apollo/client';
-import * as ApolloReactHooks from '@apollo/client/react';
+import * as Apollo from '@apollo/client';
+import * as ApolloReactHooks from '@apollo/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null | undefined;
 export type Exact<T extends { [key: string]: unknown }> = {
@@ -1396,10 +1396,6 @@ export function useSyncArtistMutation(
 export type SyncArtistMutationHookResult = ReturnType<
   typeof useSyncArtistMutation
 >;
-export type SyncArtistMutationOptions = ApolloReactCommon.BaseMutationOptions<
-  SyncArtistMutation,
-  SyncArtistMutationVariables
->;
 export const DownloadArtistDocument = gql`
   mutation DownloadArtist($artistId: String!) {
     downloadArtist(artistId: $artistId) {
@@ -1441,11 +1437,6 @@ export function useDownloadArtistMutation(
 export type DownloadArtistMutationHookResult = ReturnType<
   typeof useDownloadArtistMutation
 >;
-export type DownloadArtistMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    DownloadArtistMutation,
-    DownloadArtistMutationVariables
-  >;
 export const SyncPlaylistDocument = gql`
   mutation SyncPlaylist($playlistId: Int!) {
     syncPlaylist(playlistId: $playlistId) {
@@ -1486,10 +1477,6 @@ export function useSyncPlaylistMutation(
 }
 export type SyncPlaylistMutationHookResult = ReturnType<
   typeof useSyncPlaylistMutation
->;
-export type SyncPlaylistMutationOptions = ApolloReactCommon.BaseMutationOptions<
-  SyncPlaylistMutation,
-  SyncPlaylistMutationVariables
 >;
 export const TrackArtistDocument = gql`
   mutation TrackArtist($artistId: Int!) {
@@ -1537,10 +1524,6 @@ export function useTrackArtistMutation(
 export type TrackArtistMutationHookResult = ReturnType<
   typeof useTrackArtistMutation
 >;
-export type TrackArtistMutationOptions = ApolloReactCommon.BaseMutationOptions<
-  TrackArtistMutation,
-  TrackArtistMutationVariables
->;
 export const UntrackArtistDocument = gql`
   mutation UntrackArtist($artistId: Int!) {
     untrackArtist(artistId: $artistId) {
@@ -1587,11 +1570,6 @@ export function useUntrackArtistMutation(
 export type UntrackArtistMutationHookResult = ReturnType<
   typeof useUntrackArtistMutation
 >;
-export type UntrackArtistMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    UntrackArtistMutation,
-    UntrackArtistMutationVariables
-  >;
 export const SetAlbumWantedDocument = gql`
   mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
     setAlbumWanted(albumId: $albumId, wanted: $wanted) {
@@ -1639,11 +1617,6 @@ export function useSetAlbumWantedMutation(
 export type SetAlbumWantedMutationHookResult = ReturnType<
   typeof useSetAlbumWantedMutation
 >;
-export type SetAlbumWantedMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    SetAlbumWantedMutation,
-    SetAlbumWantedMutationVariables
-  >;
 export const TogglePlaylistDocument = gql`
   mutation TogglePlaylist($playlistId: Int!) {
     togglePlaylist(playlistId: $playlistId) {
@@ -1690,11 +1663,6 @@ export function useTogglePlaylistMutation(
 export type TogglePlaylistMutationHookResult = ReturnType<
   typeof useTogglePlaylistMutation
 >;
-export type TogglePlaylistMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    TogglePlaylistMutation,
-    TogglePlaylistMutationVariables
-  >;
 export const ForceSyncPlaylistDocument = gql`
   mutation ForceSyncPlaylist($playlistId: Int!) {
     syncPlaylist(playlistId: $playlistId, force: true) {
@@ -1736,11 +1704,6 @@ export function useForceSyncPlaylistMutation(
 export type ForceSyncPlaylistMutationHookResult = ReturnType<
   typeof useForceSyncPlaylistMutation
 >;
-export type ForceSyncPlaylistMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    ForceSyncPlaylistMutation,
-    ForceSyncPlaylistMutationVariables
-  >;
 export const TogglePlaylistAutoTrackDocument = gql`
   mutation TogglePlaylistAutoTrack($playlistId: Int!) {
     togglePlaylistAutoTrack(playlistId: $playlistId) {
@@ -1787,11 +1750,6 @@ export function useTogglePlaylistAutoTrackMutation(
 export type TogglePlaylistAutoTrackMutationHookResult = ReturnType<
   typeof useTogglePlaylistAutoTrackMutation
 >;
-export type TogglePlaylistAutoTrackMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    TogglePlaylistAutoTrackMutation,
-    TogglePlaylistAutoTrackMutationVariables
-  >;
 export const UpdatePlaylistDocument = gql`
   mutation UpdatePlaylist(
     $playlistId: Int!
@@ -1846,11 +1804,6 @@ export function useUpdatePlaylistMutation(
 export type UpdatePlaylistMutationHookResult = ReturnType<
   typeof useUpdatePlaylistMutation
 >;
-export type UpdatePlaylistMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    UpdatePlaylistMutation,
-    UpdatePlaylistMutationVariables
-  >;
 export const CreatePlaylistDocument = gql`
   mutation CreatePlaylist(
     $name: String!
@@ -1905,11 +1858,6 @@ export function useCreatePlaylistMutation(
 export type CreatePlaylistMutationHookResult = ReturnType<
   typeof useCreatePlaylistMutation
 >;
-export type CreatePlaylistMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    CreatePlaylistMutation,
-    CreatePlaylistMutationVariables
-  >;
 export const DownloadUrlDocument = gql`
   mutation DownloadUrl($url: String!, $autoTrackArtists: Boolean) {
     downloadUrl(url: $url, autoTrackArtists: $autoTrackArtists) {
@@ -1980,10 +1928,6 @@ export function useDownloadUrlMutation(
 export type DownloadUrlMutationHookResult = ReturnType<
   typeof useDownloadUrlMutation
 >;
-export type DownloadUrlMutationOptions = ApolloReactCommon.BaseMutationOptions<
-  DownloadUrlMutation,
-  DownloadUrlMutationVariables
->;
 export const CreatePlaylistFromDownloadDocument = gql`
   mutation CreatePlaylistFromDownload(
     $name: String!
@@ -2039,11 +1983,6 @@ export function useCreatePlaylistFromDownloadMutation(
 export type CreatePlaylistFromDownloadMutationHookResult = ReturnType<
   typeof useCreatePlaylistFromDownloadMutation
 >;
-export type CreatePlaylistFromDownloadMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    CreatePlaylistFromDownloadMutation,
-    CreatePlaylistFromDownloadMutationVariables
-  >;
 export const GetSongsDocument = gql`
   query GetSongs(
     $first: Int
@@ -2362,11 +2301,6 @@ export function useCancelAllPendingTasksMutation(
 export type CancelAllPendingTasksMutationHookResult = ReturnType<
   typeof useCancelAllPendingTasksMutation
 >;
-export type CancelAllPendingTasksMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    CancelAllPendingTasksMutation,
-    CancelAllPendingTasksMutationVariables
-  >;
 export const CancelTasksByNameDocument = gql`
   mutation CancelTasksByName($taskName: String!) {
     cancelTasksByName(taskName: $taskName) {
@@ -2408,11 +2342,6 @@ export function useCancelTasksByNameMutation(
 export type CancelTasksByNameMutationHookResult = ReturnType<
   typeof useCancelTasksByNameMutation
 >;
-export type CancelTasksByNameMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    CancelTasksByNameMutation,
-    CancelTasksByNameMutationVariables
-  >;
 export const CancelRunningTasksByNameDocument = gql`
   mutation CancelRunningTasksByName($taskName: String!) {
     cancelRunningTasksByName(taskName: $taskName) {
@@ -2454,11 +2383,6 @@ export function useCancelRunningTasksByNameMutation(
 export type CancelRunningTasksByNameMutationHookResult = ReturnType<
   typeof useCancelRunningTasksByNameMutation
 >;
-export type CancelRunningTasksByNameMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    CancelRunningTasksByNameMutation,
-    CancelRunningTasksByNameMutationVariables
-  >;
 export const CancelAllTasksDocument = gql`
   mutation CancelAllTasks {
     cancelAllTasks {
@@ -2499,11 +2423,6 @@ export function useCancelAllTasksMutation(
 export type CancelAllTasksMutationHookResult = ReturnType<
   typeof useCancelAllTasksMutation
 >;
-export type CancelAllTasksMutationOptions =
-  ApolloReactCommon.BaseMutationOptions<
-    CancelAllTasksMutation,
-    CancelAllTasksMutationVariables
-  >;
 export const GetTaskHistoryDocument = gql`
   query GetTaskHistory(
     $first: Int = 20
