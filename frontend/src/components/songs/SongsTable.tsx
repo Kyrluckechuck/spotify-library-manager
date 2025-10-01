@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from '@tanstack/react-router';
+import type { GetSongsQuery } from '../../types/generated/graphql';
 
 export type SortField =
   | 'name'
@@ -8,21 +9,7 @@ export type SortField =
   | 'downloaded'
   | null;
 
-interface Song {
-  id: number;
-  name: string;
-  gid: string;
-  primaryArtist: string;
-  primaryArtistId: number;
-  primaryArtistGid: string;
-  createdAt: string;
-  failedCount: number;
-  bitrate: number;
-  unavailable: boolean;
-  filePath: string | null;
-  downloaded: boolean;
-  spotifyUri: string;
-}
+type Song = GetSongsQuery['songs']['edges'][number];
 
 interface SongsTableProps {
   songs: Song[];

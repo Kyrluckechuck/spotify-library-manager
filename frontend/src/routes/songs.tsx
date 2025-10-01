@@ -77,7 +77,7 @@ function Songs() {
   };
 
   const handleLoadMore = () => {
-    if (data?.songs.pageInfo.hasNextPage) {
+    if (data?.songs?.pageInfo?.hasNextPage) {
       fetchMore({
         variables: {
           ...queryVariablesWithFilter,
@@ -91,7 +91,7 @@ function Songs() {
   const songs = useMemo(() => {
     const allSongs = data?.songs?.edges || [];
     if (filter === 'failed') {
-      return allSongs.filter(song => song.failedCount > 0);
+      return allSongs.filter(song => (song?.failedCount ?? 0) > 0);
     }
     return allSongs;
   }, [data?.songs?.edges, filter]);
