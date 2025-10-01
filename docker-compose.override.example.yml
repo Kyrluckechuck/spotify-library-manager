@@ -9,90 +9,98 @@
 # - PostgreSQL: Exposed on port 5432 for direct database access
 
 services:
-  web:
-    # Build locally instead of using pre-built image
-    build: .
-    # Development command with enhanced debugging and live reload
-    command: bash -c "
-      echo '🚀 Starting web service (DEV MODE)...';
-      echo '📦 Installing dependencies...';
-      pip install -r requirements.txt -r requirements-dev.txt &&
-      echo '📊 Environment check:';
-      echo 'Python version:' $(python --version);
-      echo 'Working directory:' $(pwd);
-      echo 'Available disk space:' $(df -h . | tail -1);
-      echo '🗄️ Running migrations...';
-      timeout \${MIGRATION_TIMEOUT:-1800} python manage.py migrate_from_sqlite --verbosity=2 || {
-        echo '⚠️ SQLite migration timed out after \${MIGRATION_TIMEOUT:-1800}s or failed. Running basic migrations...';
-        echo '⚠️ For large databases, set MIGRATION_TIMEOUT environment variable to a higher value';
-        python manage.py migrate --verbosity=2;
-      } &&
-      echo '✅ Migrations complete. Starting development server...';
-      echo '🌐 Starting uvicorn with reload on ${HOST:-0.0.0.0}:${PORT:-5000}';
-      uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --reload --log-level info
-      "
-    environment:
-      # Development environment settings
-      - DJANGO_DEBUG=True
-      - INSTALL_DEV_DEPS=true
-    volumes:
-      # Live code sync for development
-      - ./api:/app
-      - ./requirements.txt:/app/requirements.txt
-      - ./requirements-dev.txt:/app/requirements-dev.txt
-      - python_packages:/app/.venv
-      - pip_cache:/root/.cache/pip
+    web:
+        # Build locally instead of using pre-built image
+        build: .
+        # Development command with enhanced debugging and live reload
+        command: bash -c "
+            echo '🚀 Starting web service (DEV MODE)...';
+            echo '📦 Installing dependencies...';
+            pip install -r requirements.txt -r requirements-dev.txt &&
+            echo '📊 Environment check:';
+            echo 'Python version:' $(python --version);
+            echo 'Working directory:' $(pwd);
+            echo 'Available disk space:' $(df -h . | tail -1);
+            echo '🗄️ Running migrations...';
+            timeout \${MIGRATION_TIMEOUT:-1800} python manage.py migrate_from_sqlite --verbosity=2 || {
+            echo '⚠️ SQLite migration timed out after \${MIGRATION_TIMEOUT:-1800}s or failed. Running basic migrations...';
+            echo '⚠️ For large databases, set MIGRATION_TIMEOUT environment variable to a higher value';
+            python manage.py migrate --verbosity=2;
+            } &&
+            echo '✅ Migrations complete. Starting development server...';
+            echo '🌐 Starting uvicorn with reload on ${HOST:-0.0.0.0}:${PORT:-5000}';
+            uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --reload --log-level info
+            "
+        environment:
+            # Development environment settings
+            - DJANGO_DEBUG=True
+            - INSTALL_DEV_DEPS=true
+        volumes:
+            # Live code sync for development
+            - ./api:/app
+            - ./requirements.txt:/app/requirements.txt
+            - ./requirements-dev.txt:/app/requirements-dev.txt
+            - python_packages:/app/.venv
+            - pip_cache:/root/.cache/pip
 
-  frontend:
-    # Development frontend with hot reloading
-    build:
-      context: ./frontend
-      target: build  # Stop at the Node.js stage, don't build nginx
-      args:
-        - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
-    command: yarn dev --host 0.0.0.0 --port 3000
-    volumes:
-      # Live code sync for development hot reloading
-      - ./frontend:/app
-      - /app/node_modules  # Prevent overwriting node_modules
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
-    ports:
-      - "3000:3000"
+    frontend:
+        # Development frontend with hot reloading
+        build:
+            context: ./frontend
+            target: build # Stop at the Node.js stage, don't build nginx
+            args:
+                - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
+        command: yarn dev --host 0.0.0.0 --port 3000
+        volumes:
+            # Live code sync for development hot reloading
+            - ./frontend:/app
+            - /app/node_modules # Prevent overwriting node_modules
+        environment:
+            - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
+        ports:
+            - "3000:3000"
 
-  # Frontend development container for testing (use with --profile testing)
-  frontend-dev:
-    build:
-      context: ./frontend
-      target: build
-    command: tail -f /dev/null  # Keep container running for exec commands
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    profiles:
-      - testing  # Only started when explicitly requested
+    # Frontend development container for testing (use with --profile testing)
+    frontend-dev:
+        build:
+            context: ./frontend
+            target: build
+        command: tail -f /dev/null # Keep container running for exec commands
+        volumes:
+            - ./frontend:/app
+            - /app/node_modules
+        profiles:
+            - testing # Only started when explicitly requested
 
-  worker:
-    # Build locally and add live code sync
-    build: .
-    volumes:
-      # Live code sync for development
-      - ./api:/app
+    worker:
+        # Build locally and add live code sync
+        build: .
+        volumes:
+            # Live code sync for development
+            - ./api:/app
 
-  beat:
-    # Build locally and add live code sync  
-    build: .
-    volumes:
-      # Live code sync for development
-      - ./api:/app
+    beat:
+        # Build locally and add live code sync
+        build: .
+        volumes:
+            # Live code sync for development
+            - ./api:/app
 
-  postgres:
-    # Override user for development to match host user
-    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
-    # Expose PostgreSQL port for development/debugging
-    ports:
-      - "5432:5432"
+    postgres:
+        # Override user for development to match host user
+        user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+        # Expose PostgreSQL port for development/debugging
+        ports:
+            - "5432:5432"
 
 volumes:
-  python_packages:
-  pip_cache:
+    python_packages:
+    pip_cache:
+    # Override music storage location for development
+    # Adjust this path to match your local development music directory
+    music_storage:
+        driver: local
+        driver_opts:
+            type: "none"
+            o: "bind"
+            device: "/mnt/external_drive/dev_music"

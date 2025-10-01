@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-  useGetArtistQuery,
-  useGetSongLazyQuery,
-} from '../types/generated/graphql';
+import { useQuery, useLazyQuery } from '@apollo/client/react';
+import { GetArtistDocument, GetSongDocument } from '../types/generated/graphql';
 
 interface EnhancedEntityDisplayProps {
   entityType: string;
@@ -53,7 +51,7 @@ const EnhancedEntityDisplay: React.FC<EnhancedEntityDisplayProps> = ({
   const upperEntityType = entityType.toUpperCase();
 
   // Use typed hooks based on entity type
-  const artistQuery = useGetArtistQuery({
+  const artistQuery = useQuery(GetArtistDocument, {
     variables: { id: entityId },
     skip: shouldSkip || upperEntityType !== 'ARTIST',
     fetchPolicy: 'cache-first',
@@ -65,7 +63,7 @@ const EnhancedEntityDisplay: React.FC<EnhancedEntityDisplayProps> = ({
   const albumQuery = { data: undefined, loading: false };
   const playlistQuery = { data: undefined, loading: false };
 
-  const [getSong, songQuery] = useGetSongLazyQuery({
+  const [getSong, songQuery] = useLazyQuery(GetSongDocument, {
     fetchPolicy: 'cache-first',
     errorPolicy: 'ignore',
   });

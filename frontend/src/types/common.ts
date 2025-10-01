@@ -30,12 +30,12 @@ export interface Song {
   unavailable: boolean;
   downloaded: boolean;
   failedCount: number;
-  filePath?: string;
+  filePath: string | null;
   spotifyUri?: string;
 }
 
 export interface TaskHistory {
-  id: number;
+  id: string;
   taskId: string;
   type: string;
   entityType: string;

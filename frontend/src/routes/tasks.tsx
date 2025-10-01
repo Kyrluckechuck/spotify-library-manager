@@ -36,9 +36,9 @@ function Tasks() {
   const [pageSize, setPageSize] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [expandedLogs, setExpandedLogs] = useState<Record<number, boolean>>({});
+  const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
   const [expandedHistoryLogs, setExpandedHistoryLogs] = useState<
-    Record<number, boolean>
+    Record<string, boolean>
   >({});
 
   const [cancelTasksByName] = useMutation(CancelTasksByNameDocument);
@@ -662,17 +662,17 @@ function Tasks() {
                     {historyData?.taskHistory?.edges?.map(
                       (edge: {
                         node: {
-                          id: number;
+                          id: string;
                           taskId: string;
                           type: string;
                           entityType: string;
                           entityId: string;
                           status: string;
                           startedAt: string;
-                          completedAt?: string;
-                          progressPercentage?: number;
-                          durationSeconds?: number;
-                          logMessages?: string[];
+                          completedAt: string | null;
+                          progressPercentage: number | null;
+                          durationSeconds: number | null;
+                          logMessages: string[];
                         };
                       }) => {
                         const task = edge.node;
@@ -823,7 +823,7 @@ function Tasks() {
                 .map(
                   (edge: {
                     node: {
-                      id: number;
+                      id: string;
                       type: string;
                       entityType: string;
                       entityId: string;

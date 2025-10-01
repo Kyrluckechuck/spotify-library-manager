@@ -1,4 +1,4 @@
-.PHONY: build-and-publish dev dev-container dev-container-update dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db
+.PHONY: build-and-publish dev dev-container dev-container-update dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db docker-cleanup docker-cleanup-full docker-status
 
 # Main development command - starts all services
 dev:
@@ -269,3 +269,52 @@ check-newlines-frontend:
 
 fix-newlines-frontend:
 	cd frontend && yarn fix-newlines
+
+# =============================================================================
+# Docker Cleanup Commands
+# =============================================================================
+
+# Show Docker disk usage summary
+docker-status:
+	@echo "📊 Docker Disk Usage Summary:"
+	@docker system df
+	@echo ""
+	@echo "💾 Reclaimable Resources:"
+	@echo "  Images:  $(shell docker images -f dangling=true -q | wc -l) dangling images"
+	@echo "  Volumes: $(shell docker volume ls -f dangling=true -q | wc -l) unused volumes"
+	@echo "  Cache:   $(shell docker system df --format '{{.Reclaimable}}' | tail -1)"
+
+# Quick cleanup - removes dangling images only (safe, can run frequently)
+docker-cleanup:
+	@echo "🧹 Cleaning up dangling Docker images..."
+	@docker image prune -f
+	@echo "✅ Cleanup complete!"
+	@echo ""
+	@$(MAKE) docker-status
+
+# Full cleanup - removes all unused Docker resources (aggressive)
+docker-cleanup-full:
+	@echo "⚠️  WARNING: This will remove:"
+	@echo "  • All dangling images"
+	@echo "  • All unused volumes"
+	@echo "  • All unused build cache"
+	@echo ""
+	@read -p "Continue? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		echo "🧹 Cleaning up all unused Docker resources..."; \
+		docker image prune -f; \
+		docker volume prune -f; \
+		docker builder prune -f; \
+		echo "✅ Full cleanup complete!"; \
+		echo ""; \
+		$(MAKE) docker-status; \
+	else \
+		echo "❌ Cleanup cancelled."; \
+	fi
+
+# Remove only old build cache (keeps recent builds)
+docker-cleanup-cache:
+	@echo "🧹 Cleaning up Docker build cache older than 7 days..."
+	@docker builder prune -f --filter "until=168h"
+	@echo "✅ Build cache cleanup complete!"

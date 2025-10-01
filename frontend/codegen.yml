@@ -6,15 +6,18 @@ generates:
     plugins:
       - 'typescript'
       - 'typescript-operations'
-      - 'typescript-react-apollo'
+      - 'typed-document-node'
     config:
-      skipTypename: true
+      # Apollo Client v4 recommended settings
+      avoidOptionals:
+        field: true
+        inputValue: false
+        object: false
+      defaultScalarType: unknown
+      skipTypename: false
       enumsAsTypes: true
       futureProofUnions: true
-      avoidOptionals: false
       maybeValue: T | null
       inputMaybeValue: T | null | undefined
-      apolloReactHooksImportFrom: '@apollo/client/react'
-      apolloReactCommonImportFrom: '@apollo/client'
       scalars:
         DateTime: string

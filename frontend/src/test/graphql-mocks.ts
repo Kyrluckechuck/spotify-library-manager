@@ -40,6 +40,7 @@ export const createMockAlbum = (overrides = {}) => ({
   albumGroup: 'album',
   artist: 'Test Artist',
   artistId: 1,
+  artistGid: 'artist-gid-123',
   ...overrides,
 });
 
