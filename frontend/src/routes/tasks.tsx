@@ -10,14 +10,12 @@ import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import {
   GetTaskHistoryDocument,
-  type TaskHistory,
-} from '../types/generated/graphql';
-import {
   GetQueueStatusDocument,
   CancelTasksByNameDocument,
   CancelRunningTasksByNameDocument,
   CancelAllTasksDocument,
-} from '../queries/taskManagement';
+  type TaskHistory,
+} from '../types/generated/graphql';
 import EnhancedEntityDisplay from '../components/EnhancedEntityDisplay';
 
 type TaskStatus = 'running' | 'completed' | 'failed' | 'pending' | 'all';
