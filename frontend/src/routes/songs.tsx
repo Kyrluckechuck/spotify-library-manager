@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@apollo/client/react';
 import { useState, useMemo } from 'react';
 import { GetSongsDocument } from '../types/generated/graphql';
-import type { Song } from '../types/common';
 
 // Layout & shared components
 import { PageContainer } from '../components/layout/PageContainer';
@@ -90,14 +89,14 @@ function Songs() {
 
   // Apply frontend filtering for failed songs
   const songs = useMemo(() => {
-    const allSongs = data?.songs.edges || [];
+    const allSongs = data?.songs?.edges || [];
     if (filter === 'failed') {
-      return allSongs.filter((song: Song) => song.failedCount > 0);
+      return allSongs.filter(song => song.failedCount > 0);
     }
     return allSongs;
-  }, [data?.songs.edges, filter]);
-  const totalCount = data?.songs.totalCount || 0;
-  const pageInfo = data?.songs.pageInfo;
+  }, [data?.songs?.edges, filter]);
+  const totalCount = data?.songs?.totalCount || 0;
+  const pageInfo = data?.songs?.pageInfo;
   const { isRefreshing: isRefetching } = useRequestState(networkStatus);
 
   return (
