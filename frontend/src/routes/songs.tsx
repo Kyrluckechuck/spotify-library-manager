@@ -57,7 +57,6 @@ function Songs() {
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',
-      returnPartialData: true,
     }
   );
 

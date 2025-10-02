@@ -62,8 +62,6 @@ function Playlists() {
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',
-      // Keep previous data while loading new data
-      returnPartialData: true,
       onCompleted: data => {
         // Pre-fetch other filter combinations
         if (data && networkStatus !== 3) {
@@ -371,9 +369,9 @@ function Playlists() {
     );
   }
 
-  const playlists = data?.playlists.edges || [];
-  const totalCount = data?.playlists.totalCount || 0;
-  const pageInfo = data?.playlists.pageInfo;
+  const playlists = data?.playlists?.edges || [];
+  const totalCount = data?.playlists?.totalCount || 0;
+  const pageInfo = data?.playlists?.pageInfo;
 
   return (
     <section>

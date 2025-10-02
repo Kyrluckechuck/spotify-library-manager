@@ -68,7 +68,6 @@ function Artists() {
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',
-      returnPartialData: true,
       onCompleted: data => {
         // Pre-fetch other filter combinations to eliminate future jitter
         if (data && networkStatus !== 3) {

@@ -72,8 +72,6 @@ function Albums() {
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',
-      // Keep previous data while loading
-      returnPartialData: true,
     }
   );
 
