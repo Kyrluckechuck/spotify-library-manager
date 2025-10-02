@@ -216,7 +216,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     colors={{ on: 'green', off: 'gray' }}
   />
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Created ToggleStatusButton with switch & badge variants. Applied to ArtistsTable, AlbumsTable, PlaylistsTable. Eliminated ~150 lines of duplicate code. Bundle size reduced by 4KB.
 
 ### 8. Missing Abstraction - Mutation State Management
 

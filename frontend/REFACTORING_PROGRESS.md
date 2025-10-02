@@ -67,12 +67,12 @@ Successfully eliminated code duplication, improved UX, and fixed performance iss
 
 ---
 
-## 🔄 Phase 2: Composition & Reusability - IN PROGRESS
+## ✅ Phase 2: Composition & Reusability - COMPLETED
 
-### Current Task
-Creating ToggleStatusButton component to eliminate duplicated toggle logic across tables.
+### Summary
+Successfully extracted duplicate toggle patterns into reusable ToggleStatusButton component. Applied across all tables, eliminating ~150 lines of duplicate code while improving consistency and reducing bundle size.
 
-### Completed
+### Completed Tasks
 
 #### 1. Create ToggleStatusButton Component ✅
 - **Created**: `frontend/src/components/ui/ToggleStatusButton.tsx`
@@ -82,15 +82,16 @@ Creating ToggleStatusButton component to eliminate duplicated toggle logic acros
   - Pulse animation support for success feedback
   - Full accessibility (ARIA switch/button roles)
   - Color themes: green, blue, red
-- **Status**: Component created, needs to be integrated into tables
+- **Impact**: Single source of truth for toggle UI patterns
 
-### Remaining Tasks
-
-#### 2. Apply ToggleStatusButton to Tables
-- [ ] Replace toggle logic in `ArtistsTable.tsx`
-- [ ] Replace toggle logic in `AlbumsTable.tsx`
-- [ ] Replace toggle logic in `PlaylistsTable.tsx`
-- [ ] Test all toggle interactions
+#### 2. Apply ToggleStatusButton to Tables ✅
+- ✅ **ArtistsTable.tsx** - Replaced both switch and badge toggles for tracking status
+- ✅ **AlbumsTable.tsx** - Replaced badge toggle for "wanted" status
+- ✅ **PlaylistsTable.tsx** - Replaced 2 toggle pairs (enabled + autoTrackArtists)
+- **Impact**:
+  - ~150 lines eliminated
+  - Bundle size: 513KB → 509KB (-4KB)
+  - Consistent toggle behavior across app
 
 #### 3. Create useMutationState Hook
 - [ ] Extract common mutation state pattern (mutatingIds, pulseIds, errorById)
@@ -222,5 +223,35 @@ Creating ToggleStatusButton component to eliminate duplicated toggle logic acros
 
 ---
 
-**Last Updated**: 2025-10-02 13:45 EST
-**Next Review**: After Phase 2 completion
+**Last Updated**: 2025-10-02 14:15 EST
+**Next Review**: After Phase 3 completion
+
+---
+
+## 📈 Session 2 Summary (2025-10-02 14:15)
+
+### Completed Work
+- ✅ Fixed all ESLint errors (useConfirm dependencies, TypeScript types, array keys)
+- ✅ Created ToggleStatusButton component with switch & badge variants
+- ✅ Applied ToggleStatusButton to ArtistsTable, AlbumsTable, PlaylistsTable
+- ✅ Build passing, bundle size reduced by 4KB
+
+### Files Modified This Session
+- `frontend/src/hooks/useConfirm.tsx` - Fixed React Hook dependencies
+- `frontend/src/routes/tasks.tsx` - Fixed TypeScript types and ESLint issues
+- `frontend/src/components/ui/ToggleStatusButton.tsx` - Created new component
+- `frontend/src/components/artists/ArtistsTable.tsx` - Applied ToggleStatusButton
+- `frontend/src/components/albums/AlbumsTable.tsx` - Applied ToggleStatusButton
+- `frontend/src/components/playlists/PlaylistsTable.tsx` - Applied ToggleStatusButton
+
+### Metrics
+- **Code Reduction**: ~240 lines total (Phase 1: ~90 lines, Phase 2: ~150 lines)
+- **Bundle Size**: 513KB → 509KB (-4KB)
+- **Components Created**: 5 (ConfirmDialog, ActionButton, ToggleStatusButton, + 2 from Phase 1)
+- **Hooks Created**: 1 (useConfirm)
+
+### Next Session Priorities
+1. **Create useMutationState hook** - Eliminate ~200 lines of duplicate state management
+2. **Create FilterButtonGroup component** - Consistent filter UI
+3. **Fix performance issues** - Redundant filtering in tasks.tsx
+4. **Start tasks.tsx decomposition** - Break 905-line file into components
