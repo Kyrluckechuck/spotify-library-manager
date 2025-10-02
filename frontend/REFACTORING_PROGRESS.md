@@ -105,10 +105,20 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
   - playlists.tsx: Reduced 4 mutation handlers from ~95 lines → ~60 lines
 - **Impact**: Eliminated ~180 lines, consistent mutation API across app
 
-#### 4. Create FilterButtonGroup Component
-- [ ] Extract filter button pattern from routes
-- [ ] Used in: songs.tsx, albums.tsx, playlists.tsx, artists.tsx
-- **Impact**: Consistent filter UI across app
+#### 4. Create FilterButtonGroup Component ✅
+- ✅ Extract filter button pattern from routes
+- ✅ Applied to: songs.tsx, albums.tsx, playlists.tsx, artists.tsx
+- **Created**: `frontend/src/components/ui/FilterButtonGroup.tsx`
+  - Generic type parameter for type-safe filter values
+  - 7 color variants (indigo, green, orange, yellow, red, gray, blue)
+  - Optional label/heading support
+  - Optional hover handlers for prefetching
+- **Changes**:
+  - ArtistFilters: 62 lines → 29 lines (-33 lines)
+  - PlaylistFilters: 68 lines → 30 lines (-38 lines)
+  - AlbumsFilters: 127 lines → 47 lines (-80 lines)
+  - songs.tsx inline filters: 42 lines → 6 lines (-36 lines)
+- **Impact**: Eliminated ~199 lines, consistent filter UI, bundle reduced by 3.65KB
 
 #### 5. Create TaskCard Component
 - [ ] Unify three task card renderers (running, completed, failed)
@@ -155,15 +165,15 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
 
 ### Overall Statistics
 - **Total Issues Identified**: 40
-- **Issues Completed**: 11
+- **Issues Completed**: 12
 - **Issues In Progress**: 0
-- **Issues Remaining**: 29
+- **Issues Remaining**: 28
 
 ### Code Reduction
 - **Phase 1**: ~-90 lines of duplicate code
-- **Phase 2**: ~-330 lines (ToggleStatusButton: -150, useMutationState: -180)
+- **Phase 2**: ~-529 lines (ToggleStatusButton: -150, useMutationState: -180, FilterButtonGroup: -199)
 - **Phase 3 (Target)**: ~-360 lines
-- **Total So Far**: ~-420 lines while improving maintainability
+- **Total So Far**: ~-619 lines while improving maintainability
 - **Total Target**: ~-900 lines
 
 ### Files Requiring Major Refactoring
@@ -176,7 +186,7 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
 1. ✅ `ConfirmDialog` - Modal confirmation dialogs
 2. ✅ `ActionButton` - Loading state buttons
 3. ✅ `ToggleStatusButton` - Toggle switches/badges
-4. ⬜ `FilterButtonGroup` - Filter button sets
+4. ✅ `FilterButtonGroup` - Generic filter button groups
 5. ⬜ `TaskCard` - Task display cards
 
 ### Custom Hooks Created
@@ -298,7 +308,50 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
 - **Reusability**: Can instantiate multiple times for different mutation types in same component
 
 ### Next Session Priorities
-1. **Create FilterButtonGroup component** - Extract filter UI pattern
-2. **Fix performance issues** - Redundant filtering in tasks.tsx (critical)
-3. **Fix React anti-patterns** - Move useMemo side effects to useEffect
-4. **Create TaskCard component** - Unify task renderers
+1. **Fix performance issues** - Redundant filtering in tasks.tsx (critical)
+2. **Fix React anti-patterns** - Move useMemo side effects to useEffect
+3. **Create TaskCard component** - Unify task renderers
+4. **Start tasks.tsx decomposition** - Break 905-line file into components
+
+---
+
+## 📈 Session 4 Summary (2025-10-02 18:45)
+
+### Completed Work
+- ✅ Fixed TogglePlaylistAutoTrack mutation bug (wrong GraphQL document)
+- ✅ Created FilterButtonGroup component with generic type support
+- ✅ Refactored all 4 filter components to use FilterButtonGroup
+- ✅ Build passing with 3.65KB bundle size reduction
+- ✅ Updated tracking documents
+
+### Files Modified This Session
+- `frontend/src/routes/playlists.tsx` - Fixed mutation bug, added TogglePlaylistAutoTrackDocument import
+- `frontend/src/components/ui/FilterButtonGroup.tsx` - Created new component
+- `frontend/src/components/artists/ArtistFilters.tsx` - Refactored to use FilterButtonGroup
+- `frontend/src/components/playlists/PlaylistFilters.tsx` - Refactored to use FilterButtonGroup
+- `frontend/src/components/albums/AlbumFilters.tsx` - Refactored to use FilterButtonGroup
+- `frontend/src/routes/songs.tsx` - Replaced inline filters with FilterButtonGroup
+- `frontend/CODE_REVIEW_FINDINGS.md` - Marked issue #17 as completed
+- `frontend/REFACTORING_PROGRESS.md` - Updated metrics and progress
+
+### Metrics
+- **Code Reduction**: ~199 lines total (ArtistFilters: -33, PlaylistFilters: -38, AlbumFilters: -80, songs.tsx: -36, minus new component)
+- **Bundle Size**: 510KB → 507KB (-3.65KB)
+- **Components Created**: 6 total (added FilterButtonGroup)
+- **Hooks Created**: 3 total (no change)
+
+### Technical Highlights
+- **Generic Type Support**: `FilterButtonGroup<T extends string>` provides full type safety for filter values
+- **Color System**: 7 predefined color variants with consistent active/inactive states
+- **Flexible Layout**: Supports both single groups (artists, playlists, songs) and multi-group layouts (albums)
+- **Hover Support**: Optional `onHover` callback for prefetching data
+- **Bundle Optimization**: Despite adding general-purpose component, eliminated duplicated markup and styles resulted in net savings
+
+### Bug Fix
+- Fixed playlists.tsx Track Artists toggle using wrong mutation document (TogglePlaylistDocument instead of TogglePlaylistAutoTrackDocument)
+- Track Artists toggle now correctly updates the `autoTrackArtists` field
+
+### Next Session Priorities
+1. **Fix performance issues** - Redundant filtering in tasks.tsx (7x filter → 1x)
+2. **Fix React anti-patterns** - Move useMemo side effects to useEffect
+3. **Create TaskCard component** - Unify three task card renderers

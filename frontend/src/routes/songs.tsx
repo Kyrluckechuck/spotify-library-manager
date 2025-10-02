@@ -14,6 +14,19 @@ import { FilterBar } from '../components/common/FilterBar';
 // Songs components
 import { SongsTable } from '../components/songs/SongsTable';
 import type { SortField } from '../components/songs/SongsTable';
+import {
+  FilterButtonGroup,
+  type FilterOption,
+} from '../components/ui/FilterButtonGroup';
+
+const songFilterOptions: FilterOption<
+  'all' | 'downloaded' | 'failed' | 'unavailable'
+>[] = [
+  { value: 'all', label: 'All Songs', color: 'blue' },
+  { value: 'downloaded', label: 'Downloaded', color: 'green' },
+  { value: 'failed', label: 'Failed', color: 'yellow' },
+  { value: 'unavailable', label: 'Unavailable', color: 'red' },
+];
 
 function Songs() {
   const { artistId: artistIdFromSearch, search: initialSearch } =
@@ -117,48 +130,12 @@ function Songs() {
         searchPlaceholder='Search songs...'
       />
 
-      <div className='flex gap-4 mb-6'>
-        <button
-          onClick={() => handleFilterChange('all')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            filter === 'all'
-              ? 'bg-blue-100 text-blue-800'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          All Songs
-        </button>
-        <button
-          onClick={() => handleFilterChange('downloaded')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            filter === 'downloaded'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Downloaded
-        </button>
-        <button
-          onClick={() => handleFilterChange('failed')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            filter === 'failed'
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Failed
-        </button>
-        <button
-          onClick={() => handleFilterChange('unavailable')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            filter === 'unavailable'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Unavailable
-        </button>
-      </div>
+      <FilterButtonGroup
+        value={filter}
+        options={songFilterOptions}
+        onChange={handleFilterChange}
+        className='mb-6'
+      />
 
       <DataTable
         data={songs}
