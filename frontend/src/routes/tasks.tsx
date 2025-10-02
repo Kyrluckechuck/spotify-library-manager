@@ -1,7 +1,7 @@
 import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { TaskCount } from '../types/common';
 import { SearchInput } from '../components/ui/SearchInput';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
@@ -17,6 +17,8 @@ import {
   type TaskHistory,
 } from '../types/generated/graphql';
 import EnhancedEntityDisplay from '../components/EnhancedEntityDisplay';
+import { useToast } from '../components/ui/useToast';
+import { useConfirm } from '../hooks/useConfirm';
 
 type TaskStatus = 'running' | 'completed' | 'failed' | 'pending' | 'all';
 type TaskType = 'sync' | 'download' | 'fetch' | 'all';
@@ -38,6 +40,9 @@ function Tasks() {
   const [expandedHistoryLogs, setExpandedHistoryLogs] = useState<
     Record<string, boolean>
   >({});
+
+  const toast = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [cancelTasksByName] = useMutation(CancelTasksByNameDocument);
   const [cancelRunningTasksByName] = useMutation(
@@ -109,74 +114,85 @@ function Tasks() {
     (task: TaskHistory) => task.status === 'FAILED'
   );
 
-  const handleCancelAllTasks = async () => {
-    if (
-      confirm(
-        'Are you sure you want to cancel all tasks (both pending and running)? This action cannot be undone.'
-      )
-    ) {
-      try {
-        const result = await cancelAllTasksEnhanced();
-        if (result.data?.cancelAllTasks?.success) {
-          alert('Successfully cancelled all tasks');
-          refetchQueue();
-        } else {
-          alert(
-            'Failed to cancel tasks: ' + result.data?.cancelAllTasks?.message
-          );
-        }
-      } catch (error) {
-        alert('Error cancelling tasks: ' + error);
-      }
-    }
-  };
+  // Reusable handler for task cancellation with confirmation
+  const handleCancelWithConfirmation = useCallback(
+    async <T extends Record<string, unknown>>(
+      confirmMessage: string,
+      mutationFn: () => Promise<{ data?: T | null }>,
+      successMessage: string,
+      errorPrefix: string = 'Failed to cancel tasks'
+    ) => {
+      const confirmed = await confirm({
+        title: 'Confirm Cancellation',
+        message: confirmMessage,
+        confirmText: 'Cancel Tasks',
+        cancelText: 'Keep Tasks',
+        variant: 'danger',
+      });
 
-  const handleCancelTasksByName = async (taskName: string) => {
-    if (
-      confirm(
-        `Are you sure you want to cancel all '${taskName}' tasks? This action cannot be undone.`
-      )
-    ) {
-      try {
-        const result = await cancelTasksByName({ variables: { taskName } });
-        if (result.data?.cancelTasksByName?.success) {
-          alert(`Successfully cancelled ${taskName} tasks`);
-          refetchQueue();
-        } else {
-          alert(
-            'Failed to cancel tasks: ' + result.data?.cancelTasksByName?.message
-          );
-        }
-      } catch (error) {
-        alert('Error cancelling tasks: ' + error);
-      }
-    }
-  };
+      if (!confirmed) return;
 
-  const handleCancelRunningTasksByName = async (taskName: string) => {
-    if (
-      confirm(
-        `Are you sure you want to cancel all running '${taskName}' tasks? This action cannot be undone.`
-      )
-    ) {
       try {
-        const result = await cancelRunningTasksByName({
-          variables: { taskName },
-        });
-        if (result.data?.cancelRunningTasksByName?.success) {
-          alert(`Successfully cancelled running ${taskName} tasks`);
+        const result = await mutationFn();
+        if (!result.data) {
+          toast.error(`${errorPrefix}: No data returned`);
+          return;
+        }
+
+        const firstKey = Object.keys(result.data)[0];
+        const data = result.data[firstKey] as
+          | { success?: boolean; message?: string }
+          | undefined;
+
+        if (data?.success) {
+          toast.success(successMessage);
           refetchQueue();
         } else {
-          alert(
-            'Failed to cancel running tasks: ' +
-              result.data?.cancelRunningTasksByName?.message
-          );
+          toast.error(`${errorPrefix}: ${data?.message || 'Unknown error'}`);
         }
       } catch (error) {
-        alert('Error cancelling running tasks: ' + error);
+        toast.error(
+          `Error cancelling tasks: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
-    }
-  };
+    },
+    [confirm, toast, refetchQueue]
+  );
+
+  const handleCancelAllTasks = useCallback(
+    () =>
+      handleCancelWithConfirmation(
+        'Are you sure you want to cancel all tasks (both pending and running)? This action cannot be undone.',
+        () => cancelAllTasksEnhanced(),
+        'Successfully cancelled all tasks'
+      ),
+    [handleCancelWithConfirmation, cancelAllTasksEnhanced]
+  );
+
+  const handleCancelTasksByName = useCallback(
+    (taskName: string) =>
+      handleCancelWithConfirmation(
+        `Are you sure you want to cancel all '${taskName}' tasks? This action cannot be undone.`,
+        () => cancelTasksByName({ variables: { taskName } }),
+        `Successfully cancelled ${taskName} tasks`
+      ),
+    [handleCancelWithConfirmation, cancelTasksByName]
+  );
+
+  const handleCancelRunningTasksByName = useCallback(
+    (taskName: string) =>
+      handleCancelWithConfirmation(
+        `Are you sure you want to cancel all running '${taskName}' tasks? This action cannot be undone.`,
+        () => cancelRunningTasksByName({ variables: { taskName } }),
+        `Successfully cancelled running ${taskName} tasks`,
+        'Failed to cancel running tasks'
+      ),
+    [handleCancelWithConfirmation, cancelRunningTasksByName]
+  );
+
+  const handleRefresh = useCallback(() => {
+    window.location.reload();
+  }, []);
 
   return (
     <div className='space-y-8'>
@@ -199,9 +215,7 @@ function Tasks() {
             </span>
           </div>
           <button
-            onClick={() => {
-              window.location.reload();
-            }}
+            onClick={handleRefresh}
             className='px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm'
           >
             Refresh
@@ -761,14 +775,17 @@ function Tasks() {
                               <tr>
                                 <td colSpan={9} className='px-3 pb-3'>
                                   <div className='mt-1 bg-gray-50 rounded p-3 text-xs sm:text-sm font-mono text-gray-700 max-h-40 overflow-y-auto'>
-                                    {task.logMessages.map((log: string) => (
-                                      <div
-                                        key={`task-${task.id}-log-row-${log}`}
-                                        className='mb-1'
-                                      >
-                                        {log}
-                                      </div>
-                                    ))}
+                                    {task.logMessages.map(
+                                      (log: string, idx: number) => (
+                                        <div
+                                          // eslint-disable-next-line react/no-array-index-key
+                                          key={`task-${task.id}-log-${idx}`}
+                                          className='mb-1'
+                                        >
+                                          {log}
+                                        </div>
+                                      )
+                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -870,14 +887,17 @@ function Tasks() {
                         </div>
                         {isExpanded && (
                           <div className='mt-2 bg-gray-50 rounded p-2 text-xs font-mono text-gray-700 max-h-32 overflow-y-auto'>
-                            {task.logMessages?.map((log: string) => (
-                              <div
-                                key={`task-${task.id}-log-entry-${log}`}
-                                className='mb-1'
-                              >
-                                {log}
-                              </div>
-                            ))}
+                            {task.logMessages?.map(
+                              (log: string, idx: number) => (
+                                <div
+                                  // eslint-disable-next-line react/no-array-index-key
+                                  key={`task-${task.id}-log-${idx}`}
+                                  className='mb-1'
+                                >
+                                  {log}
+                                </div>
+                              )
+                            )}
                           </div>
                         )}
                       </div>
@@ -896,6 +916,7 @@ function Tasks() {
           )}
         </div>
       </div>
+      <ConfirmDialog />
     </div>
   );
 }
