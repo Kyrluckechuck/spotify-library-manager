@@ -62,38 +62,47 @@ function Playlists() {
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',
-      onCompleted: data => {
-        // Pre-fetch other filter combinations
-        if (data && networkStatus !== 3) {
-          // Not refetching
-          const baseVariables = {
-            first: pageSize,
-            sortBy: sortField,
-            sortDirection: sortDirection,
-            search: searchQuery || undefined,
-          };
-
-          // Pre-fetch enabled and disabled filters
-          ['enabled', 'disabled'].forEach(enabledFilter => {
-            const variables = {
-              ...baseVariables,
-              enabled: enabledFilter === 'enabled' ? true : false,
-            };
-
-            client
-              .query({
-                query: GetPlaylistsDocument,
-                variables,
-                fetchPolicy: 'cache-first',
-              })
-              .catch(() => {
-                // Ignore pre-fetch errors
-              });
-          });
-        }
-      },
     }
   );
+
+  // Pre-fetch other filter combinations
+  useMemo(() => {
+    if (data && networkStatus !== 3) {
+      // Not refetching
+      const baseVariables = {
+        first: pageSize,
+        sortBy: sortField,
+        sortDirection: sortDirection,
+        search: searchQuery || undefined,
+      };
+
+      // Pre-fetch enabled and disabled filters
+      ['enabled', 'disabled'].forEach(enabledFilter => {
+        const variables = {
+          ...baseVariables,
+          enabled: enabledFilter === 'enabled' ? true : false,
+        };
+
+        client
+          .query({
+            query: GetPlaylistsDocument,
+            variables,
+            fetchPolicy: 'cache-first',
+          })
+          .catch(() => {
+            // Ignore pre-fetch errors
+          });
+      });
+    }
+  }, [
+    data,
+    networkStatus,
+    pageSize,
+    sortField,
+    sortDirection,
+    searchQuery,
+    client,
+  ]);
 
   const [togglePlaylist] = useMutation(TogglePlaylistDocument);
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
@@ -321,7 +330,7 @@ function Playlists() {
   }, []);
 
   const handleLoadMore = () => {
-    if (data?.playlists.pageInfo.hasNextPage) {
+    if (data?.playlists?.pageInfo?.hasNextPage) {
       fetchMore({
         variables: {
           after: data.playlists.pageInfo.endCursor,

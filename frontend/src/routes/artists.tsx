@@ -68,34 +68,35 @@ function Artists() {
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',
-      onCompleted: data => {
-        // Pre-fetch other filter combinations to eliminate future jitter
-        if (data && networkStatus !== 3) {
-          const baseVariables = {
-            ...queryVariables,
-          };
-
-          // Pre-fetch tracked and untracked filters
-          ['tracked', 'untracked'].forEach(trackedFilter => {
-            const variables = {
-              ...baseVariables,
-              isTracked: trackedFilter === 'tracked' ? true : false,
-            };
-
-            client
-              .query({
-                query: GetArtistsDocument,
-                variables,
-                fetchPolicy: 'cache-first',
-              })
-              .catch(() => {
-                // Silently handle errors for pre-fetching
-              });
-          });
-        }
-      },
     }
   );
+
+  // Pre-fetch other filter combinations to eliminate future jitter
+  useMemo(() => {
+    if (data && networkStatus !== 3) {
+      const baseVariables = {
+        ...queryVariables,
+      };
+
+      // Pre-fetch tracked and untracked filters
+      ['tracked', 'untracked'].forEach(trackedFilter => {
+        const variables = {
+          ...baseVariables,
+          isTracked: trackedFilter === 'tracked' ? true : false,
+        };
+
+        client
+          .query({
+            query: GetArtistsDocument,
+            variables,
+            fetchPolicy: 'cache-first',
+          })
+          .catch(() => {
+            // Silently handle errors for pre-fetching
+          });
+      });
+    }
+  }, [data, networkStatus, queryVariables, client]);
 
   const [trackArtist] = useMutation(TrackArtistDocument);
   const [untrackArtist] = useMutation(UntrackArtistDocument);
