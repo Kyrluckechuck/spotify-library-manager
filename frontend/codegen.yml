@@ -19,5 +19,6 @@ generates:
       futureProofUnions: true
       maybeValue: T | null
       inputMaybeValue: T | null | undefined
+      useTypeImports: true
       scalars:
         DateTime: string

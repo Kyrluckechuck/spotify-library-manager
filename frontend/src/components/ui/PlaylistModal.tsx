@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { useMutation } from '@apollo/client/react';
 import {
   UpdatePlaylistDocument,
+  CreatePlaylistDocument,
   type UpdatePlaylistMutation,
   type UpdatePlaylistMutationVariables,
+  type Playlist,
 } from '../../types/generated/graphql';
-import { CREATE_PLAYLIST } from '../../queries/download';
-
-import type { Playlist } from '../../types/generated/graphql';
 
 interface PlaylistModalProps {
   isOpen: boolean;
@@ -33,7 +32,7 @@ export function PlaylistModal({
     UpdatePlaylistMutationVariables
   >(UpdatePlaylistDocument);
 
-  const [createPlaylist] = useMutation(CREATE_PLAYLIST);
+  const [createPlaylist] = useMutation(CreatePlaylistDocument);
 
   // Initialize form when editing
   useEffect(() => {

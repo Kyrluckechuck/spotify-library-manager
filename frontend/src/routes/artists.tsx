@@ -216,7 +216,7 @@ function Artists() {
   };
 
   const handleLoadMore = () => {
-    if (data?.artists.pageInfo.hasNextPage) {
+    if (data?.artists?.pageInfo?.hasNextPage) {
       fetchMore({
         variables: {
           ...queryVariablesWithFilter,
@@ -226,9 +226,9 @@ function Artists() {
     }
   };
 
-  const artists = data?.artists.edges || [];
-  const totalCount = data?.artists.totalCount || 0;
-  const pageInfo = data?.artists.pageInfo;
+  const artists = data?.artists?.edges || [];
+  const totalCount = data?.artists?.totalCount || 0;
+  const pageInfo = data?.artists?.pageInfo;
   const { isRefreshing: isRefetching } = useRequestState(networkStatus);
 
   return (

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation } from '@apollo/client/react';
-import { DOWNLOAD_URL, CREATE_PLAYLIST } from '../../queries/download';
+import {
+  DownloadUrlDocument,
+  CreatePlaylistDocument,
+} from '../../types/generated/graphql';
 import { useToast } from './useToast';
 
 interface DownloadModalProps {
@@ -144,9 +147,11 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
     );
   }, [autoTrackArtists]);
 
-  const [downloadUrl, { loading: downloadLoading }] = useMutation(DOWNLOAD_URL);
-  const [createPlaylist, { loading: createLoading }] =
-    useMutation(CREATE_PLAYLIST);
+  const [downloadUrl, { loading: downloadLoading }] =
+    useMutation(DownloadUrlDocument);
+  const [createPlaylist, { loading: createLoading }] = useMutation(
+    CreatePlaylistDocument
+  );
 
   const isLoading = downloadLoading || createLoading;
 
