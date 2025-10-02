@@ -3,6 +3,7 @@ import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import {
   GetPlaylistsDocument,
   TogglePlaylistDocument,
+  TogglePlaylistAutoTrackDocument,
   SyncPlaylistDocument,
   ForceSyncPlaylistDocument,
   type GetPlaylistsQuery,
@@ -23,6 +24,10 @@ import { useRequestState } from '../hooks/useRequestState';
 import { useToast } from '../components/ui/useToast';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { SearchInput } from '../components/ui/SearchInput';
+import {
+  useMutationState,
+  useMutationLoadingState,
+} from '../hooks/useMutationState';
 import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
 
 type SortDirection = 'asc' | 'desc';
@@ -107,24 +112,36 @@ function Playlists() {
   const [togglePlaylist] = useMutation(TogglePlaylistDocument);
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
   const [forceSyncPlaylist] = useMutation(ForceSyncPlaylistDocument);
-  const [togglePlaylistAutoTrack] = useMutation(TogglePlaylistDocument);
-  const [enabledMutatingIds, setEnabledMutatingIds] = useState<Set<number>>(
-    new Set()
+  const [togglePlaylistAutoTrack] = useMutation(
+    TogglePlaylistAutoTrackDocument
   );
-  const [autoMutatingIds, setAutoMutatingIds] = useState<Set<number>>(
-    new Set()
-  );
-  const [syncMutatingIds, setSyncMutatingIds] = useState<Set<number>>(
-    new Set()
-  );
-  const [forceSyncMutatingIds, setForceSyncMutatingIds] = useState<Set<number>>(
-    new Set()
-  );
-  const [enabledPulseIds, setEnabledPulseIds] = useState<Set<number>>(
-    new Set()
-  );
-  const [autoPulseIds, setAutoPulseIds] = useState<Set<number>>(new Set());
-  const [errorById, setErrorById] = useState<Record<number, string>>({});
+
+  // Enable/disable toggle with pulse
+  const {
+    mutatingIds: enabledMutatingIds,
+    pulseIds: enabledPulseIds,
+    errorById,
+    handleMutation: handleEnabledMutation,
+  } = useMutationState();
+
+  // Auto-track artists toggle with pulse (shares errorById)
+  const {
+    mutatingIds: autoMutatingIds,
+    pulseIds: autoPulseIds,
+    handleMutation: handleAutoMutation,
+  } = useMutationState();
+
+  // Separate loading states for sync and force sync
+  const {
+    loadingIds: syncMutatingIds,
+    startLoading: startSync,
+    stopLoading: stopSync,
+  } = useMutationLoadingState();
+  const {
+    loadingIds: forceSyncMutatingIds,
+    startLoading: startForceSync,
+    stopLoading: stopForceSync,
+  } = useMutationLoadingState();
 
   const handleEnabledFilterChange = (
     newFilter: 'all' | 'enabled' | 'disabled'
@@ -223,100 +240,53 @@ function Playlists() {
   );
 
   const handleTogglePlaylist = async (playlist: Playlist) => {
-    try {
-      setErrorById(prev => ({ ...prev, [playlist.id]: '' }));
-      setEnabledMutatingIds(prev => new Set(prev).add(playlist.id));
-      await togglePlaylist({ variables: { playlistId: playlist.id } });
-      toast.success(`Playlist ${playlist.enabled ? 'disabled' : 'enabled'}`);
-      setEnabledPulseIds(prev => new Set(prev).add(playlist.id));
-    } catch (error) {
-      setErrorById(prev => ({
-        ...prev,
-        [playlist.id]: error instanceof Error ? error.message : 'Action failed',
-      }));
-    }
-    setEnabledMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(playlist.id);
-      return next;
-    });
-    window.setTimeout(() => {
-      setEnabledPulseIds(prev => {
-        const next = new Set(prev);
-        next.delete(playlist.id);
-        return next;
-      });
-    }, 500);
+    await handleEnabledMutation(
+      playlist.id,
+      async () => {
+        await togglePlaylist({ variables: { playlistId: playlist.id } });
+        toast.success(`Playlist ${playlist.enabled ? 'disabled' : 'enabled'}`);
+      },
+      { withPulse: true }
+    );
   };
 
   const handleSyncPlaylist = async (playlistId: number) => {
     try {
-      setErrorById(prev => ({ ...prev, [playlistId]: '' }));
-      setSyncMutatingIds(prev => new Set(prev).add(playlistId));
+      startSync(playlistId);
       await syncPlaylist({ variables: { playlistId } });
       toast.success('Playlist synced');
     } catch (error) {
-      setErrorById(prev => ({
-        ...prev,
-        [playlistId]: error instanceof Error ? error.message : 'Sync failed',
-      }));
+      toast.error(error instanceof Error ? error.message : 'Sync failed');
+    } finally {
+      stopSync(playlistId);
     }
-    setSyncMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(playlistId);
-      return next;
-    });
   };
 
   const handleForceSyncPlaylist = async (playlistId: number) => {
     try {
-      setErrorById(prev => ({ ...prev, [playlistId]: '' }));
-      setForceSyncMutatingIds(prev => new Set(prev).add(playlistId));
+      startForceSync(playlistId);
       await forceSyncPlaylist({ variables: { playlistId } });
       toast.success('Playlist force sync started');
     } catch (error) {
-      setErrorById(prev => ({
-        ...prev,
-        [playlistId]:
-          error instanceof Error ? error.message : 'Force sync failed',
-      }));
+      toast.error(error instanceof Error ? error.message : 'Force sync failed');
+    } finally {
+      stopForceSync(playlistId);
     }
-    setForceSyncMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(playlistId);
-      return next;
-    });
   };
 
   const handleToggleAutoTrack = async (playlist: Playlist) => {
-    try {
-      setErrorById(prev => ({ ...prev, [playlist.id]: '' }));
-      setAutoMutatingIds(prev => new Set(prev).add(playlist.id));
-      await togglePlaylistAutoTrack({
-        variables: { playlistId: playlist.id },
-      });
-      toast.success(
-        `Track Artists ${playlist.autoTrackArtists ? 'disabled' : 'enabled'}`
-      );
-      setAutoPulseIds(prev => new Set(prev).add(playlist.id));
-    } catch (error) {
-      setErrorById(prev => ({
-        ...prev,
-        [playlist.id]: error instanceof Error ? error.message : 'Action failed',
-      }));
-    }
-    setAutoMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(playlist.id);
-      return next;
-    });
-    window.setTimeout(() => {
-      setAutoPulseIds(prev => {
-        const next = new Set(prev);
-        next.delete(playlist.id);
-        return next;
-      });
-    }, 500);
+    await handleAutoMutation(
+      playlist.id,
+      async () => {
+        await togglePlaylistAutoTrack({
+          variables: { playlistId: playlist.id },
+        });
+        toast.success(
+          `Track Artists ${playlist.autoTrackArtists ? 'disabled' : 'enabled'}`
+        );
+      },
+      { withPulse: true }
+    );
   };
 
   const handleEditPlaylist = useCallback((playlist: Playlist) => {

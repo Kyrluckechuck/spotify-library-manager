@@ -25,6 +25,10 @@ import { ArtistsTable } from '../components/artists/ArtistsTable';
 
 // Hooks
 import { useDataTable } from '../hooks/useDataTable';
+import {
+  useMutationState,
+  useMutationLoadingState,
+} from '../hooks/useMutationState';
 import type { SortField } from '../components/artists/ArtistsTable';
 
 function Artists() {
@@ -102,15 +106,22 @@ function Artists() {
   const [untrackArtist] = useMutation(UntrackArtistDocument);
   const [syncArtist] = useMutation(SyncArtistDocument);
   const [downloadArtist] = useMutation(DownloadArtistDocument);
-  const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
-  const [syncMutatingIds, setSyncMutatingIds] = useState<Set<number>>(
-    new Set()
-  );
-  const [downloadMutatingIds, setDownloadMutatingIds] = useState<Set<number>>(
-    new Set()
-  );
-  const [errorById, setErrorById] = useState<Record<number, string>>({});
-  const [pulseIds, setPulseIds] = useState<Set<number>>(new Set());
+
+  // Track/untrack mutations with pulse animation
+  const { mutatingIds, pulseIds, errorById, handleMutation } =
+    useMutationState();
+
+  // Separate loading states for sync and download actions
+  const {
+    loadingIds: syncMutatingIds,
+    startLoading: startSync,
+    stopLoading: stopSync,
+  } = useMutationLoadingState();
+  const {
+    loadingIds: downloadMutatingIds,
+    startLoading: startDownload,
+    stopLoading: stopDownload,
+  } = useMutationLoadingState();
 
   const handleFilterChange = (newFilter: 'all' | 'tracked' | 'untracked') => {
     setFilter(newFilter);
@@ -137,60 +148,36 @@ function Artists() {
     id: number;
     isTracked: boolean;
   }) => {
-    try {
-      setErrorById(prev => ({ ...prev, [artist.id]: '' }));
-      setMutatingIds(prev => new Set(prev).add(artist.id));
-      if (artist.isTracked) {
-        await untrackArtist({ variables: { artistId: artist.id } });
-        toast.success('Artist untracked');
-      } else {
-        await trackArtist({ variables: { artistId: artist.id } });
-        toast.success('Artist tracked');
-      }
-      setPulseIds(prev => new Set(prev).add(artist.id));
-    } catch (error) {
-      setErrorById(prev => ({
-        ...prev,
-        [artist.id]: error instanceof Error ? error.message : 'Action failed',
-      }));
-    }
-    setMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(artist.id);
-      return next;
-    });
-    window.setTimeout(() => {
-      setPulseIds(prev => {
-        const next = new Set(prev);
-        next.delete(artist.id);
-        return next;
-      });
-    }, 500);
+    await handleMutation(
+      artist.id,
+      async () => {
+        if (artist.isTracked) {
+          await untrackArtist({ variables: { artistId: artist.id } });
+          toast.success('Artist untracked');
+        } else {
+          await trackArtist({ variables: { artistId: artist.id } });
+          toast.success('Artist tracked');
+        }
+      },
+      { withPulse: true }
+    );
   };
 
   const handleSyncArtist = async (artistId: number) => {
     try {
-      setErrorById(prev => ({ ...prev, [artistId]: '' }));
-      setSyncMutatingIds(prev => new Set(prev).add(artistId));
+      startSync(artistId);
       await syncArtist({ variables: { artistId: artistId.toString() } });
       toast.success('Artist sync started');
     } catch (error) {
-      setErrorById(prev => ({
-        ...prev,
-        [artistId]: error instanceof Error ? error.message : 'Sync failed',
-      }));
+      toast.error(error instanceof Error ? error.message : 'Sync failed');
+    } finally {
+      stopSync(artistId);
     }
-    setSyncMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(artistId);
-      return next;
-    });
   };
 
   const handleDownloadArtist = async (artistId: number) => {
     try {
-      setErrorById(prev => ({ ...prev, [artistId]: '' }));
-      setDownloadMutatingIds(prev => new Set(prev).add(artistId));
+      startDownload(artistId);
       const result = await downloadArtist({
         variables: { artistId: artistId.toString() },
       });
@@ -200,20 +187,15 @@ function Artists() {
       } else {
         const errorMessage =
           result.data?.downloadArtist?.message || 'Download failed';
-        setErrorById(prev => ({ ...prev, [artistId]: errorMessage }));
         toast.error(errorMessage);
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Download failed';
-      setErrorById(prev => ({ ...prev, [artistId]: errorMessage }));
       toast.error(errorMessage);
+    } finally {
+      stopDownload(artistId);
     }
-    setDownloadMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(artistId);
-      return next;
-    });
   };
 
   const handleLoadMore = () => {

@@ -20,6 +20,7 @@ import { useToast } from '../components/ui/useToast';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { ArtistContext } from '../components/ui/ArtistContext';
 import { SearchInput } from '../components/ui/SearchInput';
+import { useMutationState } from '../hooks/useMutationState';
 import type { AlbumSortField } from '../components/albums/AlbumsTable';
 
 type SortDirection = 'asc' | 'desc';
@@ -86,9 +87,8 @@ function Albums() {
   });
 
   const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
-  const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
-  const [pulseIds, setPulseIds] = useState<Set<number>>(new Set());
-  const [errorById, setErrorById] = useState<Record<number, string>>({});
+  const { mutatingIds, pulseIds, errorById, handleMutation } =
+    useMutationState();
 
   // Pre-fetch other filter combinations when data loads (replaces onCompleted)
   useEffect(() => {
@@ -231,35 +231,19 @@ function Albums() {
   }, []);
 
   const handleWantedToggle = async (albumId: number, wanted: boolean) => {
-    try {
-      setErrorById(prev => ({ ...prev, [albumId]: '' }));
-      setMutatingIds(prev => new Set(prev).add(albumId));
-      await setAlbumWanted({
-        variables: {
-          albumId,
-          wanted,
-        },
-      });
-      toast.success(`Wanted ${wanted ? 'enabled' : 'disabled'}`);
-      setPulseIds(prev => new Set(prev).add(albumId));
-    } catch (error) {
-      setErrorById(prev => ({
-        ...prev,
-        [albumId]: error instanceof Error ? error.message : 'Action failed',
-      }));
-    }
-    setMutatingIds(prev => {
-      const next = new Set(prev);
-      next.delete(albumId);
-      return next;
-    });
-    window.setTimeout(() => {
-      setPulseIds(prev => {
-        const next = new Set(prev);
-        next.delete(albumId);
-        return next;
-      });
-    }, 500);
+    await handleMutation(
+      albumId,
+      async () => {
+        await setAlbumWanted({
+          variables: {
+            albumId,
+            wanted,
+          },
+        });
+        toast.success(`Wanted ${wanted ? 'enabled' : 'disabled'}`);
+      },
+      { withPulse: true }
+    );
   };
 
   const handleLoadMore = () => {
