@@ -166,13 +166,30 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
   - albums.tsx: Already correct (was using useEffect)
 - **Impact**: Side effects now execute reliably, follows React's mental model
 
+### Completed Tasks
+
+#### 2b. Fix useDebouncedSearch Dependency Bug ✅
+- ✅ Fixed infinite loop risk in `useDebouncedSearch` hook
+- **Changes**:
+  - Added `useRef` to store `searchFunction` reference
+  - Separate effect keeps ref up-to-date
+  - Main effect only depends on `debouncedTerm` (not `searchFunction`)
+- **Impact**: Prevents infinite loops, consumers no longer need to wrap search functions in `useCallback`
+
+#### 2c. Fix setTimeout Cleanup Memory Leak ✅
+- ✅ Fixed memory leak in `useMutationState` hook
+- **Changes**:
+  - Added `useRef<Set<number>>` to track all active timeouts
+  - Each timeout added to set when created, removed when fired
+  - Cleanup effect clears all pending timeouts on unmount
+  - Captured ref value in cleanup function (ESLint compliance)
+- **Impact**: Prevents memory leaks and "setState on unmounted component" warnings. Automatically fixes issue in all consumers (albums.tsx, artists.tsx, playlists.tsx)
+
 ### Planned Tasks
 
-#### 2b. Additional React Issues
-
-- [ ] Fix `useDebouncedSearch` dependency bug
+#### 2d. Additional React Issues
 - [ ] Add memoization for JSX calculations (if needed)
-- **Impact**: Prevent potential infinite loops, optimize re-renders
+- **Impact**: Optimize re-renders
 
 #### 3. Decompose tasks.tsx (905 lines → ~5 components)
 
@@ -205,9 +222,9 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
 ### Overall Statistics
 
 - **Total Issues Identified**: 40
-- **Issues Completed**: 14
+- **Issues Completed**: 16
 - **Issues In Progress**: 0
-- **Issues Remaining**: 26
+- **Issues Remaining**: 24
 
 ### Code Reduction
 
@@ -508,3 +525,71 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
 1. **Fix useDebouncedSearch dependency bug** - Potential infinite loop issue (critical)
 2. **Create TaskCard component** - Only if genuinely reusable (following user guidance)
 3. **Consider tasks.tsx decomposition** - Only if genuinely improves maintainability
+
+---
+
+## 📈 Session 7 Summary (2025-10-02 20:30)
+
+### Completed Work
+
+- ✅ Fixed ESLint violations from Session 6 (historyNodes memoization, unused variable)
+- ✅ Fixed useDebouncedSearch hook dependency bug
+- ✅ Build passing with no issues
+- ✅ Updated tracking documents
+
+### Files Modified This Session
+
+- `frontend/src/routes/tasks.tsx` - Fixed ESLint warnings (wrapped historyNodes in useMemo, removed unused variable)
+- `frontend/src/hooks/useDebouncedSearch.ts` - Fixed infinite loop risk with useRef pattern
+- `frontend/CODE_REVIEW_FINDINGS.md` - Marked issue #4 as completed
+- `frontend/REFACTORING_PROGRESS.md` - Updated metrics and progress
+
+### Metrics
+
+- **Code Reduction**: No line reduction (refactored for correctness)
+- **Bundle Size**: 506.83KB (unchanged)
+- **Components Created**: 6 total (no change)
+- **Hooks Created**: 3 total (no change)
+
+### Technical Highlights
+
+- **useRef Pattern for Function Props**: Prevents dependency cycles by storing function reference in ref
+- **Dual useEffect Approach**: One effect keeps ref fresh, another uses the ref (avoiding dependency issues)
+- **ESLint Rule Compliance**: Fixed react-hooks/exhaustive-deps warning by proper memoization chain
+
+### Next Session Priorities
+
+1. **Create TaskCard component** - Only if genuinely reusable (following user guidance)
+2. **Consider tasks.tsx decomposition** - Only if genuinely improves maintainability
+3. **TypeScript cleanup** - Unused params, inline type definitions (lower priority)
+
+---
+
+## 📈 Session 7 (Continued) Summary
+
+### Additional Work Completed
+
+- ✅ Fixed setTimeout cleanup memory leak in useMutationState hook
+- ✅ Surveyed all setTimeout/setInterval usage in codebase
+- ✅ Build passing with no issues
+
+### Files Modified (Additional)
+
+- `frontend/src/hooks/useMutationState.tsx` - Added timeout tracking and cleanup
+- `frontend/CODE_REVIEW_FINDINGS.md` - Marked issue #12 as completed
+- `frontend/REFACTORING_PROGRESS.md` - Updated metrics and progress
+
+### Technical Highlights
+
+- **Memory Leak Prevention**: Tracks all active timeouts in a Set stored in useRef
+- **Automatic Cleanup**: useEffect cleanup function clears all pending timeouts on unmount
+- **Cascading Fix**: Since albums.tsx, artists.tsx, and playlists.tsx all use the hook, they all benefit automatically
+- **ESLint Compliance**: Properly captures ref value inside effect to satisfy react-hooks/exhaustive-deps
+
+### Session 7 Final Metrics
+
+- **Issues Completed This Session**: 2 (useDebouncedSearch dependency bug, setTimeout cleanup)
+- **Total Issues Completed**: 16 out of 40
+- **Bundle Size**: 506.99KB (slight increase from hook improvements, +0.16KB)
+- **Components Created**: 6 total
+- **Hooks Created**: 3 total

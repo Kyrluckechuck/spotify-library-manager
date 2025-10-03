@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 /**
  * Custom hook to manage mutation state (loading, pulse animations, errors) for table items.
@@ -24,6 +24,9 @@ export function useMutationState() {
   const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
   const [pulseIds, setPulseIds] = useState<Set<number>>(new Set());
   const [errorById, setErrorById] = useState<Record<number, string>>({});
+
+  // Track active timeouts for cleanup on unmount
+  const timeoutIdsRef = useRef<Set<number>>(new Set());
 
   /**
    * Executes a mutation with automatic state management.
@@ -71,18 +74,32 @@ export function useMutationState() {
 
         // Remove pulse after animation duration
         if (withPulse) {
-          window.setTimeout(() => {
+          const timeoutId = window.setTimeout(() => {
             setPulseIds(prev => {
               const next = new Set(prev);
               next.delete(id);
               return next;
             });
+            // Remove this timeout from tracking set once it fires
+            timeoutIdsRef.current.delete(timeoutId);
           }, pulseDuration);
+
+          // Track this timeout for cleanup
+          timeoutIdsRef.current.add(timeoutId);
         }
       }
     },
     []
   );
+
+  // Cleanup all pending timeouts on unmount
+  useEffect(() => {
+    const timeouts = timeoutIdsRef.current;
+    return () => {
+      timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+      timeouts.clear();
+    };
+  }, []);
 
   /**
    * Clears the error for a specific item ID.

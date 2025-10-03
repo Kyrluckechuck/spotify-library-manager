@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export function useDebouncedSearch(
   searchFunction: (query: string) => void,
@@ -6,6 +6,14 @@ export function useDebouncedSearch(
 ) {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
+
+  // Store the latest searchFunction in a ref to avoid dependency issues
+  const searchFunctionRef = useRef(searchFunction);
+
+  // Keep ref up to date with latest searchFunction
+  useEffect(() => {
+    searchFunctionRef.current = searchFunction;
+  }, [searchFunction]);
 
   // Debounce the search term
   useEffect(() => {
@@ -20,8 +28,8 @@ export function useDebouncedSearch(
 
   // Call search function when debounced term changes
   useEffect(() => {
-    searchFunction(debouncedTerm);
-  }, [debouncedTerm, searchFunction]);
+    searchFunctionRef.current(debouncedTerm);
+  }, [debouncedTerm]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);

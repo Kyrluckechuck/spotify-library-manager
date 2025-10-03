@@ -144,7 +144,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   }, [debouncedValue]);
   ```
 
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Used `useRef` pattern to store `searchFunction` reference. Added separate effect to keep ref up-to-date. Main effect now only depends on `debouncedTerm`, preventing infinite loops. Consumers no longer need to wrap their search functions in `useCallback`. Build and ESLint checks passing.
 
 ---
 
@@ -382,7 +382,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   useEffect(() => () => clearTimeout(timeoutRef.current), []);
   ```
 
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Fixed in `useMutationState` hook. Added `useRef<Set<number>>` to track all active timeouts. Each timeout is added to the set when created and removed when it fires. Cleanup effect clears all pending timeouts on unmount. This fix automatically applies to all consumers (albums.tsx, artists.tsx, playlists.tsx) since they use the hook. ESLint warning about ref capture in cleanup properly addressed.
 
 ### 13. Component Definition Inside Parent
 
