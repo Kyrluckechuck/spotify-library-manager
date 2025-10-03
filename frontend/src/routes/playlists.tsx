@@ -9,7 +9,7 @@ import {
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
 import type { Playlist } from '../types/generated/graphql';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 
 import { PlaylistModal } from '../components/ui/PlaylistModal';
 
@@ -71,7 +71,7 @@ function Playlists() {
   );
 
   // Pre-fetch other filter combinations
-  useMemo(() => {
+  useEffect(() => {
     if (data && networkStatus !== 3) {
       // Not refetching
       const baseVariables = {

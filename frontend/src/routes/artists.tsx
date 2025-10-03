@@ -8,7 +8,7 @@ import {
   SyncArtistDocument,
   DownloadArtistDocument,
 } from '../types/generated/graphql';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { useRequestState } from '../hooks/useRequestState';
 
@@ -76,7 +76,7 @@ function Artists() {
   );
 
   // Pre-fetch other filter combinations to eliminate future jitter
-  useMemo(() => {
+  useEffect(() => {
     if (data && networkStatus !== 3) {
       const baseVariables = {
         ...queryVariables,

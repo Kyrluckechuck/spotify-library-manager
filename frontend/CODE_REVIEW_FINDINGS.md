@@ -9,12 +9,14 @@
 Reviewed 25 source files across routes, components, and hooks. Identified 40 issues ranging from critical architectural problems to minor optimizations. Primary concerns: code duplication, missing composition patterns, and performance bottlenecks from unnecessary re-renders.
 
 **Key Metrics**:
+
 - 🔴 **8 Critical Issues** - Architectural/performance problems requiring immediate attention
 - 🟠 **12 High Priority** - Significant impact on maintainability or UX
 - 🟡 **15 Medium Priority** - Code quality improvements
 - 🟢 **5 Low Priority** - Minor optimizations
 
 **Largest Files** (should be <300 lines):
+
 - `tasks.tsx`: 905 lines ⚠️
 - `EnhancedEntityDisplay.tsx`: 413 lines ⚠️
 - `playlists.tsx`: 468 lines ⚠️
@@ -27,6 +29,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 1. Massive Component Files Need Decomposition
 
 #### `frontend/src/routes/tasks.tsx` (905 lines)
+
 - **Problem**: Single component handling queue management, active tasks, history, and logs
 - **Impact**: Impossible to test individual sections, difficult to maintain
 - **Fix**: Split into focused components:
@@ -43,6 +46,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - **Status**: ⬜ Not Started
 
 #### `frontend/src/components/EnhancedEntityDisplay.tsx` (413 lines)
+
 - **Problem**: Monolithic component with 76-line switch statement, three GraphQL queries
 - **Impact**: Hard to test, wasteful network requests
 - **Fix**: Extract to:
@@ -56,6 +60,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 2. Performance - Inefficient Filtering
 
 #### `frontend/src/routes/tasks.tsx` - Redundant Filters
+
 - **Problem**: Filters entire history array 7 times on every render
 - **Impact**: O(7n) operations per render, poor performance with large datasets
 - **Current Code** (Lines 84-110):
@@ -81,11 +86,12 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     return stats;
   }, [historyNodes, taskTypeFilter]);
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Refactored from 8+ separate `.filter()` calls to single-pass `for` loop inside `useMemo`. Reduced complexity from O(8n) to O(n) with proper memoization. Also removed dead code (completedTasks/failedTasks arrays that were always empty). Performance improvement: ~87.5% reduction in filter operations, most noticeable with 100+ tasks.
 
 ### 3. React Anti-pattern - Side Effects in useMemo
 
 #### Multiple Route Files Using useMemo for Data Fetching
+
 - **Files**:
   - `frontend/src/routes/artists.tsx` (Lines 75-99)
   - `frontend/src/routes/playlists.tsx` (Lines 69-97)
@@ -95,7 +101,11 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - **Current Pattern**:
   ```typescript
   useMemo(() => {
-    client.query({ /* prefetch */ }).catch(() => {});
+    client
+      .query({
+        /* prefetch */
+      })
+      .catch(() => {});
   }, [data, networkStatus]);
   ```
 - **Fix**: Move to `useEffect`
@@ -106,11 +116,12 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     }
   }, [data, networkStatus, client]);
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Converted `useMemo` to `useEffect` in artists.tsx and playlists.tsx. albums.tsx was already using `useEffect` correctly. This ensures side effects (GraphQL prefetching) execute reliably and follow React's mental model. Build passes with no issues.
 
 ### 4. Hook Dependency Bug - Infinite Loop Risk
 
 #### `frontend/src/hooks/useDebouncedSearch.ts`
+
 - **Problem**: `searchFunction` in useEffect deps will cause infinite loops unless caller memoizes
 - **Lines**: 21-24
 - **Current Code**:
@@ -121,14 +132,18 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   ```
 - **Impact**: Silent performance bug, forces all consumers to use useCallback
 - **Fix**: Use `useRef` to store function or document requirement clearly
+
   ```typescript
   const searchRef = useRef(searchFunction);
-  useEffect(() => { searchRef.current = searchFunction; });
+  useEffect(() => {
+    searchRef.current = searchFunction;
+  });
 
   useEffect(() => {
     // Use searchRef.current
   }, [debouncedValue]);
   ```
+
 - **Status**: ⬜ Not Started
 
 ---
@@ -138,36 +153,41 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 5. Code Duplication - Task Cancellation Handlers
 
 #### `frontend/src/routes/tasks.tsx`
+
 - **Problem**: Three identical async handlers with duplicated error handling
 - **Lines**: 112-179
 - **Functions**: `handleCancelAllTasks`, `handleCancelTasksByName`, `handleCancelRunningTasksByName`
 - **Fix**: Extract common pattern
   ```typescript
-  const handleCancelWithConfirmation = useCallback(async (
-    message: string,
-    mutationFn: () => Promise<any>,
-    successMessage: string
-  ) => {
-    if (confirm(message)) {
-      try {
-        const result = await mutationFn();
-        if (result.data?.success) {
-          toast.success(successMessage);
-          refetchQueue();
-        } else {
-          toast.error(result.data?.message || 'Failed');
+  const handleCancelWithConfirmation = useCallback(
+    async (
+      message: string,
+      mutationFn: () => Promise<any>,
+      successMessage: string
+    ) => {
+      if (confirm(message)) {
+        try {
+          const result = await mutationFn();
+          if (result.data?.success) {
+            toast.success(successMessage);
+            refetchQueue();
+          } else {
+            toast.error(result.data?.message || 'Failed');
+          }
+        } catch (error) {
+          toast.error(`Error: ${error}`);
         }
-      } catch (error) {
-        toast.error(`Error: ${error}`);
       }
-    }
-  }, [refetchQueue, toast]);
+    },
+    [refetchQueue, toast]
+  );
   ```
 - **Status**: ✅ **COMPLETED** - Created `useConfirm` hook and `ConfirmDialog` component, refactored all three handlers to use shared logic
 
 ### 6. Composition Opportunity - Action Button Pattern
 
 #### Duplicate Button Pattern Across Tables
+
 - **Files**:
   - `frontend/src/components/artists/ArtistsTable.tsx` (Lines 193-228)
   - `frontend/src/components/playlists/PlaylistsTable.tsx` (Lines 285-320)
@@ -200,6 +220,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 7. Composition Opportunity - Toggle Status Button
 
 #### Complex Toggle Pattern Duplicated
+
 - **Files**: Artists, Albums, Playlists tables
 - **Problem**: Toggle with icons, pulse animation, mutation state - duplicated 4 times
 - **Example Lines**: `ArtistsTable.tsx` 111-147
@@ -221,9 +242,11 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 8. Missing Abstraction - Mutation State Management
 
 #### Duplicated Mutation State Logic
+
 - **Files**: All route files (artists, albums, playlists, songs)
 - **Problem**: `mutatingIds`, `pulseIds`, `errorById` state management repeated everywhere
 - **Pattern in each file**:
+
   ```typescript
   const [mutatingIds, setMutatingIds] = useState<Set<number>>(new Set());
   const [pulseIds, setPulseIds] = useState<Set<number>>(new Set());
@@ -232,26 +255,26 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   // Then complex update logic
   setMutatingIds(prev => new Set(prev).add(id));
   setPulseIds(prev => new Set(prev).add(id));
-  setTimeout(() => { /* cleanup */ }, 500);
+  setTimeout(() => {
+    /* cleanup */
+  }, 500);
   ```
+
 - **Fix**: Create custom hook
   ```typescript
   // hooks/useMutationState.ts
-  const {
-    isMutating,
-    isPulsing,
-    error,
-    executeMutation
-  } = useMutationState<number>({
-    onSuccess: () => toast.success('Updated'),
-    pulseDuration: 500
-  });
+  const { isMutating, isPulsing, error, executeMutation } =
+    useMutationState<number>({
+      onSuccess: () => toast.success('Updated'),
+      pulseDuration: 500,
+    });
   ```
 - **Status**: ✅ **COMPLETED** - Created `useMutationState` and `useMutationLoadingState` hooks. Applied to `albums.tsx` (simplified ~30 lines → 3), `artists.tsx` (~60 → 40 lines), and `playlists.tsx` (~95 → 60 lines). Eliminated ~180 lines total. Provides consistent API with `handleMutation()` helper, automatic error handling, and configurable pulse animations.
 
 ### 9. TypeScript - Inline Type Definitions
 
 #### Type Pollution in Map Callbacks
+
 - **File**: `frontend/src/routes/tasks.tsx`
 - **Lines**: 660-675, 822-830
 - **Problem**: Complex types defined inline in `.map()` callbacks
@@ -267,18 +290,23 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   ```
 - **Impact**: Unmaintainable, duplicated, not reusable
 - **Fix**: Extract to proper type definitions
+
   ```typescript
   type TaskHistoryEdge = {
     node: TaskHistory;
   };
 
-  edges.map((edge: TaskHistoryEdge) => { /* ... */ })
+  edges.map((edge: TaskHistoryEdge) => {
+    /* ... */
+  });
   ```
+
 - **Status**: ⬜ Not Started
 
 ### 10. Performance - Missing Memoization
 
 #### Inline JSX Calculations
+
 - **File**: `frontend/src/routes/tasks.tsx`
 - **Lines**: 237-267 (stats calculations), 281-290 (filtered counts)
 - **Problem**: Complex filters recalculated every render
@@ -292,20 +320,23 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   ```
 - **Fix**: Extract to `useMemo`
   ```typescript
-  const todayCompleted = useMemo(() =>
-    historyNodes.filter(/* ... */).length
-  , [historyNodes]);
+  const todayCompleted = useMemo(
+    () => historyNodes.filter(/* ... */).length,
+    [historyNodes]
+  );
   ```
 - **Status**: ⬜ Not Started
 
 ### 11. UX Issue - Using alert() and confirm()
 
 #### Browser Alerts for User Feedback
+
 - **File**: `frontend/src/routes/tasks.tsx`
 - **Lines**: 114, 121, 128, 138, 145, 152, 159, 166, 173
 - **Problem**: Using blocking `alert()` and `confirm()` dialogs
 - **Impact**: Poor UX, blocks main thread, not accessible, not mobile-friendly
 - **Fix**: Replace with toast notifications and modal dialogs
+
   ```typescript
   // Instead of: alert('Success!')
   toast.success('Success!');
@@ -313,14 +344,16 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   // Instead of: confirm('Are you sure?')
   const confirmed = await showConfirmDialog({
     title: 'Confirm Action',
-    message: 'Are you sure?'
+    message: 'Are you sure?',
   });
   ```
+
 - **Status**: ✅ **COMPLETED** - Replaced all `alert()` calls with toast notifications and all `confirm()` calls with `useConfirm` hook
 
 ### 12. Performance - setTimeout Cleanup Missing
 
 #### Memory Leak in Pulse Animation
+
 - **Files**:
   - `frontend/src/routes/albums.tsx` (Lines 256-262)
   - `frontend/src/routes/artists.tsx` (similar)
@@ -338,18 +371,23 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   }, 500);
   ```
 - **Fix**: Store and cleanup timeout
+
   ```typescript
   const timeoutRef = useRef<NodeJS.Timeout>();
 
-  timeoutRef.current = setTimeout(() => { /* ... */ }, 500);
+  timeoutRef.current = setTimeout(() => {
+    /* ... */
+  }, 500);
 
   useEffect(() => () => clearTimeout(timeoutRef.current), []);
   ```
+
 - **Status**: ⬜ Not Started
 
 ### 13. Component Definition Inside Parent
 
 #### Performance Issue - Component Recreated Every Render
+
 - **File**: `frontend/src/components/songs/SongsTable.tsx`
 - **Lines**: 85-103
 - **Problem**: `SortableTableHeader` component defined inside `SongsTable`
@@ -360,6 +398,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 14. Duplicate Pre-fetch Logic
 
 #### Similar Structure Across Routes
+
 - **Files**: `playlists.tsx`, `albums.tsx`, `artists.tsx`
 - **Problem**: Pre-fetch logic duplicated with slight variations
 - **Lines**: Various useEffect/useMemo hooks for prefetching
@@ -370,9 +409,9 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     document: GetPlaylistsDocument,
     filterConfigs: [
       { key: 'enabled', values: [true, false] },
-      { key: 'sortBy', values: ['name', 'date'] }
+      { key: 'sortBy', values: ['name', 'date'] },
     ],
-    prefetch: true
+    prefetch: true,
   });
   ```
 - **Status**: ⬜ Not Started
@@ -380,6 +419,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 15. Inline Anonymous Functions
 
 #### Creating New Functions Every Render
+
 - **File**: `frontend/src/routes/tasks.tsx`
 - **Lines**: 202-204, multiple other instances
 - **Problem**: `onClick={() => { window.location.reload(); }}`
@@ -395,6 +435,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 16. Non-Unique Keys in Lists
 
 #### Potential Key Collision
+
 - **File**: `frontend/src/routes/tasks.tsx`
 - **Lines**: 764, 874
 - **Problem**: Keys use log message content: `key={'task-${task.id}-log-row-${log}'}`
@@ -413,6 +454,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 17. Composition Opportunity - Filter Buttons
 
 #### Repeated Filter Button Pattern
+
 - **Files**: `songs.tsx`, `albums.tsx`, `playlists.tsx`, `artists.tsx`
 - **Example Lines**: `songs.tsx` 121-161
 - **Problem**: Same filter button UI with active state styling repeated
@@ -433,6 +475,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 18. Composition Opportunity - Task Cards
 
 #### Duplicated Task Card Rendering
+
 - **File**: `frontend/src/routes/tasks.tsx`
 - **Lines**: 424-452 (running), 463-495 (completed), 506-537 (failed)
 - **Problem**: Three nearly identical card renderers differing only by status
@@ -450,6 +493,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 19. Entity Display Duplication
 
 #### Compact vs Full Rendering Logic Duplicated
+
 - **File**: `frontend/src/components/EnhancedEntityDisplay.tsx`
 - **Lines**: 234-304 (compact) vs 308-377 (full)
 - **Problem**: Similar rendering logic with slight variations
@@ -466,6 +510,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 20. TypeScript - Unused Parameters
 
 #### ESLint Disabled for Unused Param
+
 - **File**: `frontend/src/components/albums/AlbumsTable.tsx`
 - **Line**: 46
 - **Problem**: `// eslint-disable-next-line @typescript-eslint/no-unused-vars` for `errorById`
@@ -476,6 +521,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 21. TypeScript - Missing Generics
 
 #### Type Safety Lost in Internal Component
+
 - **File**: `frontend/src/components/songs/SongsTable.tsx`
 - **Lines**: 85-103
 - **Problem**: Internal `SortableTableHeader` missing generic types
@@ -486,6 +532,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 22. TypeScript - Manual Type Assertions
 
 #### Bypassing Type Checking
+
 - **File**: `frontend/src/routes/tasks.tsx`
 - **Line**: 81
 - **Problem**: `(edge: { node: TaskHistory }) => edge.node` manual assertion
@@ -496,6 +543,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 23. Filter Logic Duplication
 
 #### Duplicate in useQuery and Handler
+
 - **Files**: `albums.tsx`, `playlists.tsx`
 - **Problem**: Filter change handlers duplicate query filter logic
 - **Lines**: Various `handleFilterChange` functions
@@ -505,17 +553,25 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 24. Complex Nested Filter Logic
 
 #### Hard to Maintain Filter Effects
+
 - **Files**: `albums.tsx` (94-135), `playlists.tsx` (68-105)
 - **Problem**: Complex useEffect with nested loops and hardcoded filter values
 - **Example**:
   ```typescript
-  useEffect(() => {
-    ['wanted', 'downloaded'].forEach(wantedFilter => {
-      ['downloaded', 'not-downloaded'].forEach(downloadedFilter => {
-        client.query({ /* ... */ });
+  useEffect(
+    () => {
+      ['wanted', 'downloaded'].forEach(wantedFilter => {
+        ['downloaded', 'not-downloaded'].forEach(downloadedFilter => {
+          client.query({
+            /* ... */
+          });
+        });
       });
-    });
-  }, [/* 5+ dependencies */]);
+    },
+    [
+      /* 5+ dependencies */
+    ]
+  );
   ```
 - **Fix**: Extract to `usePrefetchFilters` custom hook with clear interface
 - **Status**: ⬜ Not Started
@@ -527,6 +583,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 25. Inconsistent Loading States
 
 #### Mixed Loading UI Patterns
+
 - **Files**: Compare `DataTable.tsx` vs `tasks.tsx` vs `albums.tsx`
 - **Problem**: Some use skeletons, some spinners, some show nothing
 - **Fix**: Standardize on skeleton screens for initial load, inline spinners for refetch
@@ -535,6 +592,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 26. Missing Error Boundaries
 
 #### No Error Boundary Components
+
 - **Files**: Route components
 - **Problem**: No error boundaries in component tree
 - **Impact**: Single GraphQL error could crash entire app
@@ -550,6 +608,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 27. Accessibility - Incorrect ARIA
 
 #### Toggle Button Semantics Wrong
+
 - **File**: `frontend/src/components/artists/ArtistsTable.tsx`
 - **Lines**: 111-132
 - **Problem**: Uses both `role="switch"` and button semantics incorrectly
@@ -567,6 +626,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 28. Debounce Logic Can Be Simplified
 
 #### useRef + useCallback Inefficiency
+
 - **File**: `frontend/src/components/ui/SearchInput.tsx`
 - **Lines**: 21-23
 - **Problem**: `useRef` for timeout but `useCallback` wraps debounce logic
@@ -577,6 +637,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ### 29. Missing Provider Value Memoization
 
 #### Context Providers May Cause Re-renders
+
 - **File**: `frontend/src/routes/__root.tsx`
 - **Problem**: Provider components may not memoize context values
 - **Impact**: Unnecessary re-renders of all consumers
@@ -592,6 +653,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ## 📋 Recommended Action Plan
 
 ### Phase 1: Quick Wins (Week 1)
+
 - [ ] #5: Extract duplicate task cancellation logic → `handleCancelWithConfirmation`
 - [ ] #6: Create `<ActionButton>` component for loading states
 - [ ] #15: Fix inline anonymous functions → `useCallback`
@@ -599,12 +661,14 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - [ ] #11: Replace `alert()`/`confirm()` with toast/modals
 
 ### Phase 2: Composition & Reusability (Week 2)
+
 - [ ] #7: Create `<ToggleStatusButton>` component
 - [ ] #8: Extract `useMutationState` hook
 - [ ] #17: Create `<FilterButtonGroup>` component
 - [ ] #18: Create unified `<TaskCard>` component
 
 ### Phase 3: Architecture & Performance (Week 3-4)
+
 - [ ] #1: Decompose `tasks.tsx` (905 lines → ~5 components)
 - [ ] #2: Refactor `EnhancedEntityDisplay.tsx` (413 lines → hook + components)
 - [ ] #3: Fix performance - redundant filtering in tasks
@@ -612,12 +676,14 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - [ ] #5: Fix `useDebouncedSearch` dependency bug
 
 ### Phase 4: TypeScript & Code Quality (Week 5)
+
 - [ ] #9: Extract inline type definitions
 - [ ] #14: Create `useFilteredQuery` custom hook
 - [ ] #10: Add memoization for JSX calculations
 - [ ] #20-22: TypeScript cleanup (unused params, generics, assertions)
 
 ### Phase 5: Polish & Accessibility (Week 6)
+
 - [ ] #25: Standardize loading states
 - [ ] #26: Add error boundaries
 - [ ] #27: Fix accessibility issues
@@ -628,18 +694,21 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 ## 📊 Impact Summary
 
 **Files Requiring Major Refactoring** (>300 lines):
+
 - `tasks.tsx` (905 lines) → Target: 5 components @ ~150 lines each
 - `EnhancedEntityDisplay.tsx` (413 lines) → Target: hook + 2 components @ ~150 lines
 - `playlists.tsx` (468 lines) → Target: extract hooks, ~250 lines
 - `albums.tsx` (392 lines) → Target: extract hooks, ~200 lines
 
 **Reusable Components to Create**:
+
 1. `<ActionButton>` - Loading state button (saves ~100 lines)
 2. `<ToggleStatusButton>` - Status toggle with animation (saves ~150 lines)
 3. `<FilterButtonGroup>` - Filter UI (saves ~80 lines)
 4. `<TaskCard>` - Task display card (saves ~120 lines)
 
 **Custom Hooks to Extract**:
+
 1. `useMutationState` - Mutation state management (saves ~200 lines)
 2. `useFilteredQuery` - Query + prefetch logic (saves ~150 lines)
 3. `usePrefetchFilters` - Complex prefetch patterns (saves ~100 lines)

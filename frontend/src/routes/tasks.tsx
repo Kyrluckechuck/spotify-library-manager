@@ -1,7 +1,7 @@
 import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { TaskCount } from '../types/common';
 import { SearchInput } from '../components/ui/SearchInput';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
@@ -81,38 +81,50 @@ function Tasks() {
   const { isRefreshing: isHistoryRefreshing } =
     useRequestState(historyNetworkStatus);
 
-  const historyNodes: TaskHistory[] =
-    historyData?.taskHistory?.edges?.map(
-      (edge: { node: TaskHistory }) => edge.node
-    ) || [];
-
-  const realActiveTasks = historyNodes.filter(
-    (task: TaskHistory) => task.status === 'RUNNING'
+  const historyNodes = useMemo<TaskHistory[]>(
+    () =>
+      historyData?.taskHistory?.edges?.map(
+        (edge: { node: TaskHistory }) => edge.node
+      ) || [],
+    [historyData?.taskHistory?.edges]
   );
 
-  const filteredActiveTasks = realActiveTasks.filter((task: TaskHistory) => {
-    if (
-      activeTasksFilter !== 'all' &&
-      task.type.toLowerCase() !== activeTasksFilter
-    )
-      return false;
-    if (
-      activeTasksEntityFilter !== 'all' &&
-      task.entityType.toLowerCase() !== activeTasksEntityFilter
-    )
-      return false;
-    return true;
-  });
+  // Single-pass filtering and categorization for better performance
+  const taskCategories = useMemo(() => {
+    const categories = {
+      running: [] as TaskHistory[],
+      completed: [] as TaskHistory[],
+      failed: [] as TaskHistory[],
+      allActive: [] as TaskHistory[],
+    };
 
-  const runningTasks = filteredActiveTasks.filter(
-    (task: TaskHistory) => task.status === 'RUNNING'
-  );
-  const completedTasks = filteredActiveTasks.filter(
-    (task: TaskHistory) => task.status === 'COMPLETED'
-  );
-  const failedTasks = filteredActiveTasks.filter(
-    (task: TaskHistory) => task.status === 'FAILED'
-  );
+    for (const task of historyNodes) {
+      // Only process RUNNING tasks for active tasks section
+      if (task.status === 'RUNNING') {
+        categories.allActive.push(task);
+
+        // Apply type/entity filters
+        const matchesTypeFilter =
+          activeTasksFilter === 'all' ||
+          task.type.toLowerCase() === activeTasksFilter;
+        const matchesEntityFilter =
+          activeTasksEntityFilter === 'all' ||
+          task.entityType.toLowerCase() === activeTasksEntityFilter;
+
+        if (matchesTypeFilter && matchesEntityFilter) {
+          categories.running.push(task);
+        }
+      }
+    }
+
+    return categories;
+  }, [historyNodes, activeTasksFilter, activeTasksEntityFilter]);
+
+  const { running: runningTasks } = taskCategories;
+  // Note: completedTasks and failedTasks were only used in filteredActiveTasks which was incorrect
+  // (they filtered from realActiveTasks which were all RUNNING, so completed/failed would always be empty)
+  const completedTasks: TaskHistory[] = [];
+  const failedTasks: TaskHistory[] = [];
 
   // Reusable handler for task cancellation with confirmation
   const handleCancelWithConfirmation = useCallback(
@@ -411,7 +423,7 @@ function Tasks() {
         </div>
 
         <div className='p-6'>
-          {filteredActiveTasks.length === 0 ? (
+          {runningTasks.length === 0 ? (
             <div className='text-center py-8 text-gray-500'>
               <div className='text-4xl mb-4'>📋</div>
               <p>No active tasks found</p>
