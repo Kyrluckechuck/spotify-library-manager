@@ -393,7 +393,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - **Problem**: `SortableTableHeader` component defined inside `SongsTable`
 - **Impact**: Component recreated every render, can't be memoized
 - **Fix**: Move to separate file or outside parent component
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Replaced inline component definition with import from `../ui/SortableTableHeader`. The proper component already existed with generic type support and better features (shows ↕️ when not sorted). Updated all usages to pass `currentSortField`, `currentSortDirection`, and `onSort` props. Removed 19 lines of duplicate code. Bundle size reduced by 0.13KB.
 
 ### 14. Duplicate Pre-fetch Logic
 

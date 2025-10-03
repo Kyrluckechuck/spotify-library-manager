@@ -68,7 +68,6 @@ function Artists() {
     {
       variables: queryVariablesWithFilter,
       fetchPolicy: 'cache-and-network',
-      nextFetchPolicy: 'cache-first',
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',

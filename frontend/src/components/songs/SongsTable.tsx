@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from '@tanstack/react-router';
 import type { GetSongsQuery } from '../../types/generated/graphql';
+import { SortableTableHeader } from '../ui/SortableTableHeader';
 
 export type SortField =
   | 'name'
@@ -82,26 +83,6 @@ export const SongsTable: React.FC<SongsTableProps> = ({
     return 'Not downloaded';
   };
 
-  const SortableTableHeader: React.FC<{
-    field: SortField;
-    children: React.ReactNode;
-    className?: string;
-  }> = ({ field, children, className = '' }) => (
-    <th
-      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50 ${className}`}
-      onClick={() => onSort(field)}
-    >
-      <div className='flex items-center gap-1'>
-        {children}
-        {sortField === field && (
-          <span className='text-gray-400'>
-            {sortDirection === 'asc' ? '↑' : '↓'}
-          </span>
-        )}
-      </div>
-    </th>
-  );
-
   if (loading && songs.length === 0) {
     return (
       <div className='bg-white shadow overflow-hidden sm:rounded-md'>
@@ -127,14 +108,39 @@ export const SongsTable: React.FC<SongsTableProps> = ({
       <table className='min-w-full divide-y divide-gray-200'>
         <thead className='bg-gray-50'>
           <tr>
-            <SortableTableHeader field='downloaded' className='w-24'>
+            <SortableTableHeader
+              field='downloaded'
+              currentSortField={sortField}
+              currentSortDirection={sortDirection}
+              onSort={onSort}
+              className='w-24'
+            >
               Status
             </SortableTableHeader>
-            <SortableTableHeader field='name'>Song Name</SortableTableHeader>
-            <SortableTableHeader field='primaryArtist'>
+            <SortableTableHeader
+              field='name'
+              currentSortField={sortField}
+              currentSortDirection={sortDirection}
+              onSort={onSort}
+            >
+              Song Name
+            </SortableTableHeader>
+            <SortableTableHeader
+              field='primaryArtist'
+              currentSortField={sortField}
+              currentSortDirection={sortDirection}
+              onSort={onSort}
+            >
               Artist
             </SortableTableHeader>
-            <SortableTableHeader field='createdAt'>Added</SortableTableHeader>
+            <SortableTableHeader
+              field='createdAt'
+              currentSortField={sortField}
+              currentSortDirection={sortDirection}
+              onSort={onSort}
+            >
+              Added
+            </SortableTableHeader>
             <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
               Bitrate
             </th>

@@ -34,6 +34,14 @@ class AlbumService(BaseService[Album]):
         downloaded: Optional[bool] = filters.get("downloaded")
         wanted: Optional[bool] = filters.get("wanted")
         search: Optional[str] = filters.get("search")
+        sort_by = (
+            filters.get("sort_by") if isinstance(filters.get("sort_by"), str) else None
+        )
+        sort_direction = (
+            filters.get("sort_direction")
+            if isinstance(filters.get("sort_direction"), str)
+            else None
+        )
 
         def fetch_items() -> Tuple[List[Album], bool, int]:
             queryset = self.model.objects.all()
@@ -53,6 +61,21 @@ class AlbumService(BaseService[Album]):
                     Q(name__icontains=search) | Q(spotify_gid__icontains=search)
                 )
 
+            # Apply sorting
+            sort_field_map = {
+                "name": "name",
+                "artist": "artist__name",
+                "downloaded": "downloaded",
+                "wanted": "wanted",
+                "totalTracks": "total_tracks",
+            }
+
+            order_field = "id"  # default
+            if sort_by and sort_by in sort_field_map:
+                order_field = sort_field_map[sort_by]
+                if sort_direction == "desc":
+                    order_field = f"-{order_field}"
+
             # Apply cursor-based pagination
             if after:
                 id_after = self.decode_cursor(after)
@@ -62,7 +85,7 @@ class AlbumService(BaseService[Album]):
             total_count = queryset.count()
 
             # Get one extra item to determine if there are more pages
-            items = list(queryset.order_by("id")[: first + 1])
+            items = list(queryset.order_by(order_field, "id")[: first + 1])
 
             has_next_page = len(items) > first
             items = items[:first]  # Remove the extra item

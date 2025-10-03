@@ -185,9 +185,17 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
   - Captured ref value in cleanup function (ESLint compliance)
 - **Impact**: Prevents memory leaks and "setState on unmounted component" warnings. Automatically fixes issue in all consumers (albums.tsx, artists.tsx, playlists.tsx)
 
+#### 2d. Fix Inline Component Definition ✅
+- ✅ Removed inline `SortableTableHeader` component from `SongsTable.tsx`
+- **Changes**:
+  - Replaced with import from `../ui/SortableTableHeader`
+  - Updated all usages to pass proper props (currentSortField, currentSortDirection, onSort)
+  - Removed 19 lines of duplicate code
+- **Impact**: Prevents component recreation on every render, enables React memoization, better UX with ↕️ icon when not sorted
+
 ### Planned Tasks
 
-#### 2d. Additional React Issues
+#### 2e. Additional React Issues
 - [ ] Add memoization for JSX calculations (if needed)
 - **Impact**: Optimize re-renders
 
@@ -222,16 +230,16 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
 ### Overall Statistics
 
 - **Total Issues Identified**: 40
-- **Issues Completed**: 16
+- **Issues Completed**: 17
 - **Issues In Progress**: 0
-- **Issues Remaining**: 24
+- **Issues Remaining**: 23
 
 ### Code Reduction
 
 - **Phase 1**: ~-90 lines of duplicate code
 - **Phase 2**: ~-529 lines (ToggleStatusButton: -150, useMutationState: -180, FilterButtonGroup: -199)
-- **Phase 3**: ~-27 lines (Performance fix: simplified logic but maintained functionality)
-- **Total So Far**: ~-646 lines while improving maintainability and performance
+- **Phase 3**: ~-46 lines (Performance fix: -27, Inline component: -19)
+- **Total So Far**: ~-665 lines while improving maintainability and performance
 - **Note**: No arbitrary line count goal - focusing on genuine improvements per user guidance
 
 ### Files Requiring Review (Large Components)
@@ -588,8 +596,65 @@ Successfully extracted duplicate toggle patterns into reusable ToggleStatusButto
 
 ### Session 7 Final Metrics
 
-- **Issues Completed This Session**: 2 (useDebouncedSearch dependency bug, setTimeout cleanup)
-- **Total Issues Completed**: 16 out of 40
-- **Bundle Size**: 506.99KB (slight increase from hook improvements, +0.16KB)
+- **Issues Completed This Session**: 3 (useDebouncedSearch dependency bug, setTimeout cleanup, inline component)
+- **Total Issues Completed**: 17 out of 40 (42.5% complete)
+- **Bundle Size**: 506.86KB (net reduction of 0.13KB)
 - **Components Created**: 6 total
 - **Hooks Created**: 3 total
+- **Code Reduction This Session**: ~19 lines
+
+---
+
+## 🐛 Bug Fix: Sorting Not Working (Session 7 Continued)
+
+### Issue Discovered
+User reported that sorting functionality was non-functional across all pages - icons showed and were interactive, but data didn't sort.
+
+### Root Cause Analysis
+
+**Initial hypothesis was incorrect!** The `nextFetchPolicy` was a red herring. The actual problem was in the **backend GraphQL resolvers**.
+
+**Real Root Cause**: GraphQL resolvers accepted `sort_by` and `sort_direction` parameters but **never passed them to the service layer**. The parameters were silently ignored!
+
+### Files Fixed (Backend)
+- `api/src/schema/query.py`:
+  - `songs` resolver - Added `sort_by` and `sort_direction` to `services.song.get_connection()`
+  - `playlists` resolver - Added `sort_by` and `sort_direction` to `services.playlist.get_connection()`
+  - `albums` resolver - Added `sort_by` and `sort_direction` to `services.album.get_connection()`
+  - `artists` resolver - Does not support sorting (no parameters in GraphQL schema)
+
+### Files Fixed (Frontend - Reverted)
+- `frontend/src/routes/songs.tsx` - Removed `nextFetchPolicy: 'cache-first'`
+- `frontend/src/routes/artists.tsx` - Removed `nextFetchPolicy: 'cache-first'`
+- `frontend/src/routes/playlists.tsx` - Removed `nextFetchPolicy: 'cache-first'`
+- `frontend/src/routes/albums.tsx` - Removed `nextFetchPolicy: 'cache-first'`
+
+*(Note: Removing nextFetchPolicy was beneficial anyway - prevents stale cache issues)*
+
+### Solution
+Fixed the resolvers to actually pass sorting parameters through to the service layer:
+
+```python
+# Before (parameters ignored):
+items, has_next_page, total_count = await services.song.get_connection(
+    first=first_int,
+    after=after,
+    # sort_by and sort_direction missing!
+    search=search,
+)
+
+# After (parameters passed through):
+items, has_next_page, total_count = await services.song.get_connection(
+    first=first_int,
+    after=after,
+    sort_by=sort_by,
+    sort_direction=sort_direction,
+    search=search,
+)
+```
+
+### Impact
+✅ Sorting now works on songs, playlists, and albums pages
+✅ Artists page doesn't have sorting (not in schema - would need separate fix if desired)
+✅ API restart required to pick up changes
+✅ Bundle size: 506.74KB (unchanged)

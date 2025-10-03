@@ -73,6 +73,8 @@ class Query:
             artist_id=artist_id,
             downloaded=downloaded,
             wanted=wanted,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
             search=search,
         )
 
@@ -112,6 +114,8 @@ class Query:
             artist_id=artist_id,
             downloaded=downloaded,
             unavailable=unavailable,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
             search=search,
         )
 
@@ -142,7 +146,12 @@ class Query:
     ) -> PlaylistConnection:
         first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.playlist.get_connection(
-            first=first_int, after=after, enabled=enabled, search=search
+            first=first_int,
+            after=after,
+            enabled=enabled,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
+            search=search,
         )
 
         edges = items

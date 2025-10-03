@@ -48,6 +48,14 @@ class SongService(BaseService[Song]):
         search = (
             filters.get("search") if isinstance(filters.get("search"), str) else None
         )
+        sort_by = (
+            filters.get("sort_by") if isinstance(filters.get("sort_by"), str) else None
+        )
+        sort_direction = (
+            filters.get("sort_direction")
+            if isinstance(filters.get("sort_direction"), str)
+            else None
+        )
 
         # Copy the exact pattern from ArtistService
         queryset = self.model.objects.all()
@@ -67,6 +75,20 @@ class SongService(BaseService[Song]):
                 Q(name__icontains=search) | Q(primary_artist__name__icontains=search)
             )
 
+        # Apply sorting
+        sort_field_map = {
+            "name": "name",
+            "primaryArtist": "primary_artist__name",
+            "createdAt": "created_at",
+            "downloaded": "downloaded",
+        }
+
+        order_field = "id"  # default
+        if sort_by and sort_by in sort_field_map:
+            order_field = sort_field_map[sort_by]
+            if sort_direction == "desc":
+                order_field = f"-{order_field}"
+
         # Apply cursor-based pagination
         if after:
             id_after = self.decode_cursor(after)
@@ -77,7 +99,7 @@ class SongService(BaseService[Song]):
 
         # Get one extra item to determine if there are more pages
         def fetch_items() -> List[DjangoSong]:
-            return list(queryset.order_by("id")[: first + 1])
+            return list(queryset.order_by(order_field, "id")[: first + 1])
 
         items: List[DjangoSong] = await sync_to_async(fetch_items)()
 

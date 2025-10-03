@@ -63,7 +63,6 @@ function Playlists() {
     {
       variables: queryVariables,
       fetchPolicy: 'cache-and-network',
-      nextFetchPolicy: 'cache-first',
       notifyOnNetworkStatusChange: true,
       pollInterval: 0,
       errorPolicy: 'all',

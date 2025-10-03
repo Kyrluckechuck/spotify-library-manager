@@ -132,6 +132,14 @@ class PlaylistService(BaseService[Playlist]):
     ) -> Tuple[List[Playlist], bool, int]:
         enabled: Optional[bool] = filters.get("enabled")
         search: Optional[str] = filters.get("search")
+        sort_by = (
+            filters.get("sort_by") if isinstance(filters.get("sort_by"), str) else None
+        )
+        sort_direction = (
+            filters.get("sort_direction")
+            if isinstance(filters.get("sort_direction"), str)
+            else None
+        )
         queryset = self.model.objects.all()
 
         # Apply filters
@@ -143,6 +151,20 @@ class PlaylistService(BaseService[Playlist]):
                 Q(name__icontains=search) | Q(url__icontains=search)
             )
 
+        # Apply sorting
+        sort_field_map = {
+            "name": "name",
+            "enabled": "enabled",
+            "autoTrackArtists": "auto_track_artists",
+            "lastSyncedAt": "last_synced_at",
+        }
+
+        order_field = "id"  # default
+        if sort_by and sort_by in sort_field_map:
+            order_field = sort_field_map[sort_by]
+            if sort_direction == "desc":
+                order_field = f"-{order_field}"
+
         # Apply cursor-based pagination
         if after:
             id_after = self.decode_cursor(after)
@@ -153,7 +175,7 @@ class PlaylistService(BaseService[Playlist]):
 
         # Get one extra item to determine if there are more pages
         def fetch_items() -> List[DjangoPlaylist]:
-            return list(queryset.order_by("id")[: first + 1])
+            return list(queryset.order_by(order_field, "id")[: first + 1])
 
         items: List[DjangoPlaylist] = await sync_to_async(fetch_items)()
 
