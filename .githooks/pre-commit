@@ -9,8 +9,10 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
 # 1) Trailing newline enforcement (staged files only)
 echo "🔧 Ensuring trailing newlines on staged files..."
 python scripts/check-repo-newlines.py fix --staged >/dev/null 2>&1 || true
-# Re-stage in case files were modified
-git add -A >/dev/null 2>&1
+# Re-stage only the files that were modified by the newline fixer
+if [ -n "$STAGED_FILES" ]; then
+    echo "$STAGED_FILES" | xargs -r git add >/dev/null 2>&1
+fi
 python scripts/check-repo-newlines.py check --staged >/dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "❌ Newline check failed."
@@ -56,8 +58,11 @@ if [ -d "frontend" ]; then
                 yarn -s prettier --write $FE_PRETTIER_FILES >/dev/null 2>&1 || true
             fi
             
-            # Re-stage any changes produced by autofixers
-            git add -A >/dev/null 2>&1
+            # Re-stage any changes produced by autofixers (frontend files only)
+            if [ -n "$FE_LINT_FILES" ] || [ -n "$FE_PRETTIER_FILES" ]; then
+                # shellcheck disable=SC2086
+                git add $FE_LINT_FILES $FE_PRETTIER_FILES >/dev/null 2>&1 || true
+            fi
 
             # ESLint on changed JS/TS files (strict)
             if [ -n "$FE_LINT_FILES" ]; then
@@ -89,8 +94,11 @@ if [ -d "api" ]; then
             python -m isort $PY_CHANGED >/dev/null 2>&1 || true
             # shellcheck disable=SC2086
             python -m black $PY_CHANGED >/dev/null 2>&1 || true
-            # Re-stage auto-fixed files
-            git add -A >/dev/null 2>&1
+            # Re-stage only the auto-fixed Python files
+            if [ -n "$PY_CHANGED" ]; then
+                # shellcheck disable=SC2086
+                git add $PY_CHANGED >/dev/null 2>&1 || true
+            fi
             echo "🔍 Running Python linting on changed files..."
             # shellcheck disable=SC2086
             python -m flake8 --extend-ignore=W503 --exclude=.venv,__pycache__,node_modules $PY_CHANGED >/dev/null 2>&1 || {
