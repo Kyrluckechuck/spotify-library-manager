@@ -76,7 +76,7 @@ class SongService(BaseService[Song]):
             )
 
         # Apply sorting
-        sort_field_map = {
+        sort_field_map: dict[str, str] = {
             "name": "name",
             "primaryArtist": "primary_artist__name",
             "createdAt": "created_at",
@@ -84,10 +84,12 @@ class SongService(BaseService[Song]):
         }
 
         order_field = "id"  # default
-        if sort_by and sort_by in sort_field_map:
-            order_field = sort_field_map[sort_by]
-            if sort_direction == "desc":
-                order_field = f"-{order_field}"
+        if isinstance(sort_by, str):
+            mapped_field = sort_field_map.get(sort_by)
+            if mapped_field is not None:
+                order_field = mapped_field
+                if sort_direction == "desc":
+                    order_field = f"-{order_field}"
 
         # Apply cursor-based pagination
         if after:
