@@ -100,6 +100,75 @@ class TestArtistService:
 
 
 @pytest.mark.django_db
+class TestSongService:
+    """Test cases for SongService."""
+
+    @pytest.fixture
+    def song_service(self):
+        from src.services.song import SongService
+
+        return SongService()
+
+    @pytest.mark.asyncio
+    async def test_get_connection_with_sorting(self, song_service):
+        """Test getting song connection with sorting."""
+        with patch("library_manager.models.Song.objects.all") as mock_all:
+            mock_queryset = Mock()
+            mock_queryset.filter.return_value = mock_queryset
+            mock_queryset.count = Mock(return_value=3)  # Sync Mock, not AsyncMock
+
+            # Create mock songs with different names for sorting
+            mock_songs = []
+            for name in ["Zebra Song", "Alpha Song", "Beta Song"]:
+                mock_song = Mock()
+                mock_song.id = len(mock_songs) + 1
+                mock_song.name = name
+                mock_song.gid = f"song{len(mock_songs)}"
+                mock_song.primary_artist = Mock(name="Test Artist", id=1, gid="artist1")
+                mock_song.created_at = datetime.now()
+                mock_song.failed_count = 0
+                mock_song.bitrate = 320
+                mock_song.unavailable = False
+                mock_song.file_path = None
+                mock_song.downloaded = False
+                mock_song.spotify_uri = f"spotify:track:song{len(mock_songs)}"
+                mock_songs.append(mock_song)
+
+            mock_queryset.order_by.return_value = mock_queryset
+            mock_queryset.__getitem__ = Mock(return_value=mock_songs)
+            mock_all.return_value = mock_queryset
+
+            # Test sorting by name ascending
+            items, has_next, total = await song_service.get_connection(
+                first=10, sort_by="name", sort_direction="asc"
+            )
+
+            # Verify order_by was called with the correct field
+            mock_queryset.order_by.assert_called_with("name", "id")
+            assert len(items) == 3
+            assert total == 3
+
+    @pytest.mark.asyncio
+    async def test_get_connection_with_sorting_desc(self, song_service):
+        """Test getting song connection with descending sort."""
+        with patch("library_manager.models.Song.objects.all") as mock_all:
+            mock_queryset = Mock()
+            mock_queryset.filter.return_value = mock_queryset
+            mock_queryset.count = Mock(return_value=2)  # Sync Mock
+            mock_queryset.order_by.return_value = mock_queryset
+            mock_queryset.__getitem__ = Mock(return_value=[])
+            mock_all.return_value = mock_queryset
+
+            # Test sorting by primary artist descending
+            await song_service.get_connection(
+                first=10, sort_by="primaryArtist", sort_direction="desc"
+            )
+
+            # Verify order_by was called with descending prefix
+            mock_queryset.order_by.assert_called_with("-primary_artist__name", "id")
+
+
+@pytest.mark.django_db
 class TestAlbumService:
     """Test cases for AlbumService."""
 
@@ -131,6 +200,42 @@ class TestAlbumService:
             assert result.total_tracks == 10
             assert result.wanted is True
             assert result.downloaded is False
+
+    @pytest.mark.asyncio
+    async def test_get_connection_with_sorting(self, album_service):
+        """Test getting album connection with sorting."""
+        with patch("library_manager.models.Album.objects.all") as mock_all:
+            mock_queryset = Mock()
+            mock_queryset.filter.return_value = mock_queryset
+            mock_queryset.count = Mock(return_value=2)
+
+            mock_albums = []
+            for name in ["B Album", "A Album"]:
+                mock_album = Mock()
+                mock_album.id = len(mock_albums) + 1
+                mock_album.name = name
+                mock_album.spotify_gid = f"album{len(mock_albums)}"
+                mock_album.artist = Mock(name="Test Artist", gid="artist1")
+                mock_album.total_tracks = 10
+                mock_album.wanted = True
+                mock_album.downloaded = False
+                mock_album.failed_count = 0
+                mock_album.spotify_uri = f"spotify:album:album{len(mock_albums)}"
+                mock_albums.append(mock_album)
+
+            mock_queryset.order_by.return_value = mock_queryset
+            mock_queryset.__getitem__ = Mock(return_value=mock_albums)
+            mock_all.return_value = mock_queryset
+
+            # Test sorting by artist ascending
+            items, has_next, total = await album_service.get_connection(
+                first=10, sort_by="artist", sort_direction="asc"
+            )
+
+            # Verify order_by was called with the correct field mapping
+            mock_queryset.order_by.assert_called_with("artist__name", "id")
+            assert len(items) == 2
+            assert total == 2
 
 
 @pytest.mark.django_db
@@ -365,6 +470,41 @@ class TestPlaylistService:
             assert result == mock_existing_playlist
             # Should have tried exact match first, then HTTP format
             assert mock_filter.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_get_connection_with_sorting(self, playlist_service):
+        """Test getting playlist connection with sorting."""
+        with patch("library_manager.models.TrackedPlaylist.objects.all") as mock_all:
+            mock_queryset = Mock()
+            mock_queryset.filter.return_value = mock_queryset
+            mock_queryset.count = Mock(return_value=2)  # Sync Mock
+
+            mock_playlists = []
+            for name in ["Playlist B", "Playlist A"]:
+                mock_playlist = Mock()
+                mock_playlist.id = len(mock_playlists) + 1
+                mock_playlist.name = name
+                mock_playlist.url = (
+                    f"https://open.spotify.com/playlist/test{len(mock_playlists)}"
+                )
+                mock_playlist.enabled = True
+                mock_playlist.auto_track_artists = False
+                mock_playlist.last_synced_at = datetime.now()
+                mock_playlists.append(mock_playlist)
+
+            mock_queryset.order_by.return_value = mock_queryset
+            mock_queryset.__getitem__ = Mock(return_value=mock_playlists)
+            mock_all.return_value = mock_queryset
+
+            # Test sorting by name descending
+            items, has_next, total = await playlist_service.get_connection(
+                first=10, sort_by="name", sort_direction="desc"
+            )
+
+            # Verify order_by was called with descending prefix
+            mock_queryset.order_by.assert_called_with("-name", "id")
+            assert len(items) == 2
+            assert total == 2
 
 
 @pytest.mark.django_db

@@ -516,7 +516,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - **Problem**: `// eslint-disable-next-line @typescript-eslint/no-unused-vars` for `errorById`
 - **Impact**: Parameter passed but never used, indicates incomplete feature or code smell
 - **Fix**: Either implement error display or remove parameter from interface
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Removed unused `errorById` parameter from both AlbumsTable component interface and albums.tsx route. Parameter was never used anywhere in the component. Removed ESLint disable comment.
 
 ### 21. TypeScript - Missing Generics
 
@@ -527,7 +527,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - **Problem**: Internal `SortableTableHeader` missing generic types
 - **Impact**: Conflicts with imported component, loses type safety
 - **Fix**: Use the actual imported component or add proper generics
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Issue #13 already fixed this. Removed inline SortableTableHeader component definition and now imports the shared component from ui folder. Proper types are now used.
 
 ### 22. TypeScript - Manual Type Assertions
 

@@ -22,7 +22,6 @@ interface AlbumsTableProps {
   onToggleWanted: (albumId: number, wanted: boolean) => void;
   loading?: boolean;
   mutatingIds?: Set<number>;
-  errorById?: Record<number, string>;
   pulseIds?: Set<number>;
 }
 
@@ -44,8 +43,6 @@ export function AlbumsTable({
   onToggleWanted,
   loading = false,
   mutatingIds,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  errorById,
   pulseIds,
 }: AlbumsTableProps) {
   if (albums.length === 0) {

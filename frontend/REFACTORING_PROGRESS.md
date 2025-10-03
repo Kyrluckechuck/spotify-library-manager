@@ -658,3 +658,141 @@ items, has_next_page, total_count = await services.song.get_connection(
 ✅ Artists page doesn't have sorting (not in schema - would need separate fix if desired)
 ✅ API restart required to pick up changes
 ✅ Bundle size: 506.74KB (unchanged)
+
+---
+
+## 🐛 Bug Fix Part 2: Service Layer Missing Sorting Implementation (Session 7 Continued)
+
+### Issue Continued
+After fixing the GraphQL resolvers, user reported sorting **still** didn't work. The bug was deeper than expected!
+
+### Actual Root Cause
+
+**The service layer was accepting sort parameters but completely ignoring them!** All three services had hardcoded `queryset.order_by("id")` that ignored the `sort_by` and `sort_direction` filters.
+
+**Bug Chain**:
+1. ✅ Frontend sends sort_by/sort_direction variables correctly
+2. ✅ GraphQL receives them correctly
+3. ✅ Resolvers accept them correctly
+4. ✅ Resolvers pass to services correctly (after first fix)
+5. ❌ **Services ignored them and used hardcoded ordering** (THIS WAS THE BUG)
+
+### Files Fixed (Backend Services)
+
+#### 1. `api/src/services/song.py` (lines 51-102)
+- Added extraction of `sort_by` and `sort_direction` from filters
+- Created field mapping: `{"name": "name", "primaryArtist": "primary_artist__name", "createdAt": "created_at", "downloaded": "downloaded"}`
+- Changed from hardcoded `order_by("id")` to dynamic `order_by(order_field, "id")`
+- Supports descending sort with `-` prefix
+
+#### 2. `api/src/services/playlist.py` (lines 135-178)
+- Added extraction of `sort_by` and `sort_direction` from filters
+- Created field mapping: `{"name": "name", "enabled": "enabled", "autoTrackArtists": "auto_track_artists", "lastSyncedAt": "last_synced_at"}`
+- Changed from hardcoded `order_by("id")` to dynamic `order_by(order_field, "id")`
+- Supports descending sort with `-` prefix
+
+#### 3. `api/src/services/album.py` (lines 37-88)
+- Added extraction of `sort_by` and `sort_direction` from filters
+- Created field mapping: `{"name": "name", "artist": "artist__name", "downloaded": "downloaded", "wanted": "wanted", "totalTracks": "total_tracks"}`
+- Changed from hardcoded `order_by("id")` to dynamic `order_by(order_field, "id")`
+- Supports descending sort with `-` prefix
+
+### Testing Added
+
+Created comprehensive unit tests in `api/tests/unit/test_services.py`:
+
+#### SongService Tests
+- `test_get_connection_with_sorting` - Verifies ascending sort by name
+- `test_get_connection_with_sorting_desc` - Verifies descending sort by primary artist
+
+#### AlbumService Tests
+- `test_get_connection_with_sorting` - Verifies ascending sort by artist (with Django relationship traversal)
+
+#### PlaylistService Tests
+- `test_get_connection_with_sorting` - Verifies descending sort by name
+
+All tests verify that `queryset.order_by()` is called with the correct field names and direction prefixes.
+
+### Technical Implementation
+
+```python
+# Extract sorting parameters from filters
+sort_by = (
+    filters.get("sort_by") if isinstance(filters.get("sort_by"), str) else None
+)
+sort_direction = (
+    filters.get("sort_direction")
+    if isinstance(filters.get("sort_direction"), str)
+    else None
+)
+
+# Map GraphQL camelCase to Django snake_case
+sort_field_map = {
+    "name": "name",
+    "primaryArtist": "primary_artist__name",  # Django relationship traversal
+    "createdAt": "created_at",
+    "downloaded": "downloaded",
+}
+
+# Apply sorting with direction support
+order_field = "id"  # default fallback
+if sort_by and sort_by in sort_field_map:
+    order_field = sort_field_map[sort_by]
+    if sort_direction == "desc":
+        order_field = f"-{order_field}"  # Django descending prefix
+
+# Changed from: queryset.order_by("id")
+# To: queryset.order_by(order_field, "id")  # Secondary sort by ID for stability
+```
+
+### Key Patterns
+
+- **Field Mapping**: GraphQL camelCase → Django snake_case
+- **Relationship Traversal**: Django's `__` syntax for related fields (e.g., `primary_artist__name`)
+- **Direction Prefix**: Django's `-` prefix for descending order
+- **Secondary Sort**: Always include `"id"` as secondary sort for stable pagination
+
+### Final Impact
+
+✅ **Sorting fully functional** on Songs, Playlists, and Albums pages
+✅ **4 new unit tests** with 100% pass rate
+✅ **API container restarted** to apply changes
+✅ **Multi-layer bug fixed** - GraphQL resolvers AND service layer
+✅ **Comprehensive test coverage** ensures sorting won't break again
+
+### Lessons Learned
+
+- Multi-layer architectures require **end-to-end investigation** - bug was in TWO places
+- Initial hypothesis (Apollo caching) was wrong - always verify assumptions
+- Unit tests are critical - this bug existed because sorting was never tested
+
+---
+
+## 🧹 Code Cleanup: Unused Parameters (Session 7 Continued)
+
+### Issue #20 & #21: TypeScript Cleanup
+
+**Completed quick wins from CODE_REVIEW_FINDINGS.md**
+
+#### Issue #20: Removed Unused `errorById` Parameter
+- **File**: `frontend/src/components/albums/AlbumsTable.tsx`
+- **Problem**: `errorById` parameter was passed but never used, required ESLint disable comment
+- **Fix**:
+  - Removed from `AlbumsTableProps` interface
+  - Removed from component destructuring
+  - Removed from `albums.tsx` route (both destructure and prop passing)
+  - Removed ESLint disable comment
+- **Impact**: Cleaner code, no dead parameters
+
+#### Issue #21: Inline Component Already Fixed
+- **File**: `frontend/src/components/songs/SongsTable.tsx`
+- **Status**: Already completed in Issue #13
+- **Fix**: Removed inline `SortableTableHeader` component, now imports shared component with proper types
+
+### Files Modified
+- `frontend/src/components/albums/AlbumsTable.tsx` - Removed unused parameter
+- `frontend/src/routes/albums.tsx` - Removed unused destructure and prop
+- `frontend/CODE_REVIEW_FINDINGS.md` - Marked issues #20 and #21 as completed
+
+### Build Status
+✅ Build passing: 506.70KB (0.16KB reduction)

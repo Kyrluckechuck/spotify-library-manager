@@ -86,8 +86,7 @@ function Albums() {
   });
 
   const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
-  const { mutatingIds, pulseIds, errorById, handleMutation } =
-    useMutationState();
+  const { mutatingIds, pulseIds, handleMutation } = useMutationState();
 
   // Pre-fetch other filter combinations when data loads (replaces onCompleted)
   useEffect(() => {
@@ -351,7 +350,6 @@ function Albums() {
           onToggleWanted={handleWantedToggle}
           loading={loading}
           mutatingIds={mutatingIds}
-          errorById={errorById}
           pulseIds={pulseIds}
         />
         {/* No full overlay during refetch to reduce jitter */}
