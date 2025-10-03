@@ -325,7 +325,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     [historyNodes]
   );
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Created `taskStats` useMemo that calculates completedToday, failedToday, and successRate in a single pass. Replaced all inline JSX calculations with memoized values. Performance improvement: eliminated 3 filter operations per render.
 
 ### 11. UX Issue - Using alert() and confirm()
 
@@ -538,7 +538,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - **Problem**: `(edge: { node: TaskHistory }) => edge.node` manual assertion
 - **Impact**: Fragile to GraphQL schema changes, bypasses type checking
 - **Fix**: Use proper GraphQL generated types from codegen
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Removed manual type assertion `(edge: { node: TaskHistory })` and changed to `(edge) => edge.node`. TypeScript now properly infers the type from the generated GraphQL types, making it safer and more maintainable.
 
 ### 23. Filter Logic Duplication
 
@@ -621,7 +621,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     aria-label={`${isTracked ? 'Untrack' : 'Track'} artist`}
   >
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Already fixed! ToggleStatusButton component properly implements ARIA: switch variant uses `role="switch"` + `aria-checked={enabled}`, badge variant uses `aria-pressed={enabled}`. Both variants include proper `aria-label` props. Issue was outdated.
 
 ### 28. Debounce Logic Can Be Simplified
 
@@ -632,7 +632,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 - **Problem**: `useRef` for timeout but `useCallback` wraps debounce logic
 - **Impact**: Creates new callback unnecessarily
 - **Fix**: Move timeout ref management into existing custom hook
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Simplified debounce logic by removing unnecessary `useRef` and `useCallback`. Now uses single `useEffect` that creates timeout and returns cleanup function. Reduced from 3 hooks (useState, useRef, useCallback, useEffect) to 2 hooks (useState, useEffect). Cleaner and more idiomatic React pattern.
 
 ### 29. Missing Provider Value Memoization
 

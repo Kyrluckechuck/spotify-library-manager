@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface SearchInputProps {
   placeholder?: string;
@@ -17,26 +17,22 @@ export function SearchInput({
 }: SearchInputProps) {
   const [searchTerm, setSearchTerm] = useState(initialValue);
 
-  // Use a ref to store the timeout ID for proper debouncing
-  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined
-  );
+  // Store the latest onSearch function in a ref to avoid dependency issues
+  const onSearchRef = useRef(onSearch);
 
-  const debouncedSearchWithRef = useCallback(
-    (query: string) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = setTimeout(() => {
-        onSearch(query);
-      }, debounceMs);
-    },
-    [onSearch, debounceMs]
-  );
-
+  // Keep ref up to date with latest onSearch
   useEffect(() => {
-    debouncedSearchWithRef(searchTerm);
-  }, [searchTerm, debouncedSearchWithRef]);
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  // Debounce the search term updates
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      onSearchRef.current(searchTerm);
+    }, debounceMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, debounceMs]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);

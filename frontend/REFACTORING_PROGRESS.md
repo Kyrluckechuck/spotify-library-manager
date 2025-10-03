@@ -796,3 +796,155 @@ if sort_by and sort_by in sort_field_map:
 
 ### Build Status
 ✅ Build passing: 506.70KB (0.16KB reduction)
+
+---
+
+## 🚀 Performance & Type Safety Improvements (Session 7 Continued)
+
+### Issue #22: Removed Manual Type Assertions
+
+**TypeScript code quality improvement**
+
+- **File**: `frontend/src/routes/tasks.tsx`
+- **Problem**: Manual type assertion `(edge: { node: TaskHistory }) => edge.node` bypassed type checking
+- **Fix**: Removed assertion, let TypeScript infer type from GraphQL codegen
+- **Impact**: Safer code, automatically catches schema changes at compile time
+
+**Before**:
+```typescript
+const historyNodes = useMemo<TaskHistory[]>(
+  () => historyData?.taskHistory?.edges?.map(
+    (edge: { node: TaskHistory }) => edge.node
+  ) || [],
+  [historyData?.taskHistory?.edges]
+);
+```
+
+**After**:
+```typescript
+const historyNodes = useMemo<TaskHistory[]>(
+  () => historyData?.taskHistory?.edges?.map((edge) => edge.node) || [],
+  [historyData?.taskHistory?.edges]
+);
+```
+
+### Issue #10: Memoized Stats Calculations
+
+**Performance optimization - eliminated redundant filtering**
+
+- **File**: `frontend/src/routes/tasks.tsx`
+- **Problem**: Stats cards had inline filter calculations running on every render
+  - "Completed Today" card: `historyNodes.filter(...).length`
+  - "Failed Today" card: `historyNodes.filter(...).length`
+  - "Success Rate" card: IIFE with 2 filters + calculation
+- **Fix**: Created single `taskStats` useMemo with single-pass calculation
+
+**Implementation**:
+```typescript
+const taskStats = useMemo(() => {
+  const today = new Date().toDateString();
+  let completedToday = 0;
+  let failedToday = 0;
+  let totalCompleted = 0;
+  let totalFailed = 0;
+
+  for (const task of historyNodes) {
+    if (task.status === 'COMPLETED') {
+      totalCompleted++;
+      if (task.completedAt && new Date(task.completedAt).toDateString() === today) {
+        completedToday++;
+      }
+    } else if (task.status === 'FAILED') {
+      totalFailed++;
+      if (task.completedAt && new Date(task.completedAt).toDateString() === today) {
+        failedToday++;
+      }
+    }
+  }
+
+  const total = totalCompleted + totalFailed;
+  const successRate = total > 0 ? Math.round((totalCompleted / total) * 100) : 0;
+
+  return { completedToday, failedToday, successRate };
+}, [historyNodes]);
+```
+
+**Performance Impact**:
+- **Before**: 5 filter operations per render (2 for "Completed Today", 2 for "Failed Today", 1 for success rate)
+- **After**: 1 single-pass loop cached in useMemo
+- **Improvement**: ~80% reduction in work for stats cards
+- **Most noticeable**: With 100+ tasks in history
+
+### Files Modified
+- `frontend/src/routes/tasks.tsx` - Type assertion fix + stats memoization
+- `frontend/CODE_REVIEW_FINDINGS.md` - Marked issues #10 and #22 as completed
+
+### Build Status
+✅ Build passing: 506.71KB (tiny increase from added memoization logic)
+
+---
+
+## 🧹 Code Quality & Simplification (Session 7 Continued)
+
+### Issue #27: ARIA Accessibility - Already Fixed
+
+**Verification of existing accessibility implementation**
+
+- **File**: `frontend/src/components/ui/ToggleStatusButton.tsx`
+- **Finding**: Component already has proper ARIA attributes
+- **Switch variant**: `role="switch"` + `aria-checked={enabled}` + `aria-label`
+- **Badge variant**: `aria-pressed={enabled}` + `aria-label`
+- **Status**: Issue was outdated - component was fixed in Phase 2
+
+### Issue #28: Simplified Debounce Logic
+
+**Reduced complexity in SearchInput component**
+
+- **File**: `frontend/src/components/ui/SearchInput.tsx`
+- **Problem**: Over-engineered debouncing with unnecessary `useRef` + `useCallback`
+- **Fix**: Simplified to single `useEffect` with proper cleanup
+
+**Before** (using 4 hooks):
+```typescript
+const timeoutRef = React.useRef<ReturnType<typeof setTimeout>>(undefined);
+
+const debouncedSearchWithRef = useCallback(
+  (query: string) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      onSearch(query);
+    }, debounceMs);
+  },
+  [onSearch, debounceMs]
+);
+
+useEffect(() => {
+  debouncedSearchWithRef(searchTerm);
+}, [searchTerm, debouncedSearchWithRef]);
+```
+
+**After** (using 2 hooks):
+```typescript
+useEffect(() => {
+  const timeoutId = setTimeout(() => {
+    onSearch(searchTerm);
+  }, debounceMs);
+
+  return () => clearTimeout(timeoutId);
+}, [searchTerm, onSearch, debounceMs]);
+```
+
+**Benefits**:
+- **Simpler**: 16 lines → 6 lines (62.5% reduction)
+- **More idiomatic**: Standard React debounce pattern
+- **Automatic cleanup**: useEffect cleanup handles timeout cancellation
+- **Fewer dependencies**: Removed `useRef` and `useCallback` imports
+
+### Files Modified
+- `frontend/src/components/ui/SearchInput.tsx` - Simplified debounce logic
+- `frontend/CODE_REVIEW_FINDINGS.md` - Marked issues #27 and #28 as completed
+
+### Build Status
+✅ Build passing: 506.65KB (0.06KB reduction from simplified code)

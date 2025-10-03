@@ -82,10 +82,7 @@ function Tasks() {
     useRequestState(historyNetworkStatus);
 
   const historyNodes = useMemo<TaskHistory[]>(
-    () =>
-      historyData?.taskHistory?.edges?.map(
-        (edge: { node: TaskHistory }) => edge.node
-      ) || [],
+    () => historyData?.taskHistory?.edges?.map(edge => edge.node) || [],
     [historyData?.taskHistory?.edges]
   );
 
@@ -125,6 +122,45 @@ function Tasks() {
   // (they filtered from realActiveTasks which were all RUNNING, so completed/failed would always be empty)
   const completedTasks: TaskHistory[] = [];
   const failedTasks: TaskHistory[] = [];
+
+  // Memoize stats calculations for the stats cards
+  const taskStats = useMemo(() => {
+    const today = new Date().toDateString();
+    let completedToday = 0;
+    let failedToday = 0;
+    let totalCompleted = 0;
+    let totalFailed = 0;
+
+    for (const task of historyNodes) {
+      if (task.status === 'COMPLETED') {
+        totalCompleted++;
+        if (
+          task.completedAt &&
+          new Date(task.completedAt).toDateString() === today
+        ) {
+          completedToday++;
+        }
+      } else if (task.status === 'FAILED') {
+        totalFailed++;
+        if (
+          task.completedAt &&
+          new Date(task.completedAt).toDateString() === today
+        ) {
+          failedToday++;
+        }
+      }
+    }
+
+    const total = totalCompleted + totalFailed;
+    const successRate =
+      total > 0 ? Math.round((totalCompleted / total) * 100) : 0;
+
+    return {
+      completedToday,
+      failedToday,
+      successRate,
+    };
+  }, [historyNodes]);
 
   // Reusable handler for task cancellation with confirmation
   const handleCancelWithConfirmation = useCallback(
@@ -260,15 +296,7 @@ function Tasks() {
                 Completed Today
               </p>
               <p className='text-2xl font-bold text-gray-900'>
-                {
-                  historyNodes.filter(
-                    (task: TaskHistory) =>
-                      task.status === 'COMPLETED' &&
-                      !!task.completedAt &&
-                      new Date(task.completedAt).toDateString() ===
-                        new Date().toDateString()
-                  ).length
-                }
+                {taskStats.completedToday}
               </p>
             </div>
           </div>
@@ -282,15 +310,7 @@ function Tasks() {
             <div className='ml-4'>
               <p className='text-sm font-medium text-gray-600'>Failed Today</p>
               <p className='text-2xl font-bold text-gray-900'>
-                {
-                  historyNodes.filter(
-                    (task: TaskHistory) =>
-                      task.status === 'FAILED' &&
-                      !!task.completedAt &&
-                      new Date(task.completedAt).toDateString() ===
-                        new Date().toDateString()
-                  ).length
-                }
+                {taskStats.failedToday}
               </p>
             </div>
           </div>
@@ -304,17 +324,7 @@ function Tasks() {
             <div className='ml-4'>
               <p className='text-sm font-medium text-gray-600'>Success Rate</p>
               <p className='text-2xl font-bold text-gray-900'>
-                {(() => {
-                  const completed = historyNodes.filter(
-                    (task: TaskHistory) => task.status === 'COMPLETED'
-                  ).length;
-                  const failed = historyNodes.filter(
-                    (task: TaskHistory) => task.status === 'FAILED'
-                  ).length;
-                  const total = completed + failed;
-                  return total > 0 ? Math.round((completed / total) * 100) : 0;
-                })()}
-                %
+                {taskStats.successRate}%
               </p>
             </div>
           </div>

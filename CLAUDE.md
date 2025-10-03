@@ -198,6 +198,17 @@ This is a **full-stack Spotify library management application** with the followi
 - Container-based linting is also available but local is faster and more reliable
 - In future you can use the existing cleanup tasks that are used by the CI to perform "easy" fixes for python such as flake8 black and isort, and similarly there are some for yarn/javascript
 
+## Frontend React Patterns
+
+### Function Props in Effects - Use Ref Pattern
+When a component receives a function prop that will be called inside a `useEffect`, ALWAYS use the ref pattern to avoid requiring the parent to memoize. This makes components robust and defensive.
+
+**Reference implementations**:
+- `frontend/src/hooks/useDebouncedSearch.ts` (lines 11-32)
+- `frontend/src/components/ui/SearchInput.tsx` (lines 20-35)
+
+**Pattern**: Store function in ref, update ref in separate effect, main effect uses `ref.current` and does NOT include the function in dependencies.
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
