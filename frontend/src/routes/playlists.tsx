@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import {
   GetPlaylistsDocument,
   TogglePlaylistDocument,
@@ -9,7 +9,7 @@ import {
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
 import type { Playlist } from '../types/generated/graphql';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 import { PlaylistModal } from '../components/ui/PlaylistModal';
 
@@ -28,6 +28,11 @@ import {
   useMutationState,
   useMutationLoadingState,
 } from '../hooks/useMutationState';
+import {
+  usePrefetchFilters,
+  generateFilterCombinations,
+} from '../hooks/usePrefetchFilters';
+import { useQueryPrefetch } from '../hooks/useQueryPrefetch';
 import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
 import type { SortDirection, PlaylistEnabledFilter } from '../types/shared';
 
@@ -42,8 +47,6 @@ function Playlists() {
   // Modal states
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
-
-  const client = useApolloClient();
 
   // Memoize query variables to prevent unnecessary re-renders
   const queryVariables = useMemo(
@@ -68,50 +71,44 @@ function Playlists() {
     }
   );
 
-  // Pre-fetch other filter combinations
-  useEffect(() => {
-    if (data && networkStatus !== 3) {
-      // Not refetching
-      const baseVariables = {
-        first: pageSize,
-        sortBy: sortField,
-        sortDirection: sortDirection,
-        search: searchQuery || undefined,
-      };
+  // Pre-fetch filter combinations for better perceived performance
+  const baseVariables = useMemo(
+    () => ({
+      first: pageSize,
+      sortBy: sortField,
+      sortDirection: sortDirection,
+      search: searchQuery || undefined,
+    }),
+    [pageSize, sortField, sortDirection, searchQuery]
+  );
 
-      // Pre-fetch enabled and disabled filters
-      ['enabled', 'disabled'].forEach(enabledFilter => {
-        const variables = {
-          ...baseVariables,
-          enabled: enabledFilter === 'enabled' ? true : false,
-        };
+  const filterCombinations = useMemo(
+    () =>
+      generateFilterCombinations({
+        enabled: [true, false],
+      }),
+    []
+  );
 
-        client
-          .query({
-            query: GetPlaylistsDocument,
-            variables,
-            fetchPolicy: 'cache-first',
-          })
-          .catch(() => {
-            // Ignore pre-fetch errors
-          });
-      });
-    }
-  }, [
-    data,
+  usePrefetchFilters({
+    query: GetPlaylistsDocument,
+    baseVariables,
+    filterCombinations,
+    enabled: !!data,
     networkStatus,
-    pageSize,
-    sortField,
-    sortDirection,
-    searchQuery,
-    client,
-  ]);
+  });
 
   const [togglePlaylist] = useMutation(TogglePlaylistDocument);
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
   const [forceSyncPlaylist] = useMutation(ForceSyncPlaylistDocument);
   const [togglePlaylistAutoTrack] = useMutation(
     TogglePlaylistAutoTrackDocument
+  );
+
+  // Create prefetch handler factory
+  const createPrefetchHandler = useQueryPrefetch(
+    GetPlaylistsDocument,
+    queryVariables
   );
 
   // Enable/disable toggle with pulse
@@ -141,100 +138,43 @@ function Playlists() {
     stopLoading: stopForceSync,
   } = useMutationLoadingState();
 
-  const handleEnabledFilterChange = (
-    newFilter: 'all' | 'enabled' | 'disabled'
-  ) => {
-    setFilter(newFilter);
-
-    // Pre-fetch data for the new filter
-    const newVariables = {
-      ...queryVariables,
+  // Filter change handlers with automatic prefetching
+  const handleEnabledFilterChange = createPrefetchHandler(
+    setFilter,
+    (newFilter: PlaylistEnabledFilter) => ({
       enabled: newFilter === 'all' ? undefined : newFilter === 'enabled',
-    };
+    })
+  );
 
-    // Pre-fetch without blocking the UI
-    client
-      .query({
-        query: GetPlaylistsDocument,
-        variables: newVariables,
-        fetchPolicy: 'cache-first',
-      })
-      .catch(() => {
-        // Ignore pre-fetch errors
-      });
-  };
+  const handlePageSizeChange = createPrefetchHandler(setPageSize, newSize => ({
+    first: newSize,
+  }));
 
   const handleSort = (field: PlaylistSortField) => {
-    let newDirection: SortDirection = 'asc';
+    const newDirection: SortDirection =
+      sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
 
-    if (sortField === field && sortDirection === 'asc') {
-      newDirection = 'desc';
-    }
-
+    // Update both states
     setSortField(field);
     setSortDirection(newDirection);
 
-    // Pre-fetch data for the new sort
-    const newVariables = {
-      ...queryVariables,
+    // Prefetch with new sort
+    createPrefetchHandler(null, () => ({
       sortBy: field,
       sortDirection: newDirection,
-    };
-
-    client
-      .query({
-        query: GetPlaylistsDocument,
-        variables: newVariables,
-        fetchPolicy: 'cache-first',
-      })
-      .catch(() => {
-        // Ignore pre-fetch errors
-      });
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-
-    // Pre-fetch data for the new page size
-    const newVariables = {
-      ...queryVariables,
-      first: newPageSize,
-    };
-
-    client
-      .query({
-        query: GetPlaylistsDocument,
-        variables: newVariables,
-        fetchPolicy: 'cache-first',
-      })
-      .catch(() => {
-        // Ignore pre-fetch errors
-      });
+    }))(field);
   };
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
   }, []);
 
-  const handleFilterHover = useCallback(
-    (hoverFilter: 'all' | 'enabled' | 'disabled') => {
-      // Pre-fetch data on hover
-      const newVariables = {
-        ...queryVariables,
-        enabled: hoverFilter === 'all' ? undefined : hoverFilter === 'enabled',
-      };
-
-      client
-        .query({
-          query: GetPlaylistsDocument,
-          variables: newVariables,
-          fetchPolicy: 'cache-first',
-        })
-        .catch(() => {
-          // Ignore pre-fetch errors
-        });
-    },
-    [queryVariables, client]
+  // Prefetch-only handler for hover (no state update)
+  const handleFilterHover = createPrefetchHandler(
+    null, // No state setter - just prefetch
+    (hoverFilter: PlaylistEnabledFilter) => ({
+      enabled: hoverFilter === 'all' ? undefined : hoverFilter === 'enabled',
+    })
   );
 
   const handleTogglePlaylist = async (playlist: Playlist) => {

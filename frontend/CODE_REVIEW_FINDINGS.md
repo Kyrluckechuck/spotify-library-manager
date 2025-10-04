@@ -43,7 +43,13 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   </TasksPage>
   ```
 - **Lines**: Entire file
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **PARTIALLY COMPLETED** - Extracted 3 major sections into components:
+  - `TaskStatsHeader.tsx` (~110 lines) - Stats cards and header
+  - `QueueManagementSection.tsx` (~80 lines) - Queue status and controls
+  - `ActiveTasksSection.tsx` (~130 lines) - Active task filtering and display
+  - `TaskCard.tsx` (~77 lines) - Individual task card rendering (completed earlier)
+
+  **Result**: tasks.tsx reduced from 863 to 644 lines (−219 lines, −25%). Remaining work: Extract TaskHistoryTable section (~300 lines remaining). Each component now has single responsibility and is independently testable.
 
 #### `frontend/src/components/EnhancedEntityDisplay.tsx` (413 lines)
 
@@ -276,15 +282,18 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 #### Type Pollution in Map Callbacks
 
 - **File**: `frontend/src/routes/tasks.tsx`
-- **Lines**: 660-675, 822-830
-- **Problem**: Complex types defined inline in `.map()` callbacks
+- **Lines**: 541-551 (after refactoring)
+- **Problem**: Complex types defined inline in `.map()` and `.filter()` callbacks
   ```typescript
+  .some((edge: { node: { logMessages?: string[] } }) => ...)
+  .filter((edge: { node: { logMessages?: string[] } }) => ...)
   .map((edge: {
     node: {
       id: string;
-      taskId: string;
-      status: string;
-      // ... 10+ more fields
+      type: string;
+      entityType: string;
+      entityId: string;
+      logMessages?: string[];
     };
   }) => { /* ... */ })
   ```
@@ -301,7 +310,14 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   });
   ```
 
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Imported `TaskHistoryEdge` type from generated GraphQL types and replaced all 3 inline type definitions:
+  - Line 542: `.some((edge: TaskHistoryEdge) => ...)`
+  - Line 547: `.filter((edge: TaskHistoryEdge) => ...)`
+  - Line 550: `.map((edge: TaskHistoryEdge) => ...)`
+
+  Using the generated GraphQL type ensures type safety and catches schema changes at compile time. Eliminated ~15 lines of duplicate inline type definitions.
+
+**Note**: Separate issue addressed - Created `types/shared.ts` with common shared types (SortDirection, TaskStatus, EntityType, etc.) and refactored 6 files to use them. This eliminated 10+ duplicate type definitions across the codebase.
 
 ### 10. Performance - Missing Memoization
 
@@ -414,7 +430,16 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     prefetch: true,
   });
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Created `usePrefetchFilters` hook with helper `generateFilterCombinations` function:
+  - Generic hook accepts query, base variables, and filter combinations
+  - Automatically pre-fetches all combinations on data load
+  - Skips during refetch (networkStatus 3) to avoid redundant requests
+
+  Applied to:
+  - `albums.tsx`: Replaced 42-line useEffect with 3-line hook call (albums prefetch wanted × downloaded = 4 combinations)
+  - `playlists.tsx`: Replaced 36-line useEffect with 3-line hook call (prefetch enabled × disabled = 2 combinations)
+
+  Eliminated ~78 lines of duplicate prefetch logic. Bundle size +0.32KB for the reusable hook.
 
 ### 15. Inline Anonymous Functions
 
@@ -488,7 +513,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     onViewLogs={handleViewLogs}
   />
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Created unified `TaskCard` component in `components/tasks/TaskCard.tsx`. Uses configuration object pattern to map status (running/completed/failed) to UI properties (colors, labels, animations). Replaced three duplicate card renderings (~60 lines) with single component. Bundle size reduced by 0.66KB (506.70KB → 506.04KB).
 
 ### 19. Entity Display Duplication
 
@@ -505,7 +530,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     <FullEntityDisplay entity={entity} />
   );
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Created `CompactEntityDisplay` and `FullEntityDisplay` sub-components in `components/entity-display/`. Each sub-component handles the "with link vs without link" branching internally. Eliminated ~100 lines of duplicate JSX for special entities and regular entity data rendering. Bundle size reduced by 1.43KB (506.04KB → 504.61KB).
 
 ### 20. TypeScript - Unused Parameters
 
@@ -545,10 +570,39 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 #### Duplicate in useQuery and Handler
 
 - **Files**: `albums.tsx`, `playlists.tsx`
-- **Problem**: Filter change handlers duplicate query filter logic
-- **Lines**: Various `handleFilterChange` functions
-- **Fix**: Create single `handleFilterChangeWithPrefetch` utility
-- **Status**: ⬜ Not Started
+- **Problem**: Filter change handlers duplicate query filter logic with manual prefetch
+- **Lines**:
+  - `albums.tsx`: 123-213 (handleWantedFilterChange, handleDownloadFilterChange, handleSort, handlePageSizeChange)
+  - `playlists.tsx`: 136-205 (handleEnabledFilterChange, handleSort, handlePageSizeChange, handleFilterHover)
+- **Current Pattern**:
+  ```typescript
+  const handleFilterChange = (newFilter) => {
+    setFilter(newFilter);
+    const newVariables = { ...queryVariables, filter: ... };
+    client.query({ query, variables: newVariables, fetchPolicy: 'cache-first' })
+      .catch(() => {});
+  };
+  ```
+- **Fix**: Create reusable `useQueryPrefetch` hook
+  ```typescript
+  const createPrefetchHandler = useQueryPrefetch(
+    GetAlbumsDocument,
+    queryVariables
+  );
+  const handleFilterChange = createPrefetchHandler(setFilter, newFilter => ({
+    filter: newFilter === 'all' ? undefined : newFilter,
+  }));
+  ```
+- **Status**: ✅ **COMPLETED** - Created `useQueryPrefetch` hook that provides a factory function for creating setState + prefetch handlers:
+  - Generic hook accepts query, base variables, returns `createPrefetchHandler` function
+  - Supports React's `Dispatch<SetStateAction<T>>` pattern for compatibility with useState
+  - Allows `null` state setter for prefetch-only operations (e.g., hover handlers)
+
+  Applied to:
+  - `albums.tsx`: Replaced 4 handlers (wanted filter, download filter, page size, sort) - 91 lines → 33 lines
+  - `playlists.tsx`: Replaced 4 handlers (enabled filter, page size, sort, hover) - 69 lines → 26 lines
+
+  Eliminated ~140 lines of duplicate setState + prefetch logic. Bundle size unchanged (506.94 KB). All handlers now use consistent pattern with automatic prefetching.
 
 ### 24. Complex Nested Filter Logic
 
@@ -574,7 +628,7 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   );
   ```
 - **Fix**: Extract to `usePrefetchFilters` custom hook with clear interface
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Same fix as Issue #14. The `usePrefetchFilters` hook eliminated the complex nested loops and made filter prefetching declarative with `generateFilterCombinations` helper. Much cleaner and maintainable than nested forEach loops with hardcoded values.
 
 ---
 
@@ -603,7 +657,13 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
     <Outlet />
   </ErrorBoundary>
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Created `ErrorBoundary` component with:
+  - Graceful error UI with error message display
+  - Refresh and retry buttons
+  - Console logging for debugging
+  - Optional custom fallback prop
+
+  Added to `__root.tsx` wrapping the entire app. Now GraphQL errors or component crashes show user-friendly error page instead of blank screen. Bundle size increased by 1.69KB.
 
 ### 27. Accessibility - Incorrect ARIA
 

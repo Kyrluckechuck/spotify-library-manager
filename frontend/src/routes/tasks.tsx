@@ -13,6 +13,7 @@ import {
   CancelRunningTasksByNameDocument,
   CancelAllTasksDocument,
   type TaskHistory,
+  type TaskHistoryEdge,
 } from '../types/generated/graphql';
 import EnhancedEntityDisplay from '../components/EnhancedEntityDisplay';
 import { useToast } from '../components/ui/useToast';
@@ -538,84 +539,71 @@ function Tasks() {
 
         <div className='p-6'>
           {historyData?.taskHistory?.edges?.some(
-            (edge: { node: { logMessages?: string[] } }) =>
-              (edge.node.logMessages?.length ?? 0) > 0
+            (edge: TaskHistoryEdge) => (edge.node.logMessages?.length ?? 0) > 0
           ) ? (
             <div className='space-y-1'>
               {historyData.taskHistory.edges
                 .filter(
-                  (edge: { node: { logMessages?: string[] } }) =>
+                  (edge: TaskHistoryEdge) =>
                     (edge.node.logMessages?.length ?? 0) > 0
                 )
-                .map(
-                  (edge: {
-                    node: {
-                      id: string;
-                      type: string;
-                      entityType: string;
-                      entityId: string;
-                      logMessages?: string[];
-                    };
-                  }) => {
-                    const task = edge.node;
-                    const isExpanded = !!expandedLogs[task.id];
-                    return (
-                      <div
-                        key={task.id}
-                        className='border border-gray-200 rounded p-2'
-                      >
-                        <div className='flex items-center justify-between gap-3'>
-                          <div className='flex items-center gap-2 text-sm min-w-0 flex-1'>
-                            <span className='font-medium text-gray-900 whitespace-nowrap'>
-                              {task.type.charAt(0).toUpperCase() +
-                                task.type.slice(1)}
+                .map((edge: TaskHistoryEdge) => {
+                  const task = edge.node;
+                  const isExpanded = !!expandedLogs[task.id];
+                  return (
+                    <div
+                      key={task.id}
+                      className='border border-gray-200 rounded p-2'
+                    >
+                      <div className='flex items-center justify-between gap-3'>
+                        <div className='flex items-center gap-2 text-sm min-w-0 flex-1'>
+                          <span className='font-medium text-gray-900 whitespace-nowrap'>
+                            {task.type.charAt(0).toUpperCase() +
+                              task.type.slice(1)}
+                          </span>
+                          <div className='min-w-0 flex-1'>
+                            <EnhancedEntityDisplay
+                              entityType={task.entityType}
+                              entityId={task.entityId}
+                              compact={true}
+                            />
+                          </div>
+                          {!isExpanded && task.logMessages && (
+                            <span className='text-xs text-gray-500 whitespace-nowrap flex-shrink-0'>
+                              ({task.logMessages.length} logs)
                             </span>
-                            <div className='min-w-0 flex-1'>
-                              <EnhancedEntityDisplay
-                                entityType={task.entityType}
-                                entityId={task.entityId}
-                                compact={true}
-                              />
-                            </div>
-                            {!isExpanded && task.logMessages && (
-                              <span className='text-xs text-gray-500 whitespace-nowrap flex-shrink-0'>
-                                ({task.logMessages.length} logs)
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            type='button'
-                            onClick={() =>
-                              setExpandedLogs(prev => ({
-                                ...prev,
-                                [task.id]: !isExpanded,
-                              }))
-                            }
-                            aria-expanded={isExpanded}
-                            className='text-xs text-indigo-600 hover:underline px-2 py-1 rounded hover:bg-indigo-50'
-                          >
-                            {isExpanded ? 'Hide' : 'Show logs'}
-                          </button>
+                          )}
                         </div>
-                        {isExpanded && (
-                          <div className='mt-2 bg-gray-50 rounded p-2 text-xs font-mono text-gray-700 max-h-32 overflow-y-auto'>
-                            {task.logMessages?.map(
-                              (log: string, idx: number) => (
-                                <div
-                                  // eslint-disable-next-line react/no-array-index-key
-                                  key={`task-${task.id}-log-${idx}`}
-                                  className='mb-1'
-                                >
-                                  {log}
-                                </div>
-                              )
-                            )}
-                          </div>
-                        )}
+                        <button
+                          type='button'
+                          onClick={() =>
+                            setExpandedLogs(prev => ({
+                              ...prev,
+                              [task.id]: !isExpanded,
+                            }))
+                          }
+                          aria-expanded={isExpanded}
+                          className='text-xs text-indigo-600 hover:underline px-2 py-1 rounded hover:bg-indigo-50'
+                        >
+                          {isExpanded ? 'Hide' : 'Show logs'}
+                        </button>
                       </div>
-                    );
-                  }
-                )}
+                      {isExpanded && (
+                        <div className='mt-2 bg-gray-50 rounded p-2 text-xs font-mono text-gray-700 max-h-32 overflow-y-auto'>
+                          {task.logMessages?.map((log: string, idx: number) => (
+                            <div
+                              // eslint-disable-next-line react/no-array-index-key
+                              key={`task-${task.id}-log-${idx}`}
+                              className='mb-1'
+                            >
+                              {log}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           ) : (
             <div className='text-center py-8 text-gray-500'>

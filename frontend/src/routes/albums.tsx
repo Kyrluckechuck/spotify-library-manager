@@ -1,12 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import {
   GetAlbumsDocument,
   SetAlbumWantedDocument,
   GetArtistDocument,
   type GetAlbumsQuery,
 } from '../types/generated/graphql';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 // Components
 import { AlbumFilters } from '../components/albums/AlbumFilters';
@@ -21,6 +21,11 @@ import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { ArtistContext } from '../components/ui/ArtistContext';
 import { SearchInput } from '../components/ui/SearchInput';
 import { useMutationState } from '../hooks/useMutationState';
+import {
+  usePrefetchFilters,
+  generateFilterCombinations,
+} from '../hooks/usePrefetchFilters';
+import { useQueryPrefetch } from '../hooks/useQueryPrefetch';
 import type { AlbumSortField } from '../components/albums/AlbumsTable';
 import type {
   SortDirection,
@@ -37,8 +42,6 @@ function Albums() {
   const [sortField, setSortField] = useState<AlbumSortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [searchQuery, setSearchQuery] = useState('');
-
-  const client = useApolloClient();
 
   // Memoize query variables
   const queryVariables = useMemo(
@@ -87,140 +90,73 @@ function Albums() {
   const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
   const { mutatingIds, pulseIds, handleMutation } = useMutationState();
 
-  // Pre-fetch other filter combinations when data loads (replaces onCompleted)
-  useEffect(() => {
-    if (data && networkStatus !== 3) {
-      // Not refetching
-      const baseVariables = {
-        artistId: artistId || undefined,
-        first: pageSize,
-        sortBy: sortField,
-        sortDirection: sortDirection,
-        search: searchQuery || undefined,
-      };
+  // Create prefetch handler factory
+  const createPrefetchHandler = useQueryPrefetch(
+    GetAlbumsDocument,
+    queryVariables
+  );
 
-      // Pre-fetch wanted/unwanted and downloaded/pending filter combinations
-      ['wanted', 'unwanted'].forEach(wantedFilter => {
-        ['downloaded', 'pending'].forEach(downloadFilter => {
-          const variables = {
-            ...baseVariables,
-            wanted: wantedFilter === 'wanted' ? true : false,
-            downloaded: downloadFilter === 'downloaded' ? true : false,
-          };
+  // Pre-fetch filter combinations for better perceived performance
+  const baseVariables = useMemo(
+    () => ({
+      artistId: artistId || undefined,
+      first: pageSize,
+      sortBy: sortField,
+      sortDirection: sortDirection,
+      search: searchQuery || undefined,
+    }),
+    [artistId, pageSize, sortField, sortDirection, searchQuery]
+  );
 
-          client
-            .query({
-              query: GetAlbumsDocument,
-              variables,
-              fetchPolicy: 'cache-first',
-            })
-            .catch(() => {
-              // Ignore pre-fetch errors
-            });
-        });
-      });
-    }
-  }, [
-    data,
+  const filterCombinations = useMemo(
+    () =>
+      generateFilterCombinations({
+        wanted: [true, false],
+        downloaded: [true, false],
+      }),
+    []
+  );
+
+  usePrefetchFilters({
+    query: GetAlbumsDocument,
+    baseVariables,
+    filterCombinations,
+    enabled: !!data,
     networkStatus,
-    artistId,
-    pageSize,
-    sortField,
-    sortDirection,
-    searchQuery,
-    client,
-  ]);
+  });
 
-  const handleWantedFilterChange = (
-    newFilter: 'all' | 'wanted' | 'unwanted'
-  ) => {
-    setWantedFilter(newFilter);
-
-    // Pre-fetch data for the new filter
-    const newVariables = {
-      ...queryVariables,
+  // Filter change handlers with automatic prefetching
+  const handleWantedFilterChange = createPrefetchHandler(
+    setWantedFilter,
+    (newFilter: WantedFilter) => ({
       wanted: newFilter === 'all' ? undefined : newFilter === 'wanted',
-    };
+    })
+  );
 
-    client
-      .query({
-        query: GetAlbumsDocument,
-        variables: newVariables,
-        fetchPolicy: 'cache-first',
-      })
-      .catch(() => {
-        // Silently handle errors for pre-fetching
-      });
-  };
-
-  const handleDownloadFilterChange = (
-    newFilter: 'all' | 'downloaded' | 'pending'
-  ) => {
-    setDownloadFilter(newFilter);
-
-    // Pre-fetch data for the new filter
-    const newVariables = {
-      ...queryVariables,
+  const handleDownloadFilterChange = createPrefetchHandler(
+    setDownloadFilter,
+    (newFilter: DownloadFilter) => ({
       downloaded: newFilter === 'all' ? undefined : newFilter === 'downloaded',
-    };
+    })
+  );
 
-    client
-      .query({
-        query: GetAlbumsDocument,
-        variables: newVariables,
-        fetchPolicy: 'cache-first',
-      })
-      .catch(() => {
-        // Silently handle errors for pre-fetching
-      });
-  };
+  const handlePageSizeChange = createPrefetchHandler(setPageSize, newSize => ({
+    first: newSize,
+  }));
 
   const handleSort = (field: AlbumSortField) => {
-    let newDirection: SortDirection = 'asc';
+    const newDirection: SortDirection =
+      sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
 
-    if (sortField === field && sortDirection === 'asc') {
-      newDirection = 'desc';
-    }
-
+    // Update both states
     setSortField(field);
     setSortDirection(newDirection);
 
-    // Pre-fetch data for the new sort
-    const newVariables = {
-      ...queryVariables,
+    // Prefetch with new sort
+    createPrefetchHandler(null, () => ({
       sortBy: field,
       sortDirection: newDirection,
-    };
-
-    client
-      .query({
-        query: GetAlbumsDocument,
-        variables: newVariables,
-        fetchPolicy: 'cache-first',
-      })
-      .catch(() => {
-        // Silently handle errors for pre-fetching
-      });
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-
-    // Pre-fetch data for the new page size
-    const newVariables = {
-      ...queryVariables,
-      first: newPageSize,
-    };
-
-    client
-      .query({
-        query: GetAlbumsDocument,
-        variables: newVariables,
-        fetchPolicy: 'cache-first',
-      })
-      .catch(() => {
-        // Silently handle errors for pre-fetching
-      });
+    }))(field);
   };
 
   const handleSearch = useCallback((query: string) => {
