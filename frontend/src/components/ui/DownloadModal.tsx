@@ -5,15 +5,13 @@ import {
   CreatePlaylistDocument,
 } from '../../types/generated/graphql';
 import { useToast } from './useToast';
+import type { ContentType } from '../../types/shared';
 
 interface DownloadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
-
-// Content type detection
-type ContentType = 'artist' | 'album' | 'track' | 'playlist' | 'unknown';
 
 interface DetectedContent {
   type: ContentType;

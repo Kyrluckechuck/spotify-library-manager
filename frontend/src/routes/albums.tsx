@@ -22,18 +22,17 @@ import { ArtistContext } from '../components/ui/ArtistContext';
 import { SearchInput } from '../components/ui/SearchInput';
 import { useMutationState } from '../hooks/useMutationState';
 import type { AlbumSortField } from '../components/albums/AlbumsTable';
-
-type SortDirection = 'asc' | 'desc';
+import type {
+  SortDirection,
+  WantedFilter,
+  DownloadFilter,
+} from '../types/shared';
 
 function Albums() {
   const toast = useToast();
   const { artistId } = Route.useSearch();
-  const [wantedFilter, setWantedFilter] = useState<
-    'all' | 'wanted' | 'unwanted'
-  >('all');
-  const [downloadFilter, setDownloadFilter] = useState<
-    'all' | 'downloaded' | 'pending'
-  >('all');
+  const [wantedFilter, setWantedFilter] = useState<WantedFilter>('all');
+  const [downloadFilter, setDownloadFilter] = useState<DownloadFilter>('all');
   const [pageSize, setPageSize] = useState(50);
   const [sortField, setSortField] = useState<AlbumSortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');

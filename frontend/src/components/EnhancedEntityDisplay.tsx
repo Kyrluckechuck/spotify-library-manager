@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useLazyQuery } from '@apollo/client/react';
 import { GetArtistDocument, GetSongDocument } from '../types/generated/graphql';
+import { CompactEntityDisplay } from './entity-display/CompactEntityDisplay';
+import { FullEntityDisplay } from './entity-display/FullEntityDisplay';
 
 interface EnhancedEntityDisplayProps {
   entityType: string;
@@ -238,142 +240,61 @@ const EnhancedEntityDisplay: React.FC<EnhancedEntityDisplayProps> = ({
           ? `${specialEntity.name.substring(0, 20)}...`
           : specialEntity.name;
 
-      if (specialEntity.url) {
-        return (
-          <div className='flex items-center space-x-1 min-w-0 w-full'>
-            <span className={`text-sm flex-shrink-0 ${color}`}>{icon}</span>
-            <a
-              href={specialEntity.url}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='text-blue-600 hover:text-blue-800 hover:underline text-xs truncate flex-1 min-w-0'
-              title={`View ${entityType.toLowerCase()}: ${specialEntity.name}`}
-            >
-              {displayName}
-            </a>
-            <span className='text-gray-500 text-xs flex-shrink-0'>
-              ({label})
-            </span>
-          </div>
-        );
-      } else {
-        return (
-          <div className='flex items-center space-x-1 min-w-0 w-full'>
-            <span className={`text-sm flex-shrink-0 ${color}`}>{icon}</span>
-            <span
-              className='text-xs text-gray-900 truncate flex-1 min-w-0 font-medium'
-              title={specialEntity.name}
-            >
-              {displayName}
-            </span>
-            <span className='text-gray-500 text-xs flex-shrink-0'>
-              ({label})
-            </span>
-          </div>
-        );
-      }
+      return (
+        <CompactEntityDisplay
+          icon={icon}
+          color={color}
+          displayName={displayName}
+          fullName={specialEntity.name}
+          label={label}
+          entityType={entityType}
+          link={specialEntity.url}
+        />
+      );
     } else {
-      // Full mode for special entities
-      if (specialEntity.url) {
-        return (
-          <div className='flex items-center space-x-2'>
-            <span className={`text-lg ${color}`}>{icon}</span>
-            <a
-              href={specialEntity.url}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='text-blue-600 hover:text-blue-800 hover:underline font-medium'
-              title={`View ${entityType.toLowerCase()}: ${specialEntity.name}`}
-            >
-              {specialEntity.name}
-            </a>
-            <span className='text-gray-500 text-xs'>({label})</span>
-          </div>
-        );
-      } else {
-        return (
-          <div className='flex items-center space-x-2'>
-            <span className={`text-lg ${color}`}>{icon}</span>
-            <span className='font-medium text-gray-900'>
-              {specialEntity.name}
-            </span>
-            <span className='text-gray-500 text-xs'>({label})</span>
-          </div>
-        );
-      }
+      return (
+        <FullEntityDisplay
+          icon={icon}
+          color={color}
+          name={specialEntity.name}
+          label={label}
+          entityType={entityType}
+          link={specialEntity.url}
+        />
+      );
     }
   }
 
   // If we have entity data, display it with the real name
   if (entityData) {
     if (compact) {
-      // Compact mode for table display
       const displayName =
         entityData.name.length > 20
           ? `${entityData.name.substring(0, 20)}...`
           : entityData.name;
 
-      if (entityLink) {
-        return (
-          <div className='flex items-center space-x-1 min-w-0 w-full'>
-            <span className={`text-sm flex-shrink-0 ${color}`}>{icon}</span>
-            <a
-              href={entityLink}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='text-blue-600 hover:text-blue-800 hover:underline text-xs truncate flex-1 min-w-0'
-              title={`View ${entityType.toLowerCase()}: ${entityData.name}`}
-            >
-              {displayName}
-            </a>
-            <span className='text-gray-500 text-xs flex-shrink-0'>
-              ({label})
-            </span>
-          </div>
-        );
-      } else {
-        return (
-          <div className='flex items-center space-x-1 min-w-0 w-full'>
-            <span className={`text-sm flex-shrink-0 ${color}`}>{icon}</span>
-            <span
-              className='text-xs text-gray-900 truncate flex-1 min-w-0 font-medium'
-              title={entityData.name}
-            >
-              {displayName}
-            </span>
-            <span className='text-gray-500 text-xs flex-shrink-0'>
-              ({label})
-            </span>
-          </div>
-        );
-      }
+      return (
+        <CompactEntityDisplay
+          icon={icon}
+          color={color}
+          displayName={displayName}
+          fullName={entityData.name}
+          label={label}
+          entityType={entityType}
+          link={entityLink}
+        />
+      );
     } else {
-      // Full mode for other displays
-      if (entityLink) {
-        return (
-          <div className='flex items-center space-x-2'>
-            <span className={`text-lg ${color}`}>{icon}</span>
-            <a
-              href={entityLink}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='text-blue-600 hover:text-blue-800 hover:underline font-medium'
-              title={`View ${entityType.toLowerCase()}: ${entityData.name}`}
-            >
-              {entityData.name}
-            </a>
-            <span className='text-gray-500 text-xs'>({label})</span>
-          </div>
-        );
-      } else {
-        return (
-          <div className='flex items-center space-x-2'>
-            <span className={`text-lg ${color}`}>{icon}</span>
-            <span className='font-medium text-gray-900'>{entityData.name}</span>
-            <span className='text-gray-500 text-xs'>({label})</span>
-          </div>
-        );
-      }
+      return (
+        <FullEntityDisplay
+          icon={icon}
+          color={color}
+          name={entityData.name}
+          label={label}
+          entityType={entityType}
+          link={entityLink}
+        />
+      );
     }
   }
 

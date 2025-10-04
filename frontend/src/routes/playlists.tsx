@@ -29,12 +29,11 @@ import {
   useMutationLoadingState,
 } from '../hooks/useMutationState';
 import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
-
-type SortDirection = 'asc' | 'desc';
+import type { SortDirection, PlaylistEnabledFilter } from '../types/shared';
 
 function Playlists() {
   const toast = useToast();
-  const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [filter, setFilter] = useState<PlaylistEnabledFilter>('all');
   const [pageSize, setPageSize] = useState(50);
   const [sortField, setSortField] = useState<PlaylistSortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');

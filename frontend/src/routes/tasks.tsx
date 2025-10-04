@@ -2,9 +2,7 @@ import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useCallback, useMemo } from 'react';
-import type { TaskCount } from '../types/common';
 import { SearchInput } from '../components/ui/SearchInput';
-import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { useRequestState } from '../hooks/useRequestState';
 import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
@@ -19,10 +17,10 @@ import {
 import EnhancedEntityDisplay from '../components/EnhancedEntityDisplay';
 import { useToast } from '../components/ui/useToast';
 import { useConfirm } from '../hooks/useConfirm';
-
-type TaskStatus = 'running' | 'completed' | 'failed' | 'pending' | 'all';
-type TaskType = 'sync' | 'download' | 'fetch' | 'all';
-type EntityType = 'artist' | 'album' | 'playlist' | 'all';
+import { TaskStatsHeader } from '../components/tasks/TaskStatsHeader';
+import { QueueManagementSection } from '../components/tasks/QueueManagementSection';
+import { ActiveTasksSection } from '../components/tasks/ActiveTasksSection';
+import type { TaskStatus, TaskType, EntityType } from '../types/shared';
 
 function Tasks() {
   const [activeTasksFilter, setActiveTasksFilter] = useState<TaskType>('all');
@@ -244,341 +242,33 @@ function Tasks() {
 
   return (
     <div className='space-y-8'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold text-gray-900'>Background Tasks</h1>
-          <p className='text-gray-600 mt-2'>
-            Monitor active processes and view task history
-          </p>
-        </div>
-        <div className='flex items-center gap-4'>
-          <div className='flex items-center gap-3 text-sm text-blue-600'>
-            <span className='flex items-center gap-2'>
-              <span className='w-2 h-2 bg-blue-500 rounded-full animate-pulse' />
-              {runningTasks.length} active tasks
-            </span>
-            {queueLoading && <InlineSpinner label='Refreshing queue…' />}
-            <span className='text-xs text-gray-500'>
-              (auto-refreshing every 5s)
-            </span>
-          </div>
-          <button
-            onClick={handleRefresh}
-            className='px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm'
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+      <TaskStatsHeader
+        runningTasksCount={runningTasks.length}
+        completedTodayCount={taskStats.completedToday}
+        failedTodayCount={taskStats.failedToday}
+        successRate={taskStats.successRate}
+        queueLoading={queueLoading}
+        onRefresh={handleRefresh}
+      />
 
-      <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-blue-100 rounded-lg'>
-              <div className='w-6 h-6 bg-blue-500 rounded-full animate-pulse' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>Active Tasks</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {runningTasks.length}
-              </p>
-            </div>
-          </div>
-        </div>
+      <QueueManagementSection
+        queueLoading={queueLoading}
+        totalPendingTasks={queueData?.queueStatus?.totalPendingTasks || 0}
+        taskCounts={queueData?.queueStatus?.taskCounts || []}
+        onCancelTasksByName={handleCancelTasksByName}
+        onCancelAllTasks={handleCancelAllTasks}
+      />
 
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-green-100 rounded-lg'>
-              <div className='w-6 h-6 bg-green-500 rounded-full' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>
-                Completed Today
-              </p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {taskStats.completedToday}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-red-100 rounded-lg'>
-              <div className='w-6 h-6 bg-red-500 rounded-full' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>Failed Today</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {taskStats.failedToday}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center'>
-            <div className='p-2 bg-purple-100 rounded-lg'>
-              <div className='w-6 h-6 bg-purple-500 rounded-full' />
-            </div>
-            <div className='ml-4'>
-              <p className='text-sm font-medium text-gray-600'>Success Rate</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {taskStats.successRate}%
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
-        <div className='px-6 py-4 border-b border-gray-200'>
-          <div className='flex items-center justify-between'>
-            <h2 className='text-lg font-semibold text-gray-900'>
-              Huey Queue Management
-            </h2>
-            <div className='flex items-center gap-2'>
-              <span className='text-sm text-gray-600'>
-                {queueLoading
-                  ? 'Loading...'
-                  : `${queueData?.queueStatus?.totalPendingTasks || 0} pending tasks`}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className='p-6'>
-          {queueData?.queueStatus?.totalPendingTasks === 0 ? (
-            <div className='text-center py-8 text-gray-500'>
-              <div className='text-4xl mb-4'>✅</div>
-              <p>No pending tasks in Huey queue</p>
-              <p className='text-sm'>
-                All tasks are either running or completed
-              </p>
-            </div>
-          ) : (
-            <div className='space-y-4'>
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                {queueData?.queueStatus?.taskCounts?.map(
-                  (taskCount: TaskCount) => (
-                    <div
-                      key={taskCount.taskName}
-                      className='flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200'
-                    >
-                      <div>
-                        <div className='font-medium text-gray-900'>
-                          {taskCount.taskName}
-                        </div>
-                        <div className='text-sm text-gray-600'>
-                          {taskCount.count} pending
-                        </div>
-                      </div>
-                      <button
-                        onClick={() =>
-                          handleCancelTasksByName(taskCount.taskName)
-                        }
-                        className='px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600'
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )
-                )}
-              </div>
-
-              <div className='flex justify-center pt-4 border-t border-gray-200'>
-                <button
-                  onClick={handleCancelAllTasks}
-                  className='px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium'
-                >
-                  Cancel All Tasks (Pending & Running)
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
-        <div className='px-6 py-4 border-b border-gray-200'>
-          <div className='flex items-center justify-between'>
-            <h2 className='text-lg font-semibold text-gray-900'>
-              Active Tasks
-            </h2>
-            <div className='flex items-center gap-4'>
-              <select
-                value={activeTasksFilter}
-                onChange={e => setActiveTasksFilter(e.target.value as TaskType)}
-                className='px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-              >
-                <option value='all'>All Types</option>
-                <option value='sync'>Sync</option>
-                <option value='download'>Download</option>
-                <option value='fetch'>Fetch</option>
-              </select>
-              <select
-                value={activeTasksEntityFilter}
-                onChange={e =>
-                  setActiveTasksEntityFilter(e.target.value as EntityType)
-                }
-                className='px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-              >
-                <option value='all'>All Entities</option>
-                <option value='artist'>Artist</option>
-                <option value='album'>Album</option>
-                <option value='playlist'>Playlist</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className='p-6'>
-          {runningTasks.length === 0 ? (
-            <div className='text-center py-8 text-gray-500'>
-              <div className='text-4xl mb-4'>📋</div>
-              <p>No active tasks found</p>
-              <p className='text-sm'>
-                Tasks will appear here when they start running
-              </p>
-            </div>
-          ) : (
-            <div className='space-y-4'>
-              {runningTasks.length > 0 && (
-                <div>
-                  <div className='flex items-center justify-between mb-3'>
-                    <h3 className='text-sm font-medium text-gray-700'>
-                      Running ({runningTasks.length})
-                    </h3>
-                    <button
-                      onClick={() => handleCancelRunningTasksByName('all')}
-                      className='px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600'
-                    >
-                      Cancel All Running
-                    </button>
-                  </div>
-                  <div className='space-y-2'>
-                    {runningTasks.map((task: TaskHistory) => (
-                      <div
-                        key={task.id}
-                        className='flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200'
-                      >
-                        <div className='flex items-center gap-3'>
-                          <div className='w-2 h-2 bg-blue-500 rounded-full animate-pulse' />
-                          <div>
-                            <div className='font-medium text-gray-900'>
-                              {task.type.charAt(0).toUpperCase() +
-                                task.type.slice(1)}{' '}
-                              <EnhancedEntityDisplay
-                                entityType={task.entityType}
-                                entityId={task.entityId}
-                              />
-                            </div>
-                            <div className='text-sm text-gray-600'>
-                              Started{' '}
-                              {new Date(task.startedAt).toLocaleTimeString()}
-                            </div>
-                          </div>
-                        </div>
-                        {task.progressPercentage !== null && (
-                          <div className='text-sm text-gray-600'>
-                            {task.progressPercentage}% complete
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {completedTasks.length > 0 && (
-                <div>
-                  <h3 className='text-sm font-medium text-gray-700 mb-3'>
-                    Completed ({completedTasks.length})
-                  </h3>
-                  <div className='space-y-2'>
-                    {completedTasks.map((task: TaskHistory) => (
-                      <div
-                        key={task.id}
-                        className='flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200'
-                      >
-                        <div className='flex items-center gap-3'>
-                          <div className='w-2 h-2 bg-green-500 rounded-full' />
-                          <div>
-                            <div className='font-medium text-gray-900'>
-                              {task.type.charAt(0).toUpperCase() +
-                                task.type.slice(1)}{' '}
-                              <EnhancedEntityDisplay
-                                entityType={task.entityType}
-                                entityId={task.entityId}
-                              />
-                            </div>
-                            <div className='text-sm text-gray-600'>
-                              Completed{' '}
-                              {task.completedAt
-                                ? new Date(
-                                    task.completedAt
-                                  ).toLocaleTimeString()
-                                : 'Recently'}
-                            </div>
-                          </div>
-                        </div>
-                        {task.durationSeconds && (
-                          <div className='text-sm text-gray-600'>
-                            {task.durationSeconds}s
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {failedTasks.length > 0 && (
-                <div>
-                  <h3 className='text-sm font-medium text-gray-700 mb-3'>
-                    Failed ({failedTasks.length})
-                  </h3>
-                  <div className='space-y-2'>
-                    {failedTasks.map((task: TaskHistory) => (
-                      <div
-                        key={task.id}
-                        className='flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200'
-                      >
-                        <div className='flex items-center gap-3'>
-                          <div className='w-2 h-2 bg-red-500 rounded-full' />
-                          <div>
-                            <div className='font-medium text-gray-900'>
-                              {task.type.charAt(0).toUpperCase() +
-                                task.type.slice(1)}{' '}
-                              <EnhancedEntityDisplay
-                                entityType={task.entityType}
-                                entityId={task.entityId}
-                              />
-                            </div>
-                            <div className='text-sm text-gray-600'>
-                              Failed{' '}
-                              {task.completedAt
-                                ? new Date(
-                                    task.completedAt
-                                  ).toLocaleTimeString()
-                                : 'Recently'}
-                            </div>
-                          </div>
-                        </div>
-                        {task.durationSeconds && (
-                          <div className='text-sm text-gray-600'>
-                            {task.durationSeconds}s
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <ActiveTasksSection
+        runningTasks={runningTasks}
+        completedTasks={completedTasks}
+        failedTasks={failedTasks}
+        activeTasksFilter={activeTasksFilter}
+        activeTasksEntityFilter={activeTasksEntityFilter}
+        onActiveTasksFilterChange={setActiveTasksFilter}
+        onActiveTasksEntityFilterChange={setActiveTasksEntityFilter}
+        onCancelRunningTasksByName={handleCancelRunningTasksByName}
+      />
 
       <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
         <div className='px-6 py-4 border-b border-gray-200'>
