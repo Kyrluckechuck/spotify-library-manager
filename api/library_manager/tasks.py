@@ -203,6 +203,7 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
     name="library_manager.tasks.download_missing_albums_for_artist",
 )
 def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> None:
+    # pylint: disable=too-many-return-statements
     task_history = None
     try:
         # Add delay (if applicable) to reduce chance of flagging when backfilling library
