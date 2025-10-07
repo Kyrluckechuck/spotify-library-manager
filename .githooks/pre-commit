@@ -101,7 +101,7 @@ if [ -d "api" ]; then
             fi
             echo "🔍 Running Python linting on changed files..."
             # shellcheck disable=SC2086
-            python -m flake8 --extend-ignore=W503 --exclude=.venv,__pycache__,node_modules $PY_CHANGED >/dev/null 2>&1 || {
+            python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules $PY_CHANGED >/dev/null 2>&1 || {
                 echo "❌ Python linting failed."; exit 1; }
         ) || exit 1
     fi

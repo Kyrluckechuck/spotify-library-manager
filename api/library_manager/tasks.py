@@ -226,6 +226,11 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             task_history, 0.0, f"Starting download for artist {artist.name}"
         )
 
+        # Check for cancellation before proceeding
+        if check_task_cancellation(task_history):
+            print(f"Task cancelled for artist {artist.name}")
+            return
+
         missing_albums = Album.objects.filter(
             artist=artist,
             downloaded=False,
@@ -236,10 +241,12 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             f"missing albums search for artist {artist.gid} found {missing_albums.count()}"
         )
 
-        if task_history:
-            update_task_progress(
-                task_history, 25.0, f"Found {missing_albums.count()} missing albums"
-            )
+        # Check for cancellation and update progress
+        if check_and_update_progress(
+            task_history, 25.0, f"Found {missing_albums.count()} missing albums"
+        ):
+            print(f"Task cancelled during album search for artist {artist.name}")
+            return
 
         downloader_config = Config()
         # TODO: Re-enable ProcessInfo after fixing circular imports
@@ -250,7 +257,13 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
         #         total=1000,
         #     )
         #     downloader_config.process_info = process_info
-        update_task_progress(task_history, 50.0, "Preparing download configuration")
+
+        # Check for cancellation before preparing config
+        if check_and_update_progress(
+            task_history, 50.0, "Preparing download configuration"
+        ):
+            print(f"Task cancelled during config preparation for artist {artist.name}")
+            return
 
         downloader_config.urls = (
             []
@@ -262,20 +275,32 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             print(
                 f"missing albums search for artist {artist.gid} kicking off {len(downloader_config.urls)}"
             )
-            if task_history:
-                update_task_progress(
-                    task_history,
-                    75.0,
-                    f"Downloading {len(downloader_config.urls)} albums",
-                )
-            # Create callback to update task progress during long downloads
 
+            # Check for cancellation before download
+            if check_and_update_progress(
+                task_history,
+                75.0,
+                f"Downloading {len(downloader_config.urls)} albums",
+            ):
+                print(f"Task cancelled before download for artist {artist.name}")
+                return
+
+            # Create callback to update task progress during long downloads
             def progress_callback(progress_pct: float, message: str):
+                # Check for cancellation during download
+                if check_task_cancellation(task_history):
+                    raise InterruptedError(
+                        f"Download cancelled by user for artist {artist.name}"
+                    )
                 update_task_progress(task_history, progress_pct, message)
 
-            spotdl_wrapper.execute(
-                downloader_config, task_progress_callback=progress_callback
-            )
+            try:
+                spotdl_wrapper.execute(
+                    downloader_config, task_progress_callback=progress_callback
+                )
+            except InterruptedError as e:
+                print(str(e))
+                return
         else:
             print(
                 f"missing albums search for artist {artist.gid} is skipping since there are none missing"
@@ -284,6 +309,11 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
                 update_task_progress(
                     task_history, 100.0, "No missing albums to download"
                 )
+
+        # Final cancellation check before marking complete
+        if check_task_cancellation(task_history):
+            print(f"Task cancelled before completion for artist {artist.name}")
+            return
 
         artist.last_synced_at = Now()
         artist.save()
@@ -398,6 +428,11 @@ def download_playlist(
         task_history.status = "RUNNING"
         task_history.save()
 
+        # Check for cancellation before proceeding
+        if check_task_cancellation(task_history):
+            print(f"Playlist download cancelled: {playlist_url}")
+            return
+
         downloader_config = Config(
             urls=[playlist_url],
             track_artists=tracked,
@@ -408,17 +443,35 @@ def download_playlist(
         # if self is not None:
         #     process_info = ProcessInfo(self, desc="playlist download", total=1000)
         #     downloader_config.process_info = process_info
-        update_task_progress(task_history, 50.0, "Downloading playlist tracks")
+
+        # Check for cancellation before download
+        if check_and_update_progress(task_history, 50.0, "Downloading playlist tracks"):
+            print(f"Playlist download cancelled before download: {playlist_url}")
+            return
 
         # Create callback to update task progress during playlist download
         def playlist_progress_callback(progress_pct: float, message: str):
+            # Check for cancellation during download
+            if check_task_cancellation(task_history):
+                raise InterruptedError(
+                    f"Playlist download cancelled by user: {playlist_url}"
+                )
             update_task_progress(
                 task_history, 50.0 + (progress_pct / 2), message
             )  # Scale to 50-100%
 
-        spotdl_wrapper.execute(
-            downloader_config, task_progress_callback=playlist_progress_callback
-        )
+        try:
+            spotdl_wrapper.execute(
+                downloader_config, task_progress_callback=playlist_progress_callback
+            )
+        except InterruptedError as e:
+            print(str(e))
+            return
+
+        # Final cancellation check
+        if check_task_cancellation(task_history):
+            print(f"Playlist download cancelled before completion: {playlist_url}")
+            return
 
         complete_task(task_history, success=True)
 
