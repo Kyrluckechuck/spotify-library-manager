@@ -2,10 +2,7 @@ import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useCallback, useMemo } from 'react';
-import { SearchInput } from '../components/ui/SearchInput';
 import { useRequestState } from '../hooks/useRequestState';
-import { PageSizeSelector } from '../components/ui/PageSizeSelector';
-import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import {
   GetTaskHistoryDocument,
   GetQueueStatusDocument,
@@ -21,6 +18,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { TaskStatsHeader } from '../components/tasks/TaskStatsHeader';
 import { QueueManagementSection } from '../components/tasks/QueueManagementSection';
 import { ActiveTasksSection } from '../components/tasks/ActiveTasksSection';
+import { TaskHistorySection } from '../components/tasks/TaskHistorySection';
 import type { TaskStatus, TaskType, EntityType } from '../types/shared';
 
 function Tasks() {
@@ -36,9 +34,6 @@ function Tasks() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
-  const [expandedHistoryLogs, setExpandedHistoryLogs] = useState<
-    Record<string, boolean>
-  >({});
 
   const toast = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -271,266 +266,29 @@ function Tasks() {
         onCancelRunningTasksByName={handleCancelRunningTasksByName}
       />
 
-      <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
-        <div className='px-6 py-4 border-b border-gray-200'>
-          <div className='flex items-center justify-between'>
-            <h2 className='text-lg font-semibold text-gray-900'>
-              Task History
-            </h2>
-            <div className='flex items-center gap-4'>
-              <SearchInput
-                onSearch={setSearchQuery}
-                initialValue={searchQuery}
-                placeholder='Search tasks...'
-                className='w-64'
-              />
-              <select
-                value={historyFilter}
-                onChange={e => setHistoryFilter(e.target.value as TaskStatus)}
-                className='px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-              >
-                <option value='all'>All Status</option>
-                <option value='running'>Running</option>
-                <option value='completed'>Completed</option>
-                <option value='failed'>Failed</option>
-                <option value='pending'>Pending</option>
-              </select>
-              <select
-                value={historyTypeFilter}
-                onChange={e => setHistoryTypeFilter(e.target.value as TaskType)}
-                className='px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-              >
-                <option value='all'>All Types</option>
-                <option value='sync'>Sync</option>
-                <option value='download'>Download</option>
-                <option value='fetch'>Fetch</option>
-              </select>
-              <select
-                value={historyEntityFilter}
-                onChange={e =>
-                  setHistoryEntityFilter(e.target.value as EntityType)
-                }
-                className='px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-              >
-                <option value='all'>All Entities</option>
-                <option value='artist'>Artist</option>
-                <option value='album'>Album</option>
-                <option value='playlist'>Playlist</option>
-              </select>
-              <PageSizeSelector
-                pageSize={pageSize}
-                onPageSizeChange={setPageSize}
-                options={[20, 50, 100]}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className='p-6'>
-          {historyLoading ? (
-            <div className='text-center py-8'>
-              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto' />
-              <p className='mt-2 text-gray-600'>
-                {isHistoryRefreshing
-                  ? 'Refreshing task history...'
-                  : 'Loading task history...'}
-              </p>
-            </div>
-          ) : historyError ? (
-            <div className='text-center py-8 text-red-600'>
-              <p>Error loading task history: {historyError.message}</p>
-            </div>
-          ) : historyData?.taskHistory?.edges?.length === 0 ? (
-            <div className='text-center py-8 text-gray-500'>
-              <div className='text-4xl mb-4'>📝</div>
-              <p>No task history found</p>
-              <p className='text-sm'>
-                Task history will appear here as tasks are executed
-              </p>
-            </div>
-          ) : (
-            <div className='space-y-3'>
-              <div className='overflow-x-auto'>
-                <table className='min-w-full divide-y divide-gray-200 text-sm'>
-                  <thead className='bg-gray-50'>
-                    <tr>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Status
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Type
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700 w-48'>
-                        Entity
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Task ID
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Started
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Completed
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Duration
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Progress
-                      </th>
-                      <th className='px-3 py-2 text-left font-medium text-gray-700'>
-                        Logs
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className='divide-y divide-gray-100'>
-                    {historyData?.taskHistory?.edges?.map(
-                      (edge: {
-                        node: {
-                          id: string;
-                          taskId: string;
-                          type: string;
-                          entityType: string;
-                          entityId: string;
-                          status: string;
-                          startedAt: string;
-                          completedAt: string | null;
-                          progressPercentage: number | null;
-                          durationSeconds: number | null;
-                          logMessages: string[];
-                        };
-                      }) => {
-                        const task = edge.node;
-                        const isLogsOpen = !!expandedHistoryLogs[task.id];
-                        return (
-                          <>
-                            <tr key={task.id} className='hover:bg-gray-50'>
-                              <td className='px-3 py-2 whitespace-nowrap'>
-                                <span
-                                  className={`inline-block w-2.5 h-2.5 rounded-full align-middle ${
-                                    task.status === 'RUNNING'
-                                      ? 'bg-blue-500'
-                                      : task.status === 'COMPLETED'
-                                        ? 'bg-green-500'
-                                        : task.status === 'FAILED'
-                                          ? 'bg-red-500'
-                                          : 'bg-gray-400'
-                                  }`}
-                                  title={task.status}
-                                />
-                                <span className='ml-2 text-gray-700 text-xs sm:text-sm'>
-                                  {task.status}
-                                </span>
-                              </td>
-                              <td className='px-3 py-2 whitespace-nowrap text-gray-900'>
-                                {task.type.charAt(0).toUpperCase() +
-                                  task.type.slice(1)}
-                              </td>
-                              <td className='px-3 py-2 text-gray-700 max-w-xs'>
-                                <EnhancedEntityDisplay
-                                  entityType={task.entityType}
-                                  entityId={task.entityId}
-                                  compact={true}
-                                />
-                              </td>
-                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
-                                <span className='font-mono text-xs'>
-                                  {task.taskId}
-                                </span>
-                              </td>
-                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
-                                {new Date(task.startedAt).toLocaleTimeString()}
-                              </td>
-                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
-                                {task.completedAt
-                                  ? new Date(
-                                      task.completedAt
-                                    ).toLocaleTimeString()
-                                  : '-'}
-                              </td>
-                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
-                                {task.durationSeconds
-                                  ? `${task.durationSeconds}s`
-                                  : '-'}
-                              </td>
-                              <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
-                                {task.progressPercentage !== null &&
-                                task.progressPercentage !== undefined
-                                  ? `${task.progressPercentage}%`
-                                  : '-'}
-                              </td>
-                              <td className='px-3 py-2 whitespace-nowrap'>
-                                {task.logMessages &&
-                                task.logMessages.length > 0 ? (
-                                  <button
-                                    type='button'
-                                    className='text-indigo-600 hover:underline text-sm'
-                                    onClick={() =>
-                                      setExpandedHistoryLogs(prev => ({
-                                        ...prev,
-                                        [task.id]: !isLogsOpen,
-                                      }))
-                                    }
-                                    aria-expanded={isLogsOpen}
-                                  >
-                                    {isLogsOpen
-                                      ? 'Hide logs'
-                                      : `Show logs (${task.logMessages.length})`}
-                                  </button>
-                                ) : (
-                                  <span className='text-gray-400 text-sm'>
-                                    None
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                            {isLogsOpen && task.logMessages && (
-                              <tr>
-                                <td colSpan={9} className='px-3 pb-3'>
-                                  <div className='mt-1 bg-gray-50 rounded p-3 text-xs sm:text-sm font-mono text-gray-700 max-h-40 overflow-y-auto'>
-                                    {task.logMessages.map(
-                                      (log: string, idx: number) => (
-                                        <div
-                                          // eslint-disable-next-line react/no-array-index-key
-                                          key={`task-${task.id}-log-${idx}`}
-                                          className='mb-1'
-                                        >
-                                          {log}
-                                        </div>
-                                      )
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {historyData?.taskHistory?.pageInfo?.hasNextPage && (
-                <LoadMoreButton
-                  hasNextPage={historyData.taskHistory.pageInfo.hasNextPage}
-                  loading={historyLoading}
-                  remainingCount={
-                    historyData.taskHistory.totalCount -
-                    historyData.taskHistory.edges.length
-                  }
-                  onLoadMore={() =>
-                    fetchMore({
-                      variables: {
-                        after: historyData.taskHistory.pageInfo.endCursor,
-                      },
-                    })
-                  }
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <TaskHistorySection
+        data={historyData}
+        loading={historyLoading}
+        error={historyError}
+        isRefreshing={isHistoryRefreshing}
+        statusFilter={historyFilter}
+        typeFilter={historyTypeFilter}
+        entityFilter={historyEntityFilter}
+        searchQuery={searchQuery}
+        pageSize={pageSize}
+        onStatusFilterChange={setHistoryFilter}
+        onTypeFilterChange={setHistoryTypeFilter}
+        onEntityFilterChange={setHistoryEntityFilter}
+        onSearchChange={setSearchQuery}
+        onPageSizeChange={setPageSize}
+        onLoadMore={() =>
+          fetchMore({
+            variables: {
+              after: historyData?.taskHistory?.pageInfo?.endCursor,
+            },
+          })
+        }
+      />
 
       <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
         <div className='px-6 py-4 border-b border-gray-200'>

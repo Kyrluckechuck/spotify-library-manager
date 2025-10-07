@@ -10,6 +10,7 @@ import {
 } from '../types/generated/graphql';
 import { useState, useMemo, useEffect } from 'react';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
+import { PageSpinner } from '../components/ui/PageSpinner';
 import { useRequestState } from '../hooks/useRequestState';
 
 // Layout & shared components
@@ -211,7 +212,21 @@ function Artists() {
   const artists = data?.artists?.edges || [];
   const totalCount = data?.artists?.totalCount || 0;
   const pageInfo = data?.artists?.pageInfo;
-  const { isRefreshing: isRefetching } = useRequestState(networkStatus);
+  const { isRefreshing: isRefetching, isInitial: isInitialLoading } =
+    useRequestState(networkStatus);
+
+  // Show loading state on initial load
+  if (isInitialLoading && !data) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title='Artists'
+          subtitle='Manage and track your favorite artists'
+        />
+        <PageSpinner message='Loading artists...' />
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>

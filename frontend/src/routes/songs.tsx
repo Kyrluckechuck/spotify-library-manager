@@ -8,6 +8,7 @@ import { PageContainer } from '../components/layout/PageContainer';
 import { PageHeader } from '../components/layout/PageHeader';
 import { DataTable } from '../components/common/DataTable';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
+import { PageSpinner } from '../components/ui/PageSpinner';
 import { useRequestState } from '../hooks/useRequestState';
 import { FilterBar } from '../components/common/FilterBar';
 
@@ -108,7 +109,21 @@ function Songs() {
   }, [data?.songs?.edges, filter]);
   const totalCount = data?.songs?.totalCount || 0;
   const pageInfo = data?.songs?.pageInfo;
-  const { isRefreshing: isRefetching } = useRequestState(networkStatus);
+  const { isRefreshing: isRefetching, isInitial: isInitialLoading } =
+    useRequestState(networkStatus);
+
+  // Show loading state on initial load
+  if (isInitialLoading && !data) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title='Songs'
+          subtitle='Manage and track your downloaded songs'
+        />
+        <PageSpinner message='Loading songs...' />
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>

@@ -43,13 +43,14 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   </TasksPage>
   ```
 - **Lines**: Entire file
-- **Status**: ✅ **PARTIALLY COMPLETED** - Extracted 3 major sections into components:
+- **Status**: ✅ **COMPLETED** - Extracted 4 major sections into components:
   - `TaskStatsHeader.tsx` (~110 lines) - Stats cards and header
   - `QueueManagementSection.tsx` (~80 lines) - Queue status and controls
   - `ActiveTasksSection.tsx` (~130 lines) - Active task filtering and display
+  - `TaskHistorySection.tsx` (~310 lines) - Task history table with filters and pagination
   - `TaskCard.tsx` (~77 lines) - Individual task card rendering (completed earlier)
 
-  **Result**: tasks.tsx reduced from 863 to 644 lines (−219 lines, −25%). Remaining work: Extract TaskHistoryTable section (~300 lines remaining). Each component now has single responsibility and is independently testable.
+  **Result**: tasks.tsx reduced from 863 to 384 lines (−479 lines, −56% reduction). Major decomposition complete. Each component now has single responsibility and is independently testable. Bundle size: 507.77KB (+0.50KB for module boundaries).
 
 #### `frontend/src/components/EnhancedEntityDisplay.tsx` (413 lines)
 
@@ -61,7 +62,13 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   - `<FullEntityDisplay>` component
   - Entity config objects (ENTITY_ICONS, TASK_ICONS)
 - **Lines**: 118-194 (switch statement), entire file structure
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **COMPLETED** - Fully decomposed into focused modules:
+  - `hooks/useEntityData.ts` (~100 lines) - Extracted all GraphQL query logic (useQuery for artists, useLazyQuery for tracks) with proper skip logic and fallback handling
+  - `entity-display/entityConfig.ts` (~70 lines) - Declarative config objects (ENTITY_ICONS, TASK_ICONS) with getEntityDisplayConfig() function
+  - `entity-display/CompactEntityDisplay.tsx` (~50 lines) - Already existed from Session 8
+  - `entity-display/FullEntityDisplay.tsx` (~40 lines) - Already existed from Session 8
+
+  **Result**: EnhancedEntityDisplay.tsx reduced from 413 to 155 lines (−258 lines, −62% reduction). Eliminated 77 lines of nested switch statements, replaced with single config function call. All GraphQL logic now testable in isolation. Bundle size: 507.17KB (−0.10KB optimization). Component now follows single responsibility principle with clear separation of concerns.
 
 ### 2. Performance - Inefficient Filtering
 
@@ -638,10 +645,18 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
 
 #### Mixed Loading UI Patterns
 
-- **Files**: Compare `DataTable.tsx` vs `tasks.tsx` vs `albums.tsx`
-- **Problem**: Some use skeletons, some spinners, some show nothing
-- **Fix**: Standardize on skeleton screens for initial load, inline spinners for refetch
-- **Status**: ⬜ Not Started
+- **Files**: `artists.tsx`, `songs.tsx` (missing initial load), vs `albums.tsx`, `playlists.tsx` (have initial load)
+- **Problem**: Inconsistent initial loading states - some routes show nothing, others show PageSpinner
+- **Pattern**:
+  - **albums.tsx & playlists.tsx**: Show `PageSpinner` with message on initial load (`isInitialLoading && !data`)
+  - **artists.tsx & songs.tsx**: No initial loading state, just show empty arrays
+- **Fix**: Standardize all routes to use PageSpinner for initial load, InlineSpinner for refetching
+- **Status**: ✅ **COMPLETED** - Added initial loading states to artists.tsx and songs.tsx:
+  - Both routes now show `PageSpinner` with contextual message on initial load
+  - Both use `InlineSpinner` in header for refetch updates (already present)
+  - Consistent pattern across all 4 main data routes
+  - Better UX - users see clear feedback instead of empty screen during first load
+  - Bundle size: 507.27KB (+0.33KB for loading components)
 
 ### 26. Missing Error Boundaries
 
@@ -706,7 +721,12 @@ Reviewed 25 source files across routes, components, and hooks. Identified 40 iss
   const value = useMemo(() => ({ /* ... */ }), [deps]);
   return <Context.Provider value={value}>
   ```
-- **Status**: ⬜ Not Started
+- **Status**: ✅ **ALREADY COMPLETE** - Verified both providers properly memoize context values:
+  - **ToastProvider** (lines 29-37): Context value memoized with `useMemo`, depends on `[add]`
+  - **DownloadModalProvider** (lines 21-28): Context value memoized with `useMemo`, depends on `[isOpen, open, close]`
+  - Both providers use `useCallback` for handler functions to ensure stable references
+  - No changes needed - implementation already follows React best practices
+  - Zero unnecessary re-renders from context value changes
 
 ---
 

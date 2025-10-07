@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useQuery, useLazyQuery } from '@apollo/client/react';
-import { GetArtistDocument, GetSongDocument } from '../types/generated/graphql';
+import React from 'react';
+import { useEntityData } from '../hooks/useEntityData';
+import { getEntityDisplayConfig } from './entity-display/entityConfig';
 import { CompactEntityDisplay } from './entity-display/CompactEntityDisplay';
 import { FullEntityDisplay } from './entity-display/FullEntityDisplay';
 
@@ -11,193 +11,23 @@ interface EnhancedEntityDisplayProps {
   compact?: boolean;
 }
 
-interface EntityData {
-  id: string;
-  name: string;
-  url?: string;
-  gid?: string;
-  primaryArtist?: string;
-}
-
 const EnhancedEntityDisplay: React.FC<EnhancedEntityDisplayProps> = ({
   entityType,
   entityId,
   taskType,
   compact = false,
 }) => {
-  const [entityData, setEntityData] = useState<EntityData | null>(null);
+  const { entityData, loading, isSpotifyUrl, isTestName } = useEntityData(
+    entityType,
+    entityId
+  );
 
-  // Helper function to determine if entity ID is a Spotify URL
-  const isSpotifyUrl = (id: string): boolean => {
-    return (
-      id.startsWith('//open.spotify.com/') ||
-      id.startsWith('https://open.spotify.com/')
-    );
-  };
-
-  // Helper function to determine if entity ID is a test name
-  const isTestName = (id: string): boolean => {
-    return id.startsWith('test-');
-  };
-
-  // Helper function to determine if entity ID should be skipped for GraphQL queries
-  const shouldSkipGraphQL = (id: string): boolean => {
-    // Only skip GraphQL for truly problematic formats:
-    // 1. Full Spotify URLs
-    // 2. Test names
-    // Note: Numeric IDs are now handled by the backend services
-    return isSpotifyUrl(id) || isTestName(id);
-  };
-
-  const shouldSkip = shouldSkipGraphQL(entityId);
-  const upperEntityType = entityType.toUpperCase();
-
-  // Use typed hooks based on entity type
-  const artistQuery = useQuery(GetArtistDocument, {
-    variables: { id: entityId },
-    skip: shouldSkip || upperEntityType !== 'ARTIST',
-    fetchPolicy: 'cache-first',
-    errorPolicy: 'ignore',
-  });
-
-  // Album and playlist queries are not available as single entity queries
-  // So we'll skip GraphQL fetching for these types and use fallback display
-  const albumQuery = { data: undefined, loading: false };
-  const playlistQuery = { data: undefined, loading: false };
-
-  const [getSong, songQuery] = useLazyQuery(GetSongDocument, {
-    fetchPolicy: 'cache-first',
-    errorPolicy: 'ignore',
-  });
-
-  // Trigger song query when needed
-  useEffect(() => {
-    if (!shouldSkip && upperEntityType === 'TRACK') {
-      getSong({ variables: { id: entityId } });
-    }
-  }, [entityId, shouldSkip, upperEntityType, getSong]);
-
-  // Determine which query result to use
-  const activeQuery =
-    upperEntityType === 'ARTIST'
-      ? artistQuery
-      : upperEntityType === 'ALBUM'
-        ? albumQuery
-        : upperEntityType === 'PLAYLIST'
-          ? playlistQuery
-          : upperEntityType === 'TRACK'
-            ? songQuery
-            : { data: undefined, loading: false };
-
-  const { data, loading } = activeQuery;
-
-  useEffect(() => {
-    if (data) {
-      let entity: EntityData | null = null;
-
-      if (upperEntityType === 'ARTIST' && artistQuery.data?.artist) {
-        entity = {
-          id: artistQuery.data.artist.id.toString(),
-          name: artistQuery.data.artist.name,
-          gid: artistQuery.data.artist.gid,
-        };
-      } else if (upperEntityType === 'TRACK' && songQuery.data?.song) {
-        entity = {
-          id: songQuery.data.song.id.toString(),
-          name: songQuery.data.song.name,
-          gid: songQuery.data.song.gid,
-          primaryArtist: songQuery.data.song.primaryArtist,
-        };
-      }
-      // Note: Album and playlist queries are not available as single entity queries
-      // so we rely on fallback display for these entity types
-
-      setEntityData(entity);
-    }
-  }, [data, upperEntityType, artistQuery.data, songQuery.data]);
-
-  // Helper function to get the appropriate icon and color based on entity type and task type
-  const getEntityDisplay = () => {
-    const baseEntity = entityType.toUpperCase();
-
-    // Handle different task types with appropriate icons
-    if (taskType) {
-      const task = taskType.toUpperCase();
-
-      switch (task) {
-        case 'FETCH':
-          switch (baseEntity) {
-            case 'ARTIST':
-              return { icon: '🎤', label: 'ARTIST', color: 'text-blue-600' };
-            case 'ALBUM':
-              return { icon: '💿', label: 'ALBUM', color: 'text-purple-600' };
-            case 'PLAYLIST':
-              return { icon: '📜', label: 'PLAYLIST', color: 'text-green-600' };
-            default:
-              return { icon: '🔍', label: baseEntity, color: 'text-gray-600' };
-          }
-
-        case 'SYNC':
-          switch (baseEntity) {
-            case 'ARTIST':
-              return { icon: '🔄', label: 'ARTIST', color: 'text-blue-600' };
-            case 'PLAYLIST':
-              return { icon: '📜', label: 'PLAYLIST', color: 'text-green-600' };
-            case 'ALBUM':
-              return { icon: '💿', label: 'ALBUM', color: 'text-purple-600' };
-            default:
-              return { icon: '🔄', label: baseEntity, color: 'text-gray-600' };
-          }
-
-        case 'DOWNLOAD':
-          switch (baseEntity) {
-            case 'ARTIST':
-              return { icon: '🎤', label: 'ARTIST', color: 'text-blue-600' };
-            case 'PLAYLIST':
-              return { icon: '📜', label: 'PLAYLIST', color: 'text-green-600' };
-            case 'ALBUM':
-              return { icon: '💿', label: 'ALBUM', color: 'text-purple-600' };
-            case 'TRACK':
-              return { icon: '🎵', label: 'TRACK', color: 'text-orange-600' };
-            default:
-              return { icon: '⬇️', label: baseEntity, color: 'text-gray-600' };
-          }
-
-        default:
-          // Fallback for unknown task types
-          switch (baseEntity) {
-            case 'ARTIST':
-              return { icon: '🎤', label: 'ARTIST', color: 'text-blue-600' };
-            case 'PLAYLIST':
-              return { icon: '📜', label: 'PLAYLIST', color: 'text-green-600' };
-            case 'ALBUM':
-              return { icon: '💿', label: 'ALBUM', color: 'text-purple-600' };
-            case 'TRACK':
-              return { icon: '🎵', label: 'TRACK', color: 'text-orange-600' };
-            default:
-              return { icon: '❓', label: baseEntity, color: 'text-gray-600' };
-          }
-      }
-    }
-
-    // Fallback for when no task type is provided
-    switch (baseEntity) {
-      case 'ARTIST':
-        return { icon: '🎤', label: 'ARTIST', color: 'text-blue-600' };
-      case 'PLAYLIST':
-        return { icon: '📜', label: 'PLAYLIST', color: 'text-green-600' };
-      case 'ALBUM':
-        return { icon: '💿', label: 'ALBUM', color: 'text-purple-600' };
-      case 'TRACK':
-        return { icon: '🎵', label: 'TRACK', color: 'text-orange-600' };
-      default:
-        return { icon: '❓', label: baseEntity, color: 'text-gray-600' };
-    }
-  };
+  // Get display configuration from centralized config
+  const { icon, label, color } = getEntityDisplayConfig(entityType, taskType);
 
   // Helper function to create display name for special entity ID formats
   const getSpecialEntityDisplay = (): { name: string; url?: string } | null => {
-    if (isSpotifyUrl(entityId)) {
+    if (isSpotifyUrl) {
       // Extract playlist ID from Spotify URL
       const playlistIdMatch = entityId.match(/playlist\/([a-zA-Z0-9]+)/);
       const playlistId = playlistIdMatch ? playlistIdMatch[1] : entityId;
@@ -207,7 +37,7 @@ const EnhancedEntityDisplay: React.FC<EnhancedEntityDisplayProps> = ({
       };
     }
 
-    if (isTestName(entityId)) {
+    if (isTestName) {
       return {
         name: entityId.replace('test-', 'Test Playlist '),
         url: undefined,
@@ -216,8 +46,6 @@ const EnhancedEntityDisplay: React.FC<EnhancedEntityDisplayProps> = ({
 
     return null;
   };
-
-  const { icon, label, color } = getEntityDisplay();
   const entityLink = entityData?.url;
   const specialEntity = getSpecialEntityDisplay();
 
