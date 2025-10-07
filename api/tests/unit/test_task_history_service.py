@@ -269,3 +269,74 @@ class TestTaskHistoryService:
 
         assert len(items) >= 1
         assert all(item.type == TaskType.SYNC for item in items)
+
+    @pytest.mark.django_db
+    @pytest.mark.asyncio
+    async def test_cancelled_status_mapping(self, task_history_service):
+        """Test that CANCELLED status is properly mapped to GraphQL type."""
+        from library_manager.models import TaskHistory as DjangoTaskHistory
+
+        # Create a task and mark it as cancelled
+        django_task = await task_history_service.create_task(
+            task_id="test_cancelled_mapping",
+            task_type=TaskType.DOWNLOAD,
+            entity_id="artist_123",
+            entity_type=EntityType.ARTIST,
+        )
+
+        # Manually set status to CANCELLED (simulating cancellation)
+        django_task.status = "CANCELLED"
+        await sync_to_async(django_task.save)()
+
+        # Refresh from DB and convert to GraphQL type
+        refreshed_task = await sync_to_async(DjangoTaskHistory.objects.get)(
+            task_id="test_cancelled_mapping"
+        )
+        graphql_task = task_history_service._to_graphql_type(refreshed_task)
+
+        # Verify CANCELLED status is properly mapped
+        assert graphql_task.status == TaskStatus.CANCELLED
+        assert refreshed_task.status == "CANCELLED"
+
+    @pytest.mark.django_db
+    @pytest.mark.asyncio
+    async def test_get_connection_filters_cancelled_tasks(self, task_history_service):
+        """Test that cancelled tasks can be filtered in queries."""
+        # Create a running task and a cancelled task
+        running_task = await task_history_service.create_task(
+            task_id="running_task_filter",
+            task_type=TaskType.DOWNLOAD,
+            entity_id="artist_456",
+            entity_type=EntityType.ARTIST,
+        )
+        running_task.status = "RUNNING"
+        await sync_to_async(running_task.save)()
+
+        cancelled_task = await task_history_service.create_task(
+            task_id="cancelled_task_filter",
+            task_type=TaskType.DOWNLOAD,
+            entity_id="artist_789",
+            entity_type=EntityType.ARTIST,
+        )
+        cancelled_task.status = "CANCELLED"
+        await sync_to_async(cancelled_task.save)()
+
+        # Query for RUNNING tasks only
+        running_items, _, _ = await task_history_service.get_connection(
+            first=10, status=TaskStatus.RUNNING
+        )
+
+        # Verify cancelled task is not in RUNNING results
+        running_task_ids = [item.task_id for item in running_items]
+        assert "running_task_filter" in running_task_ids
+        assert "cancelled_task_filter" not in running_task_ids
+
+        # Query for CANCELLED tasks only
+        cancelled_items, _, _ = await task_history_service.get_connection(
+            first=10, status=TaskStatus.CANCELLED
+        )
+
+        # Verify only cancelled tasks are returned
+        cancelled_task_ids = [item.task_id for item in cancelled_items]
+        assert "cancelled_task_filter" in cancelled_task_ids
+        assert "running_task_filter" not in cancelled_task_ids

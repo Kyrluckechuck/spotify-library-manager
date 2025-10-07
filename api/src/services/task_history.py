@@ -40,6 +40,7 @@ class TaskHistoryService(BaseService[TaskHistory]):
                 TaskStatus.RUNNING: "RUNNING",
                 TaskStatus.COMPLETED: "COMPLETED",
                 TaskStatus.FAILED: "FAILED",
+                TaskStatus.CANCELLED: "CANCELLED",
             }
             queryset = queryset.filter(status=status_mapping.get(status, status.value))
 
@@ -98,6 +99,7 @@ class TaskHistoryService(BaseService[TaskHistory]):
             "RUNNING": TaskStatus.RUNNING,
             "COMPLETED": TaskStatus.COMPLETED,
             "FAILED": TaskStatus.FAILED,
+            "CANCELLED": TaskStatus.CANCELLED,
         }
 
         type_mapping = {

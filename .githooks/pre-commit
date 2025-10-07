@@ -37,7 +37,7 @@ if [ -d "frontend" ]; then
             # GraphQL generated types validation when queries/types changed
             if [ -n "$FE_GQL_TYPES" ] || [ -n "$FE_GQL_QUERIES" ]; then
                 echo "🔎 GraphQL generated types validation..."
-                yarn -s validate-types >/dev/null 2>&1 || { echo "❌ GraphQL types validation failed."; exit 1; }
+                GRAPHQL_CODEGEN_ENDPOINT=http://localhost:3000/graphql yarn -s validate-schema >/dev/null 2>&1 || { echo "❌ GraphQL types validation failed."; exit 1; }
             fi
             # TypeScript type check only if TS files changed
             if [ -n "$FE_TS_FILES" ]; then

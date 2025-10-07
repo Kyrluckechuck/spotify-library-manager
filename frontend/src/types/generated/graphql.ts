@@ -433,6 +433,7 @@ export type TaskHistoryEdge = {
 };
 
 export type TaskStatus =
+  | 'CANCELLED'
   | 'COMPLETED'
   | 'FAILED'
   | 'PENDING'

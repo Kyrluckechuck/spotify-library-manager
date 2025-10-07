@@ -21,6 +21,7 @@ class TaskStatus(Enum):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     PENDING = "PENDING"
+    CANCELLED = "CANCELLED"
 
 
 @strawberry.enum
