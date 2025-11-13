@@ -1,8 +1,22 @@
-.PHONY: build-and-publish dev dev-container dev-container-update dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db docker-cleanup docker-cleanup-full docker-status
+.PHONY: build-and-publish dev dev-container dev-container-branch dev-container-update dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db docker-cleanup docker-cleanup-full docker-status
 
 # Main development command - starts all services
 dev:
 	python dev.py
+
+# Auto-detect branch and set BACKEND_IMAGE_TAG for branch-specific images
+# Usage: make dev-container-branch (tries current branch, falls back to latest)
+dev-container-branch:
+	@BRANCH=$$(git branch --show-current | sed 's/\//-/g'); \
+	echo "🔍 Detected branch: $$BRANCH"; \
+	if docker manifest inspect ghcr.io/kyrluckechuck/spotify-library-manager:$$BRANCH > /dev/null 2>&1; then \
+		echo "✅ Found image for branch '$$BRANCH' on GHCR"; \
+		BACKEND_IMAGE_TAG=$$BRANCH docker compose up -d; \
+	else \
+		echo "⚠️  No image found for branch '$$BRANCH', using 'latest'"; \
+		docker compose up -d; \
+	fi
+	@echo "✅ Containers started. Use 'make dev-container-logs' to view logs."
 
 # Dev container: run compose with optional local override if present (detached)
 dev-container:

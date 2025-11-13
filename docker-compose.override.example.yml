@@ -7,16 +7,21 @@
 # - Frontend development: Separate Vite dev server for frontend development
 # - Testing: Run 'make test-docker' for complete test suite including frontend
 # - PostgreSQL: Exposed on port 5432 for direct database access
+# - Branch-specific images: Set BACKEND_IMAGE_TAG env var to use branch images from GHCR
 
 services:
     web:
-        # Build locally instead of using pre-built image
-        build: .
+        # Use GHCR image by default, build locally when needed (docker compose build)
+        # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
+        image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
+        build:
+            context: .
+            target: backend-dev
         # Development command with enhanced debugging and live reload
         command: bash -c "
             echo '🚀 Starting web service (DEV MODE)...';
-            echo '📦 Installing dependencies...';
-            pip install -r requirements.txt -r requirements-dev.txt &&
+            echo '📦 Installing dev dependencies...';
+            pip install -r requirements-dev.txt &&
             echo '📊 Environment check:';
             echo 'Python version:' $(python --version);
             echo 'Working directory:' $(pwd);
@@ -35,6 +40,12 @@ services:
             # Development environment settings
             - DJANGO_DEBUG=True
             - INSTALL_DEV_DEPS=true
+            # Database configuration
+            - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+            - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+            - POSTGRES_HOST=postgres
+            - POSTGRES_PORT=5432
         volumes:
             # Live code sync for development
             - ./api:/app
@@ -43,48 +54,107 @@ services:
             - python_packages:/app/.venv
             - pip_cache:/root/.cache/pip
 
+    # Disable main frontend service in favor of frontend-dev
     frontend:
-        # Development frontend with hot reloading
+        profiles:
+            - disabled
+
+    # Development frontend service
+    frontend-dev:
         build:
             context: ./frontend
-            target: build # Stop at the Node.js stage, don't build nginx
+            target: development  # Use development stage that skips build step
             args:
                 - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
         command: yarn dev --host 0.0.0.0 --port 3000
         volumes:
             # Live code sync for development hot reloading
             - ./frontend:/app
-            - /app/node_modules # Prevent overwriting node_modules
+            - /app/node_modules  # Prevent overwriting node_modules
         environment:
-            - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
+            - VITE_API_URL=${VITE_API_URL:-/graphql}
         ports:
-            - "3000:3000"
-
-    # Frontend development container for testing (use with --profile testing)
-    frontend-dev:
-        build:
-            context: ./frontend
-            target: build
-        command: tail -f /dev/null # Keep container running for exec commands
-        volumes:
-            - ./frontend:/app
-            - /app/node_modules
-        profiles:
-            - testing # Only started when explicitly requested
+            - "${FRONTEND_PORT:-3000}:3000"
+        depends_on:
+            web:
+                condition: service_healthy
+        networks:
+            - slm_net
+        healthcheck:
+            test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        restart: unless-stopped
 
     worker:
-        # Build locally and add live code sync
-        build: .
+        # Use GHCR image by default, build locally when needed (docker compose build)
+        # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
+        image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
+        build:
+            context: .
+            target: backend-dev
+        command: bash -c "
+            echo '🔄 Starting Celery worker (DEV MODE with auto-restart)...';
+            echo '📦 Installing dev dependencies...';
+            pip install -r requirements-dev.txt &&
+            echo '🔍 Checking watchdog installation...';
+            python -c 'import watchdog; print(\"Watchdog installed successfully\")' &&
+            echo '👷 Starting Celery worker with auto-restart on code changes...';
+            python -m watchdog.watchmedo auto-restart --directory=/app --pattern='*.py' --recursive --
+            celery -A celery_app worker --loglevel=info
+            "
+        environment:
+            - INSTALL_DEV_DEPS=true
+            # Database configuration
+            - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+            - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+            - POSTGRES_HOST=postgres
+            - POSTGRES_PORT=5432
         volumes:
             # Live code sync for development
             - ./api:/app
+            - ./requirements.txt:/app/requirements.txt
+            - ./requirements-dev.txt:/app/requirements-dev.txt
+            - ./pyproject.toml:/app/pyproject.toml
+            - ./pytest.ini:/app/pytest.ini
+            - python_packages:/app/.venv
+            - pip_cache:/root/.cache/pip
 
     beat:
-        # Build locally and add live code sync
-        build: .
+        # Use GHCR image by default, build locally when needed (docker compose build)
+        # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
+        image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
+        build:
+            context: .
+            target: backend-dev
+        command: bash -c "
+            echo '📅 Starting Celery beat (DEV MODE with auto-restart)...';
+            echo '📦 Installing dev dependencies...';
+            pip install -r requirements-dev.txt &&
+            echo '⏰ Starting Celery beat with auto-restart on code changes...';
+            python -m watchdog.watchmedo auto-restart --directory=/app --pattern='*.py' --recursive --
+            celery -A celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+            "
+        environment:
+            - INSTALL_DEV_DEPS=true
+            # Database configuration
+            - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+            - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+            - POSTGRES_HOST=postgres
+            - POSTGRES_PORT=5432
         volumes:
             # Live code sync for development
             - ./api:/app
+            - ./requirements.txt:/app/requirements.txt
+            - ./requirements-dev.txt:/app/requirements-dev.txt
+            - ./pyproject.toml:/app/pyproject.toml
+            - ./pytest.ini:/app/pytest.ini
+            - python_packages:/app/.venv
+            - pip_cache:/root/.cache/pip
 
     postgres:
         # Override user for development to match host user
