@@ -266,3 +266,23 @@ class QueueStatus:
     total_pending_tasks: int
     task_counts: List[TaskCount]
     queue_size: int
+
+
+@strawberry.type
+class AuthenticationStatus:
+    """Authentication status for Spotify downloads."""
+
+    cookies_valid: bool
+    cookies_error_type: Optional[str] = None  # 'missing', 'malformed', 'expired'
+    cookies_error_message: Optional[str] = None
+    cookies_expire_in_days: Optional[int] = None
+    po_token_configured: bool = False
+
+
+@strawberry.type
+class SystemHealth:
+    """Overall system health status."""
+
+    can_download: bool
+    download_blocker_reason: Optional[str] = None
+    authentication: AuthenticationStatus

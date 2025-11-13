@@ -6,4 +6,5 @@ class LibraryManagerConfig(AppConfig):
     name = "library_manager"
 
     def ready(self) -> None:
-        pass
+        # Import checks to register them with Django
+        from . import checks  # noqa: F401

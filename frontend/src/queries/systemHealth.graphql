@@ -1,0 +1,13 @@
+query GetSystemHealth {
+  systemHealth {
+    canDownload
+    downloadBlockerReason
+    authentication {
+      cookiesValid
+      cookiesErrorType
+      cookiesErrorMessage
+      cookiesExpireInDays
+      poTokenConfigured
+    }
+  }
+}

@@ -7,6 +7,7 @@ from ..graphql_types.models import (
     AlbumConnection,
     Artist,
     ArtistConnection,
+    AuthenticationStatus,
     HistoryConnection,
     HistoryEdge,
     PageInfo,
@@ -15,6 +16,7 @@ from ..graphql_types.models import (
     QueueStatus,
     Song,
     SongConnection,
+    SystemHealth,
     TaskCount,
     TaskHistoryConnection,
     TaskHistoryEdge,
@@ -253,4 +255,24 @@ class Query:
             total_pending_tasks=status["total_pending_tasks"],
             task_counts=task_counts,
             queue_size=status["queue_size"],
+        )
+
+    @strawberry.field
+    async def system_health(self) -> SystemHealth:
+        """Get overall system health including authentication status."""
+        from ..services.system_health import SystemHealthService
+
+        auth_status = SystemHealthService.check_authentication_status()
+        can_download, reason = SystemHealthService.is_download_capable()
+
+        return SystemHealth(
+            can_download=can_download,
+            download_blocker_reason=reason,
+            authentication=AuthenticationStatus(
+                cookies_valid=auth_status.cookies_valid,
+                cookies_error_type=auth_status.cookies_error_type,
+                cookies_error_message=auth_status.cookies_error_message,
+                cookies_expire_in_days=auth_status.cookies_expire_in_days,
+                po_token_configured=auth_status.po_token_configured,
+            ),
         )

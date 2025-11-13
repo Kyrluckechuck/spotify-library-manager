@@ -422,6 +422,17 @@ def download_playlist(
             entity_type="PLAYLIST",
             task_name="download_playlist",
         )
+
+        # Check authentication status before attempting download
+        from src.services.system_health import SystemHealthService
+
+        can_download, reason = SystemHealthService.is_download_capable()
+        if not can_download:
+            error_msg = f"Cannot download: {reason}"
+            logger.error(error_msg)
+            update_task_progress(task_history, 0.0, error_msg, status="FAILED")
+            raise RuntimeError(error_msg)
+
         update_task_progress(
             task_history, 0.0, f"Starting playlist download: {playlist_url}"
         )

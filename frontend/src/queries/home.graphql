@@ -1,0 +1,16 @@
+query GetSystemStatus {
+  systemHealth {
+    canDownload
+    downloadBlockerReason
+    authentication {
+      cookiesValid
+      cookiesErrorType
+      cookiesExpireInDays
+      poTokenConfigured
+    }
+  }
+  queueStatus {
+    totalPendingTasks
+    queueSize
+  }
+}
