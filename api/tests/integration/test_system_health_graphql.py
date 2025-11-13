@@ -3,20 +3,20 @@
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch
-
-from django.conf import settings
+from unittest.mock import MagicMock, patch
 
 import pytest
+from lib.config_class import Config
 
 from src.schema import schema
 
 
 @pytest.mark.django_db
+@pytest.mark.asyncio
 class TestSystemHealthGraphQL:
     """Integration tests for systemHealth GraphQL query."""
 
-    def test_system_health_query_valid_cookies(self):
+    async def test_system_health_query_valid_cookies(self):
         """Test systemHealth query with valid cookies."""
         # Create temporary valid cookie file
         future_timestamp = int((datetime.now() + timedelta(days=90)).timestamp())
@@ -29,8 +29,12 @@ class TestSystemHealthGraphQL:
             temp_path = Path(f.name)
 
         try:
-            # Patch the cookie file location
-            with patch.object(settings, "COOKIE_FILE_PATH", str(temp_path)):
+            # Mock Config to return temp path
+            mock_config = MagicMock(spec=Config)
+            mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = None
+
+            with patch("src.services.system_health.Config", return_value=mock_config):
                 query = """
                     query {
                         systemHealth {
@@ -47,7 +51,7 @@ class TestSystemHealthGraphQL:
                     }
                 """
 
-                result = schema.execute_sync(query)
+                result = await schema.execute(query)
 
                 assert result.errors is None
                 assert result.data["systemHealth"]["canDownload"] is True
@@ -72,9 +76,13 @@ class TestSystemHealthGraphQL:
         finally:
             temp_path.unlink()
 
-    def test_system_health_query_missing_cookies(self):
+    async def test_system_health_query_missing_cookies(self):
         """Test systemHealth query with missing cookies."""
-        with patch.object(settings, "COOKIE_FILE_PATH", "/nonexistent/cookies.txt"):
+        mock_config = MagicMock(spec=Config)
+        mock_config.cookies_location = "/nonexistent/cookies.txt"
+        mock_config.po_token = None
+
+        with patch("src.services.system_health.Config", return_value=mock_config):
             query = """
                 query {
                     systemHealth {
@@ -90,7 +98,7 @@ class TestSystemHealthGraphQL:
                 }
             """
 
-            result = schema.execute_sync(query)
+            result = await schema.execute(query)
 
             assert result.errors is None
             assert result.data["systemHealth"]["canDownload"] is False
@@ -111,7 +119,7 @@ class TestSystemHealthGraphQL:
                 is not None
             )
 
-    def test_system_health_query_expired_cookies(self):
+    async def test_system_health_query_expired_cookies(self):
         """Test systemHealth query with expired cookies."""
         past_timestamp = int((datetime.now() - timedelta(days=30)).timestamp())
 
@@ -123,7 +131,11 @@ class TestSystemHealthGraphQL:
             temp_path = Path(f.name)
 
         try:
-            with patch.object(settings, "COOKIE_FILE_PATH", str(temp_path)):
+            mock_config = MagicMock(spec=Config)
+            mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = None
+
+            with patch("src.services.system_health.Config", return_value=mock_config):
                 query = """
                     query {
                         systemHealth {
@@ -139,7 +151,7 @@ class TestSystemHealthGraphQL:
                     }
                 """
 
-                result = schema.execute_sync(query)
+                result = await schema.execute(query)
 
                 assert result.errors is None
                 assert result.data["systemHealth"]["canDownload"] is False
@@ -163,7 +175,7 @@ class TestSystemHealthGraphQL:
         finally:
             temp_path.unlink()
 
-    def test_system_health_query_malformed_cookies(self):
+    async def test_system_health_query_malformed_cookies(self):
         """Test systemHealth query with malformed cookies."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
             f.write("# Netscape HTTP Cookie File\n")
@@ -171,7 +183,11 @@ class TestSystemHealthGraphQL:
             temp_path = Path(f.name)
 
         try:
-            with patch.object(settings, "COOKIE_FILE_PATH", str(temp_path)):
+            mock_config = MagicMock(spec=Config)
+            mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = None
+
+            with patch("src.services.system_health.Config", return_value=mock_config):
                 query = """
                     query {
                         systemHealth {
@@ -186,7 +202,7 @@ class TestSystemHealthGraphQL:
                     }
                 """
 
-                result = schema.execute_sync(query)
+                result = await schema.execute(query)
 
                 assert result.errors is None
                 assert result.data["systemHealth"]["canDownload"] is False
@@ -205,27 +221,33 @@ class TestSystemHealthGraphQL:
         finally:
             temp_path.unlink()
 
-    def test_system_health_query_with_queue_status(self):
+    async def test_system_health_query_with_queue_status(self):
         """Test systemHealth query along with queueStatus."""
-        query = """
-            query {
-                systemHealth {
-                    canDownload
-                    authentication {
-                        cookiesValid
+        # Mock Config with valid default path
+        mock_config = MagicMock(spec=Config)
+        mock_config.cookies_location = "/config/cookies.txt"
+        mock_config.po_token = None
+
+        with patch("src.services.system_health.Config", return_value=mock_config):
+            query = """
+                query {
+                    systemHealth {
+                        canDownload
+                        authentication {
+                            cookiesValid
+                        }
+                    }
+                    queueStatus {
+                        totalPendingTasks
+                        queueSize
                     }
                 }
-                queueStatus {
-                    totalPendingTasks
-                    queueSize
-                }
-            }
-        """
+            """
 
-        result = schema.execute_sync(query)
+            result = await schema.execute(query)
 
-        assert result.errors is None
-        assert "systemHealth" in result.data
-        assert "queueStatus" in result.data
-        assert isinstance(result.data["queueStatus"]["totalPendingTasks"], int)
-        assert isinstance(result.data["queueStatus"]["queueSize"], int)
+            assert result.errors is None
+            assert "systemHealth" in result.data
+            assert "queueStatus" in result.data
+            assert isinstance(result.data["queueStatus"]["totalPendingTasks"], int)
+            assert isinstance(result.data["queueStatus"]["queueSize"], int)

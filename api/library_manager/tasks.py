@@ -114,6 +114,32 @@ def check_and_update_progress(
     return False
 
 
+def require_download_capability(task_history: Optional[TaskHistory] = None) -> None:
+    """Check authentication status and block task execution if downloads are not possible.
+
+    This function verifies that the system has valid authentication (cookies) before
+    allowing download tasks to proceed. If authentication is invalid or expired, the
+    task is failed immediately to prevent wasted API calls.
+
+    Args:
+        task_history: Optional task history to update with failure status if auth fails
+
+    Raises:
+        RuntimeError: If downloads are not possible due to authentication issues
+    """
+    from src.services.system_health import SystemHealthService
+
+    can_download, reason = SystemHealthService.is_download_capable()
+    if not can_download:
+        error_msg = f"Cannot download: {reason}"
+        logger.error(error_msg)
+        if task_history:
+            task_history.status = "FAILED"
+            task_history.add_log_message(error_msg)
+            task_history.save()
+        raise RuntimeError(error_msg)
+
+
 def fetch_all_albums_for_artist_sync(artist_id: int) -> None:
     """Synchronous wrapper for fetch_all_albums_for_artist - for direct calls."""
     fetch_all_albums_for_artist.delay(artist_id)
@@ -146,6 +172,9 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
         # Mark as running
         task_history.status = "RUNNING"
         task_history.save()
+
+        # Check authentication before proceeding
+        require_download_capability(task_history)
 
         # Check for cancellation before proceeding
         if check_task_cancellation(task_history):
@@ -226,6 +255,9 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
         update_task_progress(
             task_history, 0.0, f"Starting download for artist {artist.name}"
         )
+
+        # Check authentication before proceeding
+        require_download_capability(task_history)
 
         # Check for cancellation before proceeding
         if check_task_cancellation(task_history):
@@ -423,15 +455,8 @@ def download_playlist(
             task_name="download_playlist",
         )
 
-        # Check authentication status before attempting download
-        from src.services.system_health import SystemHealthService
-
-        can_download, reason = SystemHealthService.is_download_capable()
-        if not can_download:
-            error_msg = f"Cannot download: {reason}"
-            logger.error(error_msg)
-            update_task_progress(task_history, 0.0, error_msg, status="FAILED")
-            raise RuntimeError(error_msg)
+        # Check authentication before proceeding
+        require_download_capability(task_history)
 
         update_task_progress(
             task_history, 0.0, f"Starting playlist download: {playlist_url}"
@@ -516,6 +541,9 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
         print("All songs downloaded, exiting missing known song loop!")
         return
 
+    # Check authentication before proceeding
+    require_download_capability()
+
     failed_song_array = [song.spotify_uri for song in missing_known_songs_list]
 
     print(f"Downloading {len(failed_song_array)} missing songs")
@@ -560,6 +588,10 @@ def download_extra_album_types_for_artist(
     except Artist.DoesNotExist:
         print(f"Artist with ID {artist_id} does not exist. Skipping task.")
         return
+
+    # Check authentication before proceeding
+    require_download_capability()
+
     missing_albums = Album.objects.filter(
         artist=artist,
         downloaded=False,
@@ -753,6 +785,9 @@ def validate_undownloaded_songs(
     if non_downloaded_songs_count == 0:
         print("All songs marked downloaded that should be!")
         return
+
+    # Check authentication before proceeding
+    require_download_capability()
 
     missing_song_array = [song.spotify_uri for song in non_downloaded_songs]
 
