@@ -10,7 +10,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Add check constraint to prevent null task names in TaskResult
+        # First, clean up any existing rows with NULL or empty task_name
+        migrations.RunSQL(
+            sql="""
+            DELETE FROM django_celery_results_taskresult
+            WHERE task_name IS NULL OR task_name = '';
+            """,
+            reverse_sql=migrations.RunSQL.noop,
+        ),
+        # Then add check constraint to prevent null task names in TaskResult
         migrations.RunSQL(
             sql="""
             ALTER TABLE django_celery_results_taskresult
