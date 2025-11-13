@@ -27,6 +27,9 @@ RUN yarn build
 # =============================================================================
 FROM python:3.13-slim-bookworm AS python-base
 
+# Copy deno binary from official deno image (for yt-dlp JavaScript execution)
+COPY --from=denoland/deno:bin-2.5.6 /deno /usr/local/bin/deno
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -43,6 +46,9 @@ RUN apt-get update \
     curl \
  && rm -rf /var/lib/apt/lists/* \
  && apt-get clean
+
+# Verify deno installation
+RUN deno --version
 
 # =============================================================================
 # Stage 3: Python Dependencies (cached unless requirements change)

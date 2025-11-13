@@ -65,7 +65,7 @@ pyyaml
 # Critical: spotdl and yt-dlp (using current versions)
 # Note: FastAPI/Starlette/Rich constraints from spotdl are bypassed above
 spotdl==4.4.2
-yt-dlp==2025.9.23
+yt-dlp[default]==2025.11.12  # Includes yt-dlp-ejs for JavaScript execution (YouTube bot protection)
 
 # Development and linting tools
 flake8>=6.0.0
