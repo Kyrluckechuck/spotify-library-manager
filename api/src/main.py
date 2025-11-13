@@ -205,19 +205,35 @@ def _validate_runtime_configuration() -> None:
     """
     logger = logging.getLogger("api.config")
 
-    # Cookies file for downloader
+    # Cookies file validation - uses comprehensive validator
+    # Note: Django system checks (library_manager/checks.py) provide startup validation
+    # This provides runtime logging for visibility
+    from downloader.cookie_validator import CookieValidator
+
     cookies_path_str = getattr(dj_settings, "cookies_location", "/config/cookies.txt")
     cookies_path = Path(str(cookies_path_str))
-    try:
-        if not cookies_path.exists():
+
+    result = CookieValidator.validate_file(cookies_path)
+    if not result.valid:
+        if result.error_type == "missing":
             logger.warning(
-                "cookies_location not found at %s. Place your Spotify cookies.txt there or set 'cookies_location' in /config/settings.yaml",
+                "cookies_location not found at %s. Place your YouTube Music cookies.txt there or set 'cookies_location' in /config/settings.yaml",
                 cookies_path,
             )
-    except PermissionError:
+        elif result.error_type == "malformed":
+            logger.warning(
+                "Cookies file is malformed: %s. Export cookies in Netscape format from YouTube Music.",
+                result.error_message,
+            )
+        elif result.error_type == "expired":
+            logger.warning(
+                "Cookies have expired: %s. Re-export cookies from YouTube Music.",
+                result.error_message,
+            )
+    elif result.days_until_expiry is not None and result.days_until_expiry < 7:
         logger.warning(
-            "Cannot access cookies_location at %s due to permission error. Service will continue without cookies.",
-            cookies_path,
+            "YouTube Music cookies will expire in %d day(s). Consider re-exporting them soon.",
+            result.days_until_expiry,
         )
 
     # Album selection lists
