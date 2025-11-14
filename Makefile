@@ -184,6 +184,25 @@ format-check-api-isort:
 format-check-frontend:
 	cd frontend && yarn format:check
 
+# Run all API linting without short-circuiting - shows all issues at once
+lint-api-all:
+	@echo "=== Running all API linters (no short-circuit) ==="; \
+	FAIL=0; \
+	echo "\n--- flake8 ---"; \
+	(cd api && python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules) || FAIL=$$(($$FAIL + 1)); \
+	echo "\n--- black ---"; \
+	(cd api && python -m black --check --diff .) || FAIL=$$(($$FAIL + 1)); \
+	echo "\n--- isort ---"; \
+	(cd api && python -m isort --check-only --diff .) || FAIL=$$(($$FAIL + 1)); \
+	echo "\n--- mypy ---"; \
+	(cd api && python -m mypy src/ --config-file ../pyproject.toml) || FAIL=$$(($$FAIL + 1)); \
+	echo "\n--- bandit ---"; \
+	(mkdir -p reports && cd api && python -m bandit -r src/ library_manager/ -f json -o ../reports/bandit-report.json) || true; \
+	echo "\n--- pylint ---"; \
+	(cd api && python -m pylint src/ library_manager/ --rcfile ../pyproject.toml) || FAIL=$$(($$FAIL + 1)); \
+	echo "\n=== Linting complete: $$FAIL check(s) failed ==="; \
+	exit $$FAIL
+
 lint-api: lint-api-flake8 lint-api-black lint-api-isort lint-api-mypy lint-api-bandit lint-api-pylint
 
 lint-api-flake8:
@@ -207,6 +226,17 @@ lint-api-pylint:
 
 lint-frontend:
 	cd frontend && yarn lint
+
+# Run all linting (API + Frontend) without short-circuiting - shows all issues at once
+lint-all:
+	@echo "=== Running all linters (API + Frontend, no short-circuit) ==="; \
+	FAIL=0; \
+	echo "\n========== API Linting =========="; \
+	$(MAKE) lint-api-all || FAIL=$$(($$FAIL + 1)); \
+	echo "\n========== Frontend Linting =========="; \
+	(cd frontend && yarn lint) || FAIL=$$(($$FAIL + 1)); \
+	echo "\n=== All linting complete: $$FAIL section(s) failed ==="; \
+	exit $$FAIL
 
 # Code formatting and auto-fix linting issues
 format: fix-lint-api format-frontend

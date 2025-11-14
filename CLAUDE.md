@@ -42,9 +42,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make test-frontend` - Run frontend tests using Vitest (local Node/Yarn required)
 - `make test-api-docker` - Run API tests in Docker container
 - `make test-frontend-docker` - Run frontend tests in Docker container
-- `make lint` - Run linting for both API and frontend (local tools required)
-- `make lint-api` - Run comprehensive API linting (local Python required)
-- `make lint-frontend` - Run frontend linting using ESLint (local Node/Yarn required)
+
+#### Linting Commands
+- **`make lint-all`** - **RECOMMENDED: Run ALL linters (API + Frontend) without stopping on first failure** - Shows all issues at once for easier fixing
+- **`make lint-api-all`** - **RECOMMENDED: Run ALL API linters without stopping on first failure** - Shows all API issues at once
+- `make lint-api` - Run comprehensive API linting (stops on first failure)
+- `make lint-frontend` - Run frontend linting using ESLint
 - `make format` - Format code for both API and frontend (local tools required)
 
 ### Docker Operations
@@ -150,6 +153,25 @@ This is a **full-stack Spotify library management application** with the followi
 - **pytest** for Python testing with coverage reporting
 - **Vitest** for frontend testing
 - **Coverage targets**: 80%+ for critical paths
+
+### Linting Workflow
+
+**For Claude Code users:** When fixing linting issues, use `make lint-all` or `make lint-api-all` instead of the standard `make lint-api` command. This runs all linters without stopping on the first failure, allowing you to see and fix all issues at once.
+
+**Standard linting commands** (`make lint-api`, `make lint-frontend`) stop at the first failure, requiring multiple iterations to fix all issues.
+
+**Comprehensive linting commands** (`make lint-all`, `make lint-api-all`) continue through all checks even if some fail, showing you the complete list of issues. This is especially useful when:
+- Making changes that affect multiple files
+- Fixing linting issues reported by CI/CD
+- Reviewing code quality before committing
+
+**What each linter checks:**
+- **flake8**: PEP 8 style violations, unused imports, complexity
+- **black**: Code formatting (88 char line length)
+- **isort**: Import statement ordering
+- **mypy**: Type annotations and type safety
+- **bandit**: Security vulnerabilities (always passes, generates report)
+- **pylint**: Code quality, potential bugs, code smells
 
 ## Important Development Patterns
 
