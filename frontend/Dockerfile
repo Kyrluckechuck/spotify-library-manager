@@ -46,6 +46,8 @@ RUN yarn build
 # Stage 6: Production (nginx serving)
 # =============================================================================
 FROM nginx:alpine AS production
+# Install wget for healthcheck
+RUN apk add --no-cache wget
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
