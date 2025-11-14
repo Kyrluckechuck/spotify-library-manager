@@ -182,8 +182,8 @@ An example compose setup is included. Follow these steps:
    
    This starts all three services:
    - **API Server** (http://localhost:5000/graphql)
-   - **Frontend Server** (http://localhost:3000) 
-   - **Huey Worker** (background task processing)
+   - **Frontend Server** (http://localhost:3000)
+   - **Celery Worker** (background task processing)
 
 3. **Test the setup:**
    ```bash
@@ -198,7 +198,7 @@ All commands can be run from the root directory without any `cd` commands. All c
 - `make dev` - Start all services (API, Frontend, Worker)
 - `make dev-api` - Start only the API server
 - `make dev-frontend` - Start only the frontend dev server
-- `make dev-worker` - Start only the Huey worker
+- `make dev-worker` - Start only the Celery worker
 
 **Installation:**
 - `make install` - Install both API and frontend dependencies
@@ -238,24 +238,23 @@ All commands can be run from the root directory without any `cd` commands. All c
 - Graceful error handling and recovery
 
 #### ✅ **Performance Optimizations**
-- 2 Huey workers for parallel task processing
-- Thread-based workers for I/O bound operations
-- Faster polling and reduced latency
+- Celery workers for parallel task processing
+- PostgreSQL-backed task queue for reliability
+- Faster task execution and reduced latency
 - Higher concurrency limits for the API server
 
 ### Configuration
 
-For development, you can customize the Huey settings in `api/settings.py`:
+For development, you can customize the Celery settings in `api/settings.py`:
 
 ```python
-HUEY = {
-    'workers': 2,  # Number of worker threads
-    'worker_type': 'thread',  # Thread-based workers
-    'immediate': False,  # Keep False for proper async behavior
-    'results': True,  # Enable result storage
-    'blocking': False,  # Non-blocking mode
-}
+CELERY_BROKER_URL = 'db+postgresql://...'  # PostgreSQL as message broker
+CELERY_RESULT_BACKEND = 'db+postgresql://...'  # Results stored in PostgreSQL
+CELERY_WORKER_CONCURRENCY = 4  # Number of worker processes
+CELERY_TASK_ALWAYS_EAGER = False  # Async task execution
 ```
+
+Periodic tasks are configured via Django admin at http://localhost:5000/admin/django_celery_beat/
 
 ### Troubleshooting
 
@@ -263,12 +262,12 @@ If you encounter issues:
 
 1. **Check service status:**
    ```bash
-   python test_dev_setup.py
+   docker compose ps
    ```
 
-2. **Verify Huey worker is running:**
-   - Look for `[HUEY]` logs in the output
-   - Check if `huey.db` exists and has recent activity
+2. **Verify Celery worker is running:**
+   - Check worker logs: `docker compose logs worker`
+   - Check beat scheduler logs: `docker compose logs beat`
 
 3. **Reset the environment:**
    ```bash

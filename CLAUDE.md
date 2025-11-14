@@ -91,6 +91,31 @@ This is a **full-stack Spotify library management application** with the followi
 - `beat`: Celery beat scheduler for periodic tasks
 - `postgres`: PostgreSQL database (port 5432, exposed for testing)
 
+### Known Limitations (Celery Migration)
+
+This application was recently migrated from Huey to Celery. Some features are not yet reimplemented:
+
+1. **Task Deduplication** (TODO in `helpers.py`, `tasks.py`)
+   - Huey had built-in task deduplication to prevent duplicate task execution
+   - Celery doesn't provide this by default
+   - **Impact**: Rapid duplicate operations (e.g., clicking "sync artist" twice) may queue duplicate tasks
+   - **Workaround**: Frontend debouncing helps, but backend deduplication needed for full protection
+   - **Tracking**: Search codebase for "TODO: Implement Celery-based task deduplication"
+
+2. **ProcessInfo Monitoring** (TODO in `tasks.py` - 6 instances)
+   - Detailed task progress monitoring is disabled due to circular import issues
+   - **Impact**: Less granular progress updates during long-running operations (downloads, syncs)
+   - **Workaround**: Basic task status (PENDING, RUNNING, COMPLETED, FAILED) still works via TaskHistory
+   - **Tracking**: Search codebase for "TODO: Re-enable ProcessInfo after fixing circular imports"
+
+3. **Celery-based Stale Task Cleanup** (TODO in `tasks.py:825`)
+   - Stale task detection logic needs Celery-specific implementation
+   - **Impact**: Some edge cases in task cleanup may not be handled
+   - **Workaround**: `cleanup_stuck_tasks_periodic` runs every 5 minutes to handle most cases
+   - **Tracking**: See `cleanup_stuck_tasks_periodic` function
+
+**Recommendation**: These features can be implemented post-release as they don't block core functionality. Document as known limitations and create GitHub issues for tracking.
+
 ## Configuration Files
 
 ### Required Configuration

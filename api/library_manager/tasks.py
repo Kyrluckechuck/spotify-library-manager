@@ -604,6 +604,9 @@ def download_playlist(
     name="library_manager.tasks.retry_all_missing_known_songs",
 )
 def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
+    # Check authentication before proceeding with any DB queries
+    require_download_capability()
+
     missing_known_songs_list = (
         Song.objects.filter(bitrate=0, unavailable=False)
         .order_by("created_at")
@@ -619,9 +622,6 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     if missing_known_songs_list.count() == 0:
         print("All songs downloaded, exiting missing known song loop!")
         return
-
-    # Check authentication before proceeding
-    require_download_capability()
 
     failed_song_array = [song.spotify_uri for song in missing_known_songs_list]
 
@@ -661,15 +661,15 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
 def download_extra_album_types_for_artist(
     self, artist_id: int, task_id: Optional[str] = None
 ) -> None:
+    # Check authentication before proceeding with any DB queries
+    require_download_capability()
+
     # Check if artist exists before proceeding
     try:
         artist = Artist.objects.get(id=artist_id)
     except Artist.DoesNotExist:
         print(f"Artist with ID {artist_id} does not exist. Skipping task.")
         return
-
-    # Check authentication before proceeding
-    require_download_capability()
 
     missing_albums = Album.objects.filter(
         artist=artist,
@@ -811,13 +811,6 @@ def sync_tracked_playlists(self, task_id: Optional[str] = None) -> None:
 
 
 @celery_app.task(
-    bind=True, name="library_manager.tasks.cleanup_huey_history"
-)  # Scheduled via Celery Beat
-def cleanup_huey_history(self) -> None:
-    helpers.cleanup_huey_history()
-
-
-@celery_app.task(
     bind=True, name="library_manager.tasks.cleanup_stuck_tasks_periodic"
 )  # Scheduled via Celery Beat - Every 5 minutes
 def cleanup_stuck_tasks_periodic(self) -> None:
@@ -834,6 +827,20 @@ def cleanup_stuck_tasks_periodic(self) -> None:
 
 
 @celery_app.task(
+    bind=True, name="library_manager.tasks.cleanup_celery_history"
+)  # Scheduled via Celery Beat - Daily at 6 AM
+def cleanup_celery_history(self, days_to_keep: int = 30) -> None:
+    """Periodically clean up old completed/failed task history to prevent database bloat"""
+    from library_manager.models import TaskHistory
+
+    deleted_count = TaskHistory.cleanup_old_tasks(days_to_keep=days_to_keep)
+    if deleted_count > 0:
+        print(f"Cleaned up {deleted_count} old task history record(s)")
+    else:
+        print("No old task history records to clean up")
+
+
+@celery_app.task(
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
@@ -843,6 +850,9 @@ def validate_undownloaded_songs(
     self,
     task_id: Optional[str] = None,
 ) -> None:
+    # Check authentication before proceeding with any DB queries
+    require_download_capability()
+
     non_downloaded_songs_that_should_exist = Song.objects.filter(
         bitrate__gt=0, unavailable=False, downloaded=False
     ).order_by("created_at")[:500]
@@ -864,9 +874,6 @@ def validate_undownloaded_songs(
     if non_downloaded_songs_count == 0:
         print("All songs marked downloaded that should be!")
         return
-
-    # Check authentication before proceeding
-    require_download_capability()
 
     missing_song_array = [song.spotify_uri for song in non_downloaded_songs]
 

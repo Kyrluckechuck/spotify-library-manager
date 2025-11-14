@@ -1,6 +1,5 @@
 from typing import Dict, List, Optional
 
-from django.db import connection
 from django.db.models import QuerySet
 
 from .models import Artist, TrackedPlaylist
@@ -165,20 +164,6 @@ def enqueue_download_missing_albums_for_artists(
         download_missing_albums_for_artist(artist.id, **extra_args)
 
 
-def cleanup_huey_history() -> None:
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "UPDATE huey_monitor_taskmodel SET parent_task_id = NULL, state_id = NULL WHERE create_dt < DATETIME('now', '-3 day');"
-        )
-        cursor.execute(
-            "DELETE FROM huey_monitor_signalinfomodel WHERE create_dt < DATETIME('now', '-4 day');"
-        )
-        cursor.execute(
-            "DELETE FROM huey_monitor_taskmodel WHERE create_dt < DATETIME('now', '-4 day');"
-        )
-        cursor.execute("VACUUM;")
-
-
 def enqueue_batch_artist_operations(
     artists: QuerySet[Artist],
     operations: Optional[List[str]] = None,
@@ -235,7 +220,7 @@ def enqueue_priority_artist_operations(
 
     Args:
         artists: QuerySet of artists to process
-        priority: Huey task priority (lower = higher priority)
+        priority: Celery task priority (lower = higher priority)
         max_concurrent: Maximum concurrent operations
 
     Returns:

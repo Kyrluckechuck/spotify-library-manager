@@ -10,11 +10,6 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute=0, hour="*/8"),  # Every 8 hours
         "options": {"priority": 1},
     },
-    "cleanup-old-downloads": {
-        "task": "library_manager.tasks.cleanup_old_downloads_task",
-        "schedule": crontab(minute=45, hour="*/8"),  # Every 8 hours, 45 minutes past
-        "options": {"priority": 0},
-    },
     "retry-failed-playlist-songs": {
         "task": "library_manager.tasks.validate_undownloaded_songs",
         "schedule": crontab(

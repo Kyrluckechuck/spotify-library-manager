@@ -63,14 +63,14 @@ services:
     frontend-dev:
         build:
             context: ./frontend
-            target: development  # Use development stage that skips build step
+            target: development # Use development stage that skips build step
             args:
                 - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
         command: yarn dev --host 0.0.0.0 --port 3000
         volumes:
             # Live code sync for development hot reloading
             - ./frontend:/app
-            - /app/node_modules  # Prevent overwriting node_modules
+            - /app/node_modules # Prevent overwriting node_modules
         environment:
             - VITE_API_URL=${VITE_API_URL:-/graphql}
         ports:
@@ -173,4 +173,4 @@ volumes:
         driver_opts:
             type: "none"
             o: "bind"
-            device: "/mnt/external_drive/dev_music"
+            device: "${MUSIC_DIR:-/mnt/external_drive/dev_music}"
