@@ -6,7 +6,7 @@ from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
     "sync-all-playlists": {
-        "task": "library_manager.tasks.sync_all_tracked_playlists_task",
+        "task": "library_manager.tasks.sync_tracked_playlists",
         "schedule": crontab(minute=0, hour="*/8"),  # Every 8 hours
         "options": {"priority": 1},
     },
@@ -15,9 +15,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute=45, hour="*/8"),  # Every 8 hours, 45 minutes past
         "options": {"priority": 0},
     },
-    "update-playlists-task": {
-        "task": "library_manager.tasks.update_playlists_task",
-        "schedule": crontab(minute=0, hour="*/4"),  # Every 4 hours
+    "retry-failed-playlist-songs": {
+        "task": "library_manager.tasks.validate_undownloaded_songs",
+        "schedule": crontab(
+            minute=0, hour=3, day_of_week=0
+        ),  # Weekly on Sunday at 3 AM
         "options": {"priority": 1},
     },
     "cleanup-celery-history": {

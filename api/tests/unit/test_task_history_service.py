@@ -113,9 +113,13 @@ class TestTaskHistoryService:
     @pytest.mark.asyncio
     async def test_create_task_with_different_types(self, task_history_service):
         """Test creating tasks with different types."""
+        import uuid
+
+        unique_suffix = str(uuid.uuid4())[:8]
+
         # Test SYNC task
         sync_task = await task_history_service.create_task(
-            task_id="sync_task_types_1",
+            task_id=f"sync_task_types_{unique_suffix}",
             task_type=TaskType.SYNC,
             entity_id="artist_123",
             entity_type=EntityType.ARTIST,
@@ -124,7 +128,7 @@ class TestTaskHistoryService:
 
         # Test DOWNLOAD task
         download_task = await task_history_service.create_task(
-            task_id="download_task_types_1",
+            task_id=f"download_task_types_{unique_suffix}",
             task_type=TaskType.DOWNLOAD,
             entity_id="album_456",
             entity_type=EntityType.ALBUM,
@@ -133,7 +137,7 @@ class TestTaskHistoryService:
 
         # Test FETCH task
         fetch_task = await task_history_service.create_task(
-            task_id="fetch_task_types_1",
+            task_id=f"fetch_task_types_{unique_suffix}",
             task_type=TaskType.FETCH,
             entity_id="playlist_789",
             entity_type=EntityType.PLAYLIST,

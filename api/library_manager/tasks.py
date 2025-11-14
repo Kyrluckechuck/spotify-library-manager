@@ -845,10 +845,10 @@ def validate_undownloaded_songs(
 ) -> None:
     non_downloaded_songs_that_should_exist = Song.objects.filter(
         bitrate__gt=0, unavailable=False, downloaded=False
-    ).order_by("created_at")[:50]
+    ).order_by("created_at")[:500]
     non_downloaded_songs_that_maybe_should_exist = Song.objects.filter(
         bitrate__gt=0, unavailable=True, downloaded=False
-    ).order_by("created_at")[:50]
+    ).order_by("created_at")[:500]
 
     non_downloaded_songs = (
         non_downloaded_songs_that_should_exist
