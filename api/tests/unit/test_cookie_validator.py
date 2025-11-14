@@ -226,3 +226,53 @@ class TestCookieValidator:
         )
         assert not valid
         assert "secure flag" in error.lower()
+
+
+class TestPoTokenValidator:
+    """Tests for PO token validation."""
+
+    def test_validate_missing_po_token(self):
+        """Test validation with missing PO token."""
+        result = CookieValidator.validate_po_token(None)
+        assert not result.valid
+        assert "missing" in result.error_message.lower()
+
+    def test_validate_empty_po_token(self):
+        """Test validation with empty PO token."""
+        result = CookieValidator.validate_po_token("")
+        assert not result.valid
+        assert "missing" in result.error_message.lower()
+
+    def test_validate_whitespace_only_po_token(self):
+        """Test validation with whitespace-only PO token."""
+        result = CookieValidator.validate_po_token("   ")
+        assert not result.valid
+        assert "empty" in result.error_message.lower()
+
+    def test_validate_short_po_token(self):
+        """Test validation with too-short PO token."""
+        result = CookieValidator.validate_po_token("short")
+        assert not result.valid
+        assert "too short" in result.error_message.lower()
+
+    def test_validate_invalid_characters_po_token(self):
+        """Test validation with invalid characters in PO token."""
+        result = CookieValidator.validate_po_token("A" * 100 + "!@#$%")
+        assert not result.valid
+        assert "invalid characters" in result.error_message.lower()
+
+    def test_validate_valid_po_token(self):
+        """Test validation with valid PO token."""
+        # Valid base64-like string with 120 characters
+        result = CookieValidator.validate_po_token("A" * 120)
+        assert result.valid
+        assert result.error_message is None
+
+    def test_validate_valid_po_token_with_special_chars(self):
+        """Test validation with valid PO token containing base64 special chars."""
+        # Valid base64 characters including +, /, =, -, _
+        result = CookieValidator.validate_po_token(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=-_" * 2
+        )
+        assert result.valid
+        assert result.error_message is None

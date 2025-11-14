@@ -274,5 +274,7 @@ class Query:
                 cookies_error_message=auth_status.cookies_error_message,
                 cookies_expire_in_days=auth_status.cookies_expire_in_days,
                 po_token_configured=auth_status.po_token_configured,
+                po_token_valid=auth_status.po_token_valid,
+                po_token_error_message=auth_status.po_token_error_message,
             ),
         )

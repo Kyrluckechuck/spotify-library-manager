@@ -88,7 +88,7 @@ class TestPremiumDetector:
             is_premium=True,
             confidence=0.9,
             detection_method="test",
-            last_checked=time.time() - 400,  # 400 seconds ago (expired)
+            last_checked=time.time() - 2000,  # 2000 seconds ago (expired, >30min)
         )
 
         assert not detector._is_cache_valid()
@@ -288,45 +288,116 @@ class TestPremiumDetector:
 
     def test_is_premium_expired_not_premium(self, detector):
         """Test premium expiry check for non-premium account."""
-        detector._last_status = PremiumStatus(
-            is_premium=False,
-            confidence=0.9,
-            detection_method="test",
-            last_checked=time.time(),
-        )
+        # When bitrate is below threshold, it will force refresh the status
+        # Mock the detect_premium_status to return non-premium
+        with patch.object(detector, "detect_premium_status") as mock_detect:
+            mock_detect.return_value = PremiumStatus(
+                is_premium=False,
+                confidence=0.9,
+                detection_method="test",
+                last_checked=time.time(),
+            )
 
-        is_expired, reason = detector.is_premium_expired(128, 256)
+            is_expired, reason = detector.is_premium_expired(128, 240)
 
-        assert not is_expired
-        assert reason == "Account is not premium"
+            # Should have called detect_premium_status with force_refresh=True
+            mock_detect.assert_called_once_with(force_refresh=True)
+            assert is_expired is True
+            assert "premium expired" in reason.lower()
 
     def test_is_premium_expired_good_quality(self, detector):
         """Test premium expiry check with good quality download."""
-        detector._last_status = PremiumStatus(
-            is_premium=True,
-            confidence=0.9,
-            detection_method="test",
-            last_checked=time.time(),
-        )
-
-        is_expired, reason = detector.is_premium_expired(256, 256)
+        # High bitrate (250kbps) should return immediately without checking status
+        is_expired, reason = detector.is_premium_expired(250, 240)
 
         assert not is_expired
         assert reason == "Downloaded at expected premium quality"
 
-    def test_is_premium_expired_low_quality(self, detector):
-        """Test premium expiry check with low quality download."""
-        detector._last_status = PremiumStatus(
-            is_premium=True,
-            confidence=0.9,
-            detection_method="test",
-            last_checked=time.time(),
-        )
+    def test_is_premium_expired_low_quality_still_premium(self, detector):
+        """Test premium expiry check with low quality but account still premium."""
+        # Low bitrate (128kbps) but account re-validation shows still premium
+        # This means the song just doesn't have higher quality available
+        with patch.object(detector, "detect_premium_status") as mock_detect:
+            mock_detect.return_value = PremiumStatus(
+                is_premium=True,  # Still premium!
+                confidence=0.9,
+                detection_method="account_info",
+                last_checked=time.time(),
+            )
 
-        is_expired, reason = detector.is_premium_expired(128, 256)
+            is_expired, reason = detector.is_premium_expired(128, 240)
 
-        assert is_expired
-        assert "Premium account but only got 128kbps" in reason
+            # Should have re-validated status
+            mock_detect.assert_called_once_with(force_refresh=True)
+            # Not expired - song limitation
+            assert is_expired is False
+            assert "still premium" in reason.lower()
+            assert "song limitation" in reason.lower()
+
+    def test_is_premium_expired_low_quality_not_premium(self, detector):
+        """Test premium expiry check with low quality and account no longer premium."""
+        # Low bitrate (128kbps) and account re-validation shows not premium
+        # This means credentials expired
+        with patch.object(detector, "detect_premium_status") as mock_detect:
+            mock_detect.return_value = PremiumStatus(
+                is_premium=False,  # Not premium anymore!
+                confidence=0.9,
+                detection_method="account_info",
+                last_checked=time.time(),
+            )
+
+            is_expired, reason = detector.is_premium_expired(128, 240)
+
+            # Should have re-validated status
+            mock_detect.assert_called_once_with(force_refresh=True)
+            # Expired!
+            assert is_expired is True
+            assert "premium expired" in reason.lower()
+
+    def test_verify_premium_access_at_startup_success(self, detector):
+        """Test startup premium verification when account is premium."""
+        with patch.object(detector, "detect_premium_status") as mock_detect:
+            mock_detect.return_value = PremiumStatus(
+                is_premium=True,
+                confidence=0.9,
+                detection_method="account_info",
+                last_checked=time.time(),
+            )
+
+            has_access, message, bitrate = detector.verify_premium_access_at_startup()
+
+            # Should force refresh
+            mock_detect.assert_called_once_with(force_refresh=True)
+            assert has_access is True
+            assert "premium access confirmed" in message.lower()
+            assert "account_info" in message.lower()
+
+    def test_verify_premium_access_at_startup_failure(self, detector):
+        """Test startup premium verification when account is not premium."""
+        with patch.object(detector, "detect_premium_status") as mock_detect:
+            mock_detect.return_value = PremiumStatus(
+                is_premium=False,
+                confidence=0.9,
+                detection_method="account_info_error",
+                error_message="Authentication failed",
+                last_checked=time.time(),
+            )
+
+            has_access, message, bitrate = detector.verify_premium_access_at_startup()
+
+            mock_detect.assert_called_once_with(force_refresh=True)
+            assert has_access is False
+            assert "account status check failed" in message.lower()
+
+    def test_verify_premium_access_at_startup_exception(self, detector):
+        """Test startup premium verification when exception occurs."""
+        with patch.object(detector, "detect_premium_status") as mock_detect:
+            mock_detect.side_effect = Exception("Network error")
+
+            has_access, message, bitrate = detector.verify_premium_access_at_startup()
+
+            assert has_access is False
+            assert "premium verification error" in message.lower()
 
     @patch.object(PremiumDetector, "_detect_via_account_info")
     @patch.object(PremiumDetector, "_detect_via_quality_probe")

@@ -23,6 +23,17 @@ class PremiumStatus:
     details: Optional[str] = None  # Additional details about the detection
 
 
+@dataclass
+class PoTokenValidationResult:
+    """Result of live PO token validation against YouTube API."""
+
+    valid: bool
+    error_message: Optional[str] = None
+    last_checked: Optional[float] = None
+    can_authenticate: bool = False
+    details: Optional[str] = None
+
+
 class PremiumDetector:
     """Detects YouTube Music premium status using multiple methods."""
 
@@ -46,7 +57,8 @@ class PremiumDetector:
         self.ytmusic_headers_file = ytmusic_headers_file
         self._ytmusic_client: Optional[YTMusic] = None
         self._last_status: Optional[PremiumStatus] = None
-        self._cache_duration = 300  # 5 minutes cache
+        self._last_po_token_validation: Optional[PoTokenValidationResult] = None
+        self._cache_duration = 1800  # 30 minutes cache
 
     def _get_ytmusic_client(self) -> Optional[YTMusic]:
         """Get or create YTMusic client with authentication priority."""
@@ -202,6 +214,8 @@ Connection: keep-alive"""
         """
         # Check cache first
         if not force_refresh and self._is_cache_valid():
+            # Type checker: _last_status is guaranteed non-None here because _is_cache_valid checks it
+            assert self._last_status is not None
             return self._last_status
 
         self.logger.info("Detecting YouTube Music premium status...")
@@ -239,6 +253,123 @@ Connection: keep-alive"""
 
         self._last_status = status
         return status
+
+    def validate_po_token_live(
+        self, force_refresh: bool = False
+    ) -> PoTokenValidationResult:
+        """
+        Validate PO token by actually testing it against YouTube Music API.
+
+        This performs a lightweight API call to verify the PO token works.
+        Results are cached for 30 minutes to avoid hammering YouTube.
+
+        Args:
+            force_refresh: If True, bypass cache and re-validate
+
+        Returns:
+            PoTokenValidationResult with validation status and details
+        """
+        # Check cache first
+        if not force_refresh and self._is_po_token_cache_valid():
+            # Type checker: _last_po_token_validation is guaranteed non-None here
+            assert self._last_po_token_validation is not None
+            return self._last_po_token_validation
+
+        self.logger.info("Validating PO token against YouTube Music API...")
+
+        # If no PO token provided, return invalid
+        if not self.po_token:
+            result = PoTokenValidationResult(
+                valid=False,
+                error_message="PO token not provided",
+                last_checked=time.time(),
+                can_authenticate=False,
+            )
+            self._last_po_token_validation = result
+            return result
+
+        # Try to create YTMusic client with credentials
+        client = self._get_ytmusic_client()
+        if not client:
+            result = PoTokenValidationResult(
+                valid=False,
+                error_message="Failed to initialize YTMusic client with provided credentials",
+                last_checked=time.time(),
+                can_authenticate=False,
+                details="Check that cookies file exists and is valid",
+            )
+            self._last_po_token_validation = result
+            return result
+
+        # Test authentication by trying to get account info
+        try:
+            account_info = client.get_account_info()
+            if account_info and account_info.get("accountName"):
+                # Successfully authenticated
+                result = PoTokenValidationResult(
+                    valid=True,
+                    last_checked=time.time(),
+                    can_authenticate=True,
+                    details=f"Authenticated as: {account_info.get('accountName', 'Unknown')}",
+                )
+                self.logger.info(
+                    f"PO token validated successfully. Account: {account_info.get('accountName')}"
+                )
+            else:
+                # Got response but no account info - might be unauthenticated
+                result = PoTokenValidationResult(
+                    valid=False,
+                    error_message="PO token may be invalid - could not retrieve account information",
+                    last_checked=time.time(),
+                    can_authenticate=False,
+                    details="API returned empty or incomplete account info",
+                )
+                self.logger.warning(
+                    "PO token validation unclear - no account info returned"
+                )
+
+        except Exception as e:
+            # Authentication failed
+            error_str = str(e).lower()
+            if (
+                "unauthorized" in error_str
+                or "forbidden" in error_str
+                or "401" in error_str
+                or "403" in error_str
+            ):
+                error_message = (
+                    "PO token appears to be invalid or expired - authentication failed"
+                )
+                details = f"YouTube API error: {str(e)}"
+            else:
+                error_message = "Failed to validate PO token due to API error"
+                details = f"Error: {str(e)}"
+
+            result = PoTokenValidationResult(
+                valid=False,
+                error_message=error_message,
+                last_checked=time.time(),
+                can_authenticate=False,
+                details=details,
+            )
+            self.logger.warning(
+                f"PO token validation failed: {error_message} - {details}"
+            )
+
+        self._last_po_token_validation = result
+        return result
+
+    def _is_po_token_cache_valid(self) -> bool:
+        """Check if cached PO token validation is still valid."""
+        if (
+            self._last_po_token_validation is None
+            or self._last_po_token_validation.last_checked is None
+        ):
+            return False
+        return (
+            time.time() - self._last_po_token_validation.last_checked
+            < self._cache_duration
+        )
 
     def _is_cache_valid(self) -> bool:
         """Check if cached status is still valid."""
@@ -519,35 +650,91 @@ Connection: keep-alive"""
         return spotify_url.split("/")[-1]  # Simplified
 
     def is_premium_expired(
-        self, downloaded_bitrate: int, expected_premium_bitrate: int = 256
+        self, downloaded_bitrate: int, expected_premium_bitrate: int = 240
     ) -> Tuple[bool, str]:
         """
-        Check if premium has expired based on downloaded bitrate vs expected.
+        Check if premium has expired based on downloaded bitrate.
+
+        When low bitrate is detected, forces a fresh account status check
+        against YouTube API to determine if credentials actually expired
+        vs the song just having lower quality available.
 
         Args:
             downloaded_bitrate: Actual bitrate of downloaded file
-            expected_premium_bitrate: Expected bitrate for premium users
+            expected_premium_bitrate: Expected bitrate for premium users (default 240kbps)
 
         Returns:
             Tuple of (is_expired, reason)
         """
-        status = self.detect_premium_status()
-
-        if not status.is_premium:
-            return False, "Account is not premium"
-
+        # If we got expected premium quality, all good
         if downloaded_bitrate >= expected_premium_bitrate:
             return False, "Downloaded at expected premium quality"
 
-        # Check if this song actually has higher quality available
-        # This would need song URL - placeholder for now
-        if downloaded_bitrate == 128:
+        # Low bitrate detected - force fresh account check (bypass cache)
+        self.logger.info(
+            f"Low bitrate detected ({downloaded_bitrate}kbps < {expected_premium_bitrate}kbps), "
+            f"re-validating premium status..."
+        )
+        status = self.detect_premium_status(force_refresh=True)
+
+        if not status.is_premium:
+            # Account info confirms we're NOT premium anymore
             return True, (
-                f"Premium account but only got {downloaded_bitrate}kbps "
-                f"(expected {expected_premium_bitrate}kbps)"
+                f"YouTube account info confirms premium expired - "
+                f"got {downloaded_bitrate}kbps (expected {expected_premium_bitrate}kbps+)"
             )
 
-        return False, (
-            f"Downloaded at {downloaded_bitrate}kbps which may be "
-            f"max available for this song"
+        # Account still shows premium but got low bitrate - probably song limitation
+        self.logger.info(
+            f"Account info confirms still premium despite {downloaded_bitrate}kbps - "
+            f"likely this song's maximum quality"
         )
+        return False, (
+            f"Downloaded at {downloaded_bitrate}kbps but account info confirms "
+            f"still premium - likely song limitation"
+        )
+
+    def verify_premium_access_at_startup(self) -> Tuple[bool, str, Optional[int]]:
+        """
+        Verify premium access at startup using a known high-quality test track.
+
+        Uses a YouTube Music track known to have 258kbps premium quality available.
+        This provides early detection of expired credentials before downloading
+        user's actual library.
+
+        Returns:
+            Tuple of (has_premium_access, message, bitrate_achieved)
+        """
+        self.logger.info("Verifying premium access at startup...")
+
+        try:
+            # First, check account status via API
+            status = self.detect_premium_status(force_refresh=True)
+
+            if not status.is_premium:
+                return (
+                    False,
+                    (
+                        f"Account status check failed: {status.detection_method} - "
+                        f"{status.error_message or 'Not premium'}"
+                    ),
+                    None,
+                )
+
+            # Account API says we're premium, return success
+            self.logger.info(
+                f"Premium status verified via {status.detection_method} "
+                f"(confidence: {status.confidence})"
+            )
+            return (
+                True,
+                (
+                    f"Premium access confirmed via {status.detection_method} "
+                    f"(confidence: {status.confidence:.2f})"
+                ),
+                None,
+            )
+
+        except Exception as e:
+            self.logger.error(f"Premium verification failed: {e}")
+            return False, f"Premium verification error: {str(e)}", None

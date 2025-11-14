@@ -48,6 +48,12 @@ class SpotdlDownloadError(Exception):
     pass
 
 
+class PremiumExpiredException(Exception):
+    """Raised when premium status expires during download operation."""
+
+    pass
+
+
 # Apply monkeypatches to Spotdl for compatibility
 # See spotdl_override module for more information
 Spotdl.__init__ = spotdl_override.__init__
@@ -152,6 +158,26 @@ class SpotdlWrapper:
                 confidence=0.0,
                 detection_method="initialization_failed",
             )
+
+        # Verify premium access at startup to catch expired credentials early
+        try:
+            has_access, message, _ = (
+                self.premium_detector.verify_premium_access_at_startup()
+            )
+            if has_access:
+                self.logger.info(f"✓ Premium access verified: {message}")
+            else:
+                self.logger.warning(f"⚠ Premium access verification failed: {message}")
+                # Update premium status based on startup verification
+                if not has_access:
+                    self.premium_status = PremiumStatus(
+                        is_premium=False,
+                        confidence=0.9,
+                        detection_method="startup_verification_failed",
+                        error_message=message,
+                    )
+        except Exception as e:
+            self.logger.warning(f"Startup premium verification failed: {e}")
 
         self.logger.debug("Completed SpotdlWrapper Initialization")
 
@@ -375,10 +401,10 @@ class SpotdlWrapper:
                                 f"File was downloaded successfully, but no audio track existed | output_path: {output_path}"
                             )
                         # Check if this indicates premium expiry
+                        # Uses 240kbps threshold (default) and re-validates account status if low
                         is_expired, expiry_reason = (
                             self.premium_detector.is_premium_expired(
                                 downloaded_bitrate=int(bit_rate),
-                                expected_premium_bitrate=255,
                             )
                         )
 
@@ -389,17 +415,15 @@ class SpotdlWrapper:
                         )
 
                         if is_expired:
-                            self.logger.warning(
+                            error_message = (
                                 f"🚨 PREMIUM EXPIRED: {expiry_reason} | "
                                 f"Available qualities for this song: {available_qualities} | "
-                                f"Consider refreshing your YouTube cookies/po_token | {error_msg}"
+                                f"Your YouTube Music cookies or po_token have expired. "
+                                f"Please refresh your authentication to continue downloading."
                             )
-                            # Refresh premium status for next songs
-                            self.premium_status = (
-                                self.premium_detector.detect_premium_status(
-                                    force_refresh=True
-                                )
-                            )
+                            self.logger.error(error_message)
+                            # Abort the entire task - don't continue with degraded quality
+                            raise PremiumExpiredException(error_message)
                         else:
                             self.logger.error(error_msg)
                             self.logger.info(
@@ -407,6 +431,9 @@ class SpotdlWrapper:
                                 f"(confidence: {self.premium_status.confidence}) | "
                                 f"Available qualities: {available_qualities}"
                             )
+                except PremiumExpiredException:
+                    # Re-raise to abort the entire download task
+                    raise
                 except SpotdlDownloadError as exception:
                     error_count += 1
                     self.logger.error(

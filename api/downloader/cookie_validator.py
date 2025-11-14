@@ -22,6 +22,14 @@ class CookieValidationResult:
     days_until_expiry: Optional[int] = None
 
 
+@dataclass
+class PoTokenValidationResult:
+    """Result of PO token validation."""
+
+    valid: bool
+    error_message: Optional[str] = None
+
+
 class CookieValidator:
     """Validates YouTube Music cookie files for yt-dlp/spotdl."""
 
@@ -188,3 +196,51 @@ class CookieValidator:
             valid=True,
             error_message="Warning: Could not determine cookie expiration",
         )
+
+    @staticmethod
+    def validate_po_token(po_token: Optional[str]) -> PoTokenValidationResult:
+        """
+        Validate YouTube PO token format.
+
+        PO tokens are required for YouTube Music premium downloads and should be
+        in the format of a base64-encoded string (typically 100+ characters).
+
+        Args:
+            po_token: The PO token string to validate
+
+        Returns:
+            PoTokenValidationResult with validation status
+        """
+        if not po_token:
+            return PoTokenValidationResult(
+                valid=False,
+                error_message="PO token is missing. YouTube Music premium requires a valid po_token for high-quality downloads.",
+            )
+
+        # Remove whitespace
+        po_token = po_token.strip()
+
+        if not po_token:
+            return PoTokenValidationResult(
+                valid=False,
+                error_message="PO token is empty after trimming whitespace.",
+            )
+
+        # Basic validation - PO tokens should be reasonably long (typically 100+ chars)
+        # and contain base64-like characters
+        if len(po_token) < 50:
+            return PoTokenValidationResult(
+                valid=False,
+                error_message=f"PO token appears too short ({len(po_token)} characters). Expected 100+ characters.",
+            )
+
+        # Check for valid base64-like characters (alphanumeric, +, /, =, -, _)
+        import re
+
+        if not re.match(r"^[A-Za-z0-9+/=_-]+$", po_token):
+            return PoTokenValidationResult(
+                valid=False,
+                error_message="PO token contains invalid characters. Expected base64-encoded string.",
+            )
+
+        return PoTokenValidationResult(valid=True)

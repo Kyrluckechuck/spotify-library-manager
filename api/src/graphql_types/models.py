@@ -270,13 +270,15 @@ class QueueStatus:
 
 @strawberry.type
 class AuthenticationStatus:
-    """Authentication status for Spotify downloads."""
+    """Authentication status for YouTube Music Premium downloads."""
 
     cookies_valid: bool
     cookies_error_type: Optional[str] = None  # 'missing', 'malformed', 'expired'
     cookies_error_message: Optional[str] = None
     cookies_expire_in_days: Optional[int] = None
     po_token_configured: bool = False
+    po_token_valid: bool = False
+    po_token_error_message: Optional[str] = None
 
 
 @strawberry.type

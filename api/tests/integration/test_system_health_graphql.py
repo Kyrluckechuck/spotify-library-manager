@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from downloader.premium_detector import PoTokenValidationResult
 from lib.config_class import Config
 
 from src.schema import schema
@@ -29,12 +30,25 @@ class TestSystemHealthGraphQL:
             temp_path = Path(f.name)
 
         try:
-            # Mock Config to return temp path
+            # Mock Config to return temp path with valid PO token
             mock_config = MagicMock(spec=Config)
             mock_config.cookies_location = str(temp_path)
-            mock_config.po_token = None
+            # Valid PO token format (base64-like string, 100+ chars)
+            mock_config.po_token = "A" * 120
 
-            with patch("src.services.system_health.Config", return_value=mock_config):
+            # Mock live PO token validation
+            mock_po_token_result = PoTokenValidationResult(
+                valid=True,
+                can_authenticate=True,
+            )
+
+            with (
+                patch("src.services.system_health.Config", return_value=mock_config),
+                patch(
+                    "src.services.system_health.PremiumDetector.validate_po_token_live",
+                    return_value=mock_po_token_result,
+                ),
+            ):
                 query = """
                     query {
                         systemHealth {
@@ -80,7 +94,7 @@ class TestSystemHealthGraphQL:
         """Test systemHealth query with missing cookies."""
         mock_config = MagicMock(spec=Config)
         mock_config.cookies_location = "/nonexistent/cookies.txt"
-        mock_config.po_token = None
+        mock_config.po_token = "A" * 120
 
         with patch("src.services.system_health.Config", return_value=mock_config):
             query = """
@@ -133,7 +147,7 @@ class TestSystemHealthGraphQL:
         try:
             mock_config = MagicMock(spec=Config)
             mock_config.cookies_location = str(temp_path)
-            mock_config.po_token = None
+            mock_config.po_token = "A" * 120
 
             with patch("src.services.system_health.Config", return_value=mock_config):
                 query = """
@@ -185,7 +199,7 @@ class TestSystemHealthGraphQL:
         try:
             mock_config = MagicMock(spec=Config)
             mock_config.cookies_location = str(temp_path)
-            mock_config.po_token = None
+            mock_config.po_token = "A" * 120
 
             with patch("src.services.system_health.Config", return_value=mock_config):
                 query = """
@@ -226,9 +240,21 @@ class TestSystemHealthGraphQL:
         # Mock Config with valid default path
         mock_config = MagicMock(spec=Config)
         mock_config.cookies_location = "/config/cookies.txt"
-        mock_config.po_token = None
+        mock_config.po_token = "A" * 120
 
-        with patch("src.services.system_health.Config", return_value=mock_config):
+        # Mock live PO token validation (doesn't matter since cookies won't be valid for /config/cookies.txt)
+        mock_po_token_result = PoTokenValidationResult(
+            valid=True,
+            can_authenticate=True,
+        )
+
+        with (
+            patch("src.services.system_health.Config", return_value=mock_config),
+            patch(
+                "src.services.system_health.PremiumDetector.validate_po_token_live",
+                return_value=mock_po_token_result,
+            ),
+        ):
             query = """
                 query {
                     systemHealth {

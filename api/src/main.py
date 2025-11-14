@@ -236,6 +236,17 @@ def _validate_runtime_configuration() -> None:
             result.days_until_expiry,
         )
 
+    # PO token validation - REQUIRED for premium
+    po_token = getattr(dj_settings, "po_token", None)
+    po_token_result = CookieValidator.validate_po_token(po_token)
+    if not po_token_result.valid:
+        logger.warning(
+            "PO token validation failed: %s. This system requires YouTube Music Premium. "
+            "Set 'po_token' in /config/settings.yaml. "
+            "See https://github.com/yt-dlp/yt-dlp/wiki/Extractors#po-token-guide for instructions.",
+            po_token_result.error_message,
+        )
+
     # Album selection lists
     album_types = getattr(
         dj_settings, "ALBUM_TYPES_TO_DOWNLOAD", ["single", "album", "compilation"]

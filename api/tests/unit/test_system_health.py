@@ -3,7 +3,9 @@
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+from downloader.premium_detector import PoTokenValidationResult
 
 from src.services.system_health import AuthenticationStatus, SystemHealthService
 
@@ -15,6 +17,7 @@ class TestSystemHealthService:
         """Test authentication status when cookies file is missing."""
         mock_config = MagicMock()
         mock_config.cookies_location = "/nonexistent/cookies.txt"
+        mock_config.po_token = "A" * 120
 
         result = SystemHealthService.check_authentication_status(mock_config)
 
@@ -34,6 +37,7 @@ class TestSystemHealthService:
         try:
             mock_config = MagicMock()
             mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = "A" * 120
 
             result = SystemHealthService.check_authentication_status(mock_config)
 
@@ -57,6 +61,7 @@ class TestSystemHealthService:
         try:
             mock_config = MagicMock()
             mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = "A" * 120
 
             result = SystemHealthService.check_authentication_status(mock_config)
 
@@ -82,14 +87,27 @@ class TestSystemHealthService:
         try:
             mock_config = MagicMock()
             mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = "A" * 120
 
-            result = SystemHealthService.check_authentication_status(mock_config)
+            # Mock the live PO token validation to return success
+            mock_po_token_result = PoTokenValidationResult(
+                valid=True,
+                can_authenticate=True,
+            )
 
-            assert result.cookies_valid
-            assert result.cookies_error_type is None
-            assert result.cookies_error_message is None
-            assert result.cookies_expire_in_days is not None
-            assert 89 <= result.cookies_expire_in_days <= 91
+            with patch(
+                "src.services.system_health.PremiumDetector.validate_po_token_live",
+                return_value=mock_po_token_result,
+            ):
+                result = SystemHealthService.check_authentication_status(mock_config)
+
+                assert result.cookies_valid
+                assert result.cookies_error_type is None
+                assert result.cookies_error_message is None
+                assert result.cookies_expire_in_days is not None
+                assert 89 <= result.cookies_expire_in_days <= 91
+                assert result.po_token_valid is True
+                assert result.po_token_error_message is None
         finally:
             temp_path.unlink()
 
@@ -118,11 +136,24 @@ class TestSystemHealthService:
         try:
             mock_config = MagicMock()
             mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = "A" * 120
 
-            can_download, reason = SystemHealthService.is_download_capable(mock_config)
+            # Mock the live PO token validation to return success
+            mock_po_token_result = PoTokenValidationResult(
+                valid=True,
+                can_authenticate=True,
+            )
 
-            assert can_download is True
-            assert reason is None
+            with patch(
+                "src.services.system_health.PremiumDetector.validate_po_token_live",
+                return_value=mock_po_token_result,
+            ):
+                can_download, reason = SystemHealthService.is_download_capable(
+                    mock_config
+                )
+
+                assert can_download is True
+                assert reason is None
         finally:
             temp_path.unlink()
 
@@ -130,6 +161,7 @@ class TestSystemHealthService:
         """Test download capability with invalid cookies."""
         mock_config = MagicMock()
         mock_config.cookies_location = "/nonexistent/cookies.txt"
+        mock_config.po_token = "A" * 120
 
         can_download, reason = SystemHealthService.is_download_capable(mock_config)
 
@@ -151,6 +183,7 @@ class TestSystemHealthService:
         try:
             mock_config = MagicMock()
             mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = "A" * 120
 
             can_download, reason = SystemHealthService.is_download_capable(mock_config)
 
@@ -169,6 +202,7 @@ class TestSystemHealthService:
         try:
             mock_config = MagicMock()
             mock_config.cookies_location = str(temp_path)
+            mock_config.po_token = "A" * 120
 
             can_download, reason = SystemHealthService.is_download_capable(mock_config)
 
