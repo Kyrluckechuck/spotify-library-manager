@@ -256,6 +256,7 @@ jobs:
 
       - name: Build and start stack
         env:
+          CI: "true"
           SLM_CONFIG_DIR: ${{ steps.mktemp.outputs.config-dir }}
           MUSIC_DIR: ${{ steps.mktemp.outputs.music-dir }}
           BACKEND_IMAGE: local-backend:latest

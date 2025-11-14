@@ -23,6 +23,7 @@ services:
   web:
     image: ${BACKEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager:latest}
     environment:
+      - CI=${CI:-false}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-development-only-key}
       - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
       - HOST=${HOST:-0.0.0.0}
