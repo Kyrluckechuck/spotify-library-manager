@@ -182,6 +182,91 @@ This is a **full-stack Spotify library management application** with the followi
 - Use `@shared_task(bind=True)` decorator for async operations
 - Task monitoring via Django admin or task status endpoints
 
+### Async/Sync Boundaries - CRITICAL PATTERN
+
+**IMPORTANT**: This codebase mixes async (FastAPI/Strawberry GraphQL) and sync (Django ORM/Celery) code. You must respect async/sync boundaries.
+
+#### Common Pitfalls and Solutions
+
+1. **Celery Task Calls from Async Context**
+   ```python
+   # ❌ WRONG - Celery .delay() is sync-only
+   async def my_service_method():
+       my_task.delay(arg)  # Raises: "You cannot call this from an async context"
+
+   # ✅ CORRECT - Wrap in sync_to_async
+   from asgiref.sync import sync_to_async
+
+   async def my_service_method():
+       def queue_task():
+           my_task.delay(arg)
+
+       await sync_to_async(queue_task)()
+   ```
+
+2. **Django ORM from Async Context**
+   ```python
+   # ❌ WRONG - Django ORM calls are sync
+   async def my_service_method():
+       album = Album.objects.get(id=1)  # Raises sync_to_async error
+
+   # ✅ CORRECT - Wrap ORM calls
+   async def my_service_method():
+       album = await sync_to_async(Album.objects.get)(id=1)
+       # Or for complex operations:
+       def get_album():
+           return Album.objects.get(id=1)
+       album = await sync_to_async(get_album)()
+   ```
+
+3. **Model Methods from Async Context**
+   ```python
+   # ❌ WRONG - Model save() is sync
+   async def my_service_method():
+       album.wanted = True
+       album.save()  # Raises sync_to_async error
+
+   # ✅ CORRECT - Wrap model methods
+   async def my_service_method():
+       album.wanted = True
+       await sync_to_async(album.save)()
+   ```
+
+4. **Lazy-Loading Related Objects**
+   ```python
+   # ❌ WRONG - Accessing related objects can trigger lazy DB queries
+   async def my_service_method():
+       album = await sync_to_async(Album.objects.get)(id=1)
+       return convert_to_type(album)  # album.artist.name triggers lazy load!
+
+   # ✅ CORRECT - Wrap conversion that accesses relations
+   async def my_service_method():
+       album = await sync_to_async(Album.objects.get)(id=1)
+       return await sync_to_async(convert_to_type)(album)
+
+   # ✅ BETTER - Use select_related to prefetch
+   async def my_service_method():
+       album = await sync_to_async(
+           lambda: Album.objects.select_related("artist").get(id=1)
+       )()
+       return await sync_to_async(convert_to_type)(album)
+   ```
+
+#### When to Use sync_to_async
+
+Use `sync_to_async` whenever calling from async context (GraphQL resolvers, async services):
+- **Celery task queuing**: `.delay()` or `.apply_async()`
+- **Django ORM queries**: `Model.objects.get()`, `.filter()`, `.create()`, etc.
+- **Model methods**: `.save()`, `.delete()`, custom model methods
+- **Django transactions**: `transaction.atomic()`
+- **Any synchronous library calls**
+
+#### Reference Implementations
+- `api/src/services/album.py:199-203` - Celery task queuing from async
+- `api/src/services/album.py:22-23` - ORM queries from async
+- `api/src/services/album.py:127` - Model save from async
+- `api/src/services/album.py:206` - _to_graphql_type with lazy-loading protection
+
 ### GraphQL Schema
 - Auto-generated from Django models using Strawberry
 - Type-safe resolvers in `api/src/resolvers/`

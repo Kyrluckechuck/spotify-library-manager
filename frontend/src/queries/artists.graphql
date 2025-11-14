@@ -11,6 +11,22 @@ query GetArtist($id: String!) {
   }
 }
 
+query GetAlbum($id: String!) {
+  album(id: $id) {
+    id
+    name
+    spotifyGid
+    totalTracks
+    wanted
+    downloaded
+    albumType
+    albumGroup
+    artist
+    artistId
+    artistGid
+  }
+}
+
 query GetArtists(
   $isTracked: Boolean
   $first: Int = 20

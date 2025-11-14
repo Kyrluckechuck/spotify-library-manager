@@ -400,6 +400,85 @@ def _sync_tracked_playlist_internal(
     bind=True,
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
+    name="library_manager.tasks.download_single_album",
+)
+def download_single_album(self, album_id: int) -> None:
+    """Download a single specific album by ID."""
+    task_history = None
+    try:
+        # Check if album exists before proceeding
+        try:
+            album = Album.objects.get(id=album_id)
+        except Album.DoesNotExist:
+            print(f"Album with ID {album_id} does not exist. Skipping task.")
+            return
+
+        # Create task history record for the album
+        task_history = create_task_history(
+            task_id=self.request.id,
+            task_type="DOWNLOAD",
+            entity_id=album.spotify_gid,
+            entity_type="ALBUM",
+        )
+        update_task_progress(
+            task_history, 0.0, f"Starting download for album {album.name}"
+        )
+
+        # Check authentication before proceeding
+        require_download_capability(task_history)
+
+        # Check for cancellation before proceeding
+        if check_task_cancellation(task_history):
+            print(f"Task cancelled for album {album.name}")
+            return
+
+        # Ensure album is marked as wanted
+        if not album.wanted:
+            album.wanted = True
+            album.save()
+
+        if check_and_update_progress(
+            task_history, 25.0, "Preparing download configuration"
+        ):
+            print(f"Task cancelled during config preparation for album {album.name}")
+            return
+
+        downloader_config = Config()
+        downloader_config.urls = [album.spotify_uri]
+
+        if check_and_update_progress(
+            task_history, 50.0, f"Downloading album {album.name}"
+        ):
+            print(f"Task cancelled before download for album {album.name}")
+            return
+
+        # Perform the download
+        print(f"Downloading album: {album.name} (spotify_uri: {album.spotify_uri})")
+        spotdl_wrapper.execute(downloader_config)
+
+        # Mark album as downloaded
+        album.downloaded = True
+        album.save()
+
+        if check_and_update_progress(task_history, 100.0, "Download completed"):
+            print(f"Task cancelled after download for album {album.name}")
+            return
+
+        complete_task(task_history, success=True)
+        print(f"Successfully downloaded album: {album.name}")
+
+    except Exception as e:
+        error_msg = f"Error downloading album: {str(e)}"
+        print(error_msg)
+        if task_history:
+            complete_task(task_history, success=False, error_message=error_msg)
+        raise
+
+
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 2, "countdown": 30},
     name="library_manager.tasks.sync_tracked_playlist",
 )
 def sync_tracked_playlist(

@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useLazyQuery } from '@apollo/client/react';
-import { GetArtistDocument, GetSongDocument } from '../types/generated/graphql';
+import {
+  GetArtistDocument,
+  GetSongDocument,
+  GetAlbumDocument,
+} from '../types/generated/graphql';
 
 export interface EntityData {
   id: string;
@@ -45,6 +49,14 @@ export function useEntityData(entityType: string, entityId: string) {
     errorPolicy: 'ignore',
   });
 
+  // Album query
+  const albumQuery = useQuery(GetAlbumDocument, {
+    variables: { id: entityId },
+    skip: shouldSkip || upperEntityType !== 'ALBUM',
+    fetchPolicy: 'cache-first',
+    errorPolicy: 'ignore',
+  });
+
   // Song query (lazy - triggered by effect)
   const [getSong, songQuery] = useLazyQuery(GetSongDocument, {
     fetchPolicy: 'cache-first',
@@ -62,9 +74,11 @@ export function useEntityData(entityType: string, entityId: string) {
   const activeQuery =
     upperEntityType === 'ARTIST'
       ? artistQuery
-      : upperEntityType === 'TRACK'
-        ? songQuery
-        : { data: undefined, loading: false };
+      : upperEntityType === 'ALBUM'
+        ? albumQuery
+        : upperEntityType === 'TRACK'
+          ? songQuery
+          : { data: undefined, loading: false };
 
   const { data, loading } = activeQuery;
 
@@ -78,6 +92,14 @@ export function useEntityData(entityType: string, entityId: string) {
           id: artistQuery.data.artist.id.toString(),
           name: artistQuery.data.artist.name,
           gid: artistQuery.data.artist.gid,
+          url: `https://open.spotify.com/artist/${artistQuery.data.artist.gid}`,
+        };
+      } else if (upperEntityType === 'ALBUM' && albumQuery.data?.album) {
+        entity = {
+          id: albumQuery.data.album.id.toString(),
+          name: albumQuery.data.album.name,
+          gid: albumQuery.data.album.spotifyGid,
+          url: `https://open.spotify.com/album/${albumQuery.data.album.spotifyGid}`,
         };
       } else if (upperEntityType === 'TRACK' && songQuery.data?.song) {
         entity = {
@@ -90,7 +112,13 @@ export function useEntityData(entityType: string, entityId: string) {
 
       setEntityData(entity);
     }
-  }, [data, upperEntityType, artistQuery.data, songQuery.data]);
+  }, [
+    data,
+    upperEntityType,
+    artistQuery.data,
+    albumQuery.data,
+    songQuery.data,
+  ]);
 
   return {
     entityData,

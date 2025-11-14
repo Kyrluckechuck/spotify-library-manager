@@ -4,9 +4,10 @@ from typing import Any, List, Optional, Tuple
 from django.db.models import Q
 
 from asgiref.sync import sync_to_async
+from celery.result import AsyncResult
 
 from library_manager.models import Album as DjangoAlbum
-from library_manager.tasks import download_missing_albums_for_artist
+from library_manager.tasks import download_single_album
 
 from ..graphql_types.models import Album, MutationResult
 from .base import BaseService
@@ -20,7 +21,7 @@ class AlbumService(BaseService[Album]):
     async def get_by_id(self, id: str) -> Optional[Album]:
         try:
             django_album = await sync_to_async(self.model.objects.get)(spotify_gid=id)
-            return self._to_graphql_type(django_album)
+            return await sync_to_async(self._to_graphql_type)(django_album)
         except self.model.DoesNotExist:
             return None
 
@@ -124,7 +125,7 @@ class AlbumService(BaseService[Album]):
                     pass
                     # await sync_to_async(download_missing_albums_for_artist)(django_album.artist.id)
 
-            return self._to_graphql_type(django_album)
+            return await sync_to_async(self._to_graphql_type)(django_album)
         except ValueError as exc:
             raise ValueError(f"Invalid album ID format: {album_id}") from exc
         except self.model.DoesNotExist as exc:
@@ -146,17 +147,17 @@ class AlbumService(BaseService[Album]):
                     )
             except self.model.DoesNotExist:
                 # Album doesn't exist - fetch from Spotify and create it
-                from downloader.downloader import Downloader
-                from spotdl.utils.spotify import SpotifyClient
-
-                from library_manager.models import Artist as DjangoArtist
-
-                # Create Spotify client and downloader
-                spotify_client = SpotifyClient()
-                downloader = Downloader(spotify_client)
-
-                # Fetch album data from Spotify
+                # Move all sync operations into a single function
                 def fetch_and_create_album() -> DjangoAlbum:
+                    from downloader.downloader import Downloader
+                    from spotdl.utils.spotify import SpotifyClient
+
+                    from library_manager.models import Artist as DjangoArtist
+
+                    # Create Spotify client and downloader
+                    spotify_client = SpotifyClient()
+                    downloader = Downloader(spotify_client)
+
                     album_data = downloader.get_album(album_id)
 
                     # Get or create the artist
@@ -192,11 +193,18 @@ class AlbumService(BaseService[Album]):
                 django_album.wanted = True
                 await sync_to_async(django_album.save)()
 
-            # Queue download
-            await sync_to_async(download_missing_albums_for_artist)(
-                django_album.artist.id
-            )
-            return self._to_graphql_type(django_album)
+            # Queue download for this specific album
+            # Extract the ID to avoid any potential async issues with model attribute access
+            album_db_id = django_album.id
+
+            # Queue the task in a sync context
+            def queue_task() -> AsyncResult:
+                return download_single_album.delay(album_db_id)
+
+            await sync_to_async(queue_task)()
+
+            # Convert to GraphQL type - wrap to ensure no lazy-loading in async context
+            return await sync_to_async(self._to_graphql_type)(django_album)
         except ValueError as exc:
             raise ValueError(f"Invalid album ID format: {album_id}") from exc
         except Exception as e:
@@ -226,7 +234,7 @@ class AlbumService(BaseService[Album]):
         return MutationResult(
             success=True,
             message="Album wanted status updated successfully",
-            album=self._to_graphql_type(django_album),
+            album=await sync_to_async(self._to_graphql_type)(django_album),
         )
 
     def _to_graphql_type(self, django_album: DjangoAlbum) -> Album:

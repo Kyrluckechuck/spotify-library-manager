@@ -1,7 +1,7 @@
 import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRequestState } from '../hooks/useRequestState';
 import {
   GetTaskHistoryDocument,
@@ -34,6 +34,8 @@ function Tasks() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const wasRefreshingRef = useRef(false);
 
   const toast = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -74,6 +76,15 @@ function Tasks() {
 
   const { isRefreshing: isHistoryRefreshing } =
     useRequestState(historyNetworkStatus);
+
+  // Track when a refresh cycle completes (poll or manual refresh)
+  useEffect(() => {
+    // When we transition from refreshing to not refreshing, a fetch just completed
+    if (wasRefreshingRef.current && !isHistoryRefreshing && historyData) {
+      setLastUpdated(new Date());
+    }
+    wasRefreshingRef.current = isHistoryRefreshing;
+  }, [isHistoryRefreshing, historyData]);
 
   const historyNodes = useMemo<TaskHistory[]>(
     () => historyData?.taskHistory?.edges?.map(edge => edge.node) || [],
@@ -271,6 +282,7 @@ function Tasks() {
         loading={historyLoading}
         error={historyError}
         isRefreshing={isHistoryRefreshing}
+        lastUpdated={lastUpdated}
         statusFilter={historyFilter}
         typeFilter={historyTypeFilter}
         entityFilter={historyEntityFilter}

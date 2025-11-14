@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { TaskHistoryEdge } from '../../types/generated/graphql';
 import type { TaskStatus, TaskType, EntityType } from '../../types/shared';
 import { SearchInput } from '../ui/SearchInput';
@@ -25,6 +25,7 @@ interface TaskHistorySectionProps {
   loading: boolean;
   error: Error | undefined;
   isRefreshing: boolean;
+  lastUpdated: Date;
 
   // Filters
   statusFilter: TaskStatus;
@@ -44,11 +45,52 @@ interface TaskHistorySectionProps {
   onLoadMore: () => void;
 }
 
+function useRelativeTime(date: Date): string {
+  const [relativeTime, setRelativeTime] = useState('');
+
+  useEffect(() => {
+    const updateRelativeTime = () => {
+      const now = new Date();
+      const secondsAgo = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+      if (secondsAgo < 10) {
+        setRelativeTime('just now');
+      } else if (secondsAgo < 45) {
+        setRelativeTime('30 seconds ago');
+      } else if (secondsAgo < 90) {
+        setRelativeTime('a minute ago');
+      } else if (secondsAgo < 300) {
+        setRelativeTime('a few minutes ago');
+      } else if (secondsAgo < 600) {
+        setRelativeTime('5 minutes ago');
+      } else if (secondsAgo < 1800) {
+        setRelativeTime('10 minutes ago');
+      } else if (secondsAgo < 3600) {
+        setRelativeTime('30 minutes ago');
+      } else if (secondsAgo < 7200) {
+        setRelativeTime('an hour ago');
+      } else {
+        const hours = Math.floor(secondsAgo / 3600);
+        setRelativeTime(`${hours} hours ago`);
+      }
+    };
+
+    updateRelativeTime();
+    // Update every 5 seconds instead of every second
+    const interval = setInterval(updateRelativeTime, 5000);
+
+    return () => clearInterval(interval);
+  }, [date]);
+
+  return relativeTime;
+}
+
 export function TaskHistorySection({
   data,
   loading,
   error,
   isRefreshing,
+  lastUpdated,
   statusFilter,
   typeFilter,
   entityFilter,
@@ -62,12 +104,45 @@ export function TaskHistorySection({
   onLoadMore,
 }: TaskHistorySectionProps) {
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
+  const relativeTime = useRelativeTime(lastUpdated);
 
   return (
     <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
       <div className='px-6 py-4 border-b border-gray-200'>
         <div className='flex items-center justify-between'>
-          <h2 className='text-lg font-semibold text-gray-900'>Task History</h2>
+          <div className='flex items-center gap-3'>
+            <h2 className='text-lg font-semibold text-gray-900'>
+              Task History
+            </h2>
+            <div className='flex items-center gap-1.5 text-xs text-gray-500'>
+              {isRefreshing ? (
+                <>
+                  <div className='animate-spin rounded-full h-3 w-3 border-2 border-blue-500 border-t-transparent' />
+                  <span className='text-blue-600'>Updating...</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    className='h-3 w-3 text-green-500'
+                    fill='currentColor'
+                    viewBox='0 0 20 20'
+                  >
+                    <path
+                      fillRule='evenodd'
+                      d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+                      clipRule='evenodd'
+                    />
+                  </svg>
+                  <span
+                    title={lastUpdated.toLocaleString()}
+                    className='cursor-help'
+                  >
+                    Updated {relativeTime}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
           <div className='flex items-center gap-4'>
             <SearchInput
               onSearch={onSearchChange}
@@ -116,14 +191,10 @@ export function TaskHistorySection({
       </div>
 
       <div className='p-6'>
-        {loading ? (
+        {loading && !isRefreshing && !data ? (
           <div className='text-center py-8'>
             <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto' />
-            <p className='mt-2 text-gray-600'>
-              {isRefreshing
-                ? 'Refreshing task history...'
-                : 'Loading task history...'}
-            </p>
+            <p className='mt-2 text-gray-600'>Loading task history...</p>
           </div>
         ) : error ? (
           <div className='text-center py-8 text-red-600'>
@@ -212,10 +283,20 @@ export function TaskHistorySection({
                               {task.taskId}
                             </span>
                           </td>
-                          <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                          <td
+                            className='px-3 py-2 whitespace-nowrap text-gray-700'
+                            title={new Date(task.startedAt).toLocaleString()}
+                          >
                             {new Date(task.startedAt).toLocaleTimeString()}
                           </td>
-                          <td className='px-3 py-2 whitespace-nowrap text-gray-700'>
+                          <td
+                            className='px-3 py-2 whitespace-nowrap text-gray-700'
+                            title={
+                              task.completedAt
+                                ? new Date(task.completedAt).toLocaleString()
+                                : undefined
+                            }
+                          >
                             {task.completedAt
                               ? new Date(task.completedAt).toLocaleTimeString()
                               : '-'}
