@@ -1,4 +1,5 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -70,6 +71,19 @@ def download_song(self: "Downloader", song: Song) -> Tuple[Song, Optional[Path]]
     ### Returns
     - tuple with the song and the path to the downloaded file if successful.
     """
+    # Check if there's already a running event loop
+    try:
+        asyncio.get_running_loop()
+        # There's a running loop - we need to run download in a separate thread
+        # to avoid "this event loop is already running" error
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_download_song_sync, self, song)
+            result = future.result()
+            return result
+    except RuntimeError:
+        # No running loop - proceed normally
+        pass
+
     # Ensure we have a valid event loop in this thread
     try:
         current_loop = asyncio.get_event_loop()
@@ -89,3 +103,17 @@ def download_song(self: "Downloader", song: Song) -> Tuple[Song, Optional[Path]]
     # Type cast to match expected return type
     result = results[0]
     return result  # type: ignore
+
+
+def _download_song_sync(
+    downloader: "Downloader", song: Song
+) -> Tuple[Song, Optional[Path]]:
+    """
+    Helper function to download a song synchronously in a separate thread.
+    This avoids event loop conflicts when called from an async context.
+    """
+    # In this new thread, there's no event loop yet
+    asyncio.set_event_loop(downloader.loop)
+    downloader.progress_handler.set_song_count(1)
+    results = downloader.download_multiple_songs([song])
+    return results[0]  # type: ignore
