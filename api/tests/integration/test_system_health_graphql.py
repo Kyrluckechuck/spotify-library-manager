@@ -3,7 +3,7 @@
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from downloader.premium_detector import PoTokenValidationResult
@@ -253,6 +253,16 @@ class TestSystemHealthGraphQL:
             patch(
                 "src.services.system_health.PremiumDetector.validate_po_token_live",
                 return_value=mock_po_token_result,
+            ),
+            # Mock the task management service's get_queue_status to avoid database connection issues
+            patch(
+                "src.services.task_management.TaskManagementService.get_queue_status",
+                new_callable=AsyncMock,
+                return_value={
+                    "total_pending_tasks": 0,
+                    "task_counts": {},
+                    "queue_size": 0,
+                },
             ),
         ):
             query = """
