@@ -146,8 +146,8 @@ An example compose setup is included. Follow these steps:
    ```
 
 4. Access the app:
-   - Frontend: http://localhost:3000
-   - API health: http://localhost:5000/healthz (internal, not published by default)
+   - **Development**: http://localhost:3000 (Frontend dev server with HMR)
+   - **Production**: http://localhost:5000 (Nginx serving frontend + API)
 
 5. Useful commands:
    ```bash
@@ -254,7 +254,10 @@ CELERY_WORKER_CONCURRENCY = 4  # Number of worker processes
 CELERY_TASK_ALWAYS_EAGER = False  # Async task execution
 ```
 
-Periodic tasks are configured via Django admin at http://localhost:5000/admin/django_celery_beat/
+**Periodic Task Management:**
+- **Docker mode**: Access Django admin via shell: `docker compose exec web python manage.py shell`
+- **Local mode**: Django admin at http://localhost:5000/admin/django_celery_beat/
+- Alternatively, edit schedules directly in `api/celery_beat_schedule.py`
 
 ### Troubleshooting
 

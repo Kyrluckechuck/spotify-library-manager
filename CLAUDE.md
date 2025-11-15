@@ -89,11 +89,25 @@ This is a **full-stack Spotify library management application** with the followi
 - **Task Management**: Celery workers handle music downloads and library sync operations
 
 ### Docker Services
-- `web`: FastAPI application server (port 5000, internal)
-- `frontend`: Nginx-served React production build (port 3000, exposed)
+
+**Production Services** (`docker-compose.yml`):
+- `web`: FastAPI application server (port 5000, internal only)
+- `frontend`: Nginx serving static React build (port 80 → host:5000, proxies `/graphql` to web service)
 - `worker`: Celery worker for background tasks
 - `beat`: Celery beat scheduler for periodic tasks
-- `postgres`: PostgreSQL database (port 5432, exposed for testing)
+- `postgres`: PostgreSQL database (port 5432)
+
+**Development Services** (`docker-compose.override.yml`):
+- `web`: FastAPI with hot-reload (port 5000, internal only)
+- `frontend-dev`: Vite dev server with HMR (port 3000, exposed to host)
+- `worker`: Celery worker with auto-restart on code changes
+- `beat`: Celery beat with auto-restart on code changes
+- `postgres`: PostgreSQL database (port 5432, exposed for direct access)
+
+**Port Mapping Rationale**:
+- **Development uses port 3000** for Vite dev server (required for HMR/hot module replacement)
+- **Production uses port 5000** for nginx (serves static files + proxies API requests)
+- API is always internal-only on port 5000, accessed via Docker network or nginx proxy
 
 ## Configuration Files
 
@@ -199,6 +213,19 @@ This is a **full-stack Spotify library management application** with the followi
 - Long-running operations (downloads, syncing) are queued
 - Use `@shared_task(bind=True)` decorator for async operations
 - Task monitoring via Django admin or task status endpoints
+
+#### Periodic Tasks (Celery Beat Schedule)
+
+The following tasks run automatically via Celery Beat (`api/celery_beat_schedule.py`):
+
+| Task | Schedule | Purpose |
+|------|----------|---------|
+| `sync-all-playlists` | Every 8 hours | Syncs all tracked playlists to detect new songs |
+| `retry-failed-playlist-songs` | Weekly (Sunday 3 AM) | Retries downloading songs that failed previously |
+| `cleanup-celery-history` | Daily (6 AM) | Removes old task history records (older than 30 days) |
+| `cleanup-stale-tasks` | Every 5 minutes | Marks stuck/stale tasks as failed |
+
+**Note**: Celery Beat uses `DatabaseScheduler` which stores schedules in PostgreSQL. View/edit schedules in Django Admin under "Periodic tasks".
 
 ### Async/Sync Boundaries - CRITICAL PATTERN
 
