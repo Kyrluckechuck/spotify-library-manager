@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@apollo/client/react';
 import {
   GetAlbumsDocument,
   SetAlbumWantedDocument,
+  DownloadAlbumDocument,
   GetArtistDocument,
   type GetAlbumsQuery,
 } from '../types/generated/graphql';
@@ -88,6 +89,7 @@ function Albums() {
   });
 
   const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
+  const [downloadAlbum] = useMutation(DownloadAlbumDocument);
   const { mutatingIds, pulseIds, handleMutation } = useMutationState();
 
   // Create prefetch handler factory
@@ -176,6 +178,21 @@ function Albums() {
         toast.success(`Wanted ${wanted ? 'enabled' : 'disabled'}`);
       },
       { withPulse: true }
+    );
+  };
+
+  const handleDownloadAlbum = async (albumId: number) => {
+    await handleMutation(
+      albumId,
+      async () => {
+        await downloadAlbum({
+          variables: {
+            albumId: albumId.toString(),
+          },
+        });
+        toast.success('Album download queued');
+      },
+      { withPulse: false }
     );
   };
 
@@ -283,6 +300,7 @@ function Albums() {
           sortDirection={sortDirection}
           onSort={handleSort}
           onToggleWanted={handleWantedToggle}
+          onDownloadAlbum={handleDownloadAlbum}
           loading={loading}
           mutatingIds={mutatingIds}
           pulseIds={pulseIds}

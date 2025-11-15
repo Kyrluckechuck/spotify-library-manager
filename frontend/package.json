@@ -14,6 +14,8 @@
     "format:check": "prettier --check .",
     "preview": "vite preview",
     "generate": "graphql-codegen --config codegen.yml",
+    "generate:local": "graphql-codegen --config codegen.local.yml",
+    "schema:fetch": "graphql-codegen --config codegen.yml",
     "validate-schema": "node scripts/validate-schema.js",
     "validate-graphql-manual": "node scripts/validate-graphql-manual.js",
     "check-newlines": "node scripts/check-newlines.js",

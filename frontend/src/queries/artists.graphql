@@ -199,6 +199,16 @@ mutation SetAlbumWanted($albumId: Int!, $wanted: Boolean!) {
   }
 }
 
+mutation DownloadAlbum($albumId: String!) {
+  downloadAlbum(albumId: $albumId) {
+    id
+    name
+    spotifyGid
+    wanted
+    downloaded
+  }
+}
+
 mutation TogglePlaylist($playlistId: Int!) {
   togglePlaylist(playlistId: $playlistId) {
     success

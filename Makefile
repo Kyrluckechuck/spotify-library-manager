@@ -172,6 +172,26 @@ test-frontend-docker-clean:
 test-migrations:
 	cd api && python manage.py showmigrations
 
+# GraphQL Schema & Type Generation
+.PHONY: graphql-generate graphql-generate-local graphql-schema-fetch
+
+graphql-generate-local:
+	@echo "📝 Generating GraphQL types from local schema file (no server needed)..."
+	@cd frontend && yarn generate:local
+	@echo "✅ GraphQL types generated from local schema!"
+
+graphql-schema-fetch:
+	@echo "🔄 Fetching GraphQL schema from running server..."
+	@if docker compose ps web | grep -q "Up"; then \
+		docker compose exec frontend-dev sh -c "GRAPHQL_CODEGEN_ENDPOINT=http://web:5000/graphql yarn schema:fetch"; \
+		echo "✅ Schema fetched and types generated!"; \
+	else \
+		echo "❌ Error: Web service is not running. Start it with 'make dev-container' first."; \
+		exit 1; \
+	fi
+
+graphql-generate: graphql-generate-local
+
 # Linting and Code Quality
 lint: lint-api lint-frontend
 lint-all: lint format-check

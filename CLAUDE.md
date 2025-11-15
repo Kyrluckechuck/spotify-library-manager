@@ -50,6 +50,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make lint-frontend` - Run frontend linting using ESLint
 - `make format` - Format code for both API and frontend (local tools required)
 
+### GraphQL Type Generation
+- **`make graphql-generate`** - **RECOMMENDED: Generate types from local schema** (fast, no server needed)
+- `make graphql-schema-fetch` - Fetch schema from running server and regenerate types (use when backend changes)
+
 ### Docker Operations
 - `make docker-build` - Build Docker image locally
 - `docker compose up --build` - Manual Docker startup
@@ -91,31 +95,6 @@ This is a **full-stack Spotify library management application** with the followi
 - `beat`: Celery beat scheduler for periodic tasks
 - `postgres`: PostgreSQL database (port 5432, exposed for testing)
 
-### Known Limitations (Celery Migration)
-
-This application was recently migrated from Huey to Celery. Some features are not yet reimplemented:
-
-1. **Task Deduplication** (TODO in `helpers.py`, `tasks.py`)
-   - Huey had built-in task deduplication to prevent duplicate task execution
-   - Celery doesn't provide this by default
-   - **Impact**: Rapid duplicate operations (e.g., clicking "sync artist" twice) may queue duplicate tasks
-   - **Workaround**: Frontend debouncing helps, but backend deduplication needed for full protection
-   - **Tracking**: Search codebase for "TODO: Implement Celery-based task deduplication"
-
-2. **ProcessInfo Monitoring** (TODO in `tasks.py` - 6 instances)
-   - Detailed task progress monitoring is disabled due to circular import issues
-   - **Impact**: Less granular progress updates during long-running operations (downloads, syncs)
-   - **Workaround**: Basic task status (PENDING, RUNNING, COMPLETED, FAILED) still works via TaskHistory
-   - **Tracking**: Search codebase for "TODO: Re-enable ProcessInfo after fixing circular imports"
-
-3. **Celery-based Stale Task Cleanup** (TODO in `tasks.py:825`)
-   - Stale task detection logic needs Celery-specific implementation
-   - **Impact**: Some edge cases in task cleanup may not be handled
-   - **Workaround**: `cleanup_stuck_tasks_periodic` runs every 5 minutes to handle most cases
-   - **Tracking**: See `cleanup_stuck_tasks_periodic` function
-
-**Recommendation**: These features can be implemented post-release as they don't block core functionality. Document as known limitations and create GitHub issues for tracking.
-
 ## Configuration Files
 
 ### Required Configuration
@@ -133,18 +112,32 @@ This application was recently migrated from Huey to Celery. Some features are no
 ## Common Development Tasks
 
 ### Adding New GraphQL Operations
-1. Define resolver in `api/src/resolvers/`
-2. Add to schema in `api/src/schema/`
-3. Ensure dev container is running: `make dev-container`
-4. Generate types (local Node.js): `cd frontend && GRAPHQL_CODEGEN_ENDPOINT=http://localhost:5000/graphql yarn generate`
-5. **Commit the updated types**: `git add frontend/src/types/generated/graphql.ts`
-6. Test operations (optional): `cd frontend && yarn test:graphql` (requires local Node.js)
 
-**Important**: GraphQL types are committed to avoid circular dependency during builds. Always regenerate and commit types after schema changes.
+**Quick Workflow (Recommended - No Running Server Needed!)**:
+1. Add mutation/query document to `frontend/src/queries/*.graphql`
+2. Generate types locally: `make graphql-generate` or `cd frontend && yarn generate:local`
+3. Use the generated types in your components
+4. **Commit everything**: `git add frontend/src/types/generated/ frontend/src/queries/`
 
-**Environment Variables**:
-- `VITE_API_URL`: Runtime GraphQL endpoint (can be relative like `/graphql`)
-- `GRAPHQL_CODEGEN_ENDPOINT`: Build-time GraphQL endpoint (must be absolute like `http://localhost:5000/graphql`)
+**When Backend Schema Changes**:
+1. Make backend changes in `api/src/schema/` or `api/src/resolvers/`
+2. Start dev container: `make dev-container`
+3. Fetch updated schema: `make graphql-schema-fetch`
+4. **Commit schema and types**: `git add frontend/src/types/generated/`
+
+**How It Works**:
+- `schema.graphql` is the source of truth (committed to repo)
+- Local type generation uses `schema.graphql` (no server needed)
+- Only fetch from server when backend schema changes
+- Pre-commit hooks validate GraphQL documents against schema
+
+**Commands**:
+- `make graphql-generate` - Generate types from local schema (fast, no server needed)
+- `make graphql-schema-fetch` - Fetch schema from running server and regenerate types
+- `cd frontend && yarn generate:local` - Same as `make graphql-generate`
+- `cd frontend && yarn schema:fetch` - Fetch schema from server (requires GRAPHQL_CODEGEN_ENDPOINT)
+
+**Important**: GraphQL types are committed to avoid circular dependency during builds. The local schema file eliminates the need for a running server during development.
 
 ### Database Changes
 1. Modify models in `api/library_manager/models.py`

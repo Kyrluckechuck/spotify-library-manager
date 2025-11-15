@@ -1,12 +1,8 @@
 overwrite: true
-schema: '${GRAPHQL_CODEGEN_ENDPOINT:-http://localhost:5000/graphql}'
+# Use local schema file as source of truth (no running server needed!)
+schema: 'src/types/generated/schema.graphql'
 documents: 'src/**/*.{ts,tsx,graphql}'
 generates:
-  # Export schema for offline type generation
-  src/types/generated/schema.graphql:
-    plugins:
-      - 'schema-ast'
-  # Generate TypeScript types
   src/types/generated/graphql.ts:
     plugins:
       - 'typescript'

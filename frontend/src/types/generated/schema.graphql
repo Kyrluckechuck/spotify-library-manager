@@ -1,14 +1,15 @@
 type Album {
+  albumGroup: String
+  albumType: String
+  artist: String
+  artistGid: String
+  artistId: Int
+  downloaded: Boolean!
   id: Int!
   name: String!
   spotifyGid: String!
   totalTracks: Int!
   wanted: Boolean!
-  downloaded: Boolean!
-  albumType: String
-  albumGroup: String
-  artist: String
-  artistId: Int
 }
 
 type AlbumConnection {
@@ -18,12 +19,14 @@ type AlbumConnection {
 }
 
 type Artist {
-  id: Int!
-  name: String!
+  addedAt: DateTime
   gid: String!
+  id: Int!
   isTracked: Boolean!
   lastSynced: DateTime
-  addedAt: DateTime
+  name: String!
+  spotifyUri: String!
+  undownloadedCount: Int!
 }
 
 type ArtistConnection {
@@ -32,40 +35,50 @@ type ArtistConnection {
   totalCount: Int!
 }
 
+type AuthenticationStatus {
+  cookiesErrorMessage: String
+  cookiesErrorType: String
+  cookiesExpireInDays: Int
+  cookiesValid: Boolean!
+  poTokenConfigured: Boolean!
+  poTokenErrorMessage: String
+  poTokenValid: Boolean!
+}
+
 """
 The `DateTime` scalar type represents a date and time following the ISO 8601 standard.
 """
 scalar DateTime
 
 type DownloadHistory {
-  id: String!
+  completedAt: DateTime
   entityId: String!
   entityType: String!
-  status: DownloadStatus!
-  startedAt: DateTime!
-  completedAt: DateTime
   errorMessage: String
+  id: String!
+  startedAt: DateTime!
+  status: DownloadStatus!
 }
 
 type DownloadProgress {
   entityId: String!
   entityType: String!
+  message: String!
   progress: Float!
   status: DownloadStatus!
-  message: String!
 }
 
 enum DownloadStatus {
-  PENDING
-  IN_PROGRESS
   COMPLETED
   FAILED
+  IN_PROGRESS
+  PENDING
   SKIPPED
 }
 
 enum EntityType {
-  ARTIST
   ALBUM
+  ARTIST
   PLAYLIST
   TRACK
 }
@@ -77,58 +90,56 @@ type HistoryConnection {
 }
 
 type HistoryEdge {
-  node: DownloadHistory!
   cursor: String!
+  node: DownloadHistory!
 }
 
 type Mutation {
-  trackArtist(artistId: Int!): MutationResult!
-  untrackArtist(artistId: Int!): MutationResult!
-  updateArtist(input: UpdateArtistInput!): Artist!
-  setAlbumWanted(albumId: Int!, wanted: Boolean!): MutationResult!
-  updateAlbum(input: UpdateAlbumInput!): Album!
-  togglePlaylist(playlistId: Int!): MutationResult!
-  trackPlaylist(input: TrackPlaylistInput!): Playlist!
-  updatePlaylist(
-    playlistId: Int!
-    name: String!
-    autoTrackArtists: Boolean!
-  ): MutationResult!
-  syncArtist(artistId: String!): Artist!
-  syncPlaylist(playlistId: Int!): MutationResult!
-  downloadAlbum(albumId: String!): Album!
-  downloadUrl(url: String!, autoTrackArtists: Boolean! = false): MutationResult!
-  createPlaylist(
-    name: String!
-    url: String!
-    autoTrackArtists: Boolean! = false
-  ): Playlist!
+  batchArtistOperations(artistIds: [Int!]!, operations: [String!] = null): MutationResult!
   cancelAllPendingTasks: MutationResult!
+  cancelAllTasks: MutationResult!
+  cancelRunningTasksByName(taskName: String!): MutationResult!
   cancelTasksByName(taskName: String!): MutationResult!
+  createPlaylist(autoTrackArtists: Boolean! = false, name: String!, url: String!): Playlist!
+  downloadAlbum(albumId: String!): Album!
+  downloadArtist(artistId: String!): MutationResult!
+  downloadUrl(autoTrackArtists: Boolean! = false, url: String!): MutationResult!
+  setAlbumWanted(albumId: Int!, wanted: Boolean!): MutationResult!
+  syncAllTrackedArtists: MutationResult!
+  syncArtist(artistId: String!): Artist!
+  syncPlaylist(force: Boolean! = false, playlistId: Int!): MutationResult!
+  togglePlaylist(playlistId: Int!): MutationResult!
+  togglePlaylistAutoTrack(playlistId: Int!): MutationResult!
+  trackArtist(artistId: Int!): MutationResult!
+  trackPlaylist(input: TrackPlaylistInput!): Playlist!
+  untrackArtist(artistId: Int!): MutationResult!
+  updateAlbum(input: UpdateAlbumInput!): Album!
+  updateArtist(input: UpdateArtistInput!): Artist!
+  updatePlaylist(autoTrackArtists: Boolean!, name: String!, playlistId: Int!, url: String!): MutationResult!
 }
 
 type MutationResult {
-  success: Boolean!
-  message: String!
-  artist: Artist
   album: Album
+  artist: Artist
+  message: String!
   playlist: Playlist
+  success: Boolean!
 }
 
 type PageInfo {
+  endCursor: String
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
   startCursor: String
-  endCursor: String
 }
 
 type Playlist {
+  autoTrackArtists: Boolean!
+  enabled: Boolean!
   id: Int!
+  lastSyncedAt: DateTime
   name: String!
   url: String!
-  enabled: Boolean!
-  autoTrackArtists: Boolean!
-  lastSyncedAt: DateTime
 }
 
 type PlaylistConnection {
@@ -138,80 +149,40 @@ type PlaylistConnection {
 }
 
 type Query {
-  artists(
-    first: Int = 20
-    after: String = null
-    isTracked: Boolean = null
-    search: String = null
-  ): ArtistConnection!
-  artist(id: String!): Artist
-  albums(
-    first: Int = 20
-    after: String = null
-    artistId: Int = null
-    downloaded: Boolean = null
-    wanted: Boolean = null
-    sortBy: String = null
-    sortDirection: String = null
-    search: String = null
-  ): AlbumConnection!
   album(id: String!): Album
-  songs(
-    first: Int = 20
-    after: String = null
-    artistId: Int = null
-    downloaded: Boolean = null
-    unavailable: Boolean = null
-    sortBy: String = null
-    sortDirection: String = null
-    search: String = null
-  ): SongConnection!
-  song(id: String!): Song
-  playlists(
-    first: Int = 20
-    after: String = null
-    enabled: Boolean = null
-    sortBy: String = null
-    sortDirection: String = null
-    search: String = null
-  ): PlaylistConnection!
+  albums(after: String = null, artistId: Int = null, downloaded: Boolean = null, first: Int = 20, search: String = null, sortBy: String = null, sortDirection: String = null, wanted: Boolean = null): AlbumConnection!
+  artist(id: String!): Artist
+  artists(after: String = null, first: Int = 20, isTracked: Boolean = null, search: String = null): ArtistConnection!
+  downloadHistory(after: String = null, entityType: String = null, first: Int = 20, status: String = null): HistoryConnection!
   playlist(id: String!): Playlist
-  downloadHistory(
-    first: Int = 20
-    after: String = null
-    entityType: String = null
-    status: String = null
-  ): HistoryConnection!
-  taskHistory(
-    first: Int = 20
-    after: String = null
-    status: String = null
-    type: String = null
-    entityType: String = null
-    search: String = null
-  ): TaskHistoryConnection!
+  playlists(after: String = null, enabled: Boolean = null, first: Int = 20, search: String = null, sortBy: String = null, sortDirection: String = null): PlaylistConnection!
   queueStatus: QueueStatus!
+  song(id: String!): Song
+  songs(after: String = null, artistId: Int = null, downloaded: Boolean = null, first: Int = 20, search: String = null, sortBy: String = null, sortDirection: String = null, unavailable: Boolean = null): SongConnection!
+  systemHealth: SystemHealth!
+  taskHistory(after: String = null, entityType: String = null, first: Int = 20, search: String = null, status: String = null, type: String = null): TaskHistoryConnection!
 }
 
 type QueueStatus {
-  totalPendingTasks: Int!
-  taskCounts: [TaskCount!]!
   queueSize: Int!
+  taskCounts: [TaskCount!]!
+  totalPendingTasks: Int!
 }
 
 type Song {
+  bitrate: Int!
+  createdAt: DateTime!
+  downloaded: Boolean!
+  failedCount: Int!
+  filePath: String
+  gid: String!
   id: Int!
   name: String!
-  gid: String!
   primaryArtist: String!
+  primaryArtistGid: String!
   primaryArtistId: Int!
-  createdAt: DateTime!
-  failedCount: Int!
-  bitrate: Int!
-  unavailable: Boolean!
-  filePath: String
-  downloaded: Boolean!
   spotifyUri: String!
+  unavailable: Boolean!
 }
 
 type SongConnection {
@@ -221,27 +192,33 @@ type SongConnection {
 }
 
 type Subscription {
-  downloadProgress(entityId: String!): DownloadProgress!
   allDownloadProgress: DownloadProgress!
+  downloadProgress(entityId: String!): DownloadProgress!
+}
+
+type SystemHealth {
+  authentication: AuthenticationStatus!
+  canDownload: Boolean!
+  downloadBlockerReason: String
 }
 
 type TaskCount {
-  taskName: String!
   count: Int!
+  taskName: String!
 }
 
 type TaskHistory {
-  id: String!
-  taskId: String!
-  type: TaskType!
-  entityId: String!
-  entityType: EntityType!
-  status: TaskStatus!
-  startedAt: DateTime!
   completedAt: DateTime
   durationSeconds: Int
-  progressPercentage: Float
+  entityId: String!
+  entityType: EntityType!
+  id: String!
   logMessages: [String!]!
+  progressPercentage: Float
+  startedAt: DateTime!
+  status: TaskStatus!
+  taskId: String!
+  type: TaskType!
 }
 
 type TaskHistoryConnection {
@@ -251,26 +228,27 @@ type TaskHistoryConnection {
 }
 
 type TaskHistoryEdge {
-  node: TaskHistory!
   cursor: String!
+  node: TaskHistory!
 }
 
 enum TaskStatus {
-  RUNNING
+  CANCELLED
   COMPLETED
   FAILED
   PENDING
+  RUNNING
 }
 
 enum TaskType {
-  SYNC
   DOWNLOAD
   FETCH
+  SYNC
 }
 
 input TrackPlaylistInput {
-  playlistId: String!
   autoTrackArtists: Boolean! = false
+  playlistId: String!
 }
 
 input UpdateAlbumInput {
@@ -280,6 +258,6 @@ input UpdateAlbumInput {
 
 input UpdateArtistInput {
   artistId: String!
-  isTracked: Boolean = null
   autoDownload: Boolean = null
+  isTracked: Boolean = null
 }

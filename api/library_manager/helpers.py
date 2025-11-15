@@ -1,11 +1,49 @@
+import hashlib
 from typing import Dict, List, Optional
 
 from django.db.models import QuerySet
 
+from celery.result import AsyncResult
+
 from .models import Artist, TrackedPlaylist
 
-# from huey.api import Task  # Removed for Celery migration
-# from huey.contrib.djhuey import HUEY as rawHuey  # Removed for Celery migration
+# Celery Task Deduplication Utilities
+
+
+def generate_task_id(task_name: str, *args, **kwargs) -> str:
+    """
+    Generate a deterministic task ID based on task name and arguments.
+
+    This allows Celery to deduplicate tasks - if a task with the same ID
+    is already queued or running, attempting to queue another will be ignored.
+
+    Args:
+        task_name: Name of the Celery task
+        *args: Positional arguments to the task
+        **kwargs: Keyword arguments to the task
+
+    Returns:
+        A unique, deterministic task ID string
+    """
+    # Create a stable string representation of args/kwargs
+    arg_str = f"{task_name}:{args}:{sorted(kwargs.items())}"
+    # Hash it to get a reasonable-length ID
+    task_hash = hashlib.md5(arg_str.encode()).hexdigest()
+    return f"{task_name}-{task_hash[:12]}"
+
+
+def is_task_pending_or_running(task_id: str) -> bool:
+    """
+    Check if a task with the given ID is currently pending or running.
+
+    Args:
+        task_id: The Celery task ID to check
+
+    Returns:
+        True if task is PENDING or STARTED, False otherwise
+    """
+    result = AsyncResult(task_id)
+    return result.state in ["PENDING", "STARTED", "RETRY"]
 
 
 # Original Huey implementations (commented out)
@@ -26,37 +64,36 @@ from .models import Artist, TrackedPlaylist
 #     return pending_args
 
 
-# TODO: Implement Celery-based task deduplication
-def get_all_tasks_with_name(task_name: str) -> List:
-    """Temporary stub - returns empty list to avoid failures.
-    TODO: Implement proper Celery task deduplication."""
-    return []
-
-
-def convert_first_task_args_to_list(pending_tasks: List) -> List:
-    """Temporary stub - returns empty list to avoid failures.
-    TODO: Implement proper Celery task arg conversion."""
-    return []
-
-
 def update_tracked_artists_albums(
     already_enqueued_artists: List[int],
     artists_to_enqueue: List[Artist],
     priority: Optional[int] = None,
 ) -> None:
+    # Local import to avoid circular import during module initialization
+    from .tasks import fetch_all_albums_for_artist
+
     for artist in artists_to_enqueue:
         # Use database ID for internal operations
         if artist.id in already_enqueued_artists:
             continue
 
+        # Generate deterministic task ID for deduplication
+        task_id = generate_task_id(
+            "library_manager.tasks.fetch_all_albums_for_artist", artist.id
+        )
+
+        # Skip if task is already queued or running
+        if is_task_pending_or_running(task_id):
+            continue
+
         extra_args = {}
         if priority is not None:
             extra_args["priority"] = priority
-        # Local import to avoid circular import during module initialization
-        from .tasks import fetch_all_albums_for_artist
 
-        # Pass database ID, not gid
-        fetch_all_albums_for_artist(artist.id, **extra_args)
+        # Queue task asynchronously with deterministic ID for deduplication
+        fetch_all_albums_for_artist.apply_async(
+            args=[artist.id], task_id=task_id, **extra_args
+        )
 
 
 def download_missing_tracked_artists(
@@ -64,23 +101,33 @@ def download_missing_tracked_artists(
     artists_to_enqueue: List[Artist],
     priority: Optional[int] = None,
 ) -> None:
+    # Local import to avoid circular import during module initialization
+    from .tasks import download_missing_albums_for_artist
+
     for artist in artists_to_enqueue:
         # Use database ID for internal operations
         if artist.id in already_enqueued_artists:
             continue
 
-        extra_args = {
-            # Delay album downloads for the artists for 5 seconds (once they begin)
-            "delay": 5
-        }
+        # Generate deterministic task ID for deduplication
+        task_id = generate_task_id(
+            "library_manager.tasks.download_missing_albums_for_artist",
+            artist.id,
+            delay=5,
+        )
 
+        # Skip if task is already queued or running
+        if is_task_pending_or_running(task_id):
+            continue
+
+        extra_args = {}
         if priority is not None:
             extra_args["priority"] = priority
-        # Local import to avoid circular import during module initialization
-        from .tasks import download_missing_albums_for_artist
 
-        # Queue the task (pass database ID, not gid)
-        download_missing_albums_for_artist.delay(artist.id, delay=5)
+        # Queue the task asynchronously with deterministic ID for deduplication
+        download_missing_albums_for_artist.apply_async(
+            args=[artist.id], kwargs={"delay": 5}, task_id=task_id, **extra_args
+        )
 
 
 def download_non_enqueued_playlists(
@@ -88,36 +135,43 @@ def download_non_enqueued_playlists(
     playlists_to_enqueue: List[TrackedPlaylist],
     priority: Optional[int] = None,
 ) -> None:
+    # Local import to avoid circular import during module initialization
+    from .tasks import download_playlist
+
     for playlist in playlists_to_enqueue:
         if playlist.url in already_enqueued_playlists:
+            continue
+
+        # Generate deterministic task ID for deduplication
+        task_id = generate_task_id(
+            "library_manager.tasks.download_playlist",
+            playlist.url,
+            tracked=playlist.auto_track_artists,
+        )
+
+        # Skip if task is already queued or running
+        if is_task_pending_or_running(task_id):
             continue
 
         extra_args = {}
         if priority is not None:
             extra_args["priority"] = priority
-        # Local import to avoid circular import during module initialization
-        from .tasks import download_playlist
 
-        # Queue the task (remove priority from extra_args as it's not supported by delay())
-        download_playlist.delay(
-            playlist_url=playlist.url, tracked=playlist.auto_track_artists
+        # Queue the task asynchronously with deterministic ID for deduplication
+        download_playlist.apply_async(
+            kwargs={
+                "playlist_url": playlist.url,
+                "tracked": playlist.auto_track_artists,
+            },
+            task_id=task_id,
+            **extra_args,
         )
 
 
 def enqueue_playlists(
     playlists_to_enqueue: List[TrackedPlaylist], priority: Optional[int] = None
 ) -> None:
-    existing_tasks = get_all_tasks_with_name("download_playlist")
-    already_enqueued_playlists = convert_first_task_args_to_list(existing_tasks)
-    # Convert to List[str] since playlist URLs are strings
-    playlist_urls = (
-        [str(url) for url in already_enqueued_playlists]
-        if isinstance(already_enqueued_playlists, list)
-        else []
-    )
-    download_non_enqueued_playlists(
-        playlist_urls, playlists_to_enqueue, priority=priority
-    )
+    download_non_enqueued_playlists([], playlists_to_enqueue, priority=priority)
 
 
 def enqueue_fetch_all_albums_for_artists(

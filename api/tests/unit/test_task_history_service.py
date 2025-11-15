@@ -235,11 +235,13 @@ class TestTaskHistoryService:
     @pytest.mark.asyncio
     async def test_create_task_with_all_entity_types(self, task_history_service):
         """Test creating tasks with all entity types."""
+        import uuid
+
         entity_types = [EntityType.ARTIST, EntityType.ALBUM, EntityType.PLAYLIST]
 
         for i, entity_type in enumerate(entity_types):
             task = await task_history_service.create_task(
-                task_id=f"task_{entity_type.value}_{i}",
+                task_id=f"task_{entity_type.value}_{i}_{uuid.uuid4().hex[:8]}",
                 task_type=TaskType.SYNC,
                 entity_id=f"entity_{entity_type.value}_{i}",
                 entity_type=entity_type,

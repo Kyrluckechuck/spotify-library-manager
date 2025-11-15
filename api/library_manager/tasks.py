@@ -739,8 +739,6 @@ def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by(
         "last_synced_at", "added_at", "id"
     )
-    # TODO: Implement Celery-based task deduplication
-    # For now, just process all tracked artists
     helpers.update_tracked_artists_albums(
         [], list(all_tracked_artists), priority=None  # task.priority not available
     )
@@ -770,32 +768,20 @@ def download_missing_tracked_artists(self, task_id: Optional[str] = None) -> Non
         )
         return
     # Limit to only desired album types (ignoring `appears_on`), and limit results so this won't throttle
-    # NOTE: Commented out temporarily until Celery-based task deduplication is implemented
-    # all_tracked_artists = (
-    #     Artist.objects.filter(
-    #         tracked=True,
-    #         album__downloaded=False,
-    #         album__wanted=True,
-    #         album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
-    #     )
-    #     .exclude(album__album_group__in=ALBUM_GROUPS_TO_IGNORE)
-    #     .distinct()
-    #     .order_by("last_synced_at", "added_at", "id")[:150]
-    # )
-    # existing_tasks = helpers.get_all_tasks_with_name(
-    #     "download_missing_albums_for_artist"
-    # )
-    # already_enqueued_artists = helpers.convert_first_task_args_to_list(existing_tasks)
-    # # Convert to List[int] since artist IDs are integers
-    # artist_ids = (
-    #     [int(id) for id in already_enqueued_artists]
-    #     if isinstance(already_enqueued_artists, list)
-    #     else []
-    # )
-    # TODO: Implement Celery-based task deduplication
-    # helpers.download_missing_tracked_artists(
-    #     artist_ids, list(all_tracked_artists), priority=None
-    # )
+    all_tracked_artists = (
+        Artist.objects.filter(
+            tracked=True,
+            album__downloaded=False,
+            album__wanted=True,
+            album__album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
+        )
+        .exclude(album__album_group__in=ALBUM_GROUPS_TO_IGNORE)
+        .distinct()
+        .order_by("last_synced_at", "added_at", "id")[:150]
+    )
+    helpers.download_missing_tracked_artists(
+        [], list(all_tracked_artists), priority=None
+    )
 
 
 @celery_app.task(

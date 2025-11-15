@@ -65,39 +65,54 @@ class TestHelpers(TestCase):
         mock_download.assert_has_calls(expected_calls, any_order=True)
         assert mock_download.call_count == 2
 
+    @patch("library_manager.helpers.is_task_pending_or_running", return_value=False)
     @patch("library_manager.tasks.fetch_all_albums_for_artist")
-    def test_update_tracked_artists_albums_uses_database_ids(self, mock_fetch):
+    def test_update_tracked_artists_albums_uses_database_ids(
+        self, mock_fetch, mock_is_pending
+    ):
         """Test that update_tracked_artists_albums uses database IDs."""
         artists = [self.artist1, self.artist2]
         already_enqueued = []
 
         update_tracked_artists_albums(already_enqueued, artists)
 
-        # Verify that fetch_all_albums_for_artist was called with database IDs
-        expected_calls = [
-            ((self.artist1.id,), {}),
-            ((self.artist2.id,), {}),
-        ]
-        mock_fetch.assert_has_calls(expected_calls, any_order=True)
-        assert mock_fetch.call_count == 2
+        # Verify that apply_async was called with database IDs
+        assert mock_fetch.apply_async.call_count == 2
 
+        # Check that each call used the correct artist ID in args
+        for call in mock_fetch.apply_async.call_args_list:
+            args, kwargs = call
+            assert "args" in kwargs
+            assert len(kwargs["args"]) == 1
+            assert kwargs["args"][0] in [self.artist1.id, self.artist2.id]
+            # Verify task_id is set for deduplication
+            assert "task_id" in kwargs
+
+    @patch("library_manager.helpers.is_task_pending_or_running", return_value=False)
     @patch("library_manager.tasks.download_missing_albums_for_artist")
-    def test_download_missing_tracked_artists_uses_database_ids(self, mock_download):
+    def test_download_missing_tracked_artists_uses_database_ids(
+        self, mock_download, mock_is_pending
+    ):
         """Test that download_missing_tracked_artists uses database IDs."""
         artists = [self.artist1, self.artist2]
         already_enqueued = []
 
         download_missing_tracked_artists(already_enqueued, artists)
 
-        # Verify that download_missing_albums_for_artist.delay was called with database IDs
-        mock_download.delay.assert_has_calls(
-            [
-                ((self.artist1.id,), {"delay": 5}),
-                ((self.artist2.id,), {"delay": 5}),
-            ],
-            any_order=True,
-        )
-        assert mock_download.delay.call_count == 2
+        # Verify that apply_async was called with database IDs
+        assert mock_download.apply_async.call_count == 2
+
+        # Check that each call used the correct artist ID and delay kwarg
+        for call in mock_download.apply_async.call_args_list:
+            args, kwargs = call
+            assert "args" in kwargs
+            assert len(kwargs["args"]) == 1
+            assert kwargs["args"][0] in [self.artist1.id, self.artist2.id]
+            # Verify delay kwarg is passed
+            assert "kwargs" in kwargs
+            assert kwargs["kwargs"] == {"delay": 5}
+            # Verify task_id is set for deduplication
+            assert "task_id" in kwargs
 
     @patch("library_manager.tasks.fetch_all_albums_for_artist")
     def test_enqueue_fetch_all_albums_for_artists_with_extra_args(self, mock_fetch):
