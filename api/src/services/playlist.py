@@ -33,52 +33,24 @@ class PlaylistService(BaseService[Playlist]):
 
         return url
 
-    def _find_duplicate_playlist(self, normalized_url: str) -> Optional[DjangoPlaylist]:
-        """Find existing playlist that matches the normalized URL in either format."""
-        # First check for exact match with normalized URL
-        existing = cast(
-            Optional[DjangoPlaylist],
-            self.model.objects.filter(url=normalized_url).first(),
-        )
-        if existing:
-            return existing
-
-        # If normalized_url is a URI, also check for HTTP format
-        if normalized_url.startswith("spotify:"):
-            # Convert URI back to HTTP format to check existing HTTP URLs
-            parts = normalized_url.split(":")
-            if len(parts) == 3:
-                content_type, content_id = parts[1], parts[2]
-                http_url = f"https://open.spotify.com/{content_type}/{content_id}"
-
-                # Check for HTTP URLs with various parameter patterns
-                existing = cast(
-                    Optional[DjangoPlaylist],
-                    self.model.objects.filter(
-                        Q(url=http_url)
-                        | Q(
-                            url__startswith=f"{http_url}?"
-                        )  # Match URLs with parameters
-                    ).first(),
-                )
-                if existing:
-                    return existing
-
-        return None
-
-    def _find_duplicate_playlist_excluding(
-        self, normalized_url: str, exclude_id: int
+    def _find_duplicate_playlist(
+        self, normalized_url: str, exclude_id: Optional[int] = None
     ) -> Optional[DjangoPlaylist]:
-        """Find existing playlist that matches the normalized URL, excluding the specified ID."""
-        # First check for exact match with normalized URL
-        existing = cast(
-            Optional[DjangoPlaylist],
-            (
-                self.model.objects.filter(url=normalized_url)
-                .exclude(id=exclude_id)
-                .first()
-            ),
-        )
+        """Find existing playlist that matches the normalized URL in either format.
+
+        Args:
+            normalized_url: The normalized playlist URL (URI or HTTP format)
+            exclude_id: Optional playlist ID to exclude from search (for update operations)
+
+        Returns:
+            Matching playlist if found, None otherwise
+        """
+        # Build base queryset with exact URL match
+        queryset = self.model.objects.filter(url=normalized_url)
+        if exclude_id is not None:
+            queryset = queryset.exclude(id=exclude_id)
+
+        existing = cast(Optional[DjangoPlaylist], queryset.first())
         if existing:
             return existing
 
@@ -91,19 +63,13 @@ class PlaylistService(BaseService[Playlist]):
                 http_url = f"https://open.spotify.com/{content_type}/{content_id}"
 
                 # Check for HTTP URLs with various parameter patterns
-                existing = cast(
-                    Optional[DjangoPlaylist],
-                    (
-                        self.model.objects.filter(
-                            Q(url=http_url)
-                            | Q(
-                                url__startswith=f"{http_url}?"
-                            )  # Match URLs with parameters
-                        )
-                        .exclude(id=exclude_id)
-                        .first()
-                    ),
+                queryset = self.model.objects.filter(
+                    Q(url=http_url) | Q(url__startswith=f"{http_url}?")
                 )
+                if exclude_id is not None:
+                    queryset = queryset.exclude(id=exclude_id)
+
+                existing = cast(Optional[DjangoPlaylist], queryset.first())
                 if existing:
                     return existing
 
@@ -258,8 +224,8 @@ class PlaylistService(BaseService[Playlist]):
             current_normalized = self._normalize_spotify_url(django_playlist.url)
             if normalized_url != current_normalized:
                 existing_playlist = await sync_to_async(
-                    lambda: self._find_duplicate_playlist_excluding(
-                        normalized_url, playlist_id
+                    lambda: self._find_duplicate_playlist(
+                        normalized_url, exclude_id=playlist_id
                     )
                 )()
 

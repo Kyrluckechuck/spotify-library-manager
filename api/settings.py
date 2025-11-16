@@ -114,19 +114,9 @@ settings = dynaconf.DjangoDynaconf(
 )
 
 
-# Optionally enable dev-only Django apps when available and DEBUG is true
+# Internal IPs for development
 if settings.DEBUG:  # type: ignore[name-defined]
-    try:
-        # import debug_toolbar  # noqa: F401
-
-        # settings.INSTALLED_APPS.append("debug_toolbar")
-        # settings.MIDDLEWARE = [
-        #     "debug_toolbar.middleware.DebugToolbarMiddleware",
-        #     *settings.MIDDLEWARE,
-        # ]
-        INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]  # For Docker, VMs
-    except Exception:
-        pass
+    INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]  # For Docker, VMs
 
     try:
         import django_extensions  # noqa: F401

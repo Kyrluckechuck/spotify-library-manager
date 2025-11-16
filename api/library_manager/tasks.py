@@ -1,4 +1,3 @@
-import logging
 import time
 import uuid
 from typing import Optional, cast
@@ -155,7 +154,7 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
         try:
             artist = Artist.objects.get(id=artist_id)
         except Artist.DoesNotExist:
-            print(f"Artist with ID {artist_id} does not exist. Skipping task.")
+            logger.warning(f"Artist with ID {artist_id} does not exist. Skipping task.")
             return
 
         # Create task history record (always create, even without Celery context)
@@ -178,7 +177,7 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
 
         # Check for cancellation before proceeding
         if check_task_cancellation(task_history):
-            print(f"Task cancelled for artist {artist.name}")
+            logger.info(f"Task cancelled for artist {artist.name}")
             return
 
         downloader_config = Config()
@@ -197,7 +196,7 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
         if check_and_update_progress(
             task_history, 25.0, "Fetching artist albums from Spotify"
         ):
-            print(f"Task cancelled during Spotify fetch for artist {artist.name}")
+            logger.info(f"Task cancelled during Spotify fetch for artist {artist.name}")
             return
 
         # Create callback to update task progress during fetch (if task_history exists)
@@ -214,7 +213,7 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
 
         # Final cancellation check before completion
         if check_task_cancellation(task_history):
-            print(f"Task cancelled before completion for artist {artist.name}")
+            logger.info(f"Task cancelled before completion for artist {artist.name}")
             return
 
         complete_task(task_history, success=True)
@@ -242,7 +241,7 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
         try:
             artist = Artist.objects.get(id=artist_id)
         except Artist.DoesNotExist:
-            print(f"Artist with ID {artist_id} does not exist. Skipping task.")
+            logger.warning(f"Artist with ID {artist_id} does not exist. Skipping task.")
             return
 
         # Create task history record
@@ -261,7 +260,7 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
 
         # Check for cancellation before proceeding
         if check_task_cancellation(task_history):
-            print(f"Task cancelled for artist {artist.name}")
+            logger.info(f"Task cancelled for artist {artist.name}")
             return
 
         missing_albums = Album.objects.filter(
@@ -270,7 +269,7 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             wanted=True,
             album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
         ).exclude(album_group__in=ALBUM_GROUPS_TO_IGNORE)
-        print(
+        logger.info(
             f"missing albums search for artist {artist.gid} found {missing_albums.count()}"
         )
 
@@ -278,7 +277,7 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
         if check_and_update_progress(
             task_history, 25.0, f"Found {missing_albums.count()} missing albums"
         ):
-            print(f"Task cancelled during album search for artist {artist.name}")
+            logger.info(f"Task cancelled during album search for artist {artist.name}")
             return
 
         downloader_config = Config()
@@ -295,7 +294,9 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
         if check_and_update_progress(
             task_history, 50.0, "Preparing download configuration"
         ):
-            print(f"Task cancelled during config preparation for artist {artist.name}")
+            logger.info(
+                f"Task cancelled during config preparation for artist {artist.name}"
+            )
             return
 
         downloader_config.urls = (
@@ -305,7 +306,7 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             for missing_album in missing_albums:
                 downloader_config.urls.append(missing_album.spotify_uri)
 
-            print(
+            logger.info(
                 f"missing albums search for artist {artist.gid} kicking off {len(downloader_config.urls)}"
             )
 
@@ -315,7 +316,7 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
                 75.0,
                 f"Downloading {len(downloader_config.urls)} albums",
             ):
-                print(f"Task cancelled before download for artist {artist.name}")
+                logger.info(f"Task cancelled before download for artist {artist.name}")
                 return
 
             # Create callback to update task progress during long downloads
@@ -332,10 +333,10 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
                     downloader_config, task_progress_callback=progress_callback
                 )
             except InterruptedError as e:
-                print(str(e))
+                logger.error(str(e))
                 return
         else:
-            print(
+            logger.info(
                 f"missing albums search for artist {artist.gid} is skipping since there are none missing"
             )
             if task_history:
@@ -345,7 +346,7 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
 
         # Final cancellation check before marking complete
         if check_task_cancellation(task_history):
-            print(f"Task cancelled before completion for artist {artist.name}")
+            logger.info(f"Task cancelled before completion for artist {artist.name}")
             return
 
         artist.last_synced_at = Now()
@@ -355,7 +356,6 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             complete_task(task_history, success=True)
 
     except Exception as e:
-        logger = logging.getLogger("api.library_manager")
         logger.error("Error in sync_tracked_playlist_internal: %s", e, exc_info=True)
         if task_history:
             complete_task(task_history, success=False, error_message=str(e))
@@ -410,7 +410,7 @@ def download_single_album(self, album_id: int) -> None:
         try:
             album = Album.objects.get(id=album_id)
         except Album.DoesNotExist:
-            print(f"Album with ID {album_id} does not exist. Skipping task.")
+            logger.warning(f"Album with ID {album_id} does not exist. Skipping task.")
             return
 
         # Create task history record for the album
@@ -429,7 +429,7 @@ def download_single_album(self, album_id: int) -> None:
 
         # Check for cancellation before proceeding
         if check_task_cancellation(task_history):
-            print(f"Task cancelled for album {album.name}")
+            logger.info(f"Task cancelled for album {album.name}")
             return
 
         # Ensure album is marked as wanted
@@ -440,7 +440,9 @@ def download_single_album(self, album_id: int) -> None:
         if check_and_update_progress(
             task_history, 25.0, "Preparing download configuration"
         ):
-            print(f"Task cancelled during config preparation for album {album.name}")
+            logger.info(
+                f"Task cancelled during config preparation for album {album.name}"
+            )
             return
 
         downloader_config = Config()
@@ -449,11 +451,13 @@ def download_single_album(self, album_id: int) -> None:
         if check_and_update_progress(
             task_history, 50.0, f"Downloading album {album.name}"
         ):
-            print(f"Task cancelled before download for album {album.name}")
+            logger.info(f"Task cancelled before download for album {album.name}")
             return
 
         # Perform the download
-        print(f"Downloading album: {album.name} (spotify_uri: {album.spotify_uri})")
+        logger.info(
+            f"Downloading album: {album.name} (spotify_uri: {album.spotify_uri})"
+        )
         spotdl_wrapper.execute(downloader_config)
 
         # Mark album as downloaded
@@ -461,15 +465,15 @@ def download_single_album(self, album_id: int) -> None:
         album.save()
 
         if check_and_update_progress(task_history, 100.0, "Download completed"):
-            print(f"Task cancelled after download for album {album.name}")
+            logger.info(f"Task cancelled after download for album {album.name}")
             return
 
         complete_task(task_history, success=True)
-        print(f"Successfully downloaded album: {album.name}")
+        logger.info(f"Successfully downloaded album: {album.name}")
 
     except Exception as e:
         error_msg = f"Error downloading album: {str(e)}"
-        print(error_msg)
+        logger.error(error_msg)
         if task_history:
             complete_task(task_history, success=False, error_message=error_msg)
         raise
@@ -493,7 +497,9 @@ def sync_tracked_playlist(
     try:
         tracked_playlist = TrackedPlaylist.objects.get(id=playlist_id)
     except TrackedPlaylist.DoesNotExist:
-        print(f"TrackedPlaylist with ID {playlist_id} does not exist. Skipping task.")
+        logger.warning(
+            f"TrackedPlaylist with ID {playlist_id} does not exist. Skipping task."
+        )
         return
 
     _sync_tracked_playlist_internal(tracked_playlist, task_id)
@@ -546,7 +552,7 @@ def download_playlist(
 
         # Check for cancellation before proceeding
         if check_task_cancellation(task_history):
-            print(f"Playlist download cancelled: {playlist_url}")
+            logger.info(f"Playlist download cancelled: {playlist_url}")
             return
 
         downloader_config = Config(
@@ -562,7 +568,7 @@ def download_playlist(
 
         # Check for cancellation before download
         if check_and_update_progress(task_history, 50.0, "Downloading playlist tracks"):
-            print(f"Playlist download cancelled before download: {playlist_url}")
+            logger.info(f"Playlist download cancelled before download: {playlist_url}")
             return
 
         # Create callback to update task progress during playlist download
@@ -581,12 +587,14 @@ def download_playlist(
                 downloader_config, task_progress_callback=playlist_progress_callback
             )
         except InterruptedError as e:
-            print(str(e))
+            logger.error(str(e))
             return
 
         # Final cancellation check
         if check_task_cancellation(task_history):
-            print(f"Playlist download cancelled before completion: {playlist_url}")
+            logger.info(
+                f"Playlist download cancelled before completion: {playlist_url}"
+            )
             return
 
         complete_task(task_history, success=True)
@@ -620,12 +628,12 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     missing_known_songs_list = missing_known_songs_list | failed_known_songs_list
 
     if missing_known_songs_list.count() == 0:
-        print("All songs downloaded, exiting missing known song loop!")
+        logger.info("All songs downloaded, exiting missing known song loop!")
         return
 
     failed_song_array = [song.spotify_uri for song in missing_known_songs_list]
 
-    print(f"Downloading {len(failed_song_array)} missing songs")
+    logger.info(f"Downloading {len(failed_song_array)} missing songs")
     downloader_config = Config(urls=failed_song_array, track_artists=False)
 
     # TODO: Re-enable ProcessInfo after fixing circular imports
@@ -668,7 +676,7 @@ def download_extra_album_types_for_artist(
     try:
         artist = Artist.objects.get(id=artist_id)
     except Artist.DoesNotExist:
-        print(f"Artist with ID {artist_id} does not exist. Skipping task.")
+        logger.warning(f"Artist with ID {artist_id} does not exist. Skipping task.")
         return
 
     missing_albums = Album.objects.filter(
@@ -677,7 +685,7 @@ def download_extra_album_types_for_artist(
         wanted=True,
         album_group__in=ALBUM_GROUPS_TO_IGNORE,
     )
-    print(
+    logger.info(
         f"extra album missing albums search for artist {artist.gid} found {missing_albums.count()}"
     )
     downloader_config = Config()
@@ -694,7 +702,7 @@ def download_extra_album_types_for_artist(
         for missing_album in missing_albums:
             downloader_config.urls.append(missing_album.spotify_uri)
 
-        print(
+        logger.info(
             f"extra album missing albums search for artist {artist.gid} kicking off {len(downloader_config.urls)}"
         )
 
@@ -711,7 +719,7 @@ def download_extra_album_types_for_artist(
 
         spotdl_wrapper.execute(downloader_config, task_progress_callback)
     else:
-        print(
+        logger.info(
             f"extra album missing albums search for artist {artist.gid} is skipping since there are none missing"
         )
     artist.last_synced_at = Now()
@@ -726,7 +734,9 @@ def sync_tracked_playlist_artists(
     try:
         playlist = TrackedPlaylist.objects.get(id=playlist_id)
     except TrackedPlaylist.DoesNotExist:
-        print(f"TrackedPlaylist with ID {playlist_id} does not exist. Skipping task.")
+        logger.warning(
+            f"TrackedPlaylist with ID {playlist_id} does not exist. Skipping task."
+        )
         return
 
     track_artists_in_playlist(playlist.url, task_id)
@@ -751,7 +761,7 @@ def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
 )  # Scheduled via Celery Beat
 def download_missing_tracked_artists(self, task_id: Optional[str] = None) -> None:
     if settings.disable_missing_tracked_artist_download:
-        print(
+        logger.info(
             "Skipping queued missing tracked artists due to disable_missing_tracked_artist_download setting"
         )
         return
@@ -763,7 +773,7 @@ def download_missing_tracked_artists(self, task_id: Optional[str] = None) -> Non
         added_at__gte=twelve_hours_ago
     )
     if recently_downloaded_songs.count() > 250:
-        print(
+        logger.info(
             f"Skipping queued missing tracked artists due to quantity of recent downloads ({recently_downloaded_songs.count()})"
         )
         return
@@ -805,11 +815,11 @@ def cleanup_stuck_tasks_periodic(self) -> None:
 
     stuck_count = TaskHistory.cleanup_stuck_tasks()
     if stuck_count > 0:
-        print(f"Cleaned up {stuck_count} stuck task(s)")
+        logger.info(f"Cleaned up {stuck_count} stuck task(s)")
 
     # Clean up stale artist references in Celery queue
     # TODO: Implement Celery-based stale task cleanup
-    print("Celery-based stale task cleanup not yet implemented")
+    logger.warning("Celery-based stale task cleanup not yet implemented")
 
 
 @celery_app.task(
@@ -821,9 +831,9 @@ def cleanup_celery_history(self, days_to_keep: int = 30) -> None:
 
     deleted_count = TaskHistory.cleanup_old_tasks(days_to_keep=days_to_keep)
     if deleted_count > 0:
-        print(f"Cleaned up {deleted_count} old task history record(s)")
+        logger.info(f"Cleaned up {deleted_count} old task history record(s)")
     else:
-        print("No old task history records to clean up")
+        logger.info("No old task history records to clean up")
 
 
 @celery_app.task(
@@ -858,12 +868,12 @@ def validate_undownloaded_songs(
 
     # No songs to attempt
     if non_downloaded_songs_count == 0:
-        print("All songs marked downloaded that should be!")
+        logger.info("All songs marked downloaded that should be!")
         return
 
     missing_song_array = [song.spotify_uri for song in non_downloaded_songs]
 
-    print(f"Downloading {len(missing_song_array)} missing songs")
+    logger.info(f"Downloading {len(missing_song_array)} missing songs")
     downloader_config = Config(urls=missing_song_array, track_artists=False)
 
     # TODO: Re-enable ProcessInfo after fixing circular imports
@@ -886,7 +896,7 @@ def validate_undownloaded_songs(
 
     # Don't call recursively if there weren't any songs that definitely should have existed
     if non_downloaded_songs_that_should_exist_count == 0:
-        print("All songs marked downloaded that should be!")
+        logger.info("All songs marked downloaded that should be!")
         return
     # Queue up next batch after ensuring rate limit has passed
     validate_undownloaded_songs.delay()

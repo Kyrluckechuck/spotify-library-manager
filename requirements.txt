@@ -56,11 +56,6 @@ click
 dynaconf
 pymediainfo
 pyyaml
-# The following are useful in development but not required at runtime.
-# They live in requirements-dev.txt to avoid inflating the runtime image.
-# django-debug-toolbar
-# django-extensions
-# pylint-django
 
 # Critical: spotdl and yt-dlp (using current versions)
 # Note: FastAPI/Starlette/Rich constraints from spotdl are bypassed above

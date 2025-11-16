@@ -134,7 +134,7 @@ This is a **full-stack Spotify library management application** with the followi
 4. **Commit everything**: `git add frontend/src/types/generated/ frontend/src/queries/`
 
 **When Backend Schema Changes**:
-1. Make backend changes in `api/src/schema/` or `api/src/resolvers/`
+1. Make backend changes in `api/src/schema/` (mutation.py, query.py, or subscription.py)
 2. Start dev container: `make dev-container`
 3. Fetch updated schema: `make graphql-schema-fetch`
 4. **Commit schema and types**: `git add frontend/src/types/generated/`
@@ -225,7 +225,10 @@ The following tasks run automatically via Celery Beat (`api/celery_beat_schedule
 | `cleanup-celery-history` | Daily (6 AM) | Removes old task history records (older than 30 days) |
 | `cleanup-stale-tasks` | Every 5 minutes | Marks stuck/stale tasks as failed |
 
-**Note**: Celery Beat uses `DatabaseScheduler` which stores schedules in PostgreSQL. View/edit schedules in Django Admin under "Periodic tasks".
+**Note**: Celery Beat uses `DatabaseScheduler` which stores schedules in PostgreSQL. To manage schedules:
+- **Docker mode**: Use Django shell: `docker compose exec web python manage.py shell`
+- **Local mode**: Django Admin at http://localhost:5000/admin/django_celery_beat/
+- **Alternative**: Edit schedules directly in `api/celery_beat_schedule.py`
 
 ### Async/Sync Boundaries - CRITICAL PATTERN
 
@@ -307,14 +310,15 @@ Use `sync_to_async` whenever calling from async context (GraphQL resolvers, asyn
 - **Any synchronous library calls**
 
 #### Reference Implementations
-- `api/src/services/album.py:199-203` - Celery task queuing from async
-- `api/src/services/album.py:22-23` - ORM queries from async
-- `api/src/services/album.py:127` - Model save from async
-- `api/src/services/album.py:206` - _to_graphql_type with lazy-loading protection
+See `api/src/services/album.py` for examples:
+- `AlbumService.download_album()` - Celery task queuing from async using `sync_to_async`
+- `AlbumService.get_by_id()` - ORM queries from async context
+- `AlbumService.set_wanted()` - Model save operations from async
+- `AlbumService._to_graphql_type()` - Converting Django models with lazy-loading protection
 
 ### GraphQL Schema
 - Auto-generated from Django models using Strawberry
-- Type-safe resolvers in `api/src/resolvers/`
+- Type-safe resolvers in `api/src/schema/` (mutation.py, query.py, subscription.py)
 - Frontend types generated via GraphQL Code Generator
 
 ### Configuration Management

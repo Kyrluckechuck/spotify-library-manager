@@ -232,7 +232,7 @@ All commands can be run from the root directory without any `cd` commands. All c
 - Multiple worker threads for parallel processing
 
 #### ✅ **Enhanced Monitoring**
-- Color-coded service logs: `[API]`, `[FRONTEND]`, `[HUEY]`
+- Color-coded service logs: `[WEB]`, `[FRONTEND-DEV]`, `[WORKER]`, `[BEAT]`, `[POSTGRES]`
 - Service health checks and validation
 - Background task indicators in the UI
 - Graceful error handling and recovery
