@@ -1,11 +1,13 @@
-# TODO: Implement spotdl wrapper
-# spotdl --config
-# Provide --cookie-file /something/cookies.txt, if it exists
-# Come up with system to:
-# - Create & save artists that contributed to playlist/album
-# - Mark songs as downloaded
-# - If playlist starts with spotify:album:, mark album as downloaded
-# - Fetch music from playlist API to validate if it needs to be downloaded
+"""
+SpotDL wrapper for downloading music from Spotify playlists and albums.
+
+Handles:
+- Creating and saving artists that contributed to playlist/album
+- Marking songs as downloaded
+- Album download tracking
+- Playlist sync validation
+"""
+
 from __future__ import annotations, division
 
 import asyncio
@@ -58,13 +60,6 @@ class PremiumExpiredException(Exception):
 # See spotdl_override module for more information
 Spotdl.__init__ = spotdl_override.__init__
 SpotdlDownloader.download_song = spotdl_override.download_song
-
-
-def update_process_info(config: Config, progress: int) -> None:
-    if config.process_info is None:
-        return
-    config.process_info.total_progress = progress
-    config.process_info.update(n=0)
 
 
 def generate_spotdl_settings(config: Config) -> Any:
@@ -282,13 +277,6 @@ class SpotdlWrapper:
                 )
                 download_queue_item.save()
 
-                update_process_info(
-                    config,
-                    int(
-                        main_queue_progress
-                        + round(track_index / len(queue_item), 3) * one_queue_increment
-                    ),
-                )
                 # Periodic task progress updates every 5 songs
                 if task_progress_callback and track_index % 5 == 0:
                     progress_pct = (
@@ -489,6 +477,5 @@ class SpotdlWrapper:
                         tracked_playlist.last_synced_at = Now()
                         tracked_playlist.save()
 
-        update_process_info(config, 1000)
         self.logger.info(f"Done ({error_count} error(s))")
         return error_count

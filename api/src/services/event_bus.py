@@ -1,17 +1,7 @@
 import asyncio
 from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
 
-from ..graphql_types.models import DownloadProgress, DownloadStatus
-
-
-# Mock ProcessInfo class since django-huey-monitor might not be available
-class ProcessInfo:
-    def __init__(
-        self, task: Any | None = None, desc: str | None = None, percentage: int = 0
-    ):
-        self.task = task
-        self.desc = desc
-        self.percentage = percentage
+from ..graphql_types.models import DownloadProgress
 
 
 class EventBus:
@@ -60,72 +50,6 @@ class EventBus:
                 except Exception as e:
                     # Log error but don't stop other handlers
                     print(f"Error in event handler: {e}")
-
-    def update_progress(self, process_info: ProcessInfo) -> None:
-        """Called by the task monitor when progress updates"""
-        if not process_info or not process_info.task:
-            return
-
-        # Extract entity info from task description
-        # Example: "artist missing album download (artist.id: 123)"
-        desc = process_info.desc or ""
-        entity_type = "UNKNOWN"
-        entity_id = "unknown"
-
-        if "artist.id:" in desc:
-            entity_type = "ARTIST"
-            entity_id = desc.split("artist.id:")[-1].strip().strip(")")
-        elif "playlist download" in desc:
-            entity_type = "PLAYLIST"
-            # Attempt to extract playlist ID from task args (first arg is the URL)
-            try:
-                if process_info.task and getattr(process_info.task, "args", None):
-                    first_arg = process_info.task.args[0]
-                    if isinstance(first_arg, str) and first_arg:
-                        # Expect formats like "spotify:playlist:<id>" or full URLs
-                        if ":" in first_arg:
-                            entity_id = first_arg.split(":")[-1]
-                        else:
-                            # Fallback: last path segment
-                            entity_id = first_arg.rstrip("/").split("/")[-1]
-            except Exception:
-                # Best-effort only; leave default on failure
-                pass
-        elif "album download" in desc:
-            entity_type = "ALBUM"
-            # Attempt to extract album ID from task args (first arg is the URL/URI)
-            try:
-                if process_info.task and getattr(process_info.task, "args", None):
-                    first_arg = process_info.task.args[0]
-                    if isinstance(first_arg, str) and first_arg:
-                        # Handle Spotify URI format: "spotify:album:<id>"
-                        if first_arg.startswith("spotify:album:"):
-                            entity_id = first_arg.split(":")[-1]
-                        # Handle URL format: extract last path segment
-                        elif "/" in first_arg:
-                            entity_id = first_arg.rstrip("/").split("/")[-1]
-                        else:
-                            # Direct ID
-                            entity_id = first_arg
-            except Exception:
-                # Best-effort only; leave default on failure
-                pass
-
-        progress = DownloadProgress(
-            entity_id=entity_id,
-            entity_type=entity_type,
-            progress=process_info.percentage / 100.0,
-            status=(
-                DownloadStatus.IN_PROGRESS
-                if process_info.percentage < 100
-                else DownloadStatus.COMPLETED
-            ),
-            message=desc,
-        )
-
-        # Notify subscribers
-        for queue in self._download_subscribers.values():
-            queue.put_nowait(progress)
 
     async def subscribe_to_download_progress(
         self, entity_id: Optional[str] = None

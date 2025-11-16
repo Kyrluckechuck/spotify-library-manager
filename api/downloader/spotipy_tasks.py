@@ -12,9 +12,6 @@ from library_manager.models import Artist
 from . import utils
 from .downloader import Downloader
 
-# TODO: Re-add spotdl integration once all dependencies are resolved
-# For now, just basic Spotify client functionality
-
 
 class SpotifyClient:
     def __init__(self) -> None:
@@ -26,7 +23,7 @@ class SpotifyClient:
 
 
 def track_artists_in_playlist(playlist_url: str, task_id: Optional[str] = None) -> None:
-    # TODO: Implement artist tracking from playlist
+    """Mark all primary artists in a playlist as tracked."""
     spotipy_client = SpotifyClient()
     downloader = Downloader(spotipy_client.sp)
     playlist = downloader.get_playlist(playlist_url)

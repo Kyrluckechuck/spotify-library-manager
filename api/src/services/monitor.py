@@ -3,26 +3,6 @@
 import time
 from typing import Any, Dict
 
-from ..services.event_bus import ProcessInfo as BusProcessInfo
-from ..services.event_bus import event_bus
-
-
-# Mock ProcessInfo class since django-huey-monitor might not be available
-class ProcessInfo:
-    def __init__(self, task: Any = None, desc: str | None = None, percentage: int = 0):
-        self.task = task
-        self.desc = desc
-        self.percentage = percentage
-
-
-class ProgressMonitor:
-    """Mock progress monitor for testing."""
-
-    def on_task_progress(self, process_info: BusProcessInfo) -> None:
-        """Handle task progress updates."""
-        if hasattr(event_bus, "update_progress"):
-            event_bus.update_progress(process_info)
-
 
 class MonitorService:
     """Service for monitoring system status and health."""
@@ -60,6 +40,3 @@ class MonitorService:
             "last_check": self.last_check,
             "uptime": uptime,
         }
-
-
-monitor = ProgressMonitor()

@@ -343,25 +343,13 @@ class TaskHistory(models.Model):
         if self.status != "RUNNING":
             return False
 
-        # Method 1: Check Celery task state
-        try:
-            # TODO: Implement Celery-based task state checking
-            # from django_celery_results.models import TaskResult
-            # celery_task = TaskResult.objects.filter(task_id=self.task_id).first()
-            # if celery_task and celery_task.status in ['SUCCESS', 'FAILURE', 'REVOKED']:
-            #     if self.status == "RUNNING":
-            #         return True
-            pass
-        except Exception:
-            pass
-
-        # Method 2: Heartbeat timeout (only for very long timeouts - indicates dead container)
+        # Method 1: Heartbeat timeout (only for very long timeouts - indicates dead container)
         expected_duration = self.get_expected_duration_minutes()
         timeout_threshold = timezone.now() - timedelta(minutes=expected_duration)
         if self.last_heartbeat < timeout_threshold:
             return True
 
-        # Method 3: Progress-based detection (more sensitive - indicates stuck process)
+        # Method 2: Progress-based detection (more sensitive - indicates stuck process)
         if self.log_messages:
             last_log = max(self.log_messages, key=lambda x: x.get("timestamp", ""))
             if last_log.get("timestamp"):

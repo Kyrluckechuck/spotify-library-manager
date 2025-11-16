@@ -184,14 +184,6 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
         downloader_config.artist_to_fetch = artist.gid
         downloader_config.urls = []
 
-        # TODO: Re-enable ProcessInfo after fixing circular imports
-        # if self is not None:
-        #     from src.services.monitor import ProcessInfo
-        #     process_info = ProcessInfo(
-        #         self, desc=f"fetch all albums for artist (artist.gid: {artist.gid})"
-        #     )
-        #     downloader_config.process_info = process_info
-
         # Check for cancellation before major operation
         if check_and_update_progress(
             task_history, 25.0, "Fetching artist albums from Spotify"
@@ -281,14 +273,6 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             return
 
         downloader_config = Config()
-        # TODO: Re-enable ProcessInfo after fixing circular imports
-        # if self is not None and task_history:
-        #     process_info = ProcessInfo(
-        #         self,
-        #         desc=f"artist missing album download (artist.gid: {artist.gid})",
-        #         total=1000,
-        #     )
-        #     downloader_config.process_info = process_info
 
         # Check for cancellation before preparing config
         if check_and_update_progress(
@@ -561,11 +545,6 @@ def download_playlist(
             force_playlist_resync=force_playlist_resync,
         )
 
-        # TODO: Re-enable ProcessInfo after fixing circular imports
-        # if self is not None:
-        #     process_info = ProcessInfo(self, desc="playlist download", total=1000)
-        #     downloader_config.process_info = process_info
-
         # Check for cancellation before download
         if check_and_update_progress(task_history, 50.0, "Downloading playlist tracks"):
             logger.info(f"Playlist download cancelled before download: {playlist_url}")
@@ -636,13 +615,6 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     logger.info(f"Downloading {len(failed_song_array)} missing songs")
     downloader_config = Config(urls=failed_song_array, track_artists=False)
 
-    # TODO: Re-enable ProcessInfo after fixing circular imports
-    # if self is not None:
-    #     process_info = ProcessInfo(
-    #         self, desc="missing/failed song download", total=1000
-    #     )
-    #     downloader_config.process_info = process_info
-
     # Create progress callback if task history is available
     task_progress_callback = None
     if hasattr(self, "request") and self.request.id:
@@ -689,14 +661,6 @@ def download_extra_album_types_for_artist(
         f"extra album missing albums search for artist {artist.gid} found {missing_albums.count()}"
     )
     downloader_config = Config()
-    # TODO: Re-enable ProcessInfo after fixing circular imports
-    # if self is not None:
-    #     process_info = ProcessInfo(
-    #         self,
-    #         desc=f"extra album artist missing album download (artist.gid: {artist.gid})",
-    #         total=1000,
-    #     )
-    #     downloader_config.process_info = process_info
     downloader_config.urls = []  # This must be reset or it will persist between runs
     if missing_albums.count() > 0:
         for missing_album in missing_albums:
@@ -817,9 +781,8 @@ def cleanup_stuck_tasks_periodic(self) -> None:
     if stuck_count > 0:
         logger.info(f"Cleaned up {stuck_count} stuck task(s)")
 
-    # Clean up stale artist references in Celery queue
-    # TODO: Implement Celery-based stale task cleanup
-    logger.warning("Celery-based stale task cleanup not yet implemented")
+    # Note: Celery task queue cleanup is handled by the task revocation above
+    # Additional queue-level cleanup can be added here if needed
 
 
 @celery_app.task(
@@ -875,11 +838,6 @@ def validate_undownloaded_songs(
 
     logger.info(f"Downloading {len(missing_song_array)} missing songs")
     downloader_config = Config(urls=missing_song_array, track_artists=False)
-
-    # TODO: Re-enable ProcessInfo after fixing circular imports
-    # if self is not None:
-    #     process_info = ProcessInfo(self, desc="missing song download", total=1000)
-    #     downloader_config.process_info = process_info
 
     # Create progress callback if task history is available
     task_progress_callback = None
