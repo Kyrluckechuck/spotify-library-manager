@@ -47,6 +47,7 @@ class Artist:
     spotify_uri: str
     is_tracked: bool
     last_synced: Optional[DateTime]
+    last_downloaded: Optional[DateTime] = None
     added_at: Optional[DateTime] = None
     undownloaded_count: int = 0
 

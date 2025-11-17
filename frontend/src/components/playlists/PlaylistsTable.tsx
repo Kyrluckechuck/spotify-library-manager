@@ -5,8 +5,8 @@ import { ToggleStatusButton } from '../ui/ToggleStatusButton';
 export type PlaylistSortField =
   | 'name'
   | 'enabled'
-  | 'auto_track_artists'
-  | 'last_synced_at'
+  | 'autoTrackArtists'
+  | 'lastSyncedAt'
   | null;
 
 interface PlaylistsTableProps {
@@ -82,7 +82,7 @@ export function PlaylistsTable({
                 Status
               </SortableTableHeader>
               <SortableTableHeader
-                field='auto_track_artists'
+                field='autoTrackArtists'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -90,7 +90,7 @@ export function PlaylistsTable({
                 Track Artists
               </SortableTableHeader>
               <SortableTableHeader
-                field='last_synced_at'
+                field='lastSyncedAt'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}

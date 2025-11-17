@@ -21,7 +21,8 @@ class Downloader:
         """
         artist = Artist.objects.get(gid=artist_gid)
         albums_to_create_or_update: List[Dict] = []
-        artist_uri = utils.gid_to_uri(artist_gid)
+        # artist_gid is already a Spotify ID, just format as URI
+        artist_uri = f"spotify:artist:{artist_gid}"
 
         album_iterator = self.spotipy_client.artist_albums(artist_uri, limit=50)
 

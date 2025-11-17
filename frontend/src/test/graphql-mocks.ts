@@ -25,6 +25,7 @@ export const createMockArtist = (overrides = {}) => ({
   isTracked: true,
   addedAt: '2024-01-01T00:00:00Z',
   lastSynced: '2024-01-01T00:00:00Z',
+  lastDownloaded: '2024-01-01T00:00:00Z',
   undownloadedCount: 0,
   ...overrides,
 });

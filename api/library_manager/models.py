@@ -63,6 +63,9 @@ class Artist(models.Model):
     tracked: models.BooleanField = models.BooleanField(default=False)
     added_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
     last_synced_at: models.DateTimeField = models.DateTimeField(default=None, null=True)
+    last_downloaded_at: models.DateTimeField = models.DateTimeField(
+        default=None, null=True
+    )
 
     @property
     def number_songs(self) -> int:

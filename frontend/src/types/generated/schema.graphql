@@ -23,6 +23,7 @@ type Artist {
   gid: String!
   id: Int!
   isTracked: Boolean!
+  lastDownloaded: DateTime
   lastSynced: DateTime
   name: String!
   spotifyUri: String!
@@ -152,7 +153,7 @@ type Query {
   album(id: String!): Album
   albums(after: String = null, artistId: Int = null, downloaded: Boolean = null, first: Int = 20, search: String = null, sortBy: String = null, sortDirection: String = null, wanted: Boolean = null): AlbumConnection!
   artist(id: String!): Artist
-  artists(after: String = null, first: Int = 20, isTracked: Boolean = null, search: String = null): ArtistConnection!
+  artists(after: String = null, first: Int = 20, isTracked: Boolean = null, search: String = null, sortBy: String = null, sortDirection: String = null): ArtistConnection!
   downloadHistory(after: String = null, entityType: String = null, first: Int = 20, status: String = null): HistoryConnection!
   playlist(id: String!): Playlist
   playlists(after: String = null, enabled: Boolean = null, first: Int = 20, search: String = null, sortBy: String = null, sortDirection: String = null): PlaylistConnection!

@@ -2,7 +2,7 @@
 from typing import Any, List, Optional, Tuple
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import F, Q
 
 from asgiref.sync import sync_to_async
 
@@ -43,6 +43,14 @@ class ArtistService(BaseService[Artist]):
     ) -> Tuple[List[Artist], bool, int]:
         is_tracked: Optional[bool] = filters.get("is_tracked")
         search: Optional[str] = filters.get("search")
+        sort_by = (
+            filters.get("sort_by") if isinstance(filters.get("sort_by"), str) else None
+        )
+        sort_direction = (
+            filters.get("sort_direction")
+            if isinstance(filters.get("sort_direction"), str)
+            else None
+        )
         queryset = self.model.objects.all()
 
         # Apply filters
@@ -54,6 +62,44 @@ class ArtistService(BaseService[Artist]):
                 Q(name__icontains=search) | Q(gid__icontains=search)
             )
 
+        # Apply sorting
+        sort_field_map: dict[str, str] = {
+            "name": "name",
+            "isTracked": "tracked",
+            "addedAt": "added_at",
+            "lastSynced": "last_synced_at",
+            "lastDownloaded": "last_downloaded_at",
+        }
+
+        # Timestamp fields where null = "earliest" (never synced/downloaded)
+        timestamp_fields = {"last_synced_at", "last_downloaded_at", "added_at"}
+
+        order_expressions = ["id"]  # default
+        if isinstance(sort_by, str):
+            mapped_field = sort_field_map.get(sort_by)
+            if mapped_field is not None:
+                # For timestamp fields, nulls should be treated as earliest
+                if mapped_field in timestamp_fields:
+                    if sort_direction == "desc":
+                        # Descending: newest first, nulls last (never = earliest)
+                        order_expressions = [
+                            F(mapped_field).desc(nulls_last=True),
+                            "id",
+                        ]
+                    else:
+                        # Ascending: oldest first, nulls first (never = earliest)
+                        order_expressions = [
+                            F(mapped_field).asc(nulls_first=True),
+                            "id",
+                        ]
+                else:
+                    # Non-timestamp fields use standard sorting
+                    order_field = mapped_field
+                    if sort_direction == "desc":
+                        order_expressions = [f"-{order_field}", "id"]
+                    else:
+                        order_expressions = [order_field, "id"]
+
         # Apply cursor-based pagination
         if after:
             id_after = self.decode_cursor(after)
@@ -64,7 +110,7 @@ class ArtistService(BaseService[Artist]):
 
         # Get one extra item to determine if there are more pages
         def fetch_items() -> List[DjangoArtist]:
-            return list(queryset.order_by("id")[: first + 1])
+            return list(queryset.order_by(*order_expressions)[: first + 1])
 
         items: List[DjangoArtist] = await sync_to_async(fetch_items)()
 
@@ -231,6 +277,11 @@ class ArtistService(BaseService[Artist]):
                 if django_artist.last_synced_at
                 else None
             ),
+            last_downloaded=(
+                django_artist.last_downloaded_at.isoformat()
+                if django_artist.last_downloaded_at
+                else None
+            ),
             added_at=(
                 django_artist.added_at.isoformat()
                 if hasattr(django_artist, "added_at") and django_artist.added_at
@@ -257,6 +308,11 @@ class ArtistService(BaseService[Artist]):
             last_synced=(
                 django_artist.last_synced_at.isoformat()
                 if django_artist.last_synced_at
+                else None
+            ),
+            last_downloaded=(
+                django_artist.last_downloaded_at.isoformat()
+                if django_artist.last_downloaded_at
                 else None
             ),
             added_at=(

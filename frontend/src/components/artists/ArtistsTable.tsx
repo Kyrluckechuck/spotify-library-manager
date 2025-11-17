@@ -3,7 +3,13 @@ import { SortableTableHeader } from '../ui/SortableTableHeader';
 import { ToggleStatusButton } from '../ui/ToggleStatusButton';
 import { Link } from '@tanstack/react-router';
 
-export type SortField = 'name' | 'isTracked' | 'addedAt' | 'lastSynced' | null;
+export type SortField =
+  | 'name'
+  | 'isTracked'
+  | 'addedAt'
+  | 'lastSynced'
+  | 'lastDownloaded'
+  | null;
 
 interface ArtistsTableProps {
   artists: Artist[];
@@ -80,6 +86,14 @@ export function ArtistsTable({
                 Last Synced
               </SortableTableHeader>
               <SortableTableHeader
+                field='lastDownloaded'
+                currentSortField={sortField}
+                currentSortDirection={sortDirection}
+                onSort={onSort}
+              >
+                Last Downloaded
+              </SortableTableHeader>
+              <SortableTableHeader
                 field={null}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
@@ -136,6 +150,11 @@ export function ArtistsTable({
                 <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                   {artist.lastSynced
                     ? new Date(artist.lastSynced).toLocaleString()
+                    : 'Never'}
+                </td>
+                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                  {artist.lastDownloaded
+                    ? new Date(artist.lastDownloaded).toLocaleString()
                     : 'Never'}
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2'>

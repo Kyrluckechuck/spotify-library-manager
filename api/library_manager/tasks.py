@@ -208,6 +208,10 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
             logger.info(f"Task cancelled before completion for artist {artist.name}")
             return
 
+        # Update last_synced_at timestamp (metadata sync completed)
+        artist.last_synced_at = Now()
+        artist.save()
+
         complete_task(task_history, success=True)
 
     except Exception as e:
@@ -333,7 +337,8 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
             logger.info(f"Task cancelled before completion for artist {artist.name}")
             return
 
-        artist.last_synced_at = Now()
+        # Update last_downloaded_at timestamp (download completed)
+        artist.last_downloaded_at = Now()
         artist.save()
 
         if task_history:
@@ -686,7 +691,8 @@ def download_extra_album_types_for_artist(
         logger.info(
             f"extra album missing albums search for artist {artist.gid} is skipping since there are none missing"
         )
-    artist.last_synced_at = Now()
+    # Update last_downloaded_at timestamp (extra albums download completed)
+    artist.last_downloaded_at = Now()
     artist.save()
 
 
@@ -714,7 +720,9 @@ def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
         "last_synced_at", "added_at", "id"
     )
     helpers.update_tracked_artists_albums(
-        [], list(all_tracked_artists), priority=None  # task.priority not available
+        [],
+        list(all_tracked_artists),
+        priority=None,  # task.priority not available
     )
 
 

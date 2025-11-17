@@ -32,11 +32,18 @@ class Query:
         first: Optional[int] = 20,
         after: Optional[str] = None,
         is_tracked: Optional[bool] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: Optional[str] = None,
         search: Optional[str] = None,
     ) -> ArtistConnection:
         first_int: int = int(first or 20)
         items, has_next_page, total_count = await services.artist.get_connection(
-            first=first_int, after=after, is_tracked=is_tracked, search=search
+            first=first_int,
+            after=after,
+            is_tracked=is_tracked,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
+            search=search,
         )
 
         edges = items

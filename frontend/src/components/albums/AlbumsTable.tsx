@@ -8,10 +8,10 @@ export type AlbumSortField =
   | 'artist'
   | 'downloaded'
   | 'wanted'
-  | 'total_tracks'
-  | 'created_at'
-  | 'album_type'
-  | 'album_group'
+  | 'totalTracks'
+  | 'createdAt'
+  | 'albumType'
+  | 'albumGroup'
   | null;
 
 interface AlbumsTableProps {
@@ -83,7 +83,7 @@ export function AlbumsTable({
                 ID
               </th>
               <SortableTableHeader
-                field='album_type'
+                field='albumType'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -91,7 +91,7 @@ export function AlbumsTable({
                 Type
               </SortableTableHeader>
               <SortableTableHeader
-                field='album_group'
+                field='albumGroup'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
@@ -99,7 +99,7 @@ export function AlbumsTable({
                 Group
               </SortableTableHeader>
               <SortableTableHeader
-                field='total_tracks'
+                field='totalTracks'
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}

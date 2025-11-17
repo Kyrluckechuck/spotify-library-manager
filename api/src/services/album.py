@@ -1,7 +1,7 @@
 # mypy: disable-error-code=attr-defined
 from typing import Any, List, Optional, Tuple
 
-from django.db.models import Q
+from django.db.models import F, Q
 
 from asgiref.sync import sync_to_async
 from celery.result import AsyncResult
@@ -69,15 +69,39 @@ class AlbumService(BaseService[Album]):
                 "downloaded": "downloaded",
                 "wanted": "wanted",
                 "totalTracks": "total_tracks",
+                "createdAt": "created_at",
+                "albumType": "album_type",
+                "albumGroup": "album_group",
             }
 
-            order_field = "id"  # default
+            # Timestamp fields where null = "earliest"
+            timestamp_fields = {"created_at"}
+
+            order_expressions = ["id"]  # default
             if isinstance(sort_by, str):
                 mapped_field = sort_field_map.get(sort_by)
                 if mapped_field is not None:
-                    order_field = mapped_field
-                    if sort_direction == "desc":
-                        order_field = f"-{order_field}"
+                    # For timestamp fields, nulls should be treated as earliest
+                    if mapped_field in timestamp_fields:
+                        if sort_direction == "desc":
+                            # Descending: newest first, nulls last
+                            order_expressions = [
+                                F(mapped_field).desc(nulls_last=True),
+                                "id",
+                            ]
+                        else:
+                            # Ascending: oldest first, nulls first
+                            order_expressions = [
+                                F(mapped_field).asc(nulls_first=True),
+                                "id",
+                            ]
+                    else:
+                        # Non-timestamp fields use standard sorting
+                        order_field = mapped_field
+                        if sort_direction == "desc":
+                            order_expressions = [f"-{order_field}", "id"]
+                        else:
+                            order_expressions = [order_field, "id"]
 
             # Apply cursor-based pagination
             if after:
@@ -88,7 +112,7 @@ class AlbumService(BaseService[Album]):
             total_count = queryset.count()
 
             # Get one extra item to determine if there are more pages
-            items = list(queryset.order_by(order_field, "id")[: first + 1])
+            items = list(queryset.order_by(*order_expressions)[: first + 1])
 
             has_next_page = len(items) > first
             items = items[:first]  # Remove the extra item
