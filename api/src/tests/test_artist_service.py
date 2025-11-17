@@ -20,6 +20,7 @@ def mock_django_artist() -> Mock:
     mock_artist.name = "Test Artist"
     mock_artist.tracked = True
     mock_artist.last_synced_at = datetime.now()
+    mock_artist.last_downloaded_at = datetime.now()
     mock_artist.added_at = datetime.now()
     mock_artist.spotify_uri = "spotify:artist:test_id"
     return mock_artist
@@ -84,3 +85,50 @@ async def test_get_connection(
         assert isinstance(items[0], Artist)
         assert not has_next
         assert total == 1
+
+
+@pytest.mark.asyncio
+async def test_to_graphql_type_includes_timestamp_fields(
+    artist_service: ArtistService, mock_django_artist: Mock
+) -> None:
+    """Test that GraphQL type conversion includes both timestamp fields."""
+    with patch.object(
+        artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+    ) as mock_count:
+        mock_count.return_value = 0
+
+        result = await artist_service._to_graphql_type_async(mock_django_artist)
+
+        assert isinstance(result, Artist)
+        # Verify both timestamp fields are present
+        assert result.last_synced is not None
+        assert result.last_downloaded is not None
+        assert isinstance(result.last_synced, str)  # ISO format
+        assert isinstance(result.last_downloaded, str)  # ISO format
+
+
+@pytest.mark.asyncio
+async def test_to_graphql_type_handles_null_timestamps(
+    artist_service: ArtistService,
+) -> None:
+    """Test that null timestamps are handled correctly."""
+    mock_artist = Mock()
+    mock_artist.id = 1
+    mock_artist.gid = "test_id"
+    mock_artist.name = "Never Synced Artist"
+    mock_artist.tracked = False
+    mock_artist.last_synced_at = None  # Never synced
+    mock_artist.last_downloaded_at = None  # Never downloaded
+    mock_artist.added_at = datetime.now()
+    mock_artist.spotify_uri = "spotify:artist:test_id"
+
+    with patch.object(
+        artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+    ) as mock_count:
+        mock_count.return_value = 10
+
+        result = await artist_service._to_graphql_type_async(mock_artist)
+
+        assert isinstance(result, Artist)
+        assert result.last_synced is None
+        assert result.last_downloaded is None

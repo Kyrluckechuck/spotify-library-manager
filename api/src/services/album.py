@@ -77,7 +77,7 @@ class AlbumService(BaseService[Album]):
             # Timestamp fields where null = "earliest"
             timestamp_fields = {"created_at"}
 
-            order_expressions = ["id"]  # default
+            order_expressions: List[Any] = ["id"]  # default
             if isinstance(sort_by, str):
                 mapped_field = sort_field_map.get(sort_by)
                 if mapped_field is not None:

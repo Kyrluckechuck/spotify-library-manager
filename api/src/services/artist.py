@@ -74,7 +74,7 @@ class ArtistService(BaseService[Artist]):
         # Timestamp fields where null = "earliest" (never synced/downloaded)
         timestamp_fields = {"last_synced_at", "last_downloaded_at", "added_at"}
 
-        order_expressions = ["id"]  # default
+        order_expressions: List[Any] = ["id"]  # default
         if isinstance(sort_by, str):
             mapped_field = sort_field_map.get(sort_by)
             if mapped_field is not None:

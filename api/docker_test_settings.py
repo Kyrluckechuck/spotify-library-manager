@@ -45,16 +45,10 @@ PASSWORD_HASHERS = [
 ]
 
 
-# Disable migrations for tests
-class DisableMigrations:
-    def __contains__(self, item):
-        return True
-
-    def __getitem__(self, item):
-        return None
-
-
-MIGRATION_MODULES = DisableMigrations()
+# Migrations are enabled for tests to ensure schema changes are applied
+# Previously disabled for performance, but this caused stale test databases
+# when new migrations were added. The performance cost is acceptable for
+# correctness and avoiding confusing test failures.
 
 # Celery configuration for tests - use django-db broker
 CELERY_BROKER_URL = "django-db"
