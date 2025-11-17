@@ -147,6 +147,8 @@ class TestAsyncLoopFixes:
         """Test multiple downloaders each with their own event loops."""
         results = []
         threads = []
+        # Keep references to loops to prevent GC and address reuse
+        loops = []
 
         def download_task(task_id):
             """Download task for each thread."""
@@ -154,6 +156,7 @@ class TestAsyncLoopFixes:
                 # Each thread gets its own downloader with its own loop
                 downloader = Mock()
                 downloader.loop = asyncio.new_event_loop()
+                loops.append(downloader.loop)  # Keep reference to prevent GC
                 downloader.progress_handler = Mock()
                 downloader.progress_handler.set_song_count = Mock()
                 downloader.download_multiple_songs = Mock(
@@ -174,8 +177,6 @@ class TestAsyncLoopFixes:
                         "loop_id": id(downloader.loop),
                     }
                 )
-
-                downloader.loop.close()
 
             except Exception as e:
                 results.append(
@@ -200,3 +201,8 @@ class TestAsyncLoopFixes:
         # Each thread should have used a different event loop
         loop_ids = [r["loop_id"] for r in successful_results]
         assert len(set(loop_ids)) == 3  # All loop IDs should be unique
+
+        # Clean up loops
+        for loop in loops:
+            if not loop.is_closed():
+                loop.close()
