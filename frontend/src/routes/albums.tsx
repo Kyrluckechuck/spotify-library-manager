@@ -1,13 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMutation, useQuery } from '@apollo/client/react';
-import {
-  GetAlbumsDocument,
-  SetAlbumWantedDocument,
-  DownloadAlbumDocument,
-  GetArtistDocument,
-  type GetAlbumsQuery,
-} from '../types/generated/graphql';
-import { useState, useMemo, useCallback } from 'react';
 
 // Components
 import { AlbumFilters } from '../components/albums/AlbumFilters';
@@ -16,218 +7,51 @@ import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { PageSpinner } from '../components/ui/PageSpinner';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
-import { useRequestState } from '../hooks/useRequestState';
-import { useToast } from '../components/ui/useToast';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
 import { ArtistContext } from '../components/ui/ArtistContext';
 import { SearchInput } from '../components/ui/SearchInput';
-import { useMutationState } from '../hooks/useMutationState';
-import {
-  usePrefetchFilters,
-  generateFilterCombinations,
-} from '../hooks/usePrefetchFilters';
-import { useQueryPrefetch } from '../hooks/useQueryPrefetch';
-import type { AlbumSortField } from '../components/albums/AlbumsTable';
-import type {
-  SortDirection,
-  WantedFilter,
-  DownloadFilter,
-} from '../types/shared';
+
+// Hooks
+import { useAlbumsPage } from '../hooks/useAlbumsPage';
 
 function Albums() {
-  const toast = useToast();
   const { artistId } = Route.useSearch();
-  const [wantedFilter, setWantedFilter] = useState<WantedFilter>('all');
-  const [downloadFilter, setDownloadFilter] = useState<DownloadFilter>('all');
-  const [pageSize, setPageSize] = useState(50);
-  const [sortField, setSortField] = useState<AlbumSortField>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [searchQuery, setSearchQuery] = useState('');
 
-  // Memoize query variables
-  const queryVariables = useMemo(
-    () => ({
-      artistId: artistId || undefined,
-      wanted: wantedFilter === 'all' ? undefined : wantedFilter === 'wanted',
-      downloaded:
-        downloadFilter === 'all' ? undefined : downloadFilter === 'downloaded',
-      first: pageSize,
-      sortBy: sortField,
-      sortDirection: sortDirection,
-      search: searchQuery || undefined,
-    }),
-    [
-      artistId,
-      wantedFilter,
-      downloadFilter,
-      pageSize,
-      sortField,
-      sortDirection,
-      searchQuery,
-    ]
-  );
+  const {
+    // Data
+    albums,
+    totalCount,
+    pageInfo,
+    loading,
+    error,
+    isRefreshing,
+    isInitialLoading,
+    artist,
 
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(
-    GetAlbumsDocument,
-    {
-      variables: queryVariables,
-      fetchPolicy: 'cache-and-network',
-      notifyOnNetworkStatusChange: true,
-      pollInterval: 0,
-      errorPolicy: 'all',
-    }
-  );
+    // Filters & sorting
+    wantedFilter,
+    downloadFilter,
+    pageSize,
+    sortField,
+    sortDirection,
 
-  // Fetch artist details if filtering by artist
-  const { data: artistData } = useQuery(GetArtistDocument, {
-    variables: { id: artistId?.toString() ?? '0' },
-    skip: !artistId,
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-first',
-    notifyOnNetworkStatusChange: false,
-    pollInterval: 0,
-  });
+    // Mutation states
+    mutatingIds,
+    pulseIds,
 
-  const [setAlbumWanted] = useMutation(SetAlbumWantedDocument);
-  const [downloadAlbum] = useMutation(DownloadAlbumDocument);
-  const { mutatingIds, pulseIds, handleMutation } = useMutationState();
-
-  // Create prefetch handler factory
-  const createPrefetchHandler = useQueryPrefetch(
-    GetAlbumsDocument,
-    queryVariables
-  );
-
-  // Pre-fetch filter combinations for better perceived performance
-  const baseVariables = useMemo(
-    () => ({
-      artistId: artistId || undefined,
-      first: pageSize,
-      sortBy: sortField,
-      sortDirection: sortDirection,
-      search: searchQuery || undefined,
-    }),
-    [artistId, pageSize, sortField, sortDirection, searchQuery]
-  );
-
-  const filterCombinations = useMemo(
-    () =>
-      generateFilterCombinations({
-        wanted: [true, false],
-        downloaded: [true, false],
-      }),
-    []
-  );
-
-  usePrefetchFilters({
-    query: GetAlbumsDocument,
-    baseVariables,
-    filterCombinations,
-    enabled: !!data,
-    networkStatus,
-  });
-
-  // Filter change handlers with automatic prefetching
-  const handleWantedFilterChange = createPrefetchHandler(
-    setWantedFilter,
-    (newFilter: WantedFilter) => ({
-      wanted: newFilter === 'all' ? undefined : newFilter === 'wanted',
-    })
-  );
-
-  const handleDownloadFilterChange = createPrefetchHandler(
-    setDownloadFilter,
-    (newFilter: DownloadFilter) => ({
-      downloaded: newFilter === 'all' ? undefined : newFilter === 'downloaded',
-    })
-  );
-
-  const handlePageSizeChange = createPrefetchHandler(setPageSize, newSize => ({
-    first: newSize,
-  }));
-
-  const handleSort = (field: AlbumSortField) => {
-    const newDirection: SortDirection =
-      sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
-
-    // Update both states
-    setSortField(field);
-    setSortDirection(newDirection);
-
-    // Prefetch with new sort
-    createPrefetchHandler(null, () => ({
-      sortBy: field,
-      sortDirection: newDirection,
-    }))(field);
-  };
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, []);
-
-  const handleWantedToggle = async (albumId: number, wanted: boolean) => {
-    await handleMutation(
-      albumId,
-      async () => {
-        await setAlbumWanted({
-          variables: {
-            albumId,
-            wanted,
-          },
-        });
-        toast.success(`Wanted ${wanted ? 'enabled' : 'disabled'}`);
-      },
-      { withPulse: true }
-    );
-  };
-
-  const handleDownloadAlbum = async (albumId: number) => {
-    await handleMutation(
-      albumId,
-      async () => {
-        await downloadAlbum({
-          variables: {
-            albumId: albumId.toString(),
-          },
-        });
-        toast.success('Album download queued');
-      },
-      { withPulse: false }
-    );
-  };
-
-  const handleLoadMore = () => {
-    if (data?.albums.pageInfo.hasNextPage) {
-      fetchMore({
-        variables: {
-          after: data.albums.pageInfo.endCursor,
-        },
-        updateQuery: (
-          prevResult: GetAlbumsQuery,
-          { fetchMoreResult }: { fetchMoreResult?: GetAlbumsQuery }
-        ) => {
-          if (!fetchMoreResult) return prevResult;
-
-          return {
-            albums: {
-              ...fetchMoreResult.albums,
-              edges: [
-                ...prevResult.albums.edges,
-                ...fetchMoreResult.albums.edges,
-              ],
-            },
-          };
-        },
-      });
-    }
-  };
-
-  // Subtle loading indicator for filter changes
-  const { isRefreshing: isRefetching, isInitial: isInitialLoading } =
-    useRequestState(networkStatus);
+    // Handlers
+    handleWantedFilterChange,
+    handleDownloadFilterChange,
+    handlePageSizeChange,
+    handleSort,
+    handleSearch,
+    handleWantedToggle,
+    handleDownloadAlbum,
+    handleLoadMore,
+  } = useAlbumsPage({ artistId });
 
   // Only show loading state on initial load
-  if (isInitialLoading && !data) {
+  if (isInitialLoading && !albums.length) {
     return (
       <section>
         <h1 className='text-2xl font-semibold mb-4'>Albums</h1>
@@ -245,17 +69,13 @@ function Albums() {
     );
   }
 
-  const albums = data?.albums.edges || [];
-  const totalCount = data?.albums.totalCount || 0;
-  const pageInfo = data?.albums.pageInfo;
-
   return (
     <section>
       {/* Artist context when filtering by artist */}
-      {artistId && artistData?.artist && (
+      {artistId && artist && (
         <ArtistContext
           artistId={artistId}
-          artistName={artistData.artist.name}
+          artistName={artist.name}
           contentType='albums'
           totalCount={totalCount}
         />
@@ -266,7 +86,7 @@ function Albums() {
           <h1 className='text-2xl font-semibold'>
             Albums ({albums.length} of {totalCount})
           </h1>
-          {isRefetching && <InlineSpinner label='Updating...' />}
+          {isRefreshing && <InlineSpinner label='Updating...' />}
         </div>
         <div className='flex items-center gap-4'>
           <SearchInput
@@ -305,7 +125,6 @@ function Albums() {
           mutatingIds={mutatingIds}
           pulseIds={pulseIds}
         />
-        {/* No full overlay during refetch to reduce jitter */}
       </div>
 
       <LoadMoreButton

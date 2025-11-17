@@ -1,17 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMutation, useQuery } from '@apollo/client/react';
-import {
-  GetPlaylistsDocument,
-  TogglePlaylistDocument,
-  TogglePlaylistAutoTrackDocument,
-  SyncPlaylistDocument,
-  ForceSyncPlaylistDocument,
-  type GetPlaylistsQuery,
-} from '../types/generated/graphql';
-import type { Playlist } from '../types/generated/graphql';
-import { useState, useMemo, useCallback } from 'react';
-
-import { PlaylistModal } from '../components/ui/PlaylistModal';
 
 // Components
 import { PlaylistFilters } from '../components/playlists/PlaylistFilters';
@@ -20,255 +7,61 @@ import { PageSizeSelector } from '../components/ui/PageSizeSelector';
 import { InlineSpinner } from '../components/ui/InlineSpinner';
 import { PageSpinner } from '../components/ui/PageSpinner';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
-import { useRequestState } from '../hooks/useRequestState';
-import { useToast } from '../components/ui/useToast';
 import { LoadMoreButton } from '../components/ui/LoadMoreButton';
+import { PlaylistModal } from '../components/ui/PlaylistModal';
 import { SearchInput } from '../components/ui/SearchInput';
-import {
-  useMutationState,
-  useMutationLoadingState,
-} from '../hooks/useMutationState';
-import {
-  usePrefetchFilters,
-  generateFilterCombinations,
-} from '../hooks/usePrefetchFilters';
-import { useQueryPrefetch } from '../hooks/useQueryPrefetch';
-import type { PlaylistSortField } from '../components/playlists/PlaylistsTable';
-import type { SortDirection, PlaylistEnabledFilter } from '../types/shared';
+
+// Hooks
+import { usePlaylistsPage } from '../hooks/usePlaylistsPage';
 
 function Playlists() {
-  const toast = useToast();
-  const [filter, setFilter] = useState<PlaylistEnabledFilter>('all');
-  const [pageSize, setPageSize] = useState(50);
-  const [sortField, setSortField] = useState<PlaylistSortField>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Modal states
-  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
-  const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
-
-  // Memoize query variables to prevent unnecessary re-renders
-  const queryVariables = useMemo(
-    () => ({
-      enabled: filter === 'all' ? undefined : filter === 'enabled',
-      first: pageSize,
-      sortBy: sortField,
-      sortDirection: sortDirection,
-      search: searchQuery || undefined,
-    }),
-    [filter, pageSize, sortField, sortDirection, searchQuery]
-  );
-
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(
-    GetPlaylistsDocument,
-    {
-      variables: queryVariables,
-      fetchPolicy: 'cache-and-network',
-      notifyOnNetworkStatusChange: true,
-      pollInterval: 0,
-      errorPolicy: 'all',
-    }
-  );
-
-  // Pre-fetch filter combinations for better perceived performance
-  const baseVariables = useMemo(
-    () => ({
-      first: pageSize,
-      sortBy: sortField,
-      sortDirection: sortDirection,
-      search: searchQuery || undefined,
-    }),
-    [pageSize, sortField, sortDirection, searchQuery]
-  );
-
-  const filterCombinations = useMemo(
-    () =>
-      generateFilterCombinations({
-        enabled: [true, false],
-      }),
-    []
-  );
-
-  usePrefetchFilters({
-    query: GetPlaylistsDocument,
-    baseVariables,
-    filterCombinations,
-    enabled: !!data,
-    networkStatus,
-  });
-
-  const [togglePlaylist] = useMutation(TogglePlaylistDocument);
-  const [syncPlaylist] = useMutation(SyncPlaylistDocument);
-  const [forceSyncPlaylist] = useMutation(ForceSyncPlaylistDocument);
-  const [togglePlaylistAutoTrack] = useMutation(
-    TogglePlaylistAutoTrackDocument
-  );
-
-  // Create prefetch handler factory
-  const createPrefetchHandler = useQueryPrefetch(
-    GetPlaylistsDocument,
-    queryVariables
-  );
-
-  // Enable/disable toggle with pulse
   const {
-    mutatingIds: enabledMutatingIds,
-    pulseIds: enabledPulseIds,
+    // Data
+    playlists,
+    totalCount,
+    pageInfo,
+    loading,
+    error,
+    isRefreshing,
+    isInitialLoading,
+
+    // Filters & sorting
+    filter,
+    pageSize,
+    sortField,
+    sortDirection,
+
+    // Modal state
+    showPlaylistModal,
+    editingPlaylist,
+
+    // Mutation states
+    enabledMutatingIds,
+    enabledPulseIds,
+    autoMutatingIds,
+    autoPulseIds,
+    syncMutatingIds,
+    forceSyncMutatingIds,
     errorById,
-    handleMutation: handleEnabledMutation,
-  } = useMutationState();
 
-  // Auto-track artists toggle with pulse (shares errorById)
-  const {
-    mutatingIds: autoMutatingIds,
-    pulseIds: autoPulseIds,
-    handleMutation: handleAutoMutation,
-  } = useMutationState();
-
-  // Separate loading states for sync and force sync
-  const {
-    loadingIds: syncMutatingIds,
-    startLoading: startSync,
-    stopLoading: stopSync,
-  } = useMutationLoadingState();
-  const {
-    loadingIds: forceSyncMutatingIds,
-    startLoading: startForceSync,
-    stopLoading: stopForceSync,
-  } = useMutationLoadingState();
-
-  // Filter change handlers with automatic prefetching
-  const handleEnabledFilterChange = createPrefetchHandler(
-    setFilter,
-    (newFilter: PlaylistEnabledFilter) => ({
-      enabled: newFilter === 'all' ? undefined : newFilter === 'enabled',
-    })
-  );
-
-  const handlePageSizeChange = createPrefetchHandler(setPageSize, newSize => ({
-    first: newSize,
-  }));
-
-  const handleSort = (field: PlaylistSortField) => {
-    const newDirection: SortDirection =
-      sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
-
-    // Update both states
-    setSortField(field);
-    setSortDirection(newDirection);
-
-    // Prefetch with new sort
-    createPrefetchHandler(null, () => ({
-      sortBy: field,
-      sortDirection: newDirection,
-    }))(field);
-  };
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, []);
-
-  // Prefetch-only handler for hover (no state update)
-  const handleFilterHover = createPrefetchHandler(
-    null, // No state setter - just prefetch
-    (hoverFilter: PlaylistEnabledFilter) => ({
-      enabled: hoverFilter === 'all' ? undefined : hoverFilter === 'enabled',
-    })
-  );
-
-  const handleTogglePlaylist = async (playlist: Playlist) => {
-    await handleEnabledMutation(
-      playlist.id,
-      async () => {
-        await togglePlaylist({ variables: { playlistId: playlist.id } });
-        toast.success(`Playlist ${playlist.enabled ? 'disabled' : 'enabled'}`);
-      },
-      { withPulse: true }
-    );
-  };
-
-  const handleSyncPlaylist = async (playlistId: number) => {
-    try {
-      startSync(playlistId);
-      await syncPlaylist({ variables: { playlistId } });
-      toast.success('Playlist synced');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Sync failed');
-    } finally {
-      stopSync(playlistId);
-    }
-  };
-
-  const handleForceSyncPlaylist = async (playlistId: number) => {
-    try {
-      startForceSync(playlistId);
-      await forceSyncPlaylist({ variables: { playlistId } });
-      toast.success('Playlist force sync started');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Force sync failed');
-    } finally {
-      stopForceSync(playlistId);
-    }
-  };
-
-  const handleToggleAutoTrack = async (playlist: Playlist) => {
-    await handleAutoMutation(
-      playlist.id,
-      async () => {
-        await togglePlaylistAutoTrack({
-          variables: { playlistId: playlist.id },
-        });
-        toast.success(
-          `Track Artists ${playlist.autoTrackArtists ? 'disabled' : 'enabled'}`
-        );
-      },
-      { withPulse: true }
-    );
-  };
-
-  const handleEditPlaylist = useCallback((playlist: Playlist) => {
-    setEditingPlaylist(playlist);
-    setShowPlaylistModal(true);
-  }, []);
-
-  const handleClosePlaylistModal = useCallback(() => {
-    setShowPlaylistModal(false);
-    setEditingPlaylist(null);
-  }, []);
-
-  const handleLoadMore = () => {
-    if (data?.playlists?.pageInfo?.hasNextPage) {
-      fetchMore({
-        variables: {
-          after: data.playlists.pageInfo.endCursor,
-        },
-        updateQuery: (
-          prevResult: GetPlaylistsQuery,
-          { fetchMoreResult }: { fetchMoreResult?: GetPlaylistsQuery }
-        ) => {
-          if (!fetchMoreResult) return prevResult;
-
-          return {
-            playlists: {
-              ...fetchMoreResult.playlists,
-              edges: [
-                ...prevResult.playlists.edges,
-                ...fetchMoreResult.playlists.edges,
-              ],
-            },
-          };
-        },
-      });
-    }
-  };
-
-  // Subtle loading indicator for filter changes
-  const { isRefreshing: isRefetching, isInitial: isInitialLoading } =
-    useRequestState(networkStatus);
+    // Handlers
+    handleEnabledFilterChange,
+    handlePageSizeChange,
+    handleSort,
+    handleSearch,
+    handleFilterHover,
+    handleTogglePlaylist,
+    handleSyncPlaylist,
+    handleForceSyncPlaylist,
+    handleToggleAutoTrack,
+    handleEditPlaylist,
+    handleClosePlaylistModal,
+    handleCreatePlaylist,
+    handleLoadMore,
+  } = usePlaylistsPage();
 
   // Only show loading state on initial load
-  if (isInitialLoading && !data) {
+  if (isInitialLoading && !playlists.length) {
     return (
       <section>
         <h1 className='text-2xl font-semibold mb-4'>Playlists</h1>
@@ -286,10 +79,6 @@ function Playlists() {
     );
   }
 
-  const playlists = data?.playlists?.edges || [];
-  const totalCount = data?.playlists?.totalCount || 0;
-  const pageInfo = data?.playlists?.pageInfo;
-
   return (
     <section>
       <div className='flex items-center justify-between mb-4'>
@@ -297,11 +86,11 @@ function Playlists() {
           <h1 className='text-2xl font-semibold'>
             Playlists ({playlists.length} of {totalCount})
           </h1>
-          {isRefetching && <InlineSpinner label='Updating...' />}
+          {isRefreshing && <InlineSpinner label='Updating...' />}
         </div>
         <div className='flex items-center gap-4'>
           <button
-            onClick={() => setShowPlaylistModal(true)}
+            onClick={handleCreatePlaylist}
             className='px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors'
           >
             Create Playlist

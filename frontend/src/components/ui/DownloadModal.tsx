@@ -5,100 +5,16 @@ import {
   CreatePlaylistDocument,
 } from '../../types/generated/graphql';
 import { useToast } from './useToast';
-import type { ContentType } from '../../types/shared';
+import {
+  detectSpotifyContentType,
+  extractPlaylistName,
+} from '../../utils/spotifyContentDetection';
 
 interface DownloadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
-
-interface DetectedContent {
-  type: ContentType;
-  icon: string;
-  label: string;
-  buttonText: string;
-}
-
-const detectContentType = (url: string): DetectedContent => {
-  const trimmedUrl = url.trim().toLowerCase();
-
-  if (!trimmedUrl) {
-    return {
-      type: 'unknown',
-      icon: '💡',
-      label: 'Enter a Spotify URL to detect content type',
-      buttonText: 'Download',
-    };
-  }
-
-  // Check for playlist
-  if (trimmedUrl.includes('/playlist/') || trimmedUrl.includes('playlist:')) {
-    return {
-      type: 'playlist',
-      icon: '📜',
-      label: 'Playlist detected',
-      buttonText: 'Download Playlist', // Will be updated based on save setting
-    };
-  }
-
-  // Check for artist
-  if (trimmedUrl.includes('/artist/') || trimmedUrl.includes('artist:')) {
-    return {
-      type: 'artist',
-      icon: '🎤',
-      label: 'Artist detected',
-      buttonText: 'Download Artist',
-    };
-  }
-
-  // Check for album
-  if (trimmedUrl.includes('/album/') || trimmedUrl.includes('album:')) {
-    return {
-      type: 'album',
-      icon: '💿',
-      label: 'Album detected',
-      buttonText: 'Download Album',
-    };
-  }
-
-  // Check for track/song
-  if (trimmedUrl.includes('/track/') || trimmedUrl.includes('track:')) {
-    return {
-      type: 'track',
-      icon: '🎵',
-      label: 'Track detected',
-      buttonText: 'Download Track',
-    };
-  }
-
-  // If URL contains spotify but not recognized
-  if (trimmedUrl.includes('spotify')) {
-    return {
-      type: 'unknown',
-      icon: '❌',
-      label: 'URL not recognized - please check format',
-      buttonText: 'Download',
-    };
-  }
-
-  // Generic URL
-  return {
-    type: 'unknown',
-    icon: '❓',
-    label: 'Unknown URL format',
-    buttonText: 'Download',
-  };
-};
-
-const extractPlaylistName = (url: string): string => {
-  // Try to extract a reasonable name from the URL
-  const match = url.match(/playlist\/([a-zA-Z0-9]+)/);
-  if (match) {
-    return `Playlist ${match[1]}`;
-  }
-  return 'Downloaded Playlist';
-};
 
 const STORAGE_KEYS = {
   SAVE_PLAYLISTS: 'download-modal-save-playlists',
@@ -154,7 +70,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const isLoading = downloadLoading || createLoading;
 
   // Detect content type from URL
-  const detectedContent = detectContentType(url);
+  const detectedContent = detectSpotifyContentType(url);
   const isPlaylist = detectedContent.type === 'playlist';
 
   // Dynamic button text for playlists based on save setting
