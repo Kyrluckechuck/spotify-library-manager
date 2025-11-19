@@ -70,11 +70,11 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements-dev.txt
 
 # =============================================================================
-# Stage 5: Application Code (rebuilds when source changes)
+# Stage 5: Application Code (shared layer to avoid duplication)
 # =============================================================================
-FROM python-deps AS app-base
+FROM python-base AS app-code
 
-# Copy application source code
+# Copy application source code (single source of truth)
 COPY ./api/src /app/src
 COPY ./api/downloader /app/downloader
 COPY ./api/lib /app/lib
@@ -91,88 +91,54 @@ COPY ./api/scripts /app/scripts
 RUN chmod +x /app/scripts/startup.sh
 
 # =============================================================================
-# Stage 6: Production Backend (final image)
+# Stage 6: Production Backend (minimal, optimized)
 # =============================================================================
 FROM python-deps AS backend-prod
 
-# Copy application source code
-COPY ./api/src /app/src
-COPY ./api/downloader /app/downloader
-COPY ./api/lib /app/lib
-COPY ./api/library_manager /app/library_manager
-COPY ./api/celery_app.py /app/celery_app.py
-COPY ./api/celery_beat_schedule.py /app/celery_beat_schedule.py
-COPY ./api/manage.py /app/manage.py
-COPY ./api/urls.py /app/urls.py
-COPY ./api/settings.py /app/settings.py
-COPY ./api/run.py /app/run.py
-COPY ./api/scripts /app/scripts
+# Copy only application code (no dev dependencies)
+COPY --from=app-code /app /app
 
-# Make startup script executable
-RUN chmod +x /app/scripts/startup.sh
-
-# Copy built frontend from frontend-build stage
+# Copy built frontend (static files only, no node_modules)
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
 
 # Collect static files
-RUN python manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput \
+    # Clean up unnecessary files to reduce image size
+    && find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
+    && find /app -type f -name "*.pyc" -delete
 
 EXPOSE 5000
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]
 
 # =============================================================================
-# Stage 7: Development Backend (with dev dependencies)
+# Stage 7: Development Backend (with dev dependencies and hot reload)
 # =============================================================================
 FROM python-deps-dev AS backend-dev
 
-# Copy application source code
-COPY ./api/src /app/src
-COPY ./api/downloader /app/downloader
-COPY ./api/lib /app/lib
-COPY ./api/library_manager /app/library_manager
-COPY ./api/celery_app.py /app/celery_app.py
-COPY ./api/celery_beat_schedule.py /app/celery_beat_schedule.py
-COPY ./api/manage.py /app/manage.py
-COPY ./api/urls.py /app/urls.py
-COPY ./api/settings.py /app/settings.py
-COPY ./api/run.py /app/run.py
-COPY ./api/scripts /app/scripts
+# Copy application code
+COPY --from=app-code /app /app
 
-# Make startup script executable
-RUN chmod +x /app/scripts/startup.sh
-
-# Copy built frontend from frontend-build stage
+# Copy built frontend
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 5000
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
 
 # =============================================================================
 # Stage 8: Test Backend (for CI/CD)
 # =============================================================================
 FROM python-deps-dev AS backend-test
 
-# Copy application source code
-COPY ./api/src /app/src
-COPY ./api/downloader /app/downloader
-COPY ./api/lib /app/lib
-COPY ./api/library_manager /app/library_manager
-COPY ./api/celery_app.py /app/celery_app.py
-COPY ./api/celery_beat_schedule.py /app/celery_beat_schedule.py
-COPY ./api/manage.py /app/manage.py
-COPY ./api/urls.py /app/urls.py
-COPY ./api/settings.py /app/settings.py
-COPY ./api/run.py /app/run.py
-COPY ./api/scripts /app/scripts
+# Copy application code
+COPY --from=app-code /app /app
+
+# Copy test-specific files
 COPY ./api/tests /app/tests
 COPY ./api/pytest.ini /app/pytest.ini
 COPY ./api/docker_test_settings.py /app/docker_test_settings.py
-
-# Make startup script executable
-RUN chmod +x /app/scripts/startup.sh
 
 # Default target is production
 FROM backend-prod
