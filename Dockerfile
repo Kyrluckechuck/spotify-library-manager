@@ -38,14 +38,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install system dependencies (this layer rarely changes)
-RUN apt-get update \
+# Use cache mounts for apt to speed up builds
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
  && apt-get install -y --no-install-recommends \
     ffmpeg \
     mediainfo \
     ca-certificates \
-    curl \
- && rm -rf /var/lib/apt/lists/* \
- && apt-get clean
+    curl
 
 # Verify deno installation
 RUN deno --version

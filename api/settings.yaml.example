@@ -1,6 +1,25 @@
 default:
   # Downloader defaults (used by api/lib/config_class.py)
-  cookies_location: "/config/cookies.txt"
+  # YouTube Music cookies (for high-quality audio downloads via yt-dlp)
+  youtube_cookies_location: "/config/youtube_music_cookies.txt"
+
+  # Spotify OAuth Configuration (for private playlist access)
+  # When enabled, provides web-based OAuth flow for user authentication
+  spotify_user_auth_enabled: false
+  # OAuth redirect URI - must match Spotify app settings
+  # NOTE: Spotify requires explicit IP (127.0.0.1) instead of 'localhost'
+  # The system automatically detects the host from the request, but you can set a default here
+  # For local dev: http://127.0.0.1:5000/auth/spotify/callback
+  # For production: https://yourdomain.com/auth/spotify/callback
+  spotify_redirect_uri: "http://127.0.0.1:5000/auth/spotify/callback"
+
+  # Spotify Developer App Credentials (REQUIRED for OAuth)
+  # Create an app at: https://developer.spotify.com/dashboard
+  # Add the redirect URI above to your app's settings
+  # SPOTIPY_CLIENT_ID and SPOTIPY_CLIENT_SECRET can also be set via environment variables
+  SPOTIPY_CLIENT_ID: ""
+  SPOTIPY_CLIENT_SECRET: ""
+
   po_token: null
   log_level: "INFO"
   no_lrc: false

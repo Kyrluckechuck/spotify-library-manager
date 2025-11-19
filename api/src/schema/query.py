@@ -267,10 +267,17 @@ class Query:
     @strawberry.field
     async def system_health(self) -> SystemHealth:
         """Get overall system health including authentication status."""
+        from asgiref.sync import sync_to_async
+
         from ..services.system_health import SystemHealthService
 
-        auth_status = SystemHealthService.check_authentication_status()
-        can_download, reason = SystemHealthService.is_download_capable()
+        # Use thread_sensitive=True to ensure Django ORM access works correctly
+        auth_status = await sync_to_async(
+            SystemHealthService.check_authentication_status, thread_sensitive=True
+        )()
+        can_download, reason = await sync_to_async(
+            SystemHealthService.is_download_capable
+        )()
 
         return SystemHealth(
             can_download=can_download,
@@ -283,5 +290,7 @@ class Query:
                 po_token_configured=auth_status.po_token_configured,
                 po_token_valid=auth_status.po_token_valid,
                 po_token_error_message=auth_status.po_token_error_message,
+                spotify_user_auth_enabled=auth_status.spotify_user_auth_enabled,
+                spotify_auth_mode=auth_status.spotify_auth_mode,
             ),
         )

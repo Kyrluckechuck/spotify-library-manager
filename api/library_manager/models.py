@@ -613,3 +613,38 @@ class TrackedPlaylist(models.Model):
     class Meta(TypedModelMeta):
         app_label = "library_manager"
         db_table = "playlists"
+
+
+class SpotifyOAuthToken(models.Model):
+    """
+    Stores Spotify OAuth tokens for accessing private playlists.
+
+    This is a singleton model - only one row should exist.
+    Tokens are automatically refreshed when they expire.
+    """
+
+    # OAuth tokens
+    access_token: models.TextField = models.TextField()
+    refresh_token: models.TextField = models.TextField()
+    token_type: models.CharField = models.CharField(max_length=50, default="Bearer")
+    expires_at: models.DateTimeField = models.DateTimeField()
+
+    # OAuth scope granted
+    scope: models.TextField = models.TextField(
+        default="playlist-read-private user-library-read user-follow-read"
+    )
+
+    # Metadata
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    updated_at: models.DateTimeField = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Spotify OAuth Token (expires: {self.expires_at})"
+
+    def is_expired(self) -> bool:
+        """Check if the access token has expired"""
+        return timezone.now() >= self.expires_at
+
+    class Meta(TypedModelMeta):
+        app_label = "library_manager"
+        db_table = "spotify_oauth_tokens"

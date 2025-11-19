@@ -35,11 +35,13 @@ from library_manager.models import (
     Song,
     TrackedPlaylist,
 )
+from library_manager.validators import extract_spotify_id_from_uri
 
 from . import __version__, spotdl_override, utils
 from .default_download_settings import DEFAULT_DOWNLOAD_SETTINGS
 from .downloader import Downloader
 from .premium_detector import PremiumDetector, PremiumStatus
+from .spotify_auth_helper import get_spotify_oauth_credentials
 
 
 class BitrateException(Exception):
@@ -81,8 +83,24 @@ def generate_spotdl_settings(config: Config) -> Any:
                 key
             ]
 
-    if config.cookies_location:
-        spotify_settings["downloader_settings"]["cookie_file"] = config.cookies_location
+    # Use YouTube cookies for audio downloads
+    if config.youtube_cookies_location:
+        spotify_settings["downloader_settings"][
+            "cookie_file"
+        ] = config.youtube_cookies_location
+
+    # Check for stored OAuth tokens
+    oauth_creds = get_spotify_oauth_credentials()
+    if oauth_creds:
+        # Use OAuth tokens for authentication (enables private playlists)
+        # SpotDL manages tokens internally via spotipy's cache
+        # TODO: Integrate our stored tokens with SpotDL's token cache
+        spotify_settings["user_auth"] = True
+        spotify_settings["headless"] = True  # No interactive prompt needed
+    elif config.spotify_user_auth_enabled:
+        # Config enabled but no tokens yet - enable user auth for initial setup
+        spotify_settings["user_auth"] = True
+        spotify_settings["headless"] = True
 
     if config.po_token:
         spotify_settings["downloader_settings"][
@@ -141,7 +159,7 @@ class SpotdlWrapper:
 
         # Initialize premium detector for quality validation
         self.premium_detector = PremiumDetector(
-            cookies_file=config.cookies_location, po_token=config.po_token
+            cookies_file=config.youtube_cookies_location, po_token=config.po_token
         )
         try:
             self.premium_status = self.premium_detector.detect_premium_status()
@@ -199,6 +217,44 @@ class SpotdlWrapper:
                 if config.print_exceptions:
                     self.logger.error(traceback.format_exc())
 
+                # Handle (gracefully) playlists that are inaccessible
+                if (
+                    "too many 404 error responses" in str(exception)
+                    or "http status: 429" in str(exception)
+                    or "Max Retries" in str(exception)
+                ) and (
+                    url.startswith("spotify:playlist:")
+                    or url.startswith("https://open.spotify.com/playlist")
+                ):
+                    # Extract playlist ID from URL
+                    if "spotify:playlist:" in url:
+                        playlist_id = url.split("spotify:playlist:", 1)[1]
+                    else:
+                        playlist_id = url.split("/playlist/", 1)[1].split("?")[0]
+
+                    self.logger.warning(
+                        f"Playlist appears to be inaccessible (private, deleted, or rate limited): {playlist_id}"
+                    )
+
+                    # Try to find and disable the playlist
+                    try:
+                        playlist = TrackedPlaylist.objects.get(
+                            url__contains=playlist_id
+                        )
+                        if playlist.enabled:
+                            self.logger.warning(
+                                f"Disabling inaccessible playlist: {playlist.name} ({playlist_id})"
+                            )
+                            playlist.enabled = False
+                            playlist.save()
+                    except TrackedPlaylist.DoesNotExist:
+                        self.logger.warning(
+                            f"Playlist not found in database: {playlist_id}"
+                        )
+
+                    # Skip this playlist and continue
+                    continue
+
                 # Handle (gracefully) songs that no longer exist (at all) with Spotify
                 if (
                     "too many 404 error responses" in str(exception)
@@ -207,8 +263,6 @@ class SpotdlWrapper:
                     url.startswith("spotify:track:")
                     or url.startswith("https://open.spotify.com/track")
                 ):
-                    from library_manager.validators import extract_spotify_id_from_uri
-
                     # Extract Spotify ID from URL
                     track_uri = (
                         url.split("spotify:track:", 1)[1]
@@ -319,8 +373,6 @@ class SpotdlWrapper:
                     primary_artist = track["artists"][0]
                     other_artists = track["artists"][1:]
                     song = self.downloader.get_song_core_info(track)
-
-                    from library_manager.validators import extract_spotify_id_from_uri
 
                     # Extract base62 Spotify ID from URI/URL (avoids hex encoding)
                     primary_artist_gid = extract_spotify_id_from_uri(

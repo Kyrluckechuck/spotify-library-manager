@@ -32,11 +32,17 @@ def check_cookie_file(app_configs: Any, **kwargs: Any) -> List[CheckMessage]:
         or "test" in os.environ.get("DJANGO_SETTINGS_MODULE", "").lower()
     )
 
-    # Get cookie path from settings
+    # Get YouTube cookie path from settings
     cookie_path = getattr(settings, "COOKIE_FILE_PATH", None)
     if not cookie_path:
-        # Try default location
-        cookie_path = Path("/config/cookies.txt")
+        # Try youtube_cookies_location (new default)
+        cookie_path = Path(
+            getattr(
+                settings,
+                "youtube_cookies_location",
+                "/config/youtube_music_cookies.txt",
+            )
+        )
 
     cookie_path = Path(cookie_path)
 
@@ -51,7 +57,7 @@ def check_cookie_file(app_configs: Any, **kwargs: Any) -> List[CheckMessage]:
             errors.append(
                 check_class(
                     "YouTube Music cookies file not found",
-                    hint=f"Create cookies.txt at {cookie_path}. Downloads will not work without valid cookies.",
+                    hint=f"Create youtube_cookies.txt at {cookie_path}. Downloads will not work without valid cookies.",
                     obj="cookies",
                     id=check_id,
                 )

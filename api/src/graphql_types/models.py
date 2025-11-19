@@ -271,8 +271,9 @@ class QueueStatus:
 
 @strawberry.type
 class AuthenticationStatus:
-    """Authentication status for YouTube Music Premium downloads."""
+    """Authentication status for YouTube Music Premium downloads and Spotify access."""
 
+    # YouTube Music authentication (for high-quality audio downloads)
     cookies_valid: bool
     cookies_error_type: Optional[str] = None  # 'missing', 'malformed', 'expired'
     cookies_error_message: Optional[str] = None
@@ -280,6 +281,12 @@ class AuthenticationStatus:
     po_token_configured: bool = False
     po_token_valid: bool = False
     po_token_error_message: Optional[str] = None
+
+    # Spotify authentication mode (for playlist access)
+    spotify_user_auth_enabled: bool = False
+    spotify_auth_mode: str = (
+        "public"  # 'public' (public playlists only) or 'user-authenticated' (includes private)
+    )
 
 
 @strawberry.type

@@ -7,10 +7,19 @@ query GetSystemStatus {
       cookiesErrorType
       cookiesExpireInDays
       poTokenConfigured
+      spotifyUserAuthEnabled
+      spotifyAuthMode
     }
   }
   queueStatus {
     totalPendingTasks
     queueSize
+  }
+}
+
+mutation DisconnectSpotify {
+  disconnectSpotify {
+    success
+    message
   }
 }

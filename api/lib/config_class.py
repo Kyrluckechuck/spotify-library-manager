@@ -9,6 +9,8 @@ class Config:
         self,
         urls: Optional[List[str]] = None,
         cookies_location: Optional[Path] = None,
+        youtube_cookies_location: Optional[Path] = None,
+        spotify_user_auth_enabled: Optional[bool] = None,
         po_token: Optional[str] = None,
         log_level: Optional[str] = None,
         no_lrc: Optional[bool] = None,
@@ -18,9 +20,24 @@ class Config:
         print_exceptions: bool = True,
         force_playlist_resync: bool = False,
     ):
-        # Handle settings with defaults
-        self.cookies_location = cookies_location or Path(
-            getattr(settings, "cookies_location", "/config/cookies.txt")
+        # Handle YouTube cookies with backwards compatibility
+        self.youtube_cookies_location = youtube_cookies_location or Path(
+            getattr(
+                settings,
+                "youtube_cookies_location",
+                "/config/youtube_music_cookies.txt",
+            )
+        )
+        # Legacy fallback: cookies_location → youtube_cookies_location
+        if cookies_location:
+            self.youtube_cookies_location = Path(cookies_location)
+        self.cookies_location = self.youtube_cookies_location  # Backwards compat
+
+        # Handle Spotify user authentication for private playlists
+        self.spotify_user_auth_enabled = (
+            spotify_user_auth_enabled
+            if spotify_user_auth_enabled is not None
+            else getattr(settings, "spotify_user_auth_enabled", False)
         )
         self.po_token = (
             po_token if po_token is not None else getattr(settings, "po_token", None)

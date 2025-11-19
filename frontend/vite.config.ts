@@ -20,6 +20,21 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path,
       },
+      '/auth': {
+        target: 'http://web:5000',
+        changeOrigin: true,
+        rewrite: path => path,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Preserve original host for OAuth redirect URI detection
+            const originalHost = req.headers.host;
+            if (originalHost) {
+              proxyReq.setHeader('X-Forwarded-Host', originalHost);
+              proxyReq.setHeader('X-Forwarded-Proto', 'http');
+            }
+          });
+        },
+      },
     },
   },
   plugins: [

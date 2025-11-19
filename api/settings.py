@@ -134,7 +134,22 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom configuration for spotdl and downloader
-cookies_location = "/config/cookies.txt"
+# YouTube Music cookies (for high-quality audio downloads via yt-dlp)
+youtube_cookies_location = "/config/youtube_music_cookies.txt"
+
+# Spotify OAuth Configuration
+spotify_user_auth_enabled = False
+# NOTE: Spotify requires 127.0.0.1 instead of localhost
+# The system auto-detects the host from requests, but this is the fallback
+spotify_redirect_uri = "http://127.0.0.1:5000/auth/spotify/callback"
+
+# Spotify Developer App Credentials (required for OAuth)
+# Can be set via environment variables or in /config/settings.yaml
+SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID", "")
+SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET", "")
+
+# Legacy fallback for backwards compatibility
+cookies_location = youtube_cookies_location
 po_token = None
 log_level = "INFO"
 no_lrc = False

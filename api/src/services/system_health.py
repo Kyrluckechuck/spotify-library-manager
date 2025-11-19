@@ -13,8 +13,9 @@ from lib.config_class import Config
 
 @dataclass
 class AuthenticationStatus:
-    """Authentication status for YouTube Music Premium."""
+    """Authentication status for YouTube Music Premium and Spotify access."""
 
+    # YouTube Music authentication (for high-quality audio downloads)
     cookies_valid: bool
     cookies_error_type: Optional[str] = None  # 'missing', 'malformed', 'expired'
     cookies_error_message: Optional[str] = None
@@ -22,6 +23,12 @@ class AuthenticationStatus:
     po_token_configured: bool = False
     po_token_valid: bool = False
     po_token_error_message: Optional[str] = None
+
+    # Spotify authentication mode (for playlist access)
+    spotify_user_auth_enabled: bool = False
+    spotify_auth_mode: str = (
+        "public"  # 'public' (public playlists only) or 'user-authenticated' (includes private)
+    )
 
 
 class SystemHealthService:
@@ -31,6 +38,35 @@ class SystemHealthService:
     _detector_cache: Dict[str, PremiumDetector] = {}
 
     @staticmethod
+    def _check_spotify_oauth_token_exists() -> bool:
+        """
+        Sync helper to check if Spotify OAuth token exists in database.
+
+        This method is separated so it can be properly called from async contexts.
+        """
+        import logging
+
+        from library_manager.models import SpotifyOAuthToken
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            token = SpotifyOAuthToken.objects.get(id=1)
+            logger.info(
+                f"OAuth token check: FOUND token with access_token length {len(token.access_token)}"
+            )
+            return True
+        except SpotifyOAuthToken.DoesNotExist:
+            logger.info("OAuth token check: Token does NOT exist")
+            return False
+        except Exception as e:
+            # Handle any unexpected errors (e.g., database connection issues)
+            logger.error(
+                f"OAuth token check: Exception occurred: {type(e).__name__}: {e}"
+            )
+            return False
+
+    @staticmethod
     def _get_detector(config: Config) -> PremiumDetector:
         """
         Get or create a cached PremiumDetector instance.
@@ -38,12 +74,14 @@ class SystemHealthService:
         Uses cookies_location + po_token as cache key to reuse detector instances
         and preserve validation cache across multiple health checks.
         """
-        cache_key = f"{config.cookies_location}:{config.po_token}"
+        cache_key = f"{config.youtube_cookies_location}:{config.po_token}"
 
         if cache_key not in SystemHealthService._detector_cache:
             SystemHealthService._detector_cache[cache_key] = PremiumDetector(
                 cookies_file=(
-                    str(config.cookies_location) if config.cookies_location else None
+                    str(config.youtube_cookies_location)
+                    if config.youtube_cookies_location
+                    else None
                 ),
                 po_token=config.po_token,
             )
@@ -68,10 +106,10 @@ class SystemHealthService:
         if config is None:
             config = Config()
 
-        # Check cookies
+        # Check YouTube cookies
         cookie_result: CookieValidationResult
-        if config.cookies_location:
-            cookie_path = Path(config.cookies_location)
+        if config.youtube_cookies_location:
+            cookie_path = Path(config.youtube_cookies_location)
             cookie_result = CookieValidator.validate_file(cookie_path)
         else:
             cookie_result = CookieValidationResult(
@@ -113,6 +151,20 @@ class SystemHealthService:
                 can_authenticate=False,
             )
 
+        # Check Spotify authentication mode and OAuth connection status
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        spotify_user_auth = config.spotify_user_auth_enabled
+        # Check if OAuth tokens are actually stored
+        has_oauth_token = SystemHealthService._check_spotify_oauth_token_exists()
+        spotify_mode = "user-authenticated" if has_oauth_token else "public"
+
+        logger.info(
+            f"Spotify auth check: has_oauth_token={has_oauth_token}, spotify_mode={spotify_mode}"
+        )
+
         return AuthenticationStatus(
             cookies_valid=cookie_result.valid,
             cookies_error_type=cookie_result.error_type,
@@ -121,6 +173,8 @@ class SystemHealthService:
             po_token_configured=po_token_configured,
             po_token_valid=po_token_result.valid,
             po_token_error_message=po_token_result.error_message,
+            spotify_user_auth_enabled=spotify_user_auth,
+            spotify_auth_mode=spotify_mode,
         )
 
     @staticmethod

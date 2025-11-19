@@ -284,3 +284,18 @@ class Mutation:  # pylint: disable=too-many-public-methods
             return MutationResult(
                 success=False, message=f"Failed to enqueue batch operations: {str(e)}"
             )
+
+    @strawberry.mutation
+    async def disconnect_spotify(self) -> MutationResult:
+        """Disconnect Spotify OAuth account by removing stored tokens."""
+        try:
+            from library_manager.models import SpotifyOAuthToken
+
+            await sync_to_async(SpotifyOAuthToken.objects.filter(id=1).delete)()
+            return MutationResult(
+                success=True, message="Spotify account disconnected successfully"
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Failed to disconnect: {str(e)}"
+            )

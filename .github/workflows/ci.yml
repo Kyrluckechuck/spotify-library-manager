@@ -123,12 +123,12 @@ jobs:
         run: python scripts/check-repo-newlines.py check
 
   # =============================================================================
-  # Job 4: Docker build, test, and publish (runs after all tests pass)
+  # Job 4: Docker build and publish (runs in parallel with tests!)
   # =============================================================================
-  docker-build-test-publish:
-    name: Docker build, test, and publish
+  docker-build:
+    name: Docker build and publish
     runs-on: ubuntu-latest
-    needs: [backend, frontend, code-quality]
+    # No dependencies - starts immediately in parallel with tests
     steps:
       - uses: actions/checkout@v4
 
@@ -183,76 +183,102 @@ jobs:
           echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
           echo "original=$BRANCH" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push images with cache
+      - name: Build and push images in parallel using docker-bake
         run: |
-          # Determine if this is a main branch push or PR
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "🚀 Main branch push - building multi-arch images for production"
-            PLATFORMS="linux/amd64,linux/arm64"
-            BACKEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:latest"
-            BACKEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
-            FRONTEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:latest"
-            FRONTEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
-            PUSH_FLAG="--push"
+          # Set variables for docker-bake
+          export REGISTRY="ghcr.io"
+          export REPO_OWNER="${{ steps.owner.outputs.value }}"
+          export SHA="${{ github.sha }}"
+          export PLATFORMS="linux/amd64,linux/arm64"
+
+          # Determine branch name for tagging
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            export BRANCH="main"
+            echo "🚀 Main branch push - building production images"
           else
-            echo "🔨 PR - building multi-arch images for testing"
-            PLATFORMS="linux/amd64,linux/arm64"
-            # Use safe branch name for tags
-            BRANCH_NAME="${{ steps.branch.outputs.name }}"
-            BACKEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:$BRANCH_NAME"
-            BACKEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager:sha-${{ github.sha }}"
-            FRONTEND_TAG1="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:$BRANCH_NAME"
-            FRONTEND_TAG2="ghcr.io/${{ steps.owner.outputs.value }}/spotify-library-manager-frontend:sha-${{ github.sha }}"
-            PUSH_FLAG="--push"
+            export BRANCH="${{ steps.branch.outputs.name }}"
+            echo "🔨 Building images for branch: $BRANCH"
           fi
-          
-          echo "🔨 Building backend image with cache..."
-          docker buildx build \
-            --target backend-prod \
-            --platform $PLATFORMS \
-            --tag $BACKEND_TAG1 \
-            --tag $BACKEND_TAG2 \
-            --cache-from type=gha,scope=backend-app \
-            --cache-to type=gha,scope=backend-app,mode=max \
-            $PUSH_FLAG \
-            .
-          
-          echo "🔨 Building frontend image with cache..."
-          docker buildx build \
-            --target production \
-            --platform $PLATFORMS \
-            --tag $FRONTEND_TAG1 \
-            --tag $FRONTEND_TAG2 \
-            --cache-from type=gha,scope=frontend-app \
-            --cache-to type=gha,scope=frontend-app,mode=max \
-            $PUSH_FLAG \
-            ./frontend
-          
-          echo "🏷️ Images built and pushed successfully"
-          
-          # For testing, also load images locally
-          echo "📦 Loading images locally for testing..."
-          docker buildx build \
-            --target backend-prod \
-            --tag local-backend:latest \
-            --cache-from type=gha,scope=backend-app \
-            --load \
-            .
-          
-          docker buildx build \
-            --target production \
-            --tag local-frontend:latest \
-            --cache-from type=gha,scope=frontend-app \
-            --load \
-            ./frontend
-          
-          echo "✅ Images ready for testing:"
+
+          # Build and push both images in parallel using docker-bake
+          echo "🚀 Building backend and frontend in parallel with docker-bake..."
+          docker buildx bake --push
+
+          echo "✅ Multi-arch images built and pushed successfully"
+          echo "::notice title=Images Built::Backend: ghcr.io/$REPO_OWNER/spotify-library-manager:sha-$SHA"
+          echo "::notice title=Images Built::Frontend: ghcr.io/$REPO_OWNER/spotify-library-manager-frontend:sha-$SHA"
+
+  # =============================================================================
+  # Job 5: Docker integration test (runs after tests AND build complete)
+  # =============================================================================
+  docker-test:
+    name: Docker integration test
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, code-quality, docker-build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lowercase repo owner
+        id: owner
+        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract branch name
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH=${GITHUB_REF#refs/heads/}
+          fi
+          SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g' | tr '[:upper:]' '[:lower:]')
+          echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Load pre-built images locally for testing
+        run: |
+          # Set variables for docker-bake
+          export REGISTRY="ghcr.io"
+          export REPO_OWNER="${{ steps.owner.outputs.value }}"
+          export SHA="${{ github.sha }}"
+
+          echo "📦 Loading pre-built images from cache for testing..."
+          docker buildx bake local
+
+          echo "✅ Images loaded for testing:"
           docker images | grep -E "(local-backend|local-frontend)"
-          
-          # Output image tags for reference
-          echo "::notice title=Images Built::Backend: $BACKEND_TAG1, $BACKEND_TAG2"
-          echo "::notice title=Images Built::Frontend: $FRONTEND_TAG1, $FRONTEND_TAG2"
-          echo "Built from branch: ${{ steps.branch.outputs.original }}"
+
+      - name: Create temp dirs for volumes
+        id: mktemp
+        run: |
+          CONFIG_DIR="${RUNNER_TEMP}/slm_config"
+          MUSIC_DIR="${RUNNER_TEMP}/slm_music"
+          mkdir -p "$CONFIG_DIR/db" "$MUSIC_DIR"
+
+          # Create minimal settings.yaml for CI
+          cat > "$CONFIG_DIR/settings.yaml" << 'EOF'
+          # Minimal CI configuration
+          default:
+            cookies_location: "/config/cookies.txt"
+            final_path: "/mnt/music_spotify"
+            ALBUM_TYPES_TO_DOWNLOAD:
+              - single
+              - album
+              - compilation
+            ALBUM_GROUPS_TO_IGNORE:
+              - appears_on
+          EOF
+
+          echo "config-dir=$CONFIG_DIR" >> "$GITHUB_OUTPUT"
+          echo "music-dir=$MUSIC_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Build and start stack
         env:

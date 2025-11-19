@@ -44,6 +44,8 @@ type AuthenticationStatus {
   poTokenConfigured: Boolean!
   poTokenErrorMessage: String
   poTokenValid: Boolean!
+  spotifyAuthMode: String!
+  spotifyUserAuthEnabled: Boolean!
 }
 
 """
@@ -102,6 +104,7 @@ type Mutation {
   cancelRunningTasksByName(taskName: String!): MutationResult!
   cancelTasksByName(taskName: String!): MutationResult!
   createPlaylist(autoTrackArtists: Boolean! = false, name: String!, url: String!): Playlist!
+  disconnectSpotify: MutationResult!
   downloadAlbum(albumId: String!): Album!
   downloadArtist(artistId: String!): MutationResult!
   downloadUrl(autoTrackArtists: Boolean! = false, url: String!): MutationResult!

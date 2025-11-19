@@ -147,6 +147,11 @@ def create_app() -> FastAPI:
     graphql_app = GraphQLRouter(schema)
     app.include_router(graphql_app, prefix="/graphql")
 
+    # Add OAuth authentication routes
+    from src.routes.auth import router as auth_router
+
+    app.include_router(auth_router)
+
     # Serve Django static files
     static_root = getattr(dj_settings, "STATIC_ROOT", None)
     if static_root and Path(static_root).exists():

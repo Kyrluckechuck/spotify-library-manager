@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import React from 'react';
 import { useQuery } from '@apollo/client/react';
 import { GetSystemStatusDocument } from '../types/generated/graphql';
+import { SpotifyConnectButton } from '../components/ui/SpotifyConnectButton';
 
 function Home() {
   const { data, loading } = useQuery(GetSystemStatusDocument, {
@@ -24,10 +25,10 @@ function Home() {
             <div className='text-gray-900 font-semibold mb-3'>
               System Status
             </div>
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-              {/* Authentication Status */}
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+              {/* YouTube Music Authentication Status */}
               <div>
-                <div className='text-xs text-gray-600 mb-1'>Authentication</div>
+                <div className='text-xs text-gray-600 mb-1'>YouTube Music</div>
                 {loading ? (
                   <div className='text-sm text-gray-500'>Loading...</div>
                 ) : data?.systemHealth.authentication.cookiesValid ? (
@@ -74,6 +75,55 @@ function Home() {
                       {data?.systemHealth.authentication.cookiesErrorType ||
                         'Invalid'}
                     </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Spotify Authentication Mode */}
+              <div>
+                <div className='text-xs text-gray-600 mb-1'>Spotify Access</div>
+                {loading ? (
+                  <div className='text-sm text-gray-500'>Loading...</div>
+                ) : data?.systemHealth.authentication.spotifyAuthMode ===
+                  'user-authenticated' ? (
+                  <div className='space-y-2'>
+                    <div className='flex items-center gap-2'>
+                      <svg
+                        className='h-4 w-4 text-green-500'
+                        fill='currentColor'
+                        viewBox='0 0 20 20'
+                      >
+                        <path
+                          fillRule='evenodd'
+                          d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+                          clipRule='evenodd'
+                        />
+                      </svg>
+                      <span className='text-sm text-green-700 font-medium'>
+                        Private
+                      </span>
+                    </div>
+                    <SpotifyConnectButton />
+                  </div>
+                ) : (
+                  <div className='space-y-2'>
+                    <div className='flex items-center gap-2'>
+                      <svg
+                        className='h-4 w-4 text-blue-500'
+                        fill='currentColor'
+                        viewBox='0 0 20 20'
+                      >
+                        <path
+                          fillRule='evenodd'
+                          d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
+                          clipRule='evenodd'
+                        />
+                      </svg>
+                      <span className='text-sm text-blue-700 font-medium'>
+                        Public Only
+                      </span>
+                    </div>
+                    <SpotifyConnectButton />
                   </div>
                 )}
               </div>

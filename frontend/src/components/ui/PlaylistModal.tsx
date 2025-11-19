@@ -3,6 +3,7 @@ import { useMutation } from '@apollo/client/react';
 import {
   UpdatePlaylistDocument,
   CreatePlaylistDocument,
+  GetPlaylistsDocument,
   type UpdatePlaylistMutation,
   type UpdatePlaylistMutationVariables,
   type Playlist,
@@ -30,9 +31,13 @@ export function PlaylistModal({
   const [updatePlaylist] = useMutation<
     UpdatePlaylistMutation,
     UpdatePlaylistMutationVariables
-  >(UpdatePlaylistDocument);
+  >(UpdatePlaylistDocument, {
+    refetchQueries: [{ query: GetPlaylistsDocument }],
+  });
 
-  const [createPlaylist] = useMutation(CreatePlaylistDocument);
+  const [createPlaylist] = useMutation(CreatePlaylistDocument, {
+    refetchQueries: [{ query: GetPlaylistsDocument }],
+  });
 
   // Initialize form when editing
   useEffect(() => {
