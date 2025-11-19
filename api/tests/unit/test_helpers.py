@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
+import pytest
+
 from library_manager.helpers import (
     download_missing_tracked_artists,
     enqueue_artist_sync_with_download,
@@ -13,6 +15,8 @@ from library_manager.helpers import (
     enqueue_download_missing_albums_for_artists,
     enqueue_fetch_all_albums_for_artists,
     enqueue_priority_artist_operations,
+    generate_task_id,
+    is_task_pending_or_running,
     update_tracked_artists_albums,
 )
 from library_manager.models import Artist
@@ -252,3 +256,72 @@ class TestHelpers(TestCase):
         assert mock_fetch.call_count == 2
         assert operation_counts["fetch"] == 2
         assert "download" not in operation_counts
+
+
+@pytest.mark.django_db
+class TestTaskDeduplication(TestCase):
+    """Test task deduplication logic to prevent regression of playlist sync bug."""
+
+    def test_is_task_pending_or_running_returns_false_for_nonexistent_task(self):
+        """
+        REGRESSION: is_task_pending_or_running should return False for non-existent tasks.
+
+        Previously, this function used AsyncResult.state which returns "PENDING" for
+        ANY unknown task ID, causing the function to always return True and preventing
+        tasks from being queued.
+        """
+        # Generate a deterministic task ID that doesn't exist
+        fake_task_id = generate_task_id(
+            "library_manager.tasks.download_playlist",
+            playlist_url="spotify:playlist:nonexistent123",
+            tracked=False,
+        )
+
+        # Should return False since task doesn't exist
+        result = is_task_pending_or_running(fake_task_id)
+        assert result is False, (
+            "is_task_pending_or_running should return False for non-existent tasks. "
+            "If this fails, playlist syncing will be broken - tasks won't queue!"
+        )
+
+    def test_is_task_pending_or_running_returns_true_for_pending_task(self):
+        """is_task_pending_or_running should return True for tasks that are actually pending."""
+        from django_celery_results.models import TaskResult
+
+        # Create a pending task in the results database
+        task_id = generate_task_id(
+            "library_manager.tasks.download_playlist",
+            playlist_url="spotify:playlist:test123",
+            tracked=False,
+        )
+
+        TaskResult.objects.create(
+            task_id=task_id,
+            task_name="library_manager.tasks.download_playlist",
+            status="PENDING",
+        )
+
+        # Should return True since task exists and is pending
+        result = is_task_pending_or_running(task_id)
+        assert result is True
+
+    def test_is_task_pending_or_running_returns_false_for_completed_task(self):
+        """is_task_pending_or_running should return False for completed tasks."""
+        from django_celery_results.models import TaskResult
+
+        # Create a completed task in the results database
+        task_id = generate_task_id(
+            "library_manager.tasks.download_playlist",
+            playlist_url="spotify:playlist:test456",
+            tracked=False,
+        )
+
+        TaskResult.objects.create(
+            task_id=task_id,
+            task_name="library_manager.tasks.download_playlist",
+            status="SUCCESS",
+        )
+
+        # Should return False since task is completed
+        result = is_task_pending_or_running(task_id)
+        assert result is False

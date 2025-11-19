@@ -3,8 +3,6 @@ from typing import Dict, List, Optional
 
 from django.db.models import QuerySet
 
-from celery.result import AsyncResult
-
 from .models import Artist, TrackedPlaylist
 
 # Celery Task Deduplication Utilities
@@ -41,9 +39,22 @@ def is_task_pending_or_running(task_id: str) -> bool:
 
     Returns:
         True if task is PENDING or STARTED, False otherwise
+
+    Note:
+        Celery's AsyncResult.state returns "PENDING" for both queued tasks AND
+        unknown task IDs. We must check django_celery_results to determine if
+        the task actually exists before trusting the "PENDING" state.
     """
-    result = AsyncResult(task_id)
-    return result.state in ["PENDING", "STARTED", "RETRY"]
+    from django_celery_results.models import TaskResult
+
+    # Check if task result exists in database
+    try:
+        task_result = TaskResult.objects.get(task_id=task_id)
+        # Task exists - check if it's in a pending/running state
+        return task_result.status in ["PENDING", "STARTED", "RETRY"]
+    except TaskResult.DoesNotExist:
+        # Task doesn't exist in results DB - not queued yet
+        return False
 
 
 # Original Huey implementations (commented out)
