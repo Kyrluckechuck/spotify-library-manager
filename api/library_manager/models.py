@@ -57,9 +57,28 @@ class FilePath(models.Model):
 
 
 class Artist(models.Model):
+    """
+    Represents a music artist tracked in the library.
+
+    Fields:
+        id: Internal database primary key
+        name: Artist display name
+        gid: Spotify Artist ID (22-character base62 string, e.g., "4iV5W9uYEdYUVa79Axb7Rh")
+             IMPORTANT: This MUST be a valid Spotify ID, not a UUID or other identifier.
+             Use this field for all Spotify API calls.
+        tracked: Whether to automatically sync new releases for this artist
+        added_at: Timestamp when artist was first added to library
+        last_synced_at: Last time artist's albums were synced from Spotify
+        last_downloaded_at: Last time any content was downloaded for this artist
+    """
+
     id: models.BigAutoField = models.BigAutoField(primary_key=True)
     name: models.CharField = models.CharField(max_length=500)
-    gid: models.CharField = models.CharField(max_length=120, unique=True)
+    gid: models.CharField = models.CharField(
+        max_length=120,
+        unique=True,
+        help_text="Spotify Artist ID (22-char base62, e.g., '4iV5W9uYEdYUVa79Axb7Rh')",
+    )
     tracked: models.BooleanField = models.BooleanField(default=False)
     added_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
     last_synced_at: models.DateTimeField = models.DateTimeField(default=None, null=True)
@@ -67,12 +86,47 @@ class Artist(models.Model):
         default=None, null=True
     )
 
+    def clean(self) -> None:
+        """
+        Validate model fields before saving.
+
+        Note: GID validation is lenient to support legacy hex-encoded GIDs.
+        Tasks and services handle auto-conversion to base62 format.
+        """
+        from library_manager.validators import is_valid_spotify_id
+
+        super().clean()
+        if self.gid:
+            # Allow both base62 (22 chars) and hex (32 chars) for migration
+            is_base62 = is_valid_spotify_id(self.gid)
+            is_hex = (
+                len(self.gid) == 32
+                and self.gid.replace("-", "").replace("_", "").isalnum()
+            )
+
+            if not (is_base62 or is_hex):
+                raise ValueError(
+                    f"Invalid Spotify artist GID: '{self.gid}'. "
+                    f"Expected either 22-character base62 ID or 32-character hex GID, "
+                    f"got {len(self.gid)}-character string."
+                )
+
     @property
     def number_songs(self) -> int:
         return ContributingArtist.objects.filter(artist=self).count()
 
     @property
     def spotify_uri(self) -> str:
+        """
+        Get Spotify URI for this artist.
+
+        Returns:
+            str: Spotify URI in format "spotify:artist:{gid}"
+
+        Note:
+            This assumes gid is a valid Spotify ID. Use validate_spotify_gid()
+            to ensure data quality before API calls.
+        """
         return f"spotify:artist:{self.gid}"
 
     @property
@@ -113,9 +167,31 @@ class Artist(models.Model):
 
 
 class Song(models.Model):
+    """
+    Represents a music track/song.
+
+    Fields:
+        id: Internal database primary key
+        name: Song/track title
+        gid: Spotify Track ID (22-character base62 string, e.g., "6rqhFgbbKwnb9MLmUQDhG6")
+             IMPORTANT: This MUST be a valid Spotify ID, not a UUID or hex-encoded GID.
+             Use this field for all Spotify API calls.
+        primary_artist: Main artist for this track
+        created_at: When the song was first added
+        failed_count: Number of failed download attempts
+        bitrate: Audio bitrate of downloaded file
+        unavailable: Whether song is unavailable on Spotify
+        file_path_ref: Reference to file path (if downloaded)
+        downloaded: Whether the song has been downloaded
+    """
+
     id: models.BigAutoField = models.BigAutoField(primary_key=True)
     name: models.CharField = models.CharField(max_length=500)
-    gid: models.CharField = models.CharField(max_length=120, unique=True)
+    gid: models.CharField = models.CharField(
+        max_length=120,
+        unique=True,
+        help_text="Spotify Track ID (22-char base62, e.g., '6rqhFgbbKwnb9MLmUQDhG6')",
+    )
     primary_artist: models.ForeignKey = models.ForeignKey(
         Artist, on_delete=models.CASCADE
     )
@@ -127,6 +203,31 @@ class Song(models.Model):
         FilePath, on_delete=models.SET_NULL, null=True, blank=True, related_name="songs"
     )
     downloaded: models.BooleanField = models.BooleanField(default=False)
+
+    def clean(self) -> None:
+        """
+        Validate model fields before saving.
+
+        Note: GID validation is lenient to support legacy hex-encoded GIDs.
+        Tasks and services handle auto-conversion to base62 format.
+        """
+        from library_manager.validators import is_valid_spotify_id
+
+        super().clean()
+        if self.gid:
+            # Allow both base62 (22 chars) and hex (32 chars) for migration
+            is_base62 = is_valid_spotify_id(self.gid)
+            is_hex = (
+                len(self.gid) == 32
+                and self.gid.replace("-", "").replace("_", "").isalnum()
+            )
+
+            if not (is_base62 or is_hex):
+                raise ValueError(
+                    f"Invalid Spotify track GID: '{self.gid}'. "
+                    f"Expected either 22-character base62 ID or 32-character hex GID, "
+                    f"got {len(self.gid)}-character string."
+                )
 
     @property
     def file_path(self) -> str | None:
@@ -448,7 +549,28 @@ class TaskHistory(models.Model):
 
 
 class Album(models.Model):
-    spotify_gid: models.CharField = models.CharField(max_length=2048, unique=True)
+    """
+    Represents a music album/release.
+
+    Fields:
+        spotify_gid: Spotify Album ID (22-character base62 string, e.g., "7K3BhSpAxZBzniskgIPUYj")
+                     IMPORTANT: This MUST be a valid Spotify ID, not a hex-encoded GID.
+        artist: Foreign key to Artist (using artist.gid)
+        spotify_uri: Full Spotify URI
+        downloaded: Whether all tracks have been downloaded
+        total_tracks: Number of tracks on the album
+        wanted: Whether this album should be downloaded
+        name: Album title
+        failed_count: Number of failed download attempts
+        album_type: Type (album, single, compilation)
+        album_group: Group (album, appears_on, etc.)
+    """
+
+    spotify_gid: models.CharField = models.CharField(
+        max_length=2048,
+        unique=True,
+        help_text="Spotify Album ID (22-char base62, e.g., '7K3BhSpAxZBzniskgIPUYj')",
+    )
     artist: models.ForeignKey = models.ForeignKey(
         Artist, on_delete=models.CASCADE, to_field="gid", db_column="artist_gid"
     )

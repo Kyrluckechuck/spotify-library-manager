@@ -9,7 +9,6 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 from library_manager.models import Artist
 
-from . import utils
 from .downloader import Downloader
 
 
@@ -43,7 +42,14 @@ def track_artists_in_playlist(playlist_url: str, task_id: Optional[str] = None) 
             )
             print(primary_artist)
             continue
-        primary_artist_gid = utils.uri_to_gid(primary_artist["id"])
+        from library_manager.validators import extract_spotify_id_from_uri
+
+        # Extract base62 Spotify ID from URI/URL (avoids hex encoding)
+        primary_artist_gid = extract_spotify_id_from_uri(primary_artist["id"])
+        if not primary_artist_gid:
+            print(f"Skipping artist with invalid ID format: {primary_artist['id']}")
+            continue
+
         primary_artist_info = {
             "name": primary_artist["name"],
             "gid": primary_artist_gid,
@@ -53,6 +59,38 @@ def track_artists_in_playlist(playlist_url: str, task_id: Optional[str] = None) 
             artists_to_track.append(primary_artist_info)
 
     for artist_info in artists_to_track:
-        Artist.objects.update_or_create(gid=artist_info["gid"], defaults=artist_info)[0]
+        artist_gid = artist_info["gid"]
+        # Get or create artist, handling both hex and base62 GIDs
+        try:
+            artist = Artist.objects.get(gid=artist_gid)
+            # Update existing artist
+            artist.name = artist_info["name"]
+            artist.tracked = artist_info["tracked"]
+            artist.save()
+        except Artist.DoesNotExist:
+            # Check if artist exists with hex GID (legacy format)
+            from . import utils
+
+            hex_gid = utils.uri_to_gid(artist_gid)
+            try:
+                artist = Artist.objects.get(gid=hex_gid)
+                # Found with hex GID - update to base62
+                from django.db import connection, transaction
+
+                with transaction.atomic():
+                    # Update albums' artist_gid FK column
+                    with connection.cursor() as cursor:
+                        cursor.execute(
+                            "UPDATE albums SET artist_gid = %s WHERE artist_gid = %s",
+                            [artist_gid, hex_gid],
+                        )
+                    # Now safe to update artist's GID
+                    artist.gid = artist_gid
+                    artist.name = artist_info["name"]
+                    artist.tracked = artist_info["tracked"]
+                    artist.save()
+            except Artist.DoesNotExist:
+                # Doesn't exist with either format - create new
+                Artist.objects.create(**artist_info)
 
     print(f"ensured {len(artists_to_track)} artists were tracked")

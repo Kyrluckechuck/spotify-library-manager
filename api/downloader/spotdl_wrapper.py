@@ -207,10 +207,36 @@ class SpotdlWrapper:
                     url.startswith("spotify:track:")
                     or url.startswith("https://open.spotify.com/track")
                 ):
-                    song_gid = utils.uri_to_gid(url.split("spotify:track:", 1)[1])
-                    db_song = Song.objects.get(gid=song_gid)
-                    if not db_song:
+                    from library_manager.validators import extract_spotify_id_from_uri
+
+                    # Extract Spotify ID from URL
+                    track_uri = (
+                        url.split("spotify:track:", 1)[1]
+                        if "spotify:track:" in url
+                        else url.split("/track/", 1)[1].split("?")[0]
+                    )
+                    song_gid = extract_spotify_id_from_uri(track_uri)
+
+                    if not song_gid:
+                        self.logger.warning(
+                            f"Failed to extract Spotify ID from URL: {url}"
+                        )
                         continue
+
+                    try:
+                        # Try to find song by base62 ID (new format)
+                        db_song = Song.objects.get(gid=song_gid)
+                    except Song.DoesNotExist:
+                        # Fall back to hex GID (legacy format) during migration
+                        hex_gid = utils.uri_to_gid(song_gid)
+                        try:
+                            db_song = Song.objects.get(gid=hex_gid)
+                        except Song.DoesNotExist:
+                            self.logger.warning(
+                                f"Song not found in database: {song_gid} (or {hex_gid})"
+                            )
+                            continue
+
                     db_song.increment_failed_count()
 
         if len(download_queue) > 0:
@@ -294,40 +320,120 @@ class SpotdlWrapper:
                     other_artists = track["artists"][1:]
                     song = self.downloader.get_song_core_info(track)
 
-                    primary_artist_gid = utils.uri_to_gid(primary_artist["id"])
-                    primary_artist_defaults = {
-                        "name": primary_artist["name"],
-                        "gid": primary_artist_gid,
-                    }
-                    if config.track_artists:
-                        primary_artist_defaults["tracked"] = True
+                    from library_manager.validators import extract_spotify_id_from_uri
 
-                    db_artist = Artist.objects.update_or_create(
-                        gid=primary_artist_gid, defaults=primary_artist_defaults
-                    )[0]
+                    # Extract base62 Spotify ID from URI/URL (avoids hex encoding)
+                    primary_artist_gid = extract_spotify_id_from_uri(
+                        primary_artist["id"]
+                    )
+                    if not primary_artist_gid:
+                        raise ValueError(
+                            f"Invalid Spotify artist ID format: {primary_artist['id']}"
+                        )
+
+                    # Get or create artist, handling both hex and base62 GIDs
+                    # to avoid duplicates during migration
+                    try:
+                        db_artist = Artist.objects.get(gid=primary_artist_gid)
+                    except Artist.DoesNotExist:
+                        # Check if artist exists with hex GID (legacy format)
+                        hex_gid = utils.uri_to_gid(primary_artist_gid)
+                        try:
+                            db_artist = Artist.objects.get(gid=hex_gid)
+                            # Found with hex GID - update to base62
+                            # Must update albums' FK first to avoid constraint violation
+                            from django.db import connection, transaction
+
+                            with transaction.atomic():
+                                # Update albums' artist_gid FK column
+                                with connection.cursor() as cursor:
+                                    cursor.execute(
+                                        "UPDATE albums SET artist_gid = %s WHERE artist_gid = %s",
+                                        [primary_artist_gid, hex_gid],
+                                    )
+                                # Now safe to update artist's GID
+                                db_artist.gid = primary_artist_gid
+                                db_artist.name = primary_artist["name"]
+                                if config.track_artists:
+                                    db_artist.tracked = True
+                                db_artist.save()
+                        except Artist.DoesNotExist:
+                            # Doesn't exist with either format - create new
+                            primary_artist_defaults = {
+                                "name": primary_artist["name"],
+                                "gid": primary_artist_gid,
+                            }
+                            if config.track_artists:
+                                primary_artist_defaults["tracked"] = True
+                            db_artist = Artist.objects.create(**primary_artist_defaults)
 
                     db_extra_artists = [db_artist]
 
                     for artist in other_artists:
-                        artist_gid = utils.uri_to_gid(artist["id"])
-                        db_extra_artists.append(
-                            Artist.objects.update_or_create(
-                                gid=artist_gid,
-                                defaults={
-                                    "name": artist["name"],
-                                    "gid": artist_gid,
-                                },
-                            )[0]
-                        )
+                        # Extract base62 Spotify ID from URI/URL (avoids hex encoding)
+                        artist_gid = extract_spotify_id_from_uri(artist["id"])
+                        if not artist_gid:
+                            raise ValueError(
+                                f"Invalid Spotify artist ID format: {artist['id']}"
+                            )
 
-                    db_song = Song.objects.update_or_create(
-                        gid=song["song_gid"],
-                        defaults={
-                            "primary_artist": db_artist,
-                            "name": song["song_name"],
-                            "gid": song["song_gid"],
-                        },
-                    )[0]
+                        # Get or create artist, handling both hex and base62 GIDs
+                        try:
+                            db_extra_artist = Artist.objects.get(gid=artist_gid)
+                        except Artist.DoesNotExist:
+                            # Check if artist exists with hex GID (legacy format)
+                            hex_gid = utils.uri_to_gid(artist_gid)
+                            try:
+                                db_extra_artist = Artist.objects.get(gid=hex_gid)
+                                # Found with hex GID - update to base62
+                                # Must update albums' FK first to avoid constraint violation
+                                from django.db import connection, transaction
+
+                                with transaction.atomic():
+                                    # Update albums' artist_gid FK column
+                                    with connection.cursor() as cursor:
+                                        cursor.execute(
+                                            "UPDATE albums SET artist_gid = %s WHERE artist_gid = %s",
+                                            [artist_gid, hex_gid],
+                                        )
+                                    # Now safe to update artist's GID
+                                    db_extra_artist.gid = artist_gid
+                                    db_extra_artist.name = artist["name"]
+                                    db_extra_artist.save()
+                            except Artist.DoesNotExist:
+                                # Doesn't exist with either format - create new
+                                db_extra_artist = Artist.objects.create(
+                                    name=artist["name"],
+                                    gid=artist_gid,
+                                )
+
+                        db_extra_artists.append(db_extra_artist)
+
+                    # Get or create song, handling both hex and base62 GIDs
+                    song_gid = song["song_gid"]
+                    try:
+                        db_song = Song.objects.get(gid=song_gid)
+                        # Update existing song
+                        db_song.primary_artist = db_artist
+                        db_song.name = song["song_name"]
+                        db_song.save()
+                    except Song.DoesNotExist:
+                        # Check if song exists with hex GID (legacy format)
+                        hex_gid = utils.uri_to_gid(song_gid)
+                        try:
+                            db_song = Song.objects.get(gid=hex_gid)
+                            # Found with hex GID - update to base62
+                            db_song.gid = song_gid
+                            db_song.primary_artist = db_artist
+                            db_song.name = song["song_name"]
+                            db_song.save()
+                        except Song.DoesNotExist:
+                            # Doesn't exist with either format - create new
+                            db_song = Song.objects.create(
+                                gid=song_gid,
+                                primary_artist=db_artist,
+                                name=song["song_name"],
+                            )
 
                     for artist in db_extra_artists:
                         ContributingArtist.objects.get_or_create(

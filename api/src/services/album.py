@@ -191,8 +191,30 @@ class AlbumService(BaseService[Album]):
                     if not artist_data:
                         raise ValueError(f"Album {album_id} has no artist data")
 
+                    # Validate and sanitize artist GID
+                    from library_manager.validators import (
+                        extract_spotify_id_from_uri,
+                        normalize_spotify_gid,
+                    )
+
+                    raw_artist_id = artist_data.get("id") or artist_data.get("uri")
+                    if not raw_artist_id:
+                        raise ValueError(
+                            f"Album {album_id} artist data missing both 'id' and 'uri' fields"
+                        )
+
+                    # Extract Spotify ID from URI if needed
+                    artist_gid = extract_spotify_id_from_uri(raw_artist_id)
+                    if not artist_gid:
+                        raise ValueError(
+                            f"Album {album_id} has invalid artist ID/URI: {raw_artist_id}"
+                        )
+
+                    # Normalize to base62 format (handles both hex and base62)
+                    artist_gid = normalize_spotify_gid(artist_gid)
+
                     artist, _ = DjangoArtist.objects.get_or_create(
-                        gid=artist_data["id"],
+                        gid=artist_gid,
                         defaults={
                             "name": artist_data["name"],
                         },

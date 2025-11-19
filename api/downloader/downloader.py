@@ -3,8 +3,6 @@ from typing import Any, Dict, List
 
 from library_manager.models import Album, Artist
 
-from . import utils
-
 
 class Downloader:
     def __init__(self, spotipy_client):
@@ -106,7 +104,17 @@ class Downloader:
         raise Exception("Not a valid Spotify URL")
 
     def get_song_core_info(self, metadata: Dict[str, Any]) -> Dict[str, str]:
+        from library_manager.validators import extract_spotify_id_from_uri
+
+        # Extract base62 Spotify ID from URI/URL (avoids hex encoding)
+        song_id = extract_spotify_id_from_uri(metadata["id"])
+        if not song_id:
+            raise ValueError(
+                f"Invalid Spotify track ID format: {metadata['id']}. "
+                f"Expected Spotify URI, URL, or base62 ID."
+            )
+
         return {
-            "song_gid": utils.uri_to_gid(metadata["id"]),
+            "song_gid": song_id,
             "song_name": metadata["name"],
         }

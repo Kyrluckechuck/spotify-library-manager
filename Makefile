@@ -131,6 +131,16 @@ test-api-unit:
 test-api-integration:
 	cd api && python -m pytest tests/integration/ -v -n auto -m integration
 
+# Test specific file or folder
+# Usage: make test-api-path PATH=tests/unit/test_gid_validation.py
+test-api-path:
+	@if [ -z "$(PATH)" ]; then \
+		echo "❌ Error: PATH variable required"; \
+		echo "Usage: make test-api-path PATH=tests/unit/test_gid_validation.py"; \
+		exit 1; \
+	fi
+	cd api && python -m pytest $(PATH) -v -s
+
 # Docker-based testing - runs tests in containerized environment
 test-docker: test-api-docker test-frontend-docker
 
