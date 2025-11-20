@@ -43,6 +43,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make test-api-docker` - Run API tests in Docker container
 - `make test-frontend-docker` - Run frontend tests in Docker container
 
+**Note**: `test_downloader_service.py` runs with limited parallelism (`-n 2`) due to resource conflicts when 8+ workers instantiate service dependencies simultaneously. The test commands automatically handle this by running it separately from the main test suite.
+
 #### Linting Commands
 - **`make lint-all`** - **RECOMMENDED: Run ALL linters (API + Frontend) without stopping on first failure** - Shows all issues at once for easier fixing
 - **`make lint-api-all`** - **RECOMMENDED: Run ALL API linters without stopping on first failure** - Shows all API issues at once
