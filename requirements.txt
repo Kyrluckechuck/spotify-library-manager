@@ -18,6 +18,7 @@ pybase62>=1.0.0
 
 # Runtime type checking and validation
 pydantic>=2.0.0
+types-requests>=2.32.4
 
 
 pydantic-settings>=2.0.0
@@ -70,4 +71,4 @@ pylint==3.3.8
 bandit>=1.7.0
 mypy==1.18.2
 whitenoise==6.11.0
-types-pyasn1 
+types-pyasn1
