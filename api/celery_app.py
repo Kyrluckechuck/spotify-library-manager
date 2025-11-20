@@ -6,10 +6,12 @@ import logging
 import os
 import signal
 import sys
+from types import FrameType
+from typing import Any, Optional
 
 import django
 
-import psutil
+import psutil  # type: ignore[import-untyped]
 from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown, worker_shutdown
 
@@ -131,13 +133,13 @@ def log_process_state(reason: str) -> None:
         logger.error(f"[WORKER DIAGNOSTIC] Failed to log process state: {e}")
 
 
-def signal_handler(signum, frame) -> None:
+def signal_handler(signum: int, frame: Optional[FrameType]) -> None:
     """
     Handle termination signals to log diagnostic information before shutdown.
 
     This helps identify WHY the worker was killed (OOM, Docker, manual kill, etc.)
     """
-    signal_names = {
+    signal_names: dict[int, str] = {
         signal.SIGTERM: "SIGTERM (graceful shutdown requested)",
         signal.SIGINT: "SIGINT (interrupt from keyboard)",
         signal.SIGQUIT: "SIGQUIT (quit from keyboard)",
@@ -172,8 +174,8 @@ signal.signal(signal.SIGINT, signal_handler)
 # ============================================================================
 
 
-@worker_process_init.connect
-def worker_process_init_handler(sender=None, **kwargs):
+@worker_process_init.connect  # type: ignore[misc]
+def worker_process_init_handler(sender: Any = None, **kwargs: Any) -> None:
     """Log when worker process starts (only if diagnostics enabled)."""
     from django.conf import settings
 
@@ -186,8 +188,8 @@ def worker_process_init_handler(sender=None, **kwargs):
         log_process_state("Worker process initialization")
 
 
-@worker_process_shutdown.connect
-def worker_process_shutdown_handler(sender=None, **kwargs):
+@worker_process_shutdown.connect  # type: ignore[misc]
+def worker_process_shutdown_handler(sender: Any = None, **kwargs: Any) -> None:
     """Log when worker process shuts down (only if diagnostics enabled)."""
     from django.conf import settings
 
@@ -199,8 +201,8 @@ def worker_process_shutdown_handler(sender=None, **kwargs):
         log_process_state("Worker process shutdown")
 
 
-@worker_shutdown.connect
-def worker_shutdown_handler(sender=None, **kwargs):
+@worker_shutdown.connect  # type: ignore[misc]
+def worker_shutdown_handler(sender: Any = None, **kwargs: Any) -> None:
     """Log when main worker shuts down (only if diagnostics enabled)."""
     from django.conf import settings
 
