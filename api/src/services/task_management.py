@@ -111,23 +111,48 @@ class TaskManagementService:
             )
 
     async def cancel_all_tasks(self) -> MutationResult:
-        """Cancel both pending and running tasks."""
+        """Cancel both pending and running tasks, including orphaned tasks."""
         try:
-            # Cancel pending tasks
+            # Cancel pending tasks in Celery queue
             pending_result = await self.cancel_all_pending_tasks()
 
-            # Cancel running tasks
+            # Get actively running task IDs from Celery
+            inspect = current_app.control.inspect()
+            active_celery_tasks = inspect.active() or {}
+            active_task_ids = set()
+            for worker, tasks in active_celery_tasks.items():
+                for task in tasks:
+                    active_task_ids.add(task["id"])
+
+            # Cancel/clean up tasks marked as RUNNING in database
             from library_manager.models import TaskHistory
 
             queryset = TaskHistory.objects.filter(status="RUNNING")
             running_tasks: list = await sync_to_async(lambda: list(queryset))()
             cancelled_running_count = 0
+            orphaned_count = 0
 
             for task_history in running_tasks:
                 try:
-                    task_history.status = "CANCELLED"
-                    task_history.completed_at = timezone.now()
-                    task_history.error_message = "Task cancelled by user"
+                    # Check if task is actually running in Celery
+                    is_orphaned = task_history.task_id not in active_task_ids
+
+                    if is_orphaned:
+                        # Task is in database as RUNNING but not in Celery - mark as FAILED
+                        task_history.status = "FAILED"
+                        task_history.completed_at = timezone.now()
+                        task_history.error_message = (
+                            "Task orphaned (container restart or worker crash)"
+                        )
+                        orphaned_count += 1
+                    else:
+                        # Task is actually running - cancel it
+                        task_history.status = "CANCELLED"
+                        task_history.completed_at = timezone.now()
+                        task_history.error_message = "Task cancelled by user"
+                        # Also revoke from Celery
+                        current_app.control.revoke(task_history.task_id, terminate=True)
+
                     await sync_to_async(task_history.save)()
                     cancelled_running_count += 1
                 except Exception as e:
@@ -141,12 +166,19 @@ class TaskManagementService:
 
             total_cancelled = pending_count + cancelled_running_count
 
+            message_parts = [
+                f"Successfully cancelled {total_cancelled} total tasks",
+                f"({pending_count} pending",
+                f"{cancelled_running_count - orphaned_count} running",
+            ]
+            if orphaned_count > 0:
+                message_parts.append(f"{orphaned_count} orphaned)")
+            else:
+                message_parts[-1] += ")"
+
             return MutationResult(
                 success=True,
-                message=(
-                    f"Successfully cancelled {total_cancelled} total tasks ("
-                    f"{pending_count} pending, {cancelled_running_count} running)"
-                ),
+                message=" ".join(message_parts),
             )
 
         except Exception as e:

@@ -6,6 +6,8 @@ import {
   UntrackArtistDocument,
   SyncArtistDocument,
   DownloadArtistDocument,
+  SyncAllTrackedArtistsDocument,
+  DownloadAllTrackedArtistsDocument,
   type Artist,
 } from '../types/generated/graphql';
 import { useToast } from '../components/ui/useToast';
@@ -87,6 +89,10 @@ export function useArtistsPage() {
   const [untrackArtist] = useMutation(UntrackArtistDocument);
   const [syncArtist] = useMutation(SyncArtistDocument);
   const [downloadArtist] = useMutation(DownloadArtistDocument);
+  const [syncAllTrackedArtists] = useMutation(SyncAllTrackedArtistsDocument);
+  const [downloadAllTrackedArtists] = useMutation(
+    DownloadAllTrackedArtistsDocument
+  );
 
   // Mutation state management
   const { mutatingIds, pulseIds, errorById, handleMutation } =
@@ -179,6 +185,48 @@ export function useArtistsPage() {
     }
   };
 
+  const handleSyncAllTrackedArtists = async () => {
+    try {
+      const result = await syncAllTrackedArtists();
+
+      if (result.data?.syncAllTrackedArtists?.success) {
+        toast.success(
+          result.data.syncAllTrackedArtists.message ||
+            'Sync started for all tracked artists'
+        );
+      } else {
+        const errorMessage =
+          result.data?.syncAllTrackedArtists?.message || 'Sync failed';
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Sync failed';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDownloadAllTrackedArtists = async () => {
+    try {
+      const result = await downloadAllTrackedArtists();
+
+      if (result.data?.downloadAllTrackedArtists?.success) {
+        toast.success(
+          result.data.downloadAllTrackedArtists.message ||
+            'Download started for all tracked artists'
+        );
+      } else {
+        const errorMessage =
+          result.data?.downloadAllTrackedArtists?.message || 'Download failed';
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Download failed';
+      toast.error(errorMessage);
+    }
+  };
+
   const handleLoadMore = () => {
     if (data?.artists?.pageInfo?.hasNextPage) {
       fetchMore({
@@ -229,6 +277,8 @@ export function useArtistsPage() {
     handleTrackToggle,
     handleSyncArtist,
     handleDownloadArtist,
+    handleSyncAllTrackedArtists,
+    handleDownloadAllTrackedArtists,
     handleLoadMore,
   };
 }

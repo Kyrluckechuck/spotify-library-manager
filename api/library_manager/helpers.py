@@ -204,7 +204,8 @@ def enqueue_fetch_all_albums_for_artists(
         # Pass database ID, not gid
         from .tasks import fetch_all_albums_for_artist
 
-        fetch_all_albums_for_artist(artist.id, **extra_args)
+        # fetch_all_albums_for_artist doesn't accept any extra parameters
+        fetch_all_albums_for_artist.delay(artist.id)
 
 
 def enqueue_download_missing_albums_for_artists(
@@ -226,7 +227,7 @@ def enqueue_download_missing_albums_for_artists(
         # Pass database ID, not gid
         from .tasks import download_missing_albums_for_artist
 
-        download_missing_albums_for_artist(artist.id, **extra_args)
+        download_missing_albums_for_artist.delay(artist.id, **extra_args)
 
 
 def enqueue_batch_artist_operations(
@@ -265,13 +266,15 @@ def enqueue_batch_artist_operations(
         if "fetch" in operations:
             from .tasks import fetch_all_albums_for_artist
 
-            fetch_all_albums_for_artist(artist.id, **extra_args)
+            # fetch_all_albums_for_artist doesn't accept extra parameters
+            fetch_all_albums_for_artist.delay(artist.id)
             operation_counts["fetch"] = operation_counts.get("fetch", 0) + 1
 
         if "download" in operations and artist.tracked:
             from .tasks import download_missing_albums_for_artist
 
-            download_missing_albums_for_artist(artist.id, **extra_args)
+            # Only download task accepts the delay parameter
+            download_missing_albums_for_artist.delay(artist.id, **extra_args)
             operation_counts["download"] = operation_counts.get("download", 0) + 1
 
     return operation_counts

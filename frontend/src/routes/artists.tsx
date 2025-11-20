@@ -49,6 +49,8 @@ function Artists() {
     handleTrackToggle,
     handleSyncArtist,
     handleDownloadArtist,
+    handleSyncAllTrackedArtists,
+    handleDownloadAllTrackedArtists,
     handleLoadMore,
   } = useArtistsPage();
 
@@ -71,7 +73,23 @@ function Artists() {
         title='Artists'
         subtitle='Manage and track your favorite artists'
       >
-        {isRefreshing && <InlineSpinner label='Updating...' />}
+        <div className='flex items-center gap-3'>
+          {isRefreshing && <InlineSpinner label='Updating...' />}
+          <button
+            onClick={handleSyncAllTrackedArtists}
+            disabled={loading}
+            className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+          >
+            Sync All Tracked Artists
+          </button>
+          <button
+            onClick={handleDownloadAllTrackedArtists}
+            disabled={loading}
+            className='px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+          >
+            Download All Tracked Artists
+          </button>
+        </div>
       </PageHeader>
 
       <FilterBar

@@ -1,0 +1,6 @@
+mutation DownloadAllPlaylists {
+  downloadAllPlaylists {
+    success
+    message
+  }
+}

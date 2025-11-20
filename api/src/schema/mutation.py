@@ -230,8 +230,8 @@ class Mutation:  # pylint: disable=too-many-public-methods
             # Use database IDs for batch operations with sync_to_async
             operation_counts = await sync_to_async(enqueue_artist_sync_with_download)(
                 Artist.objects.filter(tracked=True),
-                auto_download=True,
-                delay_seconds=5,  # Rate limiting
+                auto_download=False,  # Only sync album info, no downloads
+                delay_seconds=0,
             )
 
             total_operations = sum(operation_counts.values())

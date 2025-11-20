@@ -40,34 +40,38 @@ class TestHelpers(TestCase):
     @patch("library_manager.tasks.fetch_all_albums_for_artist")
     def test_enqueue_fetch_all_albums_for_artists_uses_database_ids(self, mock_fetch):
         """Test that enqueue_fetch_all_albums_for_artists uses database IDs."""
+        from unittest.mock import call
+
         artists = Artist.objects.filter(tracked=True)
 
         enqueue_fetch_all_albums_for_artists(artists)
 
-        # Verify that fetch_all_albums_for_artist was called with database IDs
+        # Verify that fetch_all_albums_for_artist.delay() was called with database IDs
         expected_calls = [
-            ((self.artist1.id,), {}),
-            ((self.artist2.id,), {}),
+            call(self.artist1.id),
+            call(self.artist2.id),
         ]
-        mock_fetch.assert_has_calls(expected_calls, any_order=True)
-        assert mock_fetch.call_count == 2
+        mock_fetch.delay.assert_has_calls(expected_calls, any_order=True)
+        assert mock_fetch.delay.call_count == 2
 
     @patch("library_manager.tasks.download_missing_albums_for_artist")
     def test_enqueue_download_missing_albums_for_artists_uses_database_ids(
         self, mock_download
     ):
         """Test that enqueue_download_missing_albums_for_artists uses database IDs."""
+        from unittest.mock import call
+
         artists = Artist.objects.filter(tracked=True)
 
         enqueue_download_missing_albums_for_artists(artists)
 
-        # Verify that download_missing_albums_for_artist was called with database IDs
+        # Verify that download_missing_albums_for_artist.delay() was called with database IDs
         expected_calls = [
-            ((self.artist1.id,), {}),
-            ((self.artist2.id,), {}),
+            call(self.artist1.id),
+            call(self.artist2.id),
         ]
-        mock_download.assert_has_calls(expected_calls, any_order=True)
-        assert mock_download.call_count == 2
+        mock_download.delay.assert_has_calls(expected_calls, any_order=True)
+        assert mock_download.delay.call_count == 2
 
     @patch("library_manager.helpers.is_task_pending_or_running", return_value=False)
     @patch("library_manager.tasks.fetch_all_albums_for_artist")
@@ -120,18 +124,20 @@ class TestHelpers(TestCase):
 
     @patch("library_manager.tasks.fetch_all_albums_for_artist")
     def test_enqueue_fetch_all_albums_for_artists_with_extra_args(self, mock_fetch):
-        """Test that enqueue_fetch_all_albums_for_artists passes extra args correctly."""
+        """Test that enqueue_fetch_all_albums_for_artists ignores extra args (task doesn't support them)."""
+        from unittest.mock import call
+
         artists = Artist.objects.filter(tracked=True)
         extra_args = {"priority": 10}
 
         enqueue_fetch_all_albums_for_artists(artists, extra_args)
 
-        # Verify that extra args are passed through
+        # fetch_all_albums_for_artist doesn't accept extra args, so they should NOT be passed
         expected_calls = [
-            ((self.artist1.id,), extra_args),
-            ((self.artist2.id,), extra_args),
+            call(self.artist1.id),
+            call(self.artist2.id),
         ]
-        mock_fetch.assert_has_calls(expected_calls, any_order=True)
+        mock_fetch.delay.assert_has_calls(expected_calls, any_order=True)
 
     @patch("library_manager.tasks.fetch_all_albums_for_artist")
     def test_enqueue_fetch_all_albums_for_artists_duplicate_prevention(
@@ -143,10 +149,10 @@ class TestHelpers(TestCase):
 
         enqueue_fetch_all_albums_for_artists(artists)
 
-        # Should only call once per unique artist
-        assert mock_fetch.call_count == 2
+        # Should only call .delay() once per unique artist
+        assert mock_fetch.delay.call_count == 2
         # Verify unique database IDs were used
-        called_ids = [call[0][0] for call in mock_fetch.call_args_list]
+        called_ids = [call[0][0] for call in mock_fetch.delay.call_args_list]
         assert len(set(called_ids)) == 2
         assert self.artist1.id in called_ids
         assert self.artist2.id in called_ids
@@ -173,24 +179,26 @@ class TestHelpers(TestCase):
         self, mock_download, mock_fetch
     ):
         """Test that enqueue_batch_artist_operations uses database IDs."""
+        from unittest.mock import call
+
         artists = Artist.objects.filter(tracked=True)
 
         operation_counts = enqueue_batch_artist_operations(
             artists, operations=["fetch", "download"]
         )
 
-        # Verify operations were called with database IDs
+        # Verify operations were called with database IDs using .delay()
         expected_fetch_calls = [
-            ((self.artist1.id,), {}),
-            ((self.artist2.id,), {}),
+            call(self.artist1.id),
+            call(self.artist2.id),
         ]
         expected_download_calls = [
-            ((self.artist1.id,), {}),
-            ((self.artist2.id,), {}),
+            call(self.artist1.id),
+            call(self.artist2.id),
         ]
 
-        mock_fetch.assert_has_calls(expected_fetch_calls, any_order=True)
-        mock_download.assert_has_calls(expected_download_calls, any_order=True)
+        mock_fetch.delay.assert_has_calls(expected_fetch_calls, any_order=True)
+        mock_download.delay.assert_has_calls(expected_download_calls, any_order=True)
 
         # Verify operation counts
         assert operation_counts["fetch"] == 2
@@ -207,8 +215,8 @@ class TestHelpers(TestCase):
         operation_counts = enqueue_priority_artist_operations(artists, max_concurrent=1)
 
         # Should only process first artist due to concurrency limit
-        assert mock_fetch.call_count == 1
-        assert mock_download.call_count == 1
+        assert mock_fetch.delay.call_count == 1
+        assert mock_download.delay.call_count == 1
 
         # Verify operation counts
         assert operation_counts["fetch"] == 1
@@ -220,24 +228,28 @@ class TestHelpers(TestCase):
         self, mock_download, mock_fetch
     ):
         """Test that enqueue_artist_sync_with_download uses database IDs."""
+        from unittest.mock import call
+
         artists = Artist.objects.filter(tracked=True)
 
         operation_counts = enqueue_artist_sync_with_download(
             artists, auto_download=True
         )
 
-        # Verify operations were called with database IDs
+        # Verify operations were called with database IDs using .delay()
+        # fetch task doesn't accept extra args
         expected_fetch_calls = [
-            ((self.artist1.id,), {"delay": 0}),
-            ((self.artist2.id,), {"delay": 0}),
+            call(self.artist1.id),
+            call(self.artist2.id),
         ]
+        # download task accepts delay kwarg
         expected_download_calls = [
-            ((self.artist1.id,), {"delay": 0}),
-            ((self.artist2.id,), {"delay": 0}),
+            call(self.artist1.id, delay=0),
+            call(self.artist2.id, delay=0),
         ]
 
-        mock_fetch.assert_has_calls(expected_fetch_calls, any_order=True)
-        mock_download.assert_has_calls(expected_download_calls, any_order=True)
+        mock_fetch.delay.assert_has_calls(expected_fetch_calls, any_order=True)
+        mock_download.delay.assert_has_calls(expected_download_calls, any_order=True)
 
         # Verify operation counts
         assert operation_counts["fetch"] == 2
@@ -252,8 +264,8 @@ class TestHelpers(TestCase):
             artists, auto_download=False
         )
 
-        # Should only call fetch, not download
-        assert mock_fetch.call_count == 2
+        # Should only call fetch.delay(), not download
+        assert mock_fetch.delay.call_count == 2
         assert operation_counts["fetch"] == 2
         assert "download" not in operation_counts
 

@@ -6,6 +6,7 @@ import {
   TogglePlaylistAutoTrackDocument,
   SyncPlaylistDocument,
   ForceSyncPlaylistDocument,
+  DownloadAllPlaylistsDocument,
   type Playlist,
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
@@ -63,6 +64,7 @@ export function usePlaylistsPage() {
   );
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
   const [forceSyncPlaylist] = useMutation(ForceSyncPlaylistDocument);
+  const [downloadAllPlaylists] = useMutation(DownloadAllPlaylistsDocument);
 
   // Mutation states
   const {
@@ -223,6 +225,27 @@ export function usePlaylistsPage() {
     setShowPlaylistModal(true);
   }, []);
 
+  const handleDownloadAllPlaylists = async () => {
+    try {
+      const result = await downloadAllPlaylists();
+
+      if (result.data?.downloadAllPlaylists?.success) {
+        toast.success(
+          result.data.downloadAllPlaylists.message ||
+            'Download started for all enabled playlists'
+        );
+      } else {
+        const errorMessage =
+          result.data?.downloadAllPlaylists?.message || 'Download failed';
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Download failed';
+      toast.error(errorMessage);
+    }
+  };
+
   const handleLoadMore = () => {
     if (data?.playlists?.pageInfo?.hasNextPage) {
       fetchMore({
@@ -299,6 +322,7 @@ export function usePlaylistsPage() {
     handleEditPlaylist,
     handleClosePlaylistModal,
     handleCreatePlaylist,
+    handleDownloadAllPlaylists,
     handleLoadMore,
   };
 }

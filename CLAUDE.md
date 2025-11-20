@@ -214,6 +214,34 @@ This is a **full-stack Spotify library management application** with the followi
 - Use `@shared_task(bind=True)` decorator for async operations
 - Task monitoring via Django admin or task status endpoints
 
+#### ⚠️ CRITICAL: Celery Task Calling Pattern
+
+**ALWAYS use `.delay()` or `.apply_async()` when calling Celery tasks!**
+
+This is a recurring bug pattern. Celery tasks defined with `@shared_task` MUST be queued, not called directly.
+
+```python
+# ❌ WRONG - Calls task synchronously, bypasses queue, causes errors
+from library_manager.tasks import fetch_all_albums_for_artist
+fetch_all_albums_for_artist(artist_id)  # TypeError: got an unexpected keyword argument 'delay'
+
+# ✅ CORRECT - Queues task for async execution
+from library_manager.tasks import fetch_all_albums_for_artist
+fetch_all_albums_for_artist.delay(artist_id)  # Properly queued
+```
+
+**How to identify Celery tasks:**
+1. Defined in `api/library_manager/tasks.py`
+2. Decorated with `@shared_task` or `@app.task`
+3. Function names in `tasks.py` are tasks - always use `.delay()`
+
+**Common locations to check:**
+- `api/library_manager/helpers.py` - All task calls MUST use `.delay()`
+- Any mutation in `api/src/schema/mutation.py` calling tasks
+- Any service calling background operations
+
+**Reference fix:** See `api/library_manager/helpers.py:207`, `helpers.py:229`, `helpers.py:268`, `helpers.py:274`
+
 #### Periodic Tasks (Celery Beat Schedule)
 
 The following tasks run automatically via Celery Beat (`api/celery_beat_schedule.py`):

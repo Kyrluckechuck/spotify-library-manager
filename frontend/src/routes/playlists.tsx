@@ -57,6 +57,7 @@ function Playlists() {
     handleEditPlaylist,
     handleClosePlaylistModal,
     handleCreatePlaylist,
+    handleDownloadAllPlaylists,
     handleLoadMore,
   } = usePlaylistsPage();
 
@@ -89,6 +90,13 @@ function Playlists() {
           {isRefreshing && <InlineSpinner label='Updating...' />}
         </div>
         <div className='flex items-center gap-4'>
+          <button
+            onClick={handleDownloadAllPlaylists}
+            disabled={loading}
+            className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+          >
+            Download All Tracked Playlists
+          </button>
           <button
             onClick={handleCreatePlaylist}
             className='px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors'

@@ -447,6 +447,16 @@ class TaskHistory(models.Model):
         if self.status != "RUNNING":
             return False
 
+        # Method 0: Orphaned task detection (heartbeat never updated after task started)
+        # This catches tasks that were interrupted by container restarts
+        time_since_start = timezone.now() - self.started_at
+
+        # If heartbeat is nearly identical to started_at (within 1 second),
+        # and task has been "running" for > 10 minutes, it's likely orphaned
+        heartbeat_delta = (self.last_heartbeat - self.started_at).total_seconds()
+        if heartbeat_delta < 1.0 and time_since_start > timedelta(minutes=10):
+            return True  # Orphaned task - heartbeat was never updated
+
         # Method 1: Heartbeat timeout (only for very long timeouts - indicates dead container)
         expected_duration = self.get_expected_duration_minutes()
         timeout_threshold = timezone.now() - timedelta(minutes=expected_duration)
@@ -474,9 +484,8 @@ class TaskHistory(models.Model):
                 except Exception:
                     pass
 
-        # Method 4: Very old tasks without any progress logs (dead on arrival)
+        # Method 3: Very old tasks without any progress logs (dead on arrival)
         if not self.log_messages and self.started_at:
-            time_since_start = timezone.now() - self.started_at
             # If task has been running for 1 hour without any logs, it's probably dead
             if time_since_start > timedelta(hours=1):
                 return True
