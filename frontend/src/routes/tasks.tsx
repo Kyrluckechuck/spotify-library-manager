@@ -51,6 +51,7 @@ function Tasks() {
     loading: historyLoading,
     error: historyError,
     fetchMore,
+    refetch: refetchHistory,
     networkStatus: historyNetworkStatus,
   } = useQuery(GetTaskHistoryDocument, {
     variables: {
@@ -199,7 +200,9 @@ function Tasks() {
 
         if (data?.success) {
           toast.success(successMessage);
+          // Refetch both queue and history to update UI immediately
           refetchQueue();
+          refetchHistory();
         } else {
           toast.error(`${errorPrefix}: ${data?.message || 'Unknown error'}`);
         }
@@ -209,7 +212,7 @@ function Tasks() {
         );
       }
     },
-    [confirm, toast, refetchQueue]
+    [confirm, toast, refetchQueue, refetchHistory]
   );
 
   const handleCancelAllTasks = useCallback(

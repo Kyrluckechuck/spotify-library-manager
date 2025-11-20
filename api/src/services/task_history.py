@@ -42,7 +42,11 @@ class TaskHistoryService(BaseService[TaskHistory]):
                 TaskStatus.FAILED: "FAILED",
                 TaskStatus.CANCELLED: "CANCELLED",
             }
-            queryset = queryset.filter(status=status_mapping.get(status, status.value))
+            # Handle both enum and string inputs
+            status_value = status_mapping.get(
+                status, status if isinstance(status, str) else status.value
+            )
+            queryset = queryset.filter(status=status_value)
 
         if type:
             type_mapping = {
@@ -50,7 +54,11 @@ class TaskHistoryService(BaseService[TaskHistory]):
                 TaskType.DOWNLOAD: "DOWNLOAD",
                 TaskType.FETCH: "FETCH",
             }
-            queryset = queryset.filter(type=type_mapping.get(type, type.value))
+            # Handle both enum and string inputs
+            type_value = type_mapping.get(
+                type, type if isinstance(type, str) else type.value
+            )
+            queryset = queryset.filter(type=type_value)
 
         if entity_type:
             entity_mapping = {
@@ -59,9 +67,12 @@ class TaskHistoryService(BaseService[TaskHistory]):
                 EntityType.PLAYLIST: "PLAYLIST",
                 EntityType.TRACK: "TRACK",
             }
-            queryset = queryset.filter(
-                entity_type=entity_mapping.get(entity_type, entity_type.value)
+            # Handle both enum and string inputs
+            entity_value = entity_mapping.get(
+                entity_type,
+                entity_type if isinstance(entity_type, str) else entity_type.value,
             )
+            queryset = queryset.filter(entity_type=entity_value)
 
         if search:
             queryset = queryset.filter(

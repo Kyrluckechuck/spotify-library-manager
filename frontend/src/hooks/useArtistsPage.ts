@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import {
   GetArtistsDocument,
+  GetTaskHistoryDocument,
   TrackArtistDocument,
   UntrackArtistDocument,
   SyncArtistDocument,
@@ -48,6 +49,32 @@ export function useArtistsPage() {
     [queryVariables, filter]
   );
 
+  // Query for running artist tasks to enable smart polling
+  const { data: taskData } = useQuery(GetTaskHistoryDocument, {
+    variables: {
+      status: 'RUNNING',
+      first: 100,
+    },
+    fetchPolicy: 'cache-first',
+    pollInterval: 5000, // Poll every 5 seconds to detect active tasks
+  });
+
+  // Compute whether there are active artist-related tasks
+  const hasActiveArtistTasks = useMemo(() => {
+    const edges = taskData?.taskHistory?.edges || [];
+    return edges.some(edge => {
+      const task = edge.node;
+      return (
+        task.status === 'RUNNING' &&
+        task.entityType === 'ARTIST' &&
+        (task.type === 'SYNC' || task.type === 'DOWNLOAD')
+      );
+    });
+  }, [taskData]);
+
+  // Dynamic poll interval: 5s when tasks active, 0 (disabled) when idle
+  const artistsPollInterval = hasActiveArtistTasks ? 5000 : 0;
+
   // Data fetching
   const { data, loading, error, fetchMore, networkStatus } = useQuery(
     GetArtistsDocument,
@@ -55,7 +82,7 @@ export function useArtistsPage() {
       variables: queryVariablesWithFilter,
       fetchPolicy: 'cache-and-network',
       notifyOnNetworkStatusChange: true,
-      pollInterval: 0,
+      pollInterval: artistsPollInterval,
       errorPolicy: 'all',
     }
   );

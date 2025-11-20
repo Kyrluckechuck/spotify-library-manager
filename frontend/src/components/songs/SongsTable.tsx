@@ -180,10 +180,11 @@ export const SongsTable: React.FC<SongsTableProps> = ({
                 </div>
               </td>
               <td className='px-6 py-4 whitespace-nowrap'>
-                {/* TODO: Create dedicated artist page with albums/singles and replace this with proper artist link */}
                 <Link
-                  to='/artists'
+                  to='/albums'
+                  search={{ artistId: song.primaryArtistId }}
                   className='text-sm font-medium text-blue-600 hover:text-blue-900'
+                  title={`View albums by ${song.primaryArtist}`}
                 >
                   {song.primaryArtist}
                 </Link>
