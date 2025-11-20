@@ -631,9 +631,11 @@ class SpotdlWrapper:
                                 "Spotify album downloaded but was not expected and could not be created"
                             )
 
-                    if tracked_playlist is not None:
-                        tracked_playlist.last_synced_at = Now()
-                        tracked_playlist.save()
+            # Update last_synced_at after processing all tracks in the playlist
+            # This should happen regardless of whether tracks were skipped or downloaded
+            if tracked_playlist is not None:
+                tracked_playlist.last_synced_at = Now()
+                tracked_playlist.save()
 
         self.logger.info(f"Done ({error_count} error(s))")
         return error_count
