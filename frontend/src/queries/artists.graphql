@@ -276,3 +276,24 @@ mutation CreatePlaylist(
     autoTrackArtists
   }
 }
+
+mutation SyncAllTrackedArtists {
+  syncAllTrackedArtists {
+    success
+    message
+  }
+}
+
+mutation DownloadAllTrackedArtists {
+  downloadAllTrackedArtists {
+    success
+    message
+  }
+}
+
+mutation DownloadAllPlaylists {
+  downloadAllPlaylists {
+    success
+    message
+  }
+}

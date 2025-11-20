@@ -16,7 +16,9 @@ class TestPremiumDetector:
     @pytest.fixture
     def detector(self):
         """Create a premium detector for testing."""
-        return PremiumDetector(cookies_file="/fake/cookies.txt", po_token="fake_token")
+        return PremiumDetector(
+            cookies_file="/fake/youtube_music_cookies.txt", po_token="fake_token"
+        )
 
     @pytest.fixture
     def mock_ytmusic(self):
@@ -41,7 +43,7 @@ class TestPremiumDetector:
 
     def test_detector_initialization(self, detector):
         """Test premium detector initialization."""
-        assert detector.cookies_file == "/fake/cookies.txt"
+        assert detector.cookies_file == "/fake/youtube_music_cookies.txt"
         assert detector.po_token == "fake_token"
         assert detector._ytmusic_client is None
         assert detector._last_status is None

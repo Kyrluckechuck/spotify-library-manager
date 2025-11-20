@@ -12,7 +12,7 @@ from lib.config_class import Config
 
 
 @dataclass
-class AuthenticationStatus:
+class AuthenticationStatus:  # pylint: disable=too-many-instance-attributes
     """Authentication status for YouTube Music Premium and Spotify access."""
 
     # YouTube Music authentication (for high-quality audio downloads)

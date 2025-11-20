@@ -36,7 +36,7 @@ Thank you for your interest in contributing! This project uses a **Docker-first 
    - API GraphQL: http://localhost:5000/graphql (internal)
 
 ### Required Configuration
-- Export Spotify cookies to `./config/cookies.txt`
+- Export Spotify cookies to `./config/youtube_music_cookies.txt`
 - Update `./config/settings.yaml` with your preferences
 - Ensure `.env` has proper database credentials
 

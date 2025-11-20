@@ -643,7 +643,7 @@ class SpotifyOAuthToken(models.Model):
 
     def is_expired(self) -> bool:
         """Check if the access token has expired"""
-        return timezone.now() >= self.expires_at
+        return bool(timezone.now() >= self.expires_at)
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"

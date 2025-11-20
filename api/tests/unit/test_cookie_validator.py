@@ -12,7 +12,9 @@ class TestCookieValidator:
 
     def test_validate_missing_file(self):
         """Test validation of missing cookie file."""
-        result = CookieValidator.validate_file(Path("/nonexistent/cookies.txt"))
+        result = CookieValidator.validate_file(
+            Path("/nonexistent/youtube_music_cookies.txt")
+        )
 
         assert not result.valid
         assert result.error_type == "missing"

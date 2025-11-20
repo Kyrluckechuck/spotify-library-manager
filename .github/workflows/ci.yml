@@ -2,9 +2,9 @@ name: CI Optimized
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ "**" ]
+    branches: ["**"]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -21,7 +21,7 @@ jobs:
   backend:
     name: Backend (lint + tests) • Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -36,11 +36,11 @@ jobs:
           --health-retries=5
         ports:
           - 5432:5432
-    
+
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ '3.13' ]
+        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
 
@@ -48,7 +48,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          cache: "pip"
           cache-dependency-path: |
             requirements.txt
             requirements-dev.txt
@@ -91,9 +91,9 @@ jobs:
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: 'frontend/yarn.lock'
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: "frontend/yarn.lock"
 
       - name: Install dependencies
         working-directory: frontend
@@ -118,7 +118,7 @@ jobs:
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: "3.13"
       - name: Check trailing newlines
         run: python scripts/check-repo-newlines.py check
 
@@ -152,12 +152,12 @@ jobs:
           CONFIG_DIR="${RUNNER_TEMP}/slm_config"
           MUSIC_DIR="${RUNNER_TEMP}/slm_music"
           mkdir -p "$CONFIG_DIR/db" "$MUSIC_DIR"
-          
+
           # Create minimal settings.yaml for CI
           cat > "$CONFIG_DIR/settings.yaml" << 'EOF'
           # Minimal CI configuration
           default:
-            cookies_location: "/config/cookies.txt"
+            cookies_location: "/config/youtube_music_cookies.txt"
             final_path: "/mnt/music_spotify"
             ALBUM_TYPES_TO_DOWNLOAD:
               - single
@@ -166,7 +166,7 @@ jobs:
             ALBUM_GROUPS_TO_IGNORE:
               - appears_on
           EOF
-          
+
           echo "config-dir=$CONFIG_DIR" >> "$GITHUB_OUTPUT"
           echo "music-dir=$MUSIC_DIR" >> "$GITHUB_OUTPUT"
 
@@ -267,7 +267,7 @@ jobs:
           cat > "$CONFIG_DIR/settings.yaml" << 'EOF'
           # Minimal CI configuration
           default:
-            cookies_location: "/config/cookies.txt"
+            cookies_location: "/config/youtube_music_cookies.txt"
             final_path: "/mnt/music_spotify"
             ALBUM_TYPES_TO_DOWNLOAD:
               - single
@@ -298,15 +298,15 @@ jobs:
           echo "Using frontend image: $FRONTEND_IMAGE"
           echo "Config dir: $SLM_CONFIG_DIR"
           echo "Music dir: $MUSIC_DIR"
-          
+
           echo "=== Creating required directories ==="
           mkdir -p "${SLM_CONFIG_DIR}/db/data"
           echo "✅ Created PostgreSQL data directory"
-          
+
           echo "=== Starting PostgreSQL first ==="
           docker compose up -d postgres
           echo "⏰ Waiting for PostgreSQL to be healthy..."
-          
+
           for i in {1..45}; do
             if docker compose ps postgres | grep -q "healthy"; then
               echo "✅ PostgreSQL is healthy after ${i} attempts"
@@ -320,7 +320,7 @@ jobs:
             fi
             sleep 3
           done
-          
+
           if ! docker compose ps postgres | grep -q "healthy"; then
             echo "❌ PostgreSQL never became healthy"
             echo "=== Final PostgreSQL Debug Info ==="
@@ -328,7 +328,7 @@ jobs:
             docker compose logs postgres
             exit 1
           fi
-          
+
           echo "=== Starting web container ==="
           docker compose up -d web
 
@@ -389,52 +389,52 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "🧹 Cleaning up images for merged/deleted branches..."
-          
+
           # Function to cleanup old images for a given package
           cleanup_package() {
             local PACKAGE_NAME=$1
             local IMAGE_TYPE=$2
-            
+
             echo "📦 Cleaning up $IMAGE_TYPE images for package: $PACKAGE_NAME"
-            
+
             # Get all package versions
             gh api \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "/user/packages/container/$PACKAGE_NAME/versions" \
               --paginate > /tmp/all_versions.json
-            
+
             # Get all current branch names from the repository
             gh api \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "/repos/${{ github.repository }}/branches" \
               --jq '.[].name' > /tmp/current_branches.txt
-            
+
             # Extract branch images from package versions (both branch-* and direct branch names)
             cat /tmp/all_versions.json | jq -r '
-              .[] | 
+              .[] |
               select(.metadata.container.tags[]? | test("^branch-") or (test("^[a-z0-9._-]+$") and (. != "latest"))) |
               .metadata.container.tags[] |
               select(test("^branch-") or (test("^[a-z0-9._-]+$") and (. != "latest"))) |
               if test("^branch-") then sub("^branch-"; "") else . end
             ' | sort | uniq > /tmp/image_branches.txt
-            
+
             # Find branches that have images but no longer exist in the repo
             comm -23 /tmp/image_branches.txt /tmp/current_branches.txt > /tmp/deleted_branches.txt
-            
+
             # Clean up images for deleted branches
             while IFS= read -r branch_name; do
               if [ -n "$branch_name" ]; then
                 echo "🗑️ Cleaning up images for deleted branch: $branch_name"
-                
+
                 # Get all image IDs for this deleted branch (check both branch-* and direct branch names)
                 cat /tmp/all_versions.json | jq -r --arg branch "$branch_name" '
                   .[] |
                   select(.metadata.container.tags[]? == $branch or .metadata.container.tags[]? == ("branch-" + $branch)) |
                   .id
                 ' > /tmp/to_delete.txt
-                
+
                 # Delete all images for this deleted branch
                 while IFS= read -r image_id; do
                   if [ -n "$image_id" ]; then
@@ -448,12 +448,12 @@ jobs:
                 done < /tmp/to_delete.txt
               fi
             done < /tmp/deleted_branches.txt
-            
+
             # Also clean up old images for active branches (keep last 3)
             while IFS= read -r branch_name; do
               if [ -n "$branch_name" ]; then
                 echo "🔍 Cleaning up old images for active branch: $branch_name (keeping last 3)"
-                
+
                 # Get image IDs for this branch, sorted by creation date (oldest first)
                 cat /tmp/all_versions.json | jq -r --arg branch "$branch_name" '
                   .[] |
@@ -463,7 +463,7 @@ jobs:
                   [$date, $id] |
                   @tsv
                 ' | sort | head -n -3 | cut -f2 > /tmp/to_delete.txt
-                
+
                 # Delete old images for this active branch
                 while IFS= read -r image_id; do
                   if [ -n "$image_id" ]; then
@@ -477,12 +477,12 @@ jobs:
                 done < /tmp/to_delete.txt
               fi
             done < /tmp/current_branches.txt
-            
+
             rm -f /tmp/all_versions.json /tmp/current_branches.txt /tmp/image_branches.txt /tmp/deleted_branches.txt /tmp/to_delete.txt
           }
-          
+
           # Cleanup both backend and frontend packages
           cleanup_package "spotify-library-manager" "backend"
           cleanup_package "spotify-library-manager-frontend" "frontend"
-          
+
           echo "✅ Cleanup completed"

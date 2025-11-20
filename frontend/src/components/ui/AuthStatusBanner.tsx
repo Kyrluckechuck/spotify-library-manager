@@ -66,12 +66,12 @@ export function AuthStatusBanner() {
               <ol className='list-decimal list-inside mt-1 space-y-1'>
                 <li>
                   Export cookies from YouTube Music using a browser extension
-                  (like &ldquo;Get cookies.txt LOCALLY&rdquo;)
+                  (like &ldquo;Get youtube_music_cookies.txt LOCALLY&rdquo;)
                 </li>
                 <li>
                   Save the cookies in Netscape format to{' '}
                   <code className='bg-red-100 px-1 py-0.5 rounded'>
-                    /config/cookies.txt
+                    /config/youtube_music_cookies.txt
                   </code>
                 </li>
                 <li>Restart the application</li>

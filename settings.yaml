@@ -86,7 +86,7 @@ CELERY_TASK_TIME_LIMIT: 3600
 CELERY_BEAT_SCHEDULER: "django_celery_beat.schedulers:DatabaseScheduler"
 
 # Custom configuration
-cookies_location: /config/cookies.txt
+cookies_location: /config/youtube_music_cookies.txt
 po_token: null
 log_level: INFO
 no_lrc: false

@@ -6,7 +6,7 @@ Handles OAuth flow for accessing private playlists and user-specific data.
 
 import secrets
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -110,7 +110,7 @@ class SpotifyOAuthService:
         )
 
         response.raise_for_status()
-        return response.json()
+        return cast(Dict[str, Any], response.json())
 
     @staticmethod
     def refresh_access_token(refresh_token: str) -> Dict[str, Any]:
@@ -140,7 +140,7 @@ class SpotifyOAuthService:
         )
 
         response.raise_for_status()
-        return response.json()
+        return cast(Dict[str, Any], response.json())
 
     @staticmethod
     def save_tokens(token_data: Dict[str, Any]) -> SpotifyOAuthToken:
@@ -189,7 +189,7 @@ class SpotifyOAuthService:
             SpotifyOAuthToken with valid access token, or None if not authenticated
         """
 
-        def _get_token():
+        def _get_token() -> Optional[SpotifyOAuthToken]:
             try:
                 token = SpotifyOAuthToken.objects.get(id=1)
                 return token
@@ -227,4 +227,3 @@ class SpotifyOAuthService:
     def revoke_tokens() -> None:
         """Revoke and delete stored OAuth tokens."""
         SpotifyOAuthToken.objects.filter(id=1).delete()
-        return None

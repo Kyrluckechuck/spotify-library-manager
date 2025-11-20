@@ -17,7 +17,7 @@ from downloader.cookie_validator import CookieValidator
 @register()
 def check_cookie_file(app_configs: Any, **kwargs: Any) -> List[CheckMessage]:
     """
-    Check that cookies.txt file exists and is valid.
+    Check that youtube_music_cookies.txt file exists and is valid.
 
     This is critical for YouTube Music downloads to work (via yt-dlp/spotdl).
     In CI/test environments, missing cookies are downgraded to warnings.
@@ -57,7 +57,7 @@ def check_cookie_file(app_configs: Any, **kwargs: Any) -> List[CheckMessage]:
             errors.append(
                 check_class(
                     "YouTube Music cookies file not found",
-                    hint=f"Create youtube_cookies.txt at {cookie_path}. Downloads will not work without valid cookies.",
+                    hint=f"Create youtube_youtube_music_cookies.txt at {cookie_path}. Downloads will not work without valid cookies.",
                     obj="cookies",
                     id=check_id,
                 )

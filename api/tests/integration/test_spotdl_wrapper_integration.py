@@ -20,14 +20,18 @@ class TestSpotdlWrapperIntegration:
         """Create a mock config for testing."""
         config = Mock(spec=Config)
         config.log_level = "DEBUG"
-        config.cookies_location = None
+        config.youtube_cookies_location = None
         config.po_token = None
+        config.spotify_user_auth_enabled = False
         return config
 
     def test_event_loop_creation_in_main_thread(self, mock_config):
         """Test that SpotdlWrapper creates event loop properly in main thread."""
         # This test runs in the main thread
-        with patch("downloader.spotdl_wrapper.Spotdl") as mock_spotdl:
+        with (
+            patch("downloader.spotdl_wrapper.Spotdl") as mock_spotdl,
+            patch("downloader.spotdl_wrapper.SpotifyClient"),
+        ):
             SpotdlWrapper(mock_config)
 
             # Verify that an event loop was created and passed to Spotdl
@@ -48,7 +52,10 @@ class TestSpotdlWrapperIntegration:
         def worker_thread_task():
             """Task to run in a separate thread (simulating Celery worker)."""
             try:
-                with patch("downloader.spotdl_wrapper.Spotdl") as mock_spotdl:
+                with (
+                    patch("downloader.spotdl_wrapper.Spotdl") as mock_spotdl,
+                    patch("downloader.spotdl_wrapper.SpotifyClient"),
+                ):
                     SpotdlWrapper(mock_config)
 
                     # Verify that an event loop was created and passed to Spotdl
@@ -94,7 +101,10 @@ class TestSpotdlWrapperIntegration:
         def worker_task(worker_id):
             """Task for each worker thread."""
             try:
-                with patch("downloader.spotdl_wrapper.Spotdl") as mock_spotdl:
+                with (
+                    patch("downloader.spotdl_wrapper.Spotdl") as mock_spotdl,
+                    patch("downloader.spotdl_wrapper.SpotifyClient"),
+                ):
                     SpotdlWrapper(mock_config)
 
                     call_args = mock_spotdl.call_args

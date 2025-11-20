@@ -16,8 +16,9 @@ class TestSystemHealthService:
     def test_check_authentication_status_missing_cookies(self):
         """Test authentication status when cookies file is missing."""
         mock_config = MagicMock()
-        mock_config.cookies_location = "/nonexistent/cookies.txt"
+        mock_config.youtube_cookies_location = "/nonexistent/youtube_music_cookies.txt"
         mock_config.po_token = "A" * 120
+        mock_config.spotify_user_auth_enabled = False
 
         result = SystemHealthService.check_authentication_status(mock_config)
 
@@ -36,8 +37,9 @@ class TestSystemHealthService:
 
         try:
             mock_config = MagicMock()
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             result = SystemHealthService.check_authentication_status(mock_config)
 
@@ -60,8 +62,9 @@ class TestSystemHealthService:
 
         try:
             mock_config = MagicMock()
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             result = SystemHealthService.check_authentication_status(mock_config)
 
@@ -86,8 +89,9 @@ class TestSystemHealthService:
 
         try:
             mock_config = MagicMock()
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             # Mock the live PO token validation to return success
             mock_po_token_result = PoTokenValidationResult(
@@ -113,11 +117,11 @@ class TestSystemHealthService:
 
     def test_check_authentication_status_no_config(self):
         """Test authentication status with default config."""
-        # This will use the default config and try /config/cookies.txt
+        # This will use the default config and try /config/youtube_music_cookies.txt
         result = SystemHealthService.check_authentication_status(None)
 
         assert isinstance(result, AuthenticationStatus)
-        # Result will depend on whether /config/cookies.txt exists
+        # Result will depend on whether /config/youtube_music_cookies.txt exists
         # Just verify structure is correct
         assert isinstance(result.cookies_valid, bool)
         assert isinstance(result.po_token_configured, bool)
@@ -135,8 +139,9 @@ class TestSystemHealthService:
 
         try:
             mock_config = MagicMock()
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             # Mock the live PO token validation to return success
             mock_po_token_result = PoTokenValidationResult(
@@ -160,8 +165,9 @@ class TestSystemHealthService:
     def test_is_download_capable_invalid_cookies(self):
         """Test download capability with invalid cookies."""
         mock_config = MagicMock()
-        mock_config.cookies_location = "/nonexistent/cookies.txt"
+        mock_config.youtube_cookies_location = "/nonexistent/youtube_music_cookies.txt"
         mock_config.po_token = "A" * 120
+        mock_config.spotify_user_auth_enabled = False
 
         can_download, reason = SystemHealthService.is_download_capable(mock_config)
 
@@ -182,8 +188,9 @@ class TestSystemHealthService:
 
         try:
             mock_config = MagicMock()
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             can_download, reason = SystemHealthService.is_download_capable(mock_config)
 
@@ -201,8 +208,9 @@ class TestSystemHealthService:
 
         try:
             mock_config = MagicMock()
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             can_download, reason = SystemHealthService.is_download_capable(mock_config)
 

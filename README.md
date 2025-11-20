@@ -106,7 +106,7 @@ Quick start:
      final_path: "/mnt/music_spotify"
 
      # Downloader defaults
-     cookies_location: "/config/cookies.txt"
+     cookies_location: "/config/youtube_music_cookies.txt"
      log_level: INFO
      no_lrc: false
      overwrite: false
@@ -127,7 +127,7 @@ An example compose setup is included. Follow these steps:
    ```bash
    mkdir -p ./config/db
    # Export cookies from your browser while logged into Spotify
-   # Save as ./config/cookies.txt
+   # Save as ./config/youtube_music_cookies.txt
    # Optional: place your Widevine device file as ./config/device.wvd
    # Create ./config/settings.yaml with your desired overrides (see earlier example)
    ```
@@ -166,7 +166,7 @@ An example compose setup is included. Follow these steps:
 ### Prerequisites
 1. Install Python 3.13 or higher
 2. Install Node.js and Yarn
-3. Place your cookies in `/config/` as `cookies.txt`
+3. Place your cookies in `/config/` as `youtube_music_cookies.txt`
    * You can export your cookies by using this Google Chrome extension on Spotify website: https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc. Make sure to be logged in.
 
 ### Quick Start
@@ -320,7 +320,7 @@ Notes:
 spotify-aac-downloader can be configured using the command line arguments or the config file. The config file is created automatically when you run spotify-aac-downloader for the first time at `~/.spotify-aac-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-aac-downloader\config.json` on Windows. Config file values can be overridden using command line arguments.
 | Command line argument / Config file key                         | Description                                                           | Default value                                       |
 | --------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
-| `-c`, `--cookies-location` / `cookies_location`                 | Location of the cookies file.                                         | `./cookies.txt`                                     |
+| `-c`, `--cookies-location` / `cookies_location`                 | Location of the cookies file.                                         | `./youtube_music_cookies.txt`                                     |
 | `-w`, `--po-token` / `po_token`                                 | PO Token for your Youtube Music account                                            | `null`                                              |
 | `--config-location` / -                                         | Location of the config file.                                          | `<home_folder>/.spotify-aac-downloader/config.json` |
 | `-l`, `--log-level` / `log_level`                               | Log level.                                                            | `INFO`                                              |

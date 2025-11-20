@@ -32,9 +32,10 @@ class TestSystemHealthGraphQL:
         try:
             # Mock Config to return temp path with valid PO token
             mock_config = MagicMock(spec=Config)
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             # Valid PO token format (base64-like string, 100+ chars)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             # Mock live PO token validation
             mock_po_token_result = PoTokenValidationResult(
@@ -93,8 +94,9 @@ class TestSystemHealthGraphQL:
     async def test_system_health_query_missing_cookies(self):
         """Test systemHealth query with missing cookies."""
         mock_config = MagicMock(spec=Config)
-        mock_config.cookies_location = "/nonexistent/cookies.txt"
+        mock_config.youtube_cookies_location = "/nonexistent/youtube_music_cookies.txt"
         mock_config.po_token = "A" * 120
+        mock_config.spotify_user_auth_enabled = False
 
         with patch("src.services.system_health.Config", return_value=mock_config):
             query = """
@@ -146,8 +148,9 @@ class TestSystemHealthGraphQL:
 
         try:
             mock_config = MagicMock(spec=Config)
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             with patch("src.services.system_health.Config", return_value=mock_config):
                 query = """
@@ -198,8 +201,9 @@ class TestSystemHealthGraphQL:
 
         try:
             mock_config = MagicMock(spec=Config)
-            mock_config.cookies_location = str(temp_path)
+            mock_config.youtube_cookies_location = str(temp_path)
             mock_config.po_token = "A" * 120
+            mock_config.spotify_user_auth_enabled = False
 
             with patch("src.services.system_health.Config", return_value=mock_config):
                 query = """
@@ -239,10 +243,11 @@ class TestSystemHealthGraphQL:
         """Test systemHealth query along with queueStatus."""
         # Mock Config with valid default path
         mock_config = MagicMock(spec=Config)
-        mock_config.cookies_location = "/config/cookies.txt"
+        mock_config.youtube_cookies_location = "/config/youtube_music_cookies.txt"
         mock_config.po_token = "A" * 120
+        mock_config.spotify_user_auth_enabled = False
 
-        # Mock live PO token validation (doesn't matter since cookies won't be valid for /config/cookies.txt)
+        # Mock live PO token validation (doesn't matter since cookies won't be valid for /config/youtube_music_cookies.txt)
         mock_po_token_result = PoTokenValidationResult(
             valid=True,
             can_authenticate=True,

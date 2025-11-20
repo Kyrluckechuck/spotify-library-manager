@@ -16,7 +16,7 @@ echo "📝 Creating minimal settings.yaml..."
 cat > "$CONFIG_DIR/settings.yaml" << 'EOF'
 # Minimal CI configuration
 default:
-  cookies_location: "/config/cookies.txt"
+  cookies_location: "/config/youtube_music_cookies.txt"
   final_path: "/mnt/music_spotify"
   ALBUM_TYPES_TO_DOWNLOAD:
     - single

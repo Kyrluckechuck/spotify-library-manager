@@ -20,7 +20,7 @@ class TestSpotdlWrapperPremiumIntegration:
         """Create a real config for testing."""
         return Config(
             urls=["https://open.spotify.com/track/test123"],
-            cookies_location=Path("/fake/cookies.txt"),
+            cookies_location=Path("/fake/youtube_music_cookies.txt"),
             po_token="fake_po_token",
             log_level="INFO",
             track_artists=False,
@@ -74,7 +74,8 @@ class TestSpotdlWrapperPremiumIntegration:
 
         # Verify premium detector was initialized
         mock_premium_detector.assert_called_once_with(
-            cookies_file=Path("/fake/cookies.txt"), po_token="fake_po_token"
+            cookies_file=Path("/fake/youtube_music_cookies.txt"),
+            po_token="fake_po_token",
         )
 
         # Verify wrapper has detector and status

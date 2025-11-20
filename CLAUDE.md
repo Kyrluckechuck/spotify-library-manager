@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Setup
 1. `cp .env.example .env` - Configure environment
 2. `mkdir -p ./config && cp api/settings.yaml.example ./config/settings.yaml`
-3. Export Spotify cookies to `./config/cookies.txt`
+3. Export Spotify cookies to `./config/youtube_music_cookies.txt`
 4. `make dev-container` - Start full development stack
 5. Access:
    - Frontend: http://localhost:3000
@@ -114,7 +114,7 @@ This is a **full-stack Spotify library management application** with the followi
 ### Required Configuration
 - `.env` - Docker environment variables
 - `./config/settings.yaml` - Application settings (mounted volume)
-- `./config/cookies.txt` - Spotify authentication cookies
+- `./config/youtube_music_cookies.txt` - Spotify authentication cookies
 - `docker-compose.override.yml` - Local Docker overrides (auto-created)
 
 ### Testing Configuration

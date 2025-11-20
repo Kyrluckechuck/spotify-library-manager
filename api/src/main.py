@@ -215,14 +215,16 @@ def _validate_runtime_configuration() -> None:
     # This provides runtime logging for visibility
     from downloader.cookie_validator import CookieValidator
 
-    cookies_path_str = getattr(dj_settings, "cookies_location", "/config/cookies.txt")
+    cookies_path_str = getattr(
+        dj_settings, "cookies_location", "/config/youtube_music_cookies.txt"
+    )
     cookies_path = Path(str(cookies_path_str))
 
     result = CookieValidator.validate_file(cookies_path)
     if not result.valid:
         if result.error_type == "missing":
             logger.warning(
-                "cookies_location not found at %s. Place your YouTube Music cookies.txt there or set 'cookies_location' in /config/settings.yaml",
+                "cookies_location not found at %s. Place your YouTube Music youtube_music_cookies.txt there or set 'cookies_location' in /config/settings.yaml",
                 cookies_path,
             )
         elif result.error_type == "malformed":

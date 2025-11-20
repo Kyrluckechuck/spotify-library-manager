@@ -286,6 +286,68 @@ class Mutation:  # pylint: disable=too-many-public-methods
             )
 
     @strawberry.mutation
+    async def download_all_tracked_artists(self) -> "MutationResult":
+        """Download all missing albums for all tracked artists."""
+        try:
+            from library_manager.helpers import download_missing_tracked_artists
+            from library_manager.models import Artist
+
+            tracked_artists: list = await sync_to_async(list)(
+                Artist.objects.filter(tracked=True)
+            )
+
+            if not tracked_artists:
+                return MutationResult(
+                    success=True, message="No tracked artists found to download"
+                )
+
+            # Enqueue download tasks for all tracked artists
+            await sync_to_async(download_missing_tracked_artists)(
+                already_enqueued_artists=[],
+                artists_to_enqueue=tracked_artists,
+                priority=None,
+            )
+
+            return MutationResult(
+                success=True,
+                message=f"Enqueued download tasks for {len(tracked_artists)} tracked artists",
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Failed to download tracked artists: {str(e)}"
+            )
+
+    @strawberry.mutation
+    async def download_all_playlists(self) -> "MutationResult":
+        """Download all enabled tracked playlists."""
+        try:
+            from library_manager.helpers import enqueue_playlists
+            from library_manager.models import TrackedPlaylist
+
+            enabled_playlists: list = await sync_to_async(list)(
+                TrackedPlaylist.objects.filter(enabled=True)
+            )
+
+            if not enabled_playlists:
+                return MutationResult(
+                    success=True, message="No enabled playlists found to download"
+                )
+
+            # Enqueue download tasks for all enabled playlists
+            await sync_to_async(enqueue_playlists)(
+                playlists_to_enqueue=enabled_playlists, priority=None
+            )
+
+            return MutationResult(
+                success=True,
+                message=f"Enqueued download tasks for {len(enabled_playlists)} playlists",
+            )
+        except Exception as e:
+            return MutationResult(
+                success=False, message=f"Failed to download playlists: {str(e)}"
+            )
+
+    @strawberry.mutation
     async def disconnect_spotify(self) -> MutationResult:
         """Disconnect Spotify OAuth account by removing stored tokens."""
         try:

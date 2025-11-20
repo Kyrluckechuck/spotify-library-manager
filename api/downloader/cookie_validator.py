@@ -1,7 +1,7 @@
 """
 Cookie file validator for YouTube Music authentication.
 
-Validates cookies.txt file format (Netscape format) and checks for expiration.
+Validates youtube_music_cookies.txt file format (Netscape format) and checks for expiration.
 Used by yt-dlp/spotdl for downloading music from YouTube Music.
 """
 
@@ -90,10 +90,10 @@ class CookieValidator:
     @classmethod
     def validate_file(cls, cookie_path: Path) -> CookieValidationResult:
         """
-        Validate cookies.txt file format and check expiration.
+        Validate youtube_music_cookies.txt file format and check expiration.
 
         Args:
-            cookie_path: Path to cookies.txt file
+            cookie_path: Path to youtube_music_cookies.txt file
 
         Returns:
             CookieValidationResult with validation details
