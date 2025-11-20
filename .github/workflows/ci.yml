@@ -134,6 +134,11 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        # BuildKit automatically uses GitHub Actions cache via docker-bake.hcl
+        # Caching strategy (configured in docker-bake.hcl):
+        # 1. GitHub Actions cache (type=gha) - Fast, 10GB limit per repo
+        # 2. Registry cache (type=registry) - No limits, persists across workflows
+        # This caches yarn/pip dependencies, reducing build time significantly
 
       - name: Lowercase repo owner
         id: owner

@@ -15,7 +15,10 @@ FROM node-base AS deps
 COPY package.json yarn.lock ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
-RUN yarn install --frozen-lockfile
+# Use cache mount for yarn to speed up dependency installation
+# Share cache with main Dockerfile using cache ID
+RUN --mount=type=cache,target=/usr/local/share/.cache/yarn,id=yarn-cache,sharing=locked \
+    yarn install --frozen-lockfile
 
 # =============================================================================
 # Stage 3: Source code (rebuilds when source changes)

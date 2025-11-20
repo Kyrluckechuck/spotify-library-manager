@@ -3,6 +3,12 @@
 #   docker buildx bake --push              # Build and push all images
 #   docker buildx bake backend             # Build only backend
 #   docker buildx bake frontend            # Build only frontend
+#
+# Caching Strategy:
+#   Both targets use dual-layer caching for optimal CI performance:
+#   1. GitHub Actions cache (type=gha) - Fast in-runner cache, 10GB limit
+#   2. Registry cache (type=registry) - Persistent cache stored in GHCR, no size limits
+#   This significantly speeds up builds by caching yarn/pip package installations
 
 # Variables that can be overridden
 variable "REGISTRY" {
@@ -47,11 +53,13 @@ target "backend" {
   ]
   
   cache-from = [
-    "type=gha,scope=backend-app"
+    "type=gha,scope=backend-app",
+    "type=registry,ref=${REGISTRY}/${REPO_OWNER}/spotify-library-manager:buildcache"
   ]
-  
+
   cache-to = [
-    "type=gha,scope=backend-app,mode=max"
+    "type=gha,scope=backend-app,mode=max",
+    "type=registry,ref=${REGISTRY}/${REPO_OWNER}/spotify-library-manager:buildcache,mode=max"
   ]
   
   labels = {
@@ -78,11 +86,13 @@ target "frontend" {
   ]
   
   cache-from = [
-    "type=gha,scope=frontend-app"
+    "type=gha,scope=frontend-app",
+    "type=registry,ref=${REGISTRY}/${REPO_OWNER}/spotify-library-manager-frontend:buildcache"
   ]
-  
+
   cache-to = [
-    "type=gha,scope=frontend-app,mode=max"
+    "type=gha,scope=frontend-app,mode=max",
+    "type=registry,ref=${REGISTRY}/${REPO_OWNER}/spotify-library-manager-frontend:buildcache,mode=max"
   ]
   
   labels = {

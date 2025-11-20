@@ -13,8 +13,10 @@ RUN apk add --no-cache yarn
 # Copy package files first for better caching
 COPY frontend/package.json frontend/yarn.lock ./
 
-# Install dependencies (this layer will be cached unless package files change)
-RUN yarn install --frozen-lockfile --production=false
+# Install dependencies with cache mount (this layer will be cached unless package files change)
+# Share cache with frontend Dockerfile using cache ID
+RUN --mount=type=cache,target=/usr/local/share/.cache/yarn,id=yarn-cache,sharing=locked \
+    yarn install --frozen-lockfile --production=false
 
 # Copy source code (this layer will be rebuilt when frontend code changes)
 COPY frontend/ ./
