@@ -2,11 +2,16 @@
 Celery app configuration for Spotify Library Manager.
 """
 
+import logging
 import os
+import signal
+import sys
 
 import django
 
+import psutil
 from celery import Celery
+from celery.signals import worker_process_init, worker_process_shutdown, worker_shutdown
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
@@ -14,6 +19,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 # Initialize Django before creating Celery app
 
 django.setup()
+
+# Configure logger for signal handlers (before Celery app creation)
+logger = logging.getLogger("celery_diagnostics")
 
 app = Celery("spotify_library_manager")
 
@@ -84,3 +92,121 @@ app.conf.task_track_started = True
 def debug_task(self: "Celery.Task") -> None:
     """Debug task for testing Celery configuration."""
     print(f"Request: {self.request!r}")
+
+
+# ============================================================================
+# Worker Diagnostics and Signal Handlers
+# ============================================================================
+
+
+def get_memory_info() -> dict:
+    """Get current process memory usage information."""
+    try:
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        return {
+            "rss_mb": memory_info.rss / 1024 / 1024,  # Resident Set Size in MB
+            "vms_mb": memory_info.vms / 1024 / 1024,  # Virtual Memory Size in MB
+            "percent": process.memory_percent(),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def log_process_state(reason: str) -> None:
+    """Log comprehensive process state for diagnostics."""
+    try:
+        process = psutil.Process(os.getpid())
+        memory = get_memory_info()
+
+        logger.critical(
+            f"[WORKER DIAGNOSTIC] {reason} - "
+            f"PID: {os.getpid()}, "
+            f"Memory RSS: {memory.get('rss_mb', 'N/A'):.2f} MB, "
+            f"Memory %: {memory.get('percent', 'N/A'):.2f}%, "
+            f"Threads: {process.num_threads()}, "
+            f"Status: {process.status()}"
+        )
+    except Exception as e:
+        logger.error(f"[WORKER DIAGNOSTIC] Failed to log process state: {e}")
+
+
+def signal_handler(signum, frame) -> None:
+    """
+    Handle termination signals to log diagnostic information before shutdown.
+
+    This helps identify WHY the worker was killed (OOM, Docker, manual kill, etc.)
+    """
+    signal_names = {
+        signal.SIGTERM: "SIGTERM (graceful shutdown requested)",
+        signal.SIGINT: "SIGINT (interrupt from keyboard)",
+        signal.SIGQUIT: "SIGQUIT (quit from keyboard)",
+    }
+    signal_name = signal_names.get(signum, f"Signal {signum}")
+
+    log_process_state(f"Received {signal_name}")
+
+    # Get active task info if available
+    try:
+        from celery import current_task
+
+        if current_task and current_task.request:
+            logger.critical(
+                f"[WORKER DIAGNOSTIC] Active task: {current_task.name}, "
+                f"Task ID: {current_task.request.id}"
+            )
+    except Exception as e:
+        logger.warning(f"[WORKER DIAGNOSTIC] Could not get active task info: {e}")
+
+    # Re-raise the signal to allow normal shutdown
+    sys.exit(128 + signum)
+
+
+# Register signal handlers for worker processes
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+
+
+# ============================================================================
+# Worker Lifecycle Hooks
+# ============================================================================
+
+
+@worker_process_init.connect
+def worker_process_init_handler(sender=None, **kwargs):
+    """Log when worker process starts (only if diagnostics enabled)."""
+    from django.conf import settings
+
+    diagnostics_enabled = getattr(settings, "worker_diagnostics_enabled", False)
+    if diagnostics_enabled:
+        logger.info(
+            f"[WORKER LIFECYCLE] Worker process started - PID: {os.getpid()}, "
+            f"Parent PID: {os.getppid()}"
+        )
+        log_process_state("Worker process initialization")
+
+
+@worker_process_shutdown.connect
+def worker_process_shutdown_handler(sender=None, **kwargs):
+    """Log when worker process shuts down (only if diagnostics enabled)."""
+    from django.conf import settings
+
+    diagnostics_enabled = getattr(settings, "worker_diagnostics_enabled", False)
+    if diagnostics_enabled:
+        logger.warning(
+            f"[WORKER LIFECYCLE] Worker process shutting down - PID: {os.getpid()}"
+        )
+        log_process_state("Worker process shutdown")
+
+
+@worker_shutdown.connect
+def worker_shutdown_handler(sender=None, **kwargs):
+    """Log when main worker shuts down (only if diagnostics enabled)."""
+    from django.conf import settings
+
+    diagnostics_enabled = getattr(settings, "worker_diagnostics_enabled", False)
+    if diagnostics_enabled:
+        logger.warning(
+            f"[WORKER LIFECYCLE] Main worker shutting down - PID: {os.getpid()}"
+        )
+        log_process_state("Main worker shutdown")

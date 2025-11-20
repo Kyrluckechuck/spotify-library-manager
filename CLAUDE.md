@@ -410,6 +410,21 @@ The CI workflow (`.github/workflows/ci.yml`) uses **dual-layer caching** for Doc
 - Registry cache persists until manually deleted
 - Local cache survives `docker system prune` (uses BuildKit cache, not image layers)
 
+## Debugging Worker Issues
+
+The application includes diagnostic logging for worker crashes and performance issues. Signal handlers always log SIGTERM events (crashes), while verbose diagnostics can be enabled in `config/settings.yaml`:
+
+```yaml
+worker_diagnostics_enabled: true  # Enable for dev/debugging, false for production
+```
+
+**Docker Memory Limits** (`docker-compose.yml`):
+- Worker: 2GB hard limit (downloads are memory-intensive)
+- Web: 1GB hard limit
+- Beat: 512MB hard limit
+
+For detailed debugging instructions, crash analysis, and troubleshooting guides, see **[DEBUGGING.md](DEBUGGING.md)**.
+
 ## Frontend React Patterns
 
 ### Function Props in Effects - Use Ref Pattern

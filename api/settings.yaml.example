@@ -22,6 +22,9 @@ default:
 
   po_token: null
   log_level: "INFO"
+  # Enable verbose diagnostic logging for worker crashes and performance issues
+  # Set to true for development/debugging, false for production (reduces log noise)
+  worker_diagnostics_enabled: true
   no_lrc: false
   overwrite: false
 

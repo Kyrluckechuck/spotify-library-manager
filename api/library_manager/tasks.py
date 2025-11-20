@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 from typing import Optional, cast
@@ -6,6 +7,7 @@ from django.conf import settings
 from django.db.models.functions import Now
 from django.utils import timezone
 
+import psutil
 from celery.utils.log import get_task_logger
 from celery_app import app as celery_app
 from downloader.spotdl_wrapper import SpotdlWrapper
@@ -32,6 +34,33 @@ spotdl_wrapper = SpotdlWrapper(Config())
 logger = get_task_logger(__name__)
 
 
+def log_memory_usage(context: str, task_id: Optional[str] = None) -> None:
+    """Log current memory usage for diagnostics (only if enabled in settings)."""
+    from django.conf import settings
+
+    diagnostics_enabled = getattr(settings, "worker_diagnostics_enabled", False)
+    if not diagnostics_enabled:
+        return
+
+    try:
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        rss_mb = memory_info.rss / 1024 / 1024
+        memory_percent = process.memory_percent()
+
+        log_msg = (
+            f"[MEMORY] {context} - "
+            f"RSS: {rss_mb:.2f} MB, "
+            f"Memory %: {memory_percent:.2f}%"
+        )
+        if task_id:
+            log_msg += f", Task: {task_id}"
+
+        logger.info(log_msg)
+    except Exception as e:
+        logger.warning(f"[MEMORY] Failed to log memory usage: {e}")
+
+
 def create_task_history(
     task_id: Optional[str] = None,
     task_type: Optional[str] = None,
@@ -54,6 +83,9 @@ def create_task_history(
     existing_task = TaskHistory.objects.filter(task_id=generated_task_id).first()
     if existing_task:
         return existing_task
+
+    # Log memory usage at task start
+    log_memory_usage(f"Task created: {task_type}/{entity_type}", generated_task_id)
 
     # Create new task history record
     task_history = TaskHistory(
@@ -88,6 +120,10 @@ def complete_task(
     task_history: TaskHistory, success: bool = True, error_message: Optional[str] = None
 ) -> None:
     """Mark task as completed or failed"""
+    # Log memory usage at task completion
+    status_str = "completed" if success else f"failed: {error_message}"
+    log_memory_usage(f"Task {status_str}", task_history.task_id)
+
     if success:
         task_history.mark_completed()
     else:
