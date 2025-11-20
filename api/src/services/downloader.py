@@ -193,7 +193,3 @@ class DownloaderService:
             return match.group(1)
 
         raise ValueError(f"Could not extract ID from URL: {url}")
-
-
-# Create service instance
-downloader_service = DownloaderService()

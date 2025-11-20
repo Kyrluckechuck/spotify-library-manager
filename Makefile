@@ -121,19 +121,15 @@ createsuperuser:
 test: test-api test-frontend
 
 # Main API test command with coverage
-# Note: test_downloader_service.py runs with limited parallelism due to resource conflicts with 8+ workers
-test-api:
-	@echo "Running main test suite with full parallelism..."
-	@cd api && python -m pytest tests/ src/tests/ --ignore=tests/unit/test_downloader_service.py -v -n auto --cov=src --cov=library_manager --cov-report=term-missing || exit_code=$$?; \
-	echo "Running downloader service tests with limited parallelism..."; \
-	cd api && python -m pytest tests/unit/test_downloader_service.py -v -n 2 --cov=src --cov=library_manager --cov-append --cov-report=term-missing || exit 1
+# Runs unit tests (parallel) then integration tests (sequential)
+test-api: test-api-unit test-api-integration
 
 # API test variants
 test-api-unit:
-	cd api && python -m pytest tests/unit/ src/tests/ -v -n auto -m "not integration"
+	cd api && python -m pytest tests/unit/ src/tests/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing -m "not integration"
 
 test-api-integration:
-	cd api && python -m pytest tests/integration/ -v -n auto -m integration
+	cd api && python -m pytest tests/integration/ -v --cov=src --cov=library_manager --cov-append --cov-report=term-missing -m integration
 
 # Test specific file or folder
 # Usage: make test-api-path PATH=tests/unit/test_gid_validation.py
@@ -149,19 +145,15 @@ test-api-path:
 test-docker: test-api-docker test-frontend-docker
 
 # Main API test command in Docker with coverage
-# Note: test_downloader_service.py runs with limited parallelism due to resource conflicts with 8+ workers
-test-api-docker:
-	@echo "Running main test suite with full parallelism..."
-	@docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/ src/tests/ --ignore=tests/unit/test_downloader_service.py -v -n auto --cov=src --cov=library_manager --cov-report=term-missing --reuse-db" || true
-	@echo "Running downloader service tests with limited parallelism..."
-	@docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/unit/test_downloader_service.py -v -n 2 --cov=src --cov=library_manager --cov-append --cov-report=term-missing --reuse-db"
+# Runs unit tests (parallel) then integration tests (sequential)
+test-api-docker: test-api-unit-docker test-api-integration-docker
 
 # API test variants in Docker
 test-api-unit-docker:
-	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/unit/ src/tests/ -v -n auto -m 'not integration' --reuse-db"
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/unit/ src/tests/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing -m 'not integration' --reuse-db"
 
 test-api-integration-docker:
-	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/integration/ -v -n auto -m integration --reuse-db"
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/integration/ -v --cov=src --cov=library_manager --cov-append --cov-report=term-missing -m integration --reuse-db"
 
 
 # Frontend testing

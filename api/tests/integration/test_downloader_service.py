@@ -1,9 +1,11 @@
 """
-Tests for DownloaderService - handling track, album, artist, and playlist downloads.
+Integration tests for DownloaderService.
 
-Note: These tests work correctly in sequential mode or with limited parallelism (1-2 workers).
-With high parallelism (8+ workers), the global DownloaderService instantiation at module import
-can cause resource conflicts. See Makefile test commands for proper execution.
+Tests the orchestration between DownloaderService and its dependencies
+(AlbumService, ArtistService, PlaylistService) including URL parsing,
+metadata fetching, and download routing.
+
+These are integration tests because they test service interaction, not isolated units.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,6 +13,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.graphql_types.models import MutationResult
+
+# Mark all tests as integration tests
+pytestmark = pytest.mark.integration
 
 
 class TestDownloaderService:
