@@ -138,17 +138,40 @@ class DownloaderService:
             )
 
     async def _handle_track_download(self, track_url: str) -> MutationResult:
-        """Handle track download (treat as album for now)."""
+        """Handle track download by fetching track metadata and downloading its album."""
         try:
+            from asgiref.sync import sync_to_async
+
             # Extract track ID from URL
             track_id = self._extract_id_from_url(track_url)
 
-            # For now, treat tracks as albums
-            album = await self.album_service.download_album(track_id)
+            # Fetch track metadata from Spotify to get album ID
+            def get_track_album_id() -> tuple[str, str]:
+                from downloader.downloader import Downloader
+                from spotdl.utils.spotify import SpotifyClient
+
+                # Create Spotify client and downloader
+                spotify_client = SpotifyClient()
+                downloader = Downloader(spotify_client)
+
+                # Get track metadata (includes artist, name, ISRC, album info)
+                track_data = downloader.get_track(track_id)
+
+                if not track_data or "album" not in track_data:
+                    raise ValueError(f"Track {track_id} has no album data")
+
+                album_id = track_data["album"]["id"]
+                track_name = track_data["name"]
+                return album_id, track_name
+
+            album_id, track_name = await sync_to_async(get_track_album_id)()
+
+            # Download the album containing this track
+            album = await self.album_service.download_album(album_id)
 
             return MutationResult(
                 success=True,
-                message=f"Successfully started downloading track: {album.name}",
+                message=f"Successfully started downloading track: {track_name} (from album: {album.name})",
                 album=album,
             )
         except Exception as e:
