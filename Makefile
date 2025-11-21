@@ -121,15 +121,16 @@ createsuperuser:
 test: test-api test-frontend
 
 # Main API test command with coverage
-# Runs unit tests (parallel) then integration tests (sequential)
-test-api: test-api-unit test-api-integration
+# Runs all tests in parallel with 2 workers
+test-api:
+	cd api && python -m pytest tests/ src/tests/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing
 
-# API test variants
+# API test variants (for running subsets individually)
 test-api-unit:
 	cd api && python -m pytest tests/unit/ src/tests/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing -m "not integration"
 
 test-api-integration:
-	cd api && python -m pytest tests/integration/ -v --cov=src --cov=library_manager --cov-append --cov-report=term-missing -m integration
+	cd api && python -m pytest tests/integration/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing -m integration
 
 # Test specific file or folder
 # Usage: make test-api-path PATH=tests/unit/test_gid_validation.py
@@ -145,15 +146,16 @@ test-api-path:
 test-docker: test-api-docker test-frontend-docker
 
 # Main API test command in Docker with coverage
-# Runs unit tests (parallel) then integration tests (sequential)
-test-api-docker: test-api-unit-docker test-api-integration-docker
+# Runs all tests in parallel with 2 workers
+test-api-docker:
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/ src/tests/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing --reuse-db"
 
-# API test variants in Docker
+# API test variants in Docker (for running subsets individually)
 test-api-unit-docker:
 	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/unit/ src/tests/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing -m 'not integration' --reuse-db"
 
 test-api-integration-docker:
-	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/integration/ -v --cov=src --cov=library_manager --cov-append --cov-report=term-missing -m integration --reuse-db"
+	docker compose exec web bash -c "DJANGO_SETTINGS_MODULE=docker_test_settings python -m pytest tests/integration/ -v -n 2 --cov=src --cov=library_manager --cov-report=term-missing -m integration --reuse-db"
 
 
 # Frontend testing

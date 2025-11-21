@@ -299,9 +299,9 @@ class TestTaskManagementGraphQL:
     @pytest.mark.asyncio
     async def test_task_history_query_with_fixed_cursor(self):
         """Test task history query with the fixed cursor implementation."""
-        # Create some test task history records
-        await sync_to_async(TaskHistoryFactory)(task_id="test_task_1")
-        await sync_to_async(TaskHistoryFactory)(task_id="test_task_2")
+        # Create some test task history records (let factory generate unique task_ids)
+        await sync_to_async(TaskHistoryFactory)()
+        await sync_to_async(TaskHistoryFactory)()
 
         query = """
         query {

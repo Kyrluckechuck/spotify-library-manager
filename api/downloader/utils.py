@@ -36,3 +36,36 @@ def sanitize_and_strip_url(raw_url: str) -> str:
         raw_url = urljoin(raw_url, urlparse(raw_url).path)
 
     return raw_url
+
+
+def normalize_spotify_url(url: str) -> str:
+    """Convert various Spotify URL formats to a standard URI format, stripping tracking parameters.
+
+    This ensures consistent URL format for database lookups and storage.
+
+    Args:
+        url: Spotify URL in any format (HTTP with/without params, or URI)
+
+    Returns:
+        Normalized Spotify URI (e.g., "spotify:playlist:4tFwfZE3huEB7e8LRnKwmY")
+
+    Examples:
+        >>> normalize_spotify_url("https://open.spotify.com/playlist/ABC?si=123")
+        "spotify:playlist:ABC"
+        >>> normalize_spotify_url("spotify:playlist:ABC")
+        "spotify:playlist:ABC"
+    """
+    import re
+
+    # Handle spotify: URIs (already normalized)
+    if url.startswith("spotify:"):
+        return url
+
+    # Handle web URLs - extract content type and ID, ignoring parameters
+    if "open.spotify.com" in url:
+        match = re.search(r"open\.spotify\.com/([^/?]+)/([^/?]+)", url)
+        if match:
+            content_type, content_id = match.groups()
+            return f"spotify:{content_type}:{content_id}"
+
+    return url

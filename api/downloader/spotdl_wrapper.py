@@ -307,7 +307,9 @@ class SpotdlWrapper:
             )[0]
 
             try:
-                tracked_playlist = TrackedPlaylist.objects.get(url=download_queue_url)
+                # Normalize URL to match database format (strips ?si= parameters and converts to URI format)
+                normalized_url = utils.normalize_spotify_url(download_queue_url)
+                tracked_playlist = TrackedPlaylist.objects.get(url=normalized_url)
 
                 if config.force_playlist_resync:
                     tracked_playlist.last_synced_at = None
