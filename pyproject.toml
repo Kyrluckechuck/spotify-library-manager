@@ -190,6 +190,67 @@ per-file-ignores = [
 exclude_dirs = ["tests", "test", "migrations"]
 skips = ["B101", "B601"]
 
+[tool.ruff]
+# Ruff replaces Black, isort, and flake8 with a single fast tool
+line-length = 88
+target-version = "py311"
+
+# Exclude directories
+extend-exclude = [
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+    "migrations",
+    "node_modules",
+]
+
+[tool.ruff.lint]
+# Enable rule sets
+select = [
+    "E",     # pycodestyle errors (replaces flake8)
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes (replaces flake8)
+    "I",     # isort (replaces isort)
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "DJ",    # flake8-django
+    "SIM",   # flake8-simplify
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",   # line too long (Black handles this)
+    "W503",   # line break before binary operator (conflicts with Black)
+    "E203",   # whitespace before ':' (conflicts with Black)
+]
+
+# Per-file ignores
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]              # Unused imports in __init__.py
+"migrations/*" = ["E501"]             # Long lines in migrations
+"tests/*" = ["S101"]                  # Use of assert in tests
+
+[tool.ruff.lint.isort]
+# Configure import sorting to match existing isort config
+known-first-party = ["api", "library_manager", "src"]
+section-order = ["future", "standard-library", "django", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+django = ["django"]
+
+[tool.ruff.format]
+# Use Black-compatible formatting
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
 [tool.pylint.messages_control]
 disable = [
     "C0114",  # missing-module-docstring
