@@ -13,9 +13,12 @@ Root Cause:
     and fetch_all_albums_for_artist task was using artist.gid without validation.
 
 Fix:
-    - Added validate_spotify_gid() function
-    - Added validation in fetch_all_albums_for_artist task before using GID
+    - Database migration 0015_normalize_gids.py converts all hex GIDs to base62 format
+    - Added validate_spotify_gid() function for validation
     - Added model documentation and clean() validation
+
+Note: Legacy hex-to-base62 conversion was originally done live in tasks, but is now
+      handled by a one-time database migration for better performance and maintainability.
 """
 
 from unittest.mock import patch
@@ -29,97 +32,6 @@ from library_manager.tasks import fetch_all_albums_for_artist
 @pytest.mark.django_db
 class TestGidValidationRegression:
     """Regression tests for Spotify GID validation in tasks."""
-
-    def test_fetch_all_albums_converts_hex_gid_to_spotify_id(self):
-        """
-        REGRESSION: Ensure 32-char hex GIDs are auto-converted to base62 Spotify IDs.
-
-        This test prevents the bug where hex GIDs caused 400 errors from Spotify API.
-        The system now gracefully converts hex GIDs to base62 format and updates the database.
-        """
-        # Create artist with 32-char hex GID (from production data)
-        artist = Artist.objects.create(
-            name="Test Artist with Hex GID",
-            gid="85273dc1a556464e98d5faae420a5cbb",  # 32-char hex (legacy format)
-            tracked=True,
-        )
-
-        # Mock the downloader to avoid actual API calls
-        with patch(
-            "downloader.downloader.Downloader.get_artist_albums"
-        ) as mock_get_albums:
-            mock_get_albums.return_value = []  # No albums to process
-
-            # Fetch albums should succeed with auto-conversion
-            try:
-                fetch_all_albums_for_artist(artist.id)
-            except Exception:
-                # Task may fail due to download capability check, but GID should still be converted
-                pass
-
-            # Reload artist from database
-            artist.refresh_from_db()
-
-            # Verify GID was converted to base62 format
-            assert len(artist.gid) == 22  # Base62 Spotify IDs are 22 chars
-            assert artist.gid == "43fUAK2p4LkPWxTLXWvaBl"  # Converted value
-
-    def test_fetch_all_albums_updates_album_fk_on_conversion(self):
-        """
-        REGRESSION: Verify albums' FK is updated when artist GID is converted.
-
-        Album model has FK to Artist using to_field="gid", so when artist.gid changes,
-        we must also update all albums' artist_gid column.
-        """
-        from library_manager.models import Album
-
-        # Create artist with hex GID
-        artist = Artist.objects.create(
-            name="Test Artist with Albums",
-            gid="92be5088b0b54882b1edd5b5cd439e48",  # 32-char hex
-            tracked=True,
-        )
-
-        # Create albums that reference this artist's hex GID
-        album1 = Album.objects.create(
-            name="Test Album 1",
-            spotify_gid="testalbum1234567890ab",
-            artist=artist,
-            spotify_uri="spotify:album:testalbum1234567890ab",
-            total_tracks=10,
-        )
-        album2 = Album.objects.create(
-            name="Test Album 2",
-            spotify_gid="testalbum2234567890cd",
-            artist=artist,
-            spotify_uri="spotify:album:testalbum2234567890cd",
-            total_tracks=12,
-        )
-
-        # Mock downloader
-        with patch(
-            "downloader.downloader.Downloader.get_artist_albums"
-        ) as mock_get_albums:
-            mock_get_albums.return_value = []
-
-            # Fetch albums should convert GID and update FK
-            try:
-                fetch_all_albums_for_artist(artist.id)
-            except Exception:
-                pass
-
-            # Reload from database
-            artist.refresh_from_db()
-            album1.refresh_from_db()
-            album2.refresh_from_db()
-
-            # Verify artist GID was converted to base62 format
-            assert len(artist.gid) == 22  # Base62 Spotify IDs are 22 chars
-            assert artist.gid == "4sTQVOfp9vEMCemLw50sbu"  # Converted from hex
-
-            # Verify albums still reference the artist (FK was updated)
-            assert album1.artist == artist
-            assert album2.artist == artist
 
     def test_fetch_all_albums_accepts_valid_spotify_id(self):
         """Valid 22-char Spotify IDs should be accepted."""

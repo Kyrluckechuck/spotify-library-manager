@@ -193,61 +193,6 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
             logger.warning(f"Artist with ID {artist_id} does not exist. Skipping task.")
             return
 
-        # Normalize artist GID (handles both hex and base62 formats)
-        from django.db import transaction
-
-        from library_manager.validators import normalize_spotify_gid
-
-        try:
-            normalized_gid = normalize_spotify_gid(artist.gid)
-
-            # If GID was converted from hex, update the database
-            if normalized_gid != artist.gid:
-                old_gid = artist.gid
-                logger.info(
-                    f"Converting artist '{artist.name}' (ID: {artist_id}) GID from hex "
-                    f"({old_gid}) to base62 ({normalized_gid})"
-                )
-
-                # Update artist and all related albums in a transaction
-                # Album FK references artist.gid, so we need to update the artist_gid column
-                with transaction.atomic():
-                    from django.db import connection
-
-                    # First, update all albums' artist_gid column to the new GID
-                    # The FK constraint uses artist.gid, so we must update albums first
-                    with connection.cursor() as cursor:
-                        cursor.execute(
-                            "UPDATE albums SET artist_gid = %s WHERE artist_gid = %s",
-                            [normalized_gid, old_gid],
-                        )
-                        albums_updated = cursor.rowcount
-
-                    logger.info(
-                        f"Updated {albums_updated} album(s) FK from {old_gid} to {normalized_gid}"
-                    )
-
-                    # Now update the artist's GID
-                    artist.gid = normalized_gid
-                    artist.save()
-        except ValueError as e:
-            error_msg = (
-                f"Cannot fetch albums for artist '{artist.name}' (ID: {artist_id}): {e}. "
-                f"This artist has invalid Spotify ID data and needs to be fixed."
-            )
-            logger.error(error_msg)
-            # Create task history to record the failure
-            task_history = create_task_history(
-                task_id=self.request.id,
-                task_type="FETCH",
-                entity_id=str(artist_id),  # Use DB ID since GID is invalid
-                entity_type="ARTIST",
-                task_name="fetch_all_albums_for_artist",
-            )
-            task_history.status = "FAILED"
-            task_history.save()
-            raise ValueError(error_msg) from e
-
         # Create task history record (always create, even without Celery context)
         task_history = create_task_history(
             task_id=self.request.id,
