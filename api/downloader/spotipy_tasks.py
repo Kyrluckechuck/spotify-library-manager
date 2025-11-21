@@ -10,15 +10,27 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from library_manager.models import Artist
 
 from .downloader import Downloader
+from .spotify_auth_helper import get_spotify_oauth_credentials
 
 
 class SpotifyClient:
     def __init__(self) -> None:
-        client_credentials_manager = SpotifyClientCredentials(
-            client_id=getattr(settings, "SPOTIPY_CLIENT_ID", ""),
-            client_secret=getattr(settings, "SPOTIPY_CLIENT_SECRET", ""),
-        )
-        self.sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+        # Try to use OAuth credentials first (for private playlist access)
+        oauth_creds = get_spotify_oauth_credentials()
+
+        if oauth_creds:
+            # Use OAuth token for authenticated access (supports private playlists)
+            # Pass the access token directly to avoid interactive prompts
+            self.sp = spotipy.Spotify(auth=oauth_creds["access_token"])
+        else:
+            # Fall back to client credentials (public access only)
+            client_credentials_manager = SpotifyClientCredentials(
+                client_id=getattr(settings, "SPOTIPY_CLIENT_ID", ""),
+                client_secret=getattr(settings, "SPOTIPY_CLIENT_SECRET", ""),
+            )
+            self.sp = spotipy.Spotify(
+                client_credentials_manager=client_credentials_manager
+            )
 
 
 def track_artists_in_playlist(playlist_url: str, task_id: Optional[str] = None) -> None:

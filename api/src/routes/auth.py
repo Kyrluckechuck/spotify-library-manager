@@ -36,8 +36,13 @@ async def initiate_oauth(request: Request) -> RedirectResponse:
     # Spotify requires 127.0.0.1 instead of localhost for loopback addresses
     host = host.replace("localhost", "127.0.0.1")
 
-    # Check for X-Forwarded-Proto (reverse proxy) first, then fall back to request scheme
+    # Determine scheme: HTTPS for non-localhost domains (Spotify requirement)
+    # Check X-Forwarded-Proto first (reverse proxy), then fall back to request scheme
     scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+
+    # Force HTTPS for any non-localhost domain (Spotify OAuth requirement)
+    if not (host.startswith("127.0.0.1") or host.startswith("localhost")):
+        scheme = "https"
 
     redirect_uri = f"{scheme}://{host}/auth/spotify/callback"
 
@@ -141,7 +146,14 @@ async def oauth_callback(
         "host", "127.0.0.1:5000"
     )
     host = host.replace("localhost", "127.0.0.1")
+
+    # Determine scheme: HTTPS for non-localhost domains (Spotify requirement)
     scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+
+    # Force HTTPS for any non-localhost domain (Spotify OAuth requirement)
+    if not (host.startswith("127.0.0.1") or host.startswith("localhost")):
+        scheme = "https"
+
     redirect_uri = f"{scheme}://{host}/auth/spotify/callback"
 
     try:

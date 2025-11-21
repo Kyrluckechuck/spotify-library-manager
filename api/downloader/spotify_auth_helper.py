@@ -17,6 +17,8 @@ def get_spotify_oauth_credentials() -> Optional[dict]:
     """
     Get Spotify OAuth credentials from database if available.
 
+    Automatically refreshes expired tokens using the refresh token.
+
     Returns:
         Dict with OAuth credentials, or None if not authenticated
     """
@@ -29,9 +31,26 @@ def get_spotify_oauth_credentials() -> Optional[dict]:
 
             # Check if token is expired
             if token.is_expired():
-                logger.warning("Spotify OAuth token is expired - needs refresh")
-                # Token will be auto-refreshed when used by SpotifyOAuthService
-                return None
+                logger.info("Spotify OAuth token is expired - refreshing...")
+
+                try:
+                    # Import service here to avoid circular imports
+                    from src.services.spotify_oauth import SpotifyOAuthService
+
+                    # Refresh the token
+                    refreshed_data = SpotifyOAuthService.refresh_access_token(
+                        token.refresh_token
+                    )
+
+                    # Save the refreshed token
+                    token = SpotifyOAuthService.save_tokens(refreshed_data)
+                    logger.info("✓ Successfully refreshed Spotify OAuth token")
+
+                except Exception as refresh_error:
+                    logger.error(
+                        f"Failed to refresh Spotify OAuth token: {refresh_error}"
+                    )
+                    return None
 
             return {
                 "access_token": token.access_token,
