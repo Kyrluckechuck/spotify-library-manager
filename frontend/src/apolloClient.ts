@@ -40,40 +40,70 @@ export const apolloClient = new ApolloClient({
       Query: {
         fields: {
           artists: {
-            keyArgs: ['isTracked', 'search'],
-            merge(existing, incoming, { args }) {
+            keyArgs: ['isTracked', 'search', 'sortBy', 'sortDirection'],
+            merge(existing, incoming) {
               // Handle pagination merging
+              // Always merge edges if we have existing data (indicates pagination)
               if (!existing) return incoming;
-              if (!args?.after) return incoming;
 
-              return {
-                ...incoming,
-                edges: [...existing.edges, ...incoming.edges],
-              };
+              // Check if this is a pagination request by seeing if edges exist
+              if (existing.edges && incoming.edges) {
+                return {
+                  ...incoming,
+                  edges: [...existing.edges, ...incoming.edges],
+                };
+              }
+
+              // Not a pagination request, replace the cache
+              return incoming;
             },
           },
           albums: {
-            keyArgs: ['artistId', 'wanted', 'downloaded', 'search'],
-            merge(existing, incoming, { args }) {
+            keyArgs: [
+              'artistId',
+              'wanted',
+              'downloaded',
+              'search',
+              'sortBy',
+              'sortDirection',
+            ],
+            merge(existing, incoming) {
               if (!existing) return incoming;
-              if (!args?.after) return incoming;
 
-              return {
-                ...incoming,
-                edges: [...existing.edges, ...incoming.edges],
-              };
+              // Merge edges if both have them (pagination request)
+              if (existing.edges && incoming.edges) {
+                return {
+                  ...incoming,
+                  edges: [...existing.edges, ...incoming.edges],
+                };
+              }
+
+              // Not a pagination request, replace the cache
+              return incoming;
             },
           },
           songs: {
-            keyArgs: ['artistId', 'downloaded', 'unavailable', 'search'],
-            merge(existing, incoming, { args }) {
+            keyArgs: [
+              'artistId',
+              'downloaded',
+              'unavailable',
+              'search',
+              'sortBy',
+              'sortDirection',
+            ],
+            merge(existing, incoming) {
               if (!existing) return incoming;
-              if (!args?.after) return incoming;
 
-              return {
-                ...incoming,
-                edges: [...existing.edges, ...incoming.edges],
-              };
+              // Merge edges if both have them (pagination request)
+              if (existing.edges && incoming.edges) {
+                return {
+                  ...incoming,
+                  edges: [...existing.edges, ...incoming.edges],
+                };
+              }
+
+              // Not a pagination request, replace the cache
+              return incoming;
             },
           },
           playlists: {

@@ -6,7 +6,6 @@ import {
   DownloadAlbumDocument,
   GetArtistDocument,
   type Album,
-  type GetAlbumsQuery,
 } from '../types/generated/graphql';
 import { useToast } from '../components/ui/useToast';
 import { useMutationState } from './useMutationState';
@@ -194,23 +193,8 @@ export function useAlbumsPage(options: UseAlbumsPageOptions = {}) {
     if (data?.albums.pageInfo.hasNextPage) {
       fetchMore({
         variables: {
+          ...queryVariables,
           after: data.albums.pageInfo.endCursor,
-        },
-        updateQuery: (
-          prevResult: GetAlbumsQuery,
-          { fetchMoreResult }: { fetchMoreResult?: GetAlbumsQuery }
-        ) => {
-          if (!fetchMoreResult) return prevResult;
-
-          return {
-            albums: {
-              ...fetchMoreResult.albums,
-              edges: [
-                ...prevResult.albums.edges,
-                ...fetchMoreResult.albums.edges,
-              ],
-            },
-          };
         },
       });
     }

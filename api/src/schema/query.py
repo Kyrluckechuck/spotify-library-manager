@@ -51,8 +51,8 @@ class Query:
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
-            start_cursor=None,
-            end_cursor=None,
+            start_cursor=services.artist.create_cursor(edges[0]) if edges else None,
+            end_cursor=services.artist.create_cursor(edges[-1]) if edges else None,
         )
 
         return ArtistConnection(
@@ -92,8 +92,8 @@ class Query:
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
-            start_cursor=None,
-            end_cursor=None,
+            start_cursor=services.album.create_cursor(edges[0]) if edges else None,
+            end_cursor=services.album.create_cursor(edges[-1]) if edges else None,
         )
 
         return AlbumConnection(
@@ -133,8 +133,8 @@ class Query:
         page_info = PageInfo(
             has_next_page=has_next_page,
             has_previous_page=after is not None,
-            start_cursor=None,
-            end_cursor=None,
+            start_cursor=services.song.create_cursor(edges[0]) if edges else None,
+            end_cursor=services.song.create_cursor(edges[-1]) if edges else None,
         )
 
         return SongConnection(edges=edges, page_info=page_info, total_count=total_count)

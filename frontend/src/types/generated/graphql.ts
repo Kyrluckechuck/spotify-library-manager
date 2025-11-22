@@ -13,7 +13,6 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  /** The `DateTime` scalar type represents a date and time following the ISO 8601 standard. */
   DateTime: { input: string; output: string; }
 };
 
