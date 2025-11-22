@@ -14,7 +14,11 @@ services:
     networks:
       - slm_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-slm_user} -d ${POSTGRES_DB:-spotify_library_manager}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-slm_user} -d ${POSTGRES_DB:-spotify_library_manager}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,9 +58,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G  # Hard limit for API server
+          memory: 2G # Hard limit for API server
         reservations:
-          memory: 256M  # Soft limit - guaranteed minimum
+          memory: 512M # Soft limit - guaranteed minimum
 
   frontend:
     # Nginx frontend service - serves static files and proxies API
@@ -85,7 +89,7 @@ services:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - HOME=/config
-    command: celery -A celery_app worker --loglevel=info --queues=downloads,spotify,celery --concurrency=10
+    command: celery -A celery_app worker --loglevel=info --queues=downloads,spotify,celery --concurrency=6
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,9 +104,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G  # Hard limit - container will be killed if exceeded
+          memory: 2G # Hard limit - container will be killed if exceeded
         reservations:
-          memory: 512M  # Soft limit - guaranteed minimum
+          memory: 512M # Soft limit - guaranteed minimum
 
   beat:
     image: ${BACKEND_IMAGE:-ghcr.io/kyrluckechuck/spotify-library-manager:latest}
@@ -127,28 +131,27 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M  # Hard limit for beat scheduler
+          memory: 512M # Hard limit for beat scheduler
         reservations:
-          memory: 128M  # Soft limit - guaranteed minimum
-
+          memory: 128M # Soft limit - guaranteed minimum
 
 volumes:
   config_storage:
     driver: local
     driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: '${SLM_CONFIG_DIR:-/config}'
+      type: "none"
+      o: "bind"
+      device: "${SLM_CONFIG_DIR:-/config}"
   music_storage:
     driver: local
     driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: '${MUSIC_DIR:-/mnt/music_spotify}'
+      type: "none"
+      o: "bind"
+      device: "${MUSIC_DIR:-/mnt/music_spotify}"
   postgres_data:
     driver: local
     driver_opts:
-      type: 'none'
-      o: 'bind'
+      type: "none"
+      o: "bind"
       # You will need to ensure this directory exists in order to start the script
-      device: '${SLM_CONFIG_DIR:-/config}/db/data'
+      device: "${SLM_CONFIG_DIR:-/config}/db/data"

@@ -66,7 +66,24 @@ SpotdlDownloader.download_song = spotdl_override.download_song
 
 def generate_spotdl_settings(config: Config) -> Any:
     spotify_settings, downloader_settings, _ = create_settings(Namespace(config=False))
-    del spotify_settings["auth_token"]
+
+    # Check for stored OAuth tokens first (before modifying auth_token)
+    oauth_creds = get_spotify_oauth_credentials()
+
+    if oauth_creds:
+        # Use OAuth access token for authentication (enables private playlists)
+        # Pass the token directly to avoid interactive prompts
+        spotify_settings["auth_token"] = oauth_creds["access_token"]
+        spotify_settings["user_auth"] = True
+        spotify_settings["headless"] = True  # No interactive prompt needed
+    else:
+        # No OAuth credentials - delete auth_token and use client credentials
+        del spotify_settings["auth_token"]
+        if config.spotify_user_auth_enabled:
+            # Config enabled but no tokens yet - enable user auth for initial setup
+            spotify_settings["user_auth"] = True
+            spotify_settings["headless"] = True
+
     del spotify_settings["max_retries"]
     del spotify_settings["use_cache_file"]
     spotify_settings["downloader_settings"] = downloader_settings
@@ -88,19 +105,6 @@ def generate_spotdl_settings(config: Config) -> Any:
         spotify_settings["downloader_settings"][
             "cookie_file"
         ] = config.youtube_cookies_location
-
-    # Check for stored OAuth tokens
-    oauth_creds = get_spotify_oauth_credentials()
-    if oauth_creds:
-        # Use OAuth tokens for authentication (enables private playlists)
-        # SpotDL manages tokens internally via spotipy's cache
-        # TODO: Integrate our stored tokens with SpotDL's token cache
-        spotify_settings["user_auth"] = True
-        spotify_settings["headless"] = True  # No interactive prompt needed
-    elif config.spotify_user_auth_enabled:
-        # Config enabled but no tokens yet - enable user auth for initial setup
-        spotify_settings["user_auth"] = True
-        spotify_settings["headless"] = True
 
     if config.po_token:
         spotify_settings["downloader_settings"][
