@@ -23,6 +23,7 @@ def __init__(
         Union[DownloaderOptionalOptions, DownloaderOptions]
     ] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
+    auth_token: Optional[str] = None,
 ) -> None:
     """
     Initialize the Spotdl class
@@ -36,6 +37,7 @@ def __init__(
     - headless: If true, no browser will be opened
     - downloader_settings: Settings for the downloader
     - loop: Event loop to use
+    - auth_token: OAuth access token (bypasses client credentials if provided)
     """
 
     if downloader_settings is None:
@@ -43,14 +45,29 @@ def __init__(
 
     # Initialize spotify client
     if SpotifyClient._instance is None:
-        SpotifyClient.init(
-            client_id=client_id,
-            client_secret=client_secret,
-            user_auth=user_auth,
-            cache_path=cache_path,
-            no_cache=no_cache,
-            headless=headless,
-        )
+        # If OAuth token is provided, use it directly; otherwise use client credentials
+        if auth_token:
+            # For OAuth authentication, pass the token directly
+            # This bypasses client credentials and uses the OAuth token
+            SpotifyClient.init(
+                client_id=client_id or "",
+                client_secret=client_secret or "",
+                user_auth=user_auth,
+                cache_path=cache_path,
+                no_cache=no_cache,
+                headless=headless,
+                auth_token=auth_token,
+            )
+        else:
+            # Standard client credentials authentication
+            SpotifyClient.init(
+                client_id=client_id,
+                client_secret=client_secret,
+                user_auth=user_auth,
+                cache_path=cache_path,
+                no_cache=no_cache,
+                headless=headless,
+            )
 
     # Initialize downloader
     self.downloader = Downloader(

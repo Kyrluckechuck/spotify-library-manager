@@ -10,167 +10,167 @@
 # - Branch-specific images: Set BACKEND_IMAGE_TAG env var to use branch images from GHCR
 
 services:
-    web:
-        # Use GHCR image by default, build locally when needed (docker compose build)
-        # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
-        image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
-        build:
-            context: .
-            target: backend-dev
-        # Development command with enhanced debugging and live reload
-        command: bash -c "
-            echo '🚀 Starting web service (DEV MODE)...';
-            echo '📦 Installing dev dependencies...';
-            pip install -r requirements-dev.txt &&
-            echo '📊 Environment check:';
-            echo 'Python version:' $(python --version);
-            echo 'Working directory:' $(pwd);
-            echo 'Available disk space:' $(df -h . | tail -1);
-            echo '🗄️ Running migrations...';
-            timeout \${MIGRATION_TIMEOUT:-1800} python manage.py migrate_from_sqlite --verbosity=2 || {
-            echo '⚠️ SQLite migration timed out after \${MIGRATION_TIMEOUT:-1800}s or failed. Running basic migrations...';
-            echo '⚠️ For large databases, set MIGRATION_TIMEOUT environment variable to a higher value';
-            python manage.py migrate --verbosity=2;
-            } &&
-            echo '✅ Migrations complete. Starting development server...';
-            echo '🌐 Starting uvicorn with reload on ${HOST:-0.0.0.0}:${PORT:-5000}';
-            uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --reload --log-level info
-            "
-        environment:
-            # Development environment settings
-            - DJANGO_DEBUG=True
-            - INSTALL_DEV_DEPS=true
-            # Database configuration
-            - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
-            - POSTGRES_USER=${POSTGRES_USER:-slm_user}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
-            - POSTGRES_HOST=postgres
-            - POSTGRES_PORT=5432
-        volumes:
-            # Live code sync for development
-            - ./api:/app
-            - ./requirements.txt:/app/requirements.txt
-            - ./requirements-dev.txt:/app/requirements-dev.txt
-            - python_packages:/app/.venv
-            - pip_cache:/root/.cache/pip
+  web:
+    # Use GHCR image by default, build locally when needed (docker compose build)
+    # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
+    image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
+    build:
+      context: .
+      target: backend-dev
+    # Development command with enhanced debugging and live reload
+    command: bash -c "
+      echo '🚀 Starting web service (DEV MODE)...';
+      echo '📦 Installing dev dependencies...';
+      pip install -r requirements-dev.txt &&
+      echo '📊 Environment check:';
+      echo 'Python version:' $(python --version);
+      echo 'Working directory:' $(pwd);
+      echo 'Available disk space:' $(df -h . | tail -1);
+      echo '🗄️ Running migrations...';
+      timeout \${MIGRATION_TIMEOUT:-1800} python manage.py migrate_from_sqlite --verbosity=2 || {
+      echo '⚠️ SQLite migration timed out after \${MIGRATION_TIMEOUT:-1800}s or failed. Running basic migrations...';
+      echo '⚠️ For large databases, set MIGRATION_TIMEOUT environment variable to a higher value';
+      python manage.py migrate --verbosity=2;
+      } &&
+      echo '✅ Migrations complete. Starting development server...';
+      echo '🌐 Starting uvicorn with reload on ${HOST:-0.0.0.0}:${PORT:-5000}';
+      uvicorn src.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-5000} --reload --log-level info
+      "
+    environment:
+      # Development environment settings
+      - DJANGO_DEBUG=True
+      - INSTALL_DEV_DEPS=true
+      # Database configuration
+      - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+      - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    volumes:
+      # Live code sync for development
+      - ./api:/app
+      - ./requirements.txt:/app/requirements.txt
+      - ./requirements-dev.txt:/app/requirements-dev.txt
+      - python_packages:/app/.venv
+      - pip_cache:/root/.cache/pip
 
-    # Disable main frontend service in favor of frontend-dev
-    frontend:
-        profiles:
-            - disabled
+  # Disable main frontend service in favor of frontend-dev
+  frontend:
+    profiles:
+      - disabled
 
-    # Development frontend service
-    frontend-dev:
-        build:
-            context: ./frontend
-            target: development # Use development stage that skips build step
-            args:
-                - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
-        command: yarn dev --host 0.0.0.0 --port 3000
-        volumes:
-            # Live code sync for development hot reloading
-            - ./frontend:/app
-            - /app/node_modules # Prevent overwriting node_modules
-        environment:
-            - VITE_API_URL=${VITE_API_URL:-/graphql}
-        ports:
-            - "${FRONTEND_PORT:-3000}:3000"
-        depends_on:
-            web:
-                condition: service_healthy
-        networks:
-            - slm_net
-        healthcheck:
-            test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
-            start_period: 10s
-        restart: unless-stopped
+  # Development frontend service
+  frontend-dev:
+    build:
+      context: ./frontend
+      target: development # Use development stage that skips build step
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:5000/graphql}
+    command: yarn dev --host 0.0.0.0 --port 3000
+    volumes:
+      # Live code sync for development hot reloading
+      - ./frontend:/app
+      - /app/node_modules # Prevent overwriting node_modules
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-/graphql}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - slm_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
-    worker:
-        # Use GHCR image by default, build locally when needed (docker compose build)
-        # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
-        image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
-        build:
-            context: .
-            target: backend-dev
-        command: bash -c "
-            echo '🔄 Starting Celery worker (DEV MODE with auto-restart)...';
-            echo '📦 Installing dev dependencies...';
-            pip install -r requirements-dev.txt &&
-            echo '🔍 Checking watchdog installation...';
-            python -c 'import watchdog; print(\"Watchdog installed successfully\")' &&
-            echo '👷 Starting Celery worker with auto-restart on code changes...';
-            python -m watchdog.watchmedo auto-restart --directory=/app --pattern='*.py' --recursive --
-            celery -A celery_app worker --loglevel=info --queues=downloads,spotify,celery --concurrency=10
-            "
-        environment:
-            - INSTALL_DEV_DEPS=true
-            # Database configuration
-            - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
-            - POSTGRES_USER=${POSTGRES_USER:-slm_user}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
-            - POSTGRES_HOST=postgres
-            - POSTGRES_PORT=5432
-        volumes:
-            # Live code sync for development
-            - ./api:/app
-            - ./requirements.txt:/app/requirements.txt
-            - ./requirements-dev.txt:/app/requirements-dev.txt
-            - ./pyproject.toml:/app/pyproject.toml
-            - ./pytest.ini:/app/pytest.ini
-            - python_packages:/app/.venv
-            - pip_cache:/root/.cache/pip
+  worker:
+    # Use GHCR image by default, build locally when needed (docker compose build)
+    # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
+    image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
+    build:
+      context: .
+      target: backend-dev
+    command: bash -c "
+      echo '🔄 Starting Celery worker (DEV MODE with auto-restart)...';
+      echo '📦 Installing dev dependencies...';
+      pip install -r requirements-dev.txt &&
+      echo '🔍 Checking watchdog installation...';
+      python -c 'import watchdog; print(\"Watchdog installed successfully\")' &&
+      echo '👷 Starting Celery worker with auto-restart on code changes...';
+      python -m watchdog.watchmedo auto-restart --directory=/app --pattern='*.py' --recursive --
+      celery -A celery_app worker --loglevel=info --queues=downloads,spotify,celery --concurrency=10
+      "
+    environment:
+      - INSTALL_DEV_DEPS=true
+      # Database configuration
+      - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+      - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    volumes:
+      # Live code sync for development
+      - ./api:/app
+      - ./requirements.txt:/app/requirements.txt
+      - ./requirements-dev.txt:/app/requirements-dev.txt
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./pytest.ini:/app/pytest.ini
+      - python_packages:/app/.venv
+      - pip_cache:/root/.cache/pip
 
-    beat:
-        # Use GHCR image by default, build locally when needed (docker compose build)
-        # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
-        image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
-        build:
-            context: .
-            target: backend-dev
-        command: bash -c "
-            echo '📅 Starting Celery beat (DEV MODE with auto-restart)...';
-            echo '📦 Installing dev dependencies...';
-            pip install -r requirements-dev.txt &&
-            echo '⏰ Starting Celery beat with auto-restart on code changes...';
-            python -m watchdog.watchmedo auto-restart --directory=/app --pattern='*.py' --recursive --
-            celery -A celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-            "
-        environment:
-            - INSTALL_DEV_DEPS=true
-            # Database configuration
-            - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
-            - POSTGRES_USER=${POSTGRES_USER:-slm_user}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
-            - POSTGRES_HOST=postgres
-            - POSTGRES_PORT=5432
-        volumes:
-            # Live code sync for development
-            - ./api:/app
-            - ./requirements.txt:/app/requirements.txt
-            - ./requirements-dev.txt:/app/requirements-dev.txt
-            - ./pyproject.toml:/app/pyproject.toml
-            - ./pytest.ini:/app/pytest.ini
-            - python_packages:/app/.venv
-            - pip_cache:/root/.cache/pip
+  beat:
+    # Use GHCR image by default, build locally when needed (docker compose build)
+    # Set BACKEND_IMAGE_TAG env var to use branch-specific image (e.g., overhual-frontend-tanstack)
+    image: ghcr.io/kyrluckechuck/spotify-library-manager:${BACKEND_IMAGE_TAG:-latest}
+    build:
+      context: .
+      target: backend-dev
+    command: bash -c "
+      echo '📅 Starting Celery beat (DEV MODE with auto-restart)...';
+      echo '📦 Installing dev dependencies...';
+      pip install -r requirements-dev.txt &&
+      echo '⏰ Starting Celery beat with auto-restart on code changes...';
+      python -m watchdog.watchmedo auto-restart --directory=/app --pattern='*.py' --recursive --
+      celery -A celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+      "
+    environment:
+      - INSTALL_DEV_DEPS=true
+      # Database configuration
+      - POSTGRES_DB=${POSTGRES_DB:-spotify_library_manager}
+      - POSTGRES_USER=${POSTGRES_USER:-slm_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-slm_dev_password}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    volumes:
+      # Live code sync for development
+      - ./api:/app
+      - ./requirements.txt:/app/requirements.txt
+      - ./requirements-dev.txt:/app/requirements-dev.txt
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./pytest.ini:/app/pytest.ini
+      - python_packages:/app/.venv
+      - pip_cache:/root/.cache/pip
 
-    postgres:
-        # Override user for development to match host user
-        user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
-        # Expose PostgreSQL port for development/debugging
-        ports:
-            - "5432:5432"
+  postgres:
+    # Override user for development to match host user
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+    # Expose PostgreSQL port for development/debugging
+    ports:
+      - "5432:5432"
 
 volumes:
-    python_packages:
-    pip_cache:
-    # Override music storage location for development
-    # Adjust this path to match your local development music directory
-    music_storage:
-        driver: local
-        driver_opts:
-            type: "none"
-            o: "bind"
-            device: "${MUSIC_DIR:-/mnt/external_drive/dev_music}"
+  python_packages:
+  pip_cache:
+  # Override music storage location for development
+  # Adjust this path to match your local development music directory
+  music_storage:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${MUSIC_DIR:-/mnt/external_drive/dev_music}"
