@@ -17,6 +17,11 @@ CELERY_BEAT_SCHEDULE = {
         ),  # Weekly on Sunday at 3 AM
         "options": {"priority": 1},
     },
+    "queue-missing-albums-for-tracked-artists": {
+        "task": "library_manager.tasks.queue_missing_albums_for_tracked_artists",
+        "schedule": crontab(minute=0),  # Every hour
+        "options": {"priority": 3},
+    },
     "cleanup-celery-history": {
         "task": "library_manager.tasks.cleanup_celery_history",
         "schedule": crontab(minute=0, hour=6),  # Daily at 6 AM

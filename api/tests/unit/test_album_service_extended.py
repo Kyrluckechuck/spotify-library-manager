@@ -161,7 +161,7 @@ class TestAlbumServiceExtended:
         """Test download_album with database ID."""
         with (
             patch("src.services.album.sync_to_async") as mock_sync_to_async,
-            patch("src.services.album.download_single_album") as mock_download_task,
+            patch("library_manager.tasks.download_single_album") as mock_download_task,
         ):
             mock_download_task.delay = Mock()
 

@@ -902,3 +902,52 @@ def validate_undownloaded_songs(
         return
     # Queue up next batch after ensuring rate limit has passed
     validate_undownloaded_songs.delay()
+
+
+@celery_app.task(
+    bind=True, name="library_manager.tasks.queue_missing_albums_for_tracked_artists"
+)  # Scheduled via Celery Beat - Every hour
+def queue_missing_albums_for_tracked_artists(self) -> None:
+    """
+    Periodically find tracked artists with missing music and queue downloads.
+
+    Finds up to 300 albums that are marked as wanted but not yet downloaded
+    from tracked artists, and queues them for download.
+    """
+    try:
+        logger.info("Starting periodic queue of missing albums for tracked artists")
+
+        # Find all missing albums for tracked artists
+        missing_albums = (
+            Album.objects.filter(
+                artist__tracked=True,
+                downloaded=False,
+                wanted=True,
+                album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
+            )
+            .exclude(album_group__in=ALBUM_GROUPS_TO_IGNORE)
+            .order_by("id")[:300]
+        )
+
+        if not missing_albums.exists():
+            logger.info(
+                "No missing albums found for tracked artists to queue for download"
+            )
+            return
+
+        queued_count = 0
+        for album in missing_albums:
+            try:
+                download_single_album.delay(album.id)
+                queued_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to queue album {album.name} ({album.id}): {e}")
+
+        logger.info(
+            f"Queued {queued_count} missing albums from tracked artists for download"
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error in queue_missing_albums_for_tracked_artists: {e}", exc_info=True
+        )
