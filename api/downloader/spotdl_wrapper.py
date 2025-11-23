@@ -41,7 +41,6 @@ from . import __version__, spotdl_override, utils
 from .default_download_settings import DEFAULT_DOWNLOAD_SETTINGS
 from .downloader import Downloader
 from .premium_detector import PremiumDetector, PremiumStatus
-from .spotify_auth_helper import get_spotify_oauth_credentials
 
 
 class BitrateException(Exception):
@@ -67,22 +66,15 @@ SpotdlDownloader.download_song = spotdl_override.download_song
 def generate_spotdl_settings(config: Config) -> Any:
     spotify_settings, downloader_settings, _ = create_settings(Namespace(config=False))
 
-    # Check for stored OAuth tokens first (before modifying auth_token)
-    oauth_creds = get_spotify_oauth_credentials()
-
-    if oauth_creds:
-        # Use OAuth access token for authentication (enables private playlists)
-        # Pass the token directly to avoid interactive prompts
-        spotify_settings["auth_token"] = oauth_creds["access_token"]
-        spotify_settings["user_auth"] = True
-        spotify_settings["headless"] = True  # No interactive prompt needed
-    else:
-        # No OAuth credentials - delete auth_token and use client credentials
+    # OAuth tokens are now fetched directly in spotdl_override.py during initialization
+    # Remove auth_token from settings as it's no longer needed
+    if "auth_token" in spotify_settings:
         del spotify_settings["auth_token"]
-        if config.spotify_user_auth_enabled:
-            # Config enabled but no tokens yet - enable user auth for initial setup
-            spotify_settings["user_auth"] = True
-            spotify_settings["headless"] = True
+
+    if config.spotify_user_auth_enabled:
+        # Config enabled - enable user auth for initial setup
+        spotify_settings["user_auth"] = True
+        spotify_settings["headless"] = True
 
     del spotify_settings["max_retries"]
     del spotify_settings["use_cache_file"]

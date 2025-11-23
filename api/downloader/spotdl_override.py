@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
+from downloader.spotify_auth_helper import get_spotify_oauth_credentials
 from spotdl.download.downloader import Downloader
 from spotdl.types.options import DownloaderOptionalOptions, DownloaderOptions
 from spotdl.types.song import Song
@@ -23,7 +24,6 @@ def __init__(
         Union[DownloaderOptionalOptions, DownloaderOptions]
     ] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
-    auth_token: Optional[str] = None,
 ) -> None:
     """
     Initialize the Spotdl class
@@ -37,7 +37,6 @@ def __init__(
     - headless: If true, no browser will be opened
     - downloader_settings: Settings for the downloader
     - loop: Event loop to use
-    - auth_token: OAuth access token (bypasses client credentials if provided)
     """
 
     if downloader_settings is None:
@@ -45,8 +44,10 @@ def __init__(
 
     # Initialize spotify client
     if SpotifyClient._instance is None:
-        # If OAuth token is provided, use it directly; otherwise use client credentials
-        if auth_token:
+        oauth_creds = get_spotify_oauth_credentials()
+
+        # If OAuth token is available, pass it directly; otherwise use client credentials
+        if oauth_creds:
             # For OAuth authentication, pass the token directly
             # This bypasses client credentials and uses the OAuth token
             SpotifyClient.init(
@@ -56,7 +57,7 @@ def __init__(
                 cache_path=cache_path,
                 no_cache=no_cache,
                 headless=headless,
-                auth_token=auth_token,
+                auth_token=oauth_creds["access_token"],
             )
         else:
             # Standard client credentials authentication

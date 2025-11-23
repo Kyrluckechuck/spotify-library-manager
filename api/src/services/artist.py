@@ -8,10 +8,6 @@ from asgiref.sync import sync_to_async
 
 from library_manager.models import Album
 from library_manager.models import Artist as DjangoArtist
-from library_manager.tasks import (
-    download_missing_albums_for_artist,
-    fetch_all_albums_for_artist_sync,
-)
 
 from ..graphql_types.models import Artist, MutationResult
 from .base import BaseService
@@ -189,6 +185,9 @@ class ArtistService(BaseService[Artist]):
         await django_artist.asave()
 
         if auto_download:
+            # Local import to avoid circular import during module initialization
+            from library_manager.tasks import download_missing_albums_for_artist
+
             await sync_to_async(download_missing_albums_for_artist)(django_artist.id)
 
         return await self._to_graphql_type_async(django_artist)
@@ -198,6 +197,9 @@ class ArtistService(BaseService[Artist]):
             # Convert string to int since frontend sends database ID
             artist_db_id = int(artist_id)
             django_artist = await sync_to_async(self.model.objects.get)(id=artist_db_id)
+            # Local import to avoid circular import during module initialization
+            from library_manager.tasks import fetch_all_albums_for_artist_sync
+
             await sync_to_async(fetch_all_albums_for_artist_sync)(django_artist.id)
             return await self._to_graphql_type_async(django_artist)
         except ValueError as exc:
@@ -214,6 +216,9 @@ class ArtistService(BaseService[Artist]):
             django_artist = await sync_to_async(self.model.objects.get)(id=artist_db_id)
 
             # Start download task for missing albums
+            # Local import to avoid circular import during module initialization
+            from library_manager.tasks import download_missing_albums_for_artist
+
             await sync_to_async(download_missing_albums_for_artist.delay)(
                 django_artist.id
             )

@@ -7,7 +7,6 @@ from django.db.models import Q
 from asgiref.sync import sync_to_async
 
 from library_manager.models import TrackedPlaylist as DjangoPlaylist
-from library_manager.tasks import sync_tracked_playlist, sync_tracked_playlist_artists
 
 from ..graphql_types.models import MutationResult, Playlist
 from .base import BaseService
@@ -166,7 +165,12 @@ class PlaylistService(BaseService[Playlist]):
         django_playlist.auto_track_artists = auto_track_artists
         await sync_to_async(django_playlist.save)()
 
-        # Queue tasks
+        # Queue tasks - local imports to avoid circular import during module initialization
+        from library_manager.tasks import (
+            sync_tracked_playlist,
+            sync_tracked_playlist_artists,
+        )
+
         sync_tracked_playlist.delay(django_playlist.id)
         if auto_track_artists:
             sync_tracked_playlist_artists.delay(django_playlist.id)
@@ -197,7 +201,12 @@ class PlaylistService(BaseService[Playlist]):
         )
         await sync_to_async(django_playlist.save)()
 
-        # Queue tasks
+        # Queue tasks - local imports to avoid circular import during module initialization
+        from library_manager.tasks import (
+            sync_tracked_playlist,
+            sync_tracked_playlist_artists,
+        )
+
         sync_tracked_playlist.delay(django_playlist.id)
         if auto_track_artists:
             sync_tracked_playlist_artists.delay(django_playlist.id)
@@ -277,6 +286,9 @@ class PlaylistService(BaseService[Playlist]):
                 message = "Playlist force sync started successfully"
             else:
                 # Trigger normal sync task (queue it for Celery worker)
+                # Local import to avoid circular import during module initialization
+                from library_manager.tasks import sync_tracked_playlist
+
                 await sync_to_async(sync_tracked_playlist.delay)(django_playlist.id)
                 message = "Playlist sync started successfully"
 

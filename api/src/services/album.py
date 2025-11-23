@@ -7,7 +7,6 @@ from asgiref.sync import sync_to_async
 from celery.result import AsyncResult
 
 from library_manager.models import Album as DjangoAlbum
-from library_manager.tasks import download_single_album
 
 from ..graphql_types.models import Album, MutationResult
 from .base import BaseService
@@ -245,6 +244,9 @@ class AlbumService(BaseService[Album]):
 
             # Queue the task in a sync context
             def queue_task() -> AsyncResult:
+                # Local import to avoid circular import during module initialization
+                from library_manager.tasks import download_single_album
+
                 return download_single_album.delay(album_db_id)
 
             await sync_to_async(queue_task)()

@@ -28,7 +28,6 @@ def get_spotify_oauth_credentials() -> Optional[dict]:
 
         try:
             token = SpotifyOAuthToken.objects.get(id=1)
-
             # Check if token is expired
             if token.is_expired():
                 logger.info("Spotify OAuth token is expired - refreshing...")
