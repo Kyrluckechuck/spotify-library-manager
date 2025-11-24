@@ -78,6 +78,10 @@ api/server.log
 api/staticfiles/
 api/static/
 
+# Prevent accidental files in api/ (created by docker volume mount conflicts)
+api/requirements*.txt
+api/pyproject.toml
+
 # Frontend build artifacts (generated)
 frontend/dist/
 frontend/build/

@@ -1,4 +1,4 @@
-# Optimized frontend Dockerfile with better caching
+# Optimized frontend Dockerfile with smaller production image
 ARG VITE_API_URL
 
 # =============================================================================
@@ -15,8 +15,8 @@ FROM node-base AS deps
 COPY package.json yarn.lock ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
-# Use cache mount for yarn to speed up dependency installation
-# Share cache with main Dockerfile using cache ID
+
+# Use cache mount for yarn
 RUN --mount=type=cache,target=/usr/local/share/.cache/yarn,id=yarn-cache,sharing=locked \
     yarn install --frozen-lockfile
 
@@ -30,8 +30,7 @@ COPY . .
 # Stage 4: Development (for local dev - no build step)
 # =============================================================================
 FROM source AS development
-# Don't run build - this avoids GraphQL circular dependency issues
-# The dev server will serve files directly from source
+# Don't run build - dev server serves files directly from source
 
 # =============================================================================
 # Stage 5: Test (for CI/CD)
@@ -46,13 +45,17 @@ FROM source AS build
 RUN yarn build
 
 # =============================================================================
-# Stage 6: Production (nginx serving)
+# Stage 7: Production (nginx serving static files)
 # =============================================================================
 FROM nginx:alpine AS production
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+
+# Use a minimal nginx config
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Add wget for healthcheck (minimal addition)
+RUN apk add --no-cache wget
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 

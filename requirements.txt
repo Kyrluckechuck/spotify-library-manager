@@ -1,7 +1,11 @@
+# =============================================================================
+# Production Dependencies Only
+# =============================================================================
+# These are the minimal dependencies required to run the application in production.
+# Dev/test dependencies are in requirements-dev.txt
+
 # Django and related packages
 django==5.2.6
-django-stubs[compatible-mypy]==5.2.5
-django-stubs-ext==5.2.5
 # Celery with database broker (PostgreSQL)
 celery>=5.3.0
 django-celery-beat>=2.5.0
@@ -19,9 +23,6 @@ psutil>=5.9.0  # Process and system monitoring for worker diagnostics
 
 # Runtime type checking and validation
 pydantic>=2.0.0
-types-requests>=2.32.4
-
-
 pydantic-settings>=2.0.0
 
 # GraphQL API (updated for Python 3.13 compatibility)
@@ -41,20 +42,7 @@ typer==0.19.2
 click==8.3.0
 requests==2.32.5
 
-
-# Test dependencies
-pytest==8.4.2
-pytest-asyncio==1.2.0
-pytest-cov==7.0.0
-pytest-mock==3.15.1
-pytest-django==4.11.1
-pytest-xdist==3.8.0
-coverage==7.10.7
-factory-boy>=3.3.0
-faker>=22.0.0
-
-# Essential dependencies from root requirements.txt
-click
+# Essential dependencies
 dynaconf
 pymediainfo
 pyyaml
@@ -64,13 +52,5 @@ pyyaml
 spotdl==4.4.2
 yt-dlp[default]==2025.11.12  # Includes yt-dlp-ejs for JavaScript execution (YouTube bot protection)
 
-# Development and linting tools
-flake8>=6.0.0
-black==25.9.0
-isort>=5.12.0
-pylint==3.3.8
-bandit>=1.7.0
-mypy==1.18.2
+# Static file serving
 whitenoise==6.11.0
-types-pyasn1
-types-psutil>=5.9.0

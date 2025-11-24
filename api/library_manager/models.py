@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import django.core.validators
 from django.conf import settings
@@ -7,7 +7,12 @@ from django.db import models
 from django.db.models import QuerySet, Sum
 from django.utils import timezone
 
-from django_stubs_ext.db.models import TypedModelMeta
+# TypedModelMeta is only needed for type checking with mypy
+# At runtime, we can use type (regular metaclass) as a fallback
+if TYPE_CHECKING:
+    from django_stubs_ext.db.models import TypedModelMeta
+else:
+    TypedModelMeta = type
 
 # Album selection configuration
 #

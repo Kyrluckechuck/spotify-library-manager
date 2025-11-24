@@ -1,10 +1,16 @@
 import os
 from pathlib import Path
 
-import django_stubs_ext
 import dynaconf
 
-django_stubs_ext.monkeypatch()
+# django_stubs_ext is a dev-only dependency for type checking
+# Only import and monkeypatch if available (dev environment)
+try:
+    import django_stubs_ext
+
+    django_stubs_ext.monkeypatch()
+except ImportError:
+    pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent
@@ -35,13 +41,12 @@ settings = dynaconf.DjangoDynaconf(
         "django.contrib.sessions",
         "django.contrib.messages",
         "django.contrib.staticfiles",
-        "django_stubs_ext",
         "bx_django_utils",
         "django_celery_results",
         "django_celery_beat",
         "kombu.transport.sqlalchemy",
         "library_manager",
-        # Dev-only apps may be appended below when DEBUG is true
+        # Dev-only apps are appended conditionally below
     ],
     # API-specific middleware (simpler than full web app)
     MIDDLEWARE=[
@@ -118,11 +123,19 @@ settings = dynaconf.DjangoDynaconf(
 if settings.DEBUG:  # type: ignore[name-defined]
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]  # For Docker, VMs
 
+    # Add dev-only apps if available
     try:
         import django_extensions  # noqa: F401
 
         settings.INSTALLED_APPS.append("django_extensions")
-    except Exception:
+    except ImportError:
+        pass
+
+    try:
+        import django_stubs_ext  # noqa: F401
+
+        settings.INSTALLED_APPS.append("django_stubs_ext")
+    except ImportError:
         pass
 
 LANGUAGE_CODE = "en-us"
