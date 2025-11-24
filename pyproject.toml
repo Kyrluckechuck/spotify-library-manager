@@ -67,6 +67,8 @@ module = [
     "base62.*",
     "celery.*",
     "django_celery_results.*",
+    "psutil",
+    "psutil.*",
 ]
 ignore_missing_imports = true
 
@@ -114,8 +116,11 @@ disable_error_code = ["var-annotated", "attr-defined"]
 [[tool.mypy.overrides]]
 module = [
     "api.library_manager.management.commands.*",
-    "api.library_manager.signals", 
+    "api.library_manager.signals",
     "api.library_manager.tasks",
+    "api.library_manager.tasks.*",
+    "library_manager.tasks",
+    "library_manager.tasks.*",
     "api.downloader.*",
     "api.celery_app",
 ]

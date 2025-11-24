@@ -1,6 +1,6 @@
 """Maintenance tasks for the Spotify library manager."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from celery_app import app as celery_app
 from lib.config_class import Config
@@ -15,7 +15,7 @@ from .core import logger, require_download_capability, spotdl_wrapper
     retry_kwargs={"max_retries": 2, "countdown": 30},
     name="library_manager.tasks.retry_all_missing_known_songs",
 )
-def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
+def retry_all_missing_known_songs(self: Any, task_id: Optional[str] = None) -> None:
     # Check authentication before proceeding with any DB queries
     require_download_capability()
 
@@ -45,22 +45,26 @@ def retry_all_missing_known_songs(self, task_id: Optional[str] = None) -> None:
     if hasattr(self, "request") and self.request.id:
         task_history = TaskHistory.objects.filter(task_id=self.request.id).first()
         if task_history:
+            # Capture task_history in closure to avoid cell-var-from-loop
+            captured_task_history = task_history
 
-            def update_task_progress_callback(progress_pct, message):
-                task_history.update_progress(progress_pct, message)
+            def update_task_progress_callback(
+                progress_pct: float, message: str
+            ) -> None:
+                captured_task_history.update_progress(progress_pct)
 
             task_progress_callback = update_task_progress_callback
 
     spotdl_wrapper.execute(downloader_config, task_progress_callback)
 
     # Queue up next batch after ensuring rate limit has passed
-    retry_all_missing_known_songs.schedule(delay=30)
+    retry_all_missing_known_songs.apply_async(countdown=30)
 
 
 @celery_app.task(
     bind=True, name="library_manager.tasks.cleanup_stuck_tasks_periodic"
 )  # Scheduled via Celery Beat - Every 5 minutes
-def cleanup_stuck_tasks_periodic(self) -> None:
+def cleanup_stuck_tasks_periodic(self: Any) -> None:
     """Periodically clean up stuck tasks and stale artist references"""
     from library_manager.models import TaskHistory
 
@@ -75,7 +79,7 @@ def cleanup_stuck_tasks_periodic(self) -> None:
 @celery_app.task(
     bind=True, name="library_manager.tasks.cleanup_celery_history"
 )  # Scheduled via Celery Beat - Daily at 6 AM
-def cleanup_celery_history(self, days_to_keep: int = 30) -> None:
+def cleanup_celery_history(self: Any, days_to_keep: int = 30) -> None:
     """Periodically clean up old completed/failed task history to prevent database bloat"""
     from library_manager.models import TaskHistory
 
@@ -93,7 +97,7 @@ def cleanup_celery_history(self, days_to_keep: int = 30) -> None:
     name="library_manager.tasks.validate_undownloaded_songs",
 )
 def validate_undownloaded_songs(
-    self,
+    self: Any,
     task_id: Optional[str] = None,
 ) -> None:
     # Check authentication before proceeding with any DB queries
@@ -131,9 +135,13 @@ def validate_undownloaded_songs(
     if hasattr(self, "request") and self.request.id:
         task_history = TaskHistory.objects.filter(task_id=self.request.id).first()
         if task_history:
+            # Capture task_history in closure to avoid cell-var-from-loop
+            captured_task_history = task_history
 
-            def update_task_progress_callback(progress_pct, message):
-                task_history.update_progress(progress_pct, message)
+            def update_task_progress_callback(
+                progress_pct: float, message: str
+            ) -> None:
+                captured_task_history.update_progress(progress_pct)
 
             task_progress_callback = update_task_progress_callback
 
@@ -150,7 +158,7 @@ def validate_undownloaded_songs(
 @celery_app.task(
     bind=True, name="library_manager.tasks.retry_failed_songs"
 )  # Scheduled via Celery Beat - Every 6 hours
-def retry_failed_songs(self) -> None:
+def retry_failed_songs(self: Any) -> None:
     """
     Periodically retry downloading songs that have previously failed.
 
@@ -191,7 +199,7 @@ def retry_failed_songs(self) -> None:
         song_uris = [song.spotify_uri for song in failed_songs]
 
         # Log some stats about what we're retrying
-        failure_counts = {}
+        failure_counts: dict[int, int] = {}
         for song in failed_songs:
             failure_counts[song.failed_count] = (
                 failure_counts.get(song.failed_count, 0) + 1
@@ -206,9 +214,13 @@ def retry_failed_songs(self) -> None:
         if hasattr(self, "request") and self.request.id:
             task_history = TaskHistory.objects.filter(task_id=self.request.id).first()
             if task_history:
+                # Capture task_history in closure to avoid cell-var-from-loop
+                captured_task_history = task_history
 
-                def update_task_progress_callback(progress_pct, message):
-                    task_history.update_progress(progress_pct, message)
+                def update_task_progress_callback(
+                    progress_pct: float, message: str
+                ) -> None:
+                    captured_task_history.update_progress(progress_pct)
 
                 task_progress_callback = update_task_progress_callback
 

@@ -73,3 +73,4 @@ bandit>=1.7.0
 mypy==1.18.2
 whitenoise==6.11.0
 types-pyasn1
+types-psutil>=5.9.0

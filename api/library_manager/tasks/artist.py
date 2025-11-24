@@ -1,12 +1,12 @@
 """Artist tasks for the Spotify library manager."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from django.conf import settings
 from django.db.models.functions import Now
 from django.utils import timezone
 
-from celery_app import app as celery_app  # noqa: F401
+from celery_app import app as celery_app
 from lib.config_class import Config
 
 from .. import helpers
@@ -30,12 +30,8 @@ from .core import (
 )
 
 
-def fetch_all_albums_for_artist_sync(artist_id: int) -> None:
-    """Synchronous wrapper for fetch_all_albums_for_artist - for direct calls."""
-    fetch_all_albums_for_artist.delay(artist_id)
-
-
-def fetch_all_albums_for_artist(self, artist_id: int) -> None:
+@celery_app.task(bind=True, name="library_manager.tasks.fetch_all_albums_for_artist")
+def fetch_all_albums_for_artist(self: Any, artist_id: int) -> None:
     task_history = None
     try:
         # Check if artist exists before proceeding
@@ -122,7 +118,13 @@ def fetch_all_albums_for_artist(self, artist_id: int) -> None:
         raise
 
 
-def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
+def fetch_all_albums_for_artist_sync(artist_id: int) -> None:
+    """Synchronous wrapper for fetch_all_albums_for_artist - for direct calls."""
+    fetch_all_albums_for_artist.delay(artist_id)
+
+
+@celery_app.task(bind=True, name="library_manager.tasks.update_tracked_artists")
+def update_tracked_artists(self: Any, task_id: Optional[str] = None) -> None:
     all_tracked_artists = Artist.objects.filter(tracked=True).order_by(
         "last_synced_at", "added_at", "id"
     )
@@ -137,7 +139,10 @@ def update_tracked_artists(self, task_id: Optional[str] = None) -> None:
 # There is a high likelyhood of being flagged due to high usage at the moment and a new scalable solution needs to be investigated.
 
 
-def download_missing_tracked_artists(self, task_id: Optional[str] = None) -> None:
+@celery_app.task(
+    bind=True, name="library_manager.tasks.download_missing_tracked_artists"
+)
+def download_missing_tracked_artists(self: Any, task_id: Optional[str] = None) -> None:
     if settings.disable_missing_tracked_artist_download:
         logger.info(
             "Skipping queued missing tracked artists due to disable_missing_tracked_artist_download setting"

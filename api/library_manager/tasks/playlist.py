@@ -1,6 +1,6 @@
 """Playlist tasks for the Spotify library manager."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from celery_app import app as celery_app
 from downloader.spotipy_tasks import track_artists_in_playlist
@@ -44,8 +44,9 @@ def _sync_tracked_playlist_internal(
         raise
 
 
+@celery_app.task(bind=True, name="library_manager.tasks.sync_tracked_playlist")
 def sync_tracked_playlist(
-    self, playlist_id: int, task_id: Optional[str] = None
+    self: Any, playlist_id: int, task_id: Optional[str] = None
 ) -> None:
     """Celery task wrapper for sync_tracked_playlist"""
     # Use the Celery task ID if no task_id is provided
@@ -66,7 +67,7 @@ def sync_tracked_playlist(
 
 @celery_app.task(bind=True, name="library_manager.tasks.sync_tracked_playlist_artists")
 def sync_tracked_playlist_artists(
-    self, playlist_id: int, task_id: Optional[str] = None
+    self: Any, playlist_id: int, task_id: Optional[str] = None
 ) -> None:
     # Given a playlist, track the artists without actually downloading the playlist (potentially, again)
     try:

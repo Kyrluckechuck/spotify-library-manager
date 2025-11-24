@@ -1,10 +1,11 @@
 """Download tasks for the Spotify library manager."""
 
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from django.db.models.functions import Now
 
+from celery_app import app as celery_app
 from downloader.utils import sanitize_and_strip_url
 from lib.config_class import Config
 
@@ -29,7 +30,12 @@ from .core import (
 )
 
 
-def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> None:
+@celery_app.task(
+    bind=True, name="library_manager.tasks.download_missing_albums_for_artist"
+)
+def download_missing_albums_for_artist(
+    self: Any, artist_id: int, delay: int = 0
+) -> None:
     # pylint: disable=too-many-return-statements
     task_history = None
     try:
@@ -159,7 +165,8 @@ def download_missing_albums_for_artist(self, artist_id: int, delay: int = 0) -> 
         raise
 
 
-def download_single_album(self, album_id: int) -> None:
+@celery_app.task(bind=True, name="library_manager.tasks.download_single_album")
+def download_single_album(self: Any, album_id: int) -> None:
     """Download a single specific album by ID."""
     task_history = None
     try:
@@ -236,8 +243,9 @@ def download_single_album(self, album_id: int) -> None:
         raise
 
 
+@celery_app.task(bind=True, name="library_manager.tasks.download_playlist")
 def download_playlist(
-    self,
+    self: Any,
     playlist_url: str,
     tracked: bool = True,
     force_playlist_resync: bool = False,
@@ -330,8 +338,11 @@ def download_playlist(
         raise
 
 
+@celery_app.task(
+    bind=True, name="library_manager.tasks.download_extra_album_types_for_artist"
+)
 def download_extra_album_types_for_artist(
-    self, artist_id: int, task_id: Optional[str] = None
+    self: Any, artist_id: int, task_id: Optional[str] = None
 ) -> None:
     # Check authentication before proceeding with any DB queries
     require_download_capability()
@@ -367,9 +378,13 @@ def download_extra_album_types_for_artist(
         if task_id:
             task_history = TaskHistory.objects.filter(task_id=task_id).first()
             if task_history:
+                # Capture task_history in closure to avoid cell-var-from-loop
+                captured_task_history = task_history
 
-                def update_task_progress_callback(progress_pct, message):
-                    task_history.update_progress(progress_pct, message)
+                def update_task_progress_callback(
+                    progress_pct: float, message: str
+                ) -> None:
+                    captured_task_history.update_progress(progress_pct)
 
                 task_progress_callback = update_task_progress_callback
 

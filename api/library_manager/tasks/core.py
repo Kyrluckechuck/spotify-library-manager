@@ -26,8 +26,6 @@ from ..models import TaskHistory
 class TaskCancelledException(Exception):
     """Raised when a task has been cancelled and should stop execution."""
 
-    pass
-
 
 # Initialize SpotdlWrapper
 spotdl_wrapper = SpotdlWrapper(Config())

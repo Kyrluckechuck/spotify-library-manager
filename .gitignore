@@ -126,6 +126,8 @@ docker-compose.override.yml
 *.temp
 .tmp/
 .temp/
+.lint-tmp/
+todo.txt
 
 # OS generated files
 Thumbs.db

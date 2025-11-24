@@ -1,6 +1,6 @@
 """Periodic tasks for the Spotify library manager."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from celery_app import app as celery_app
 
@@ -18,7 +18,7 @@ from .download import download_single_album
 @celery_app.task(
     bind=True, name="library_manager.tasks.sync_tracked_playlists"
 )  # Scheduled via Celery Beat
-def sync_tracked_playlists(self, task_id: Optional[str] = None) -> None:
+def sync_tracked_playlists(self: Any, task_id: Optional[str] = None) -> None:
     all_enabled_playlists = TrackedPlaylist.objects.filter(enabled=True).order_by(
         "last_synced_at", "id"
     )
@@ -30,7 +30,7 @@ def sync_tracked_playlists(self, task_id: Optional[str] = None) -> None:
 @celery_app.task(
     bind=True, name="library_manager.tasks.queue_missing_albums_for_tracked_artists"
 )  # Scheduled via Celery Beat - Every hour
-def queue_missing_albums_for_tracked_artists(self) -> None:
+def queue_missing_albums_for_tracked_artists(self: Any) -> None:
     """
     Periodically find tracked artists with missing music and queue downloads.
 

@@ -188,7 +188,9 @@ class ArtistService(BaseService[Artist]):
             # Local import to avoid circular import during module initialization
             from library_manager.tasks import download_missing_albums_for_artist
 
-            await sync_to_async(download_missing_albums_for_artist)(django_artist.id)
+            await sync_to_async(download_missing_albums_for_artist.delay)(
+                django_artist.id
+            )
 
         return await self._to_graphql_type_async(django_artist)
 

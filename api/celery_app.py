@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 import django
 
-import psutil  # type: ignore[import-untyped]
+import psutil
 from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown, worker_shutdown
 

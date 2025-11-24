@@ -1,4 +1,4 @@
-.PHONY: build-and-publish dev dev-container dev-container-branch dev-container-update dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db docker-cleanup docker-cleanup-full docker-status
+.PHONY: build-and-publish dev dev-container dev-container-branch dev-container-update dev-container-attach dev-container-down dev-container-logs dev-container-logs-web dev-container-logs-frontend dev-container-logs-worker setup migrate createsuperuser test-migrations clean test test-docker test-api test-api-docker test-frontend test-frontend-docker lint lint-all lint-api lint-frontend docker-build docker-up docker-down dev-api dev-frontend dev-worker dev-admin dev-db docker-cleanup docker-cleanup-full docker-status
 
 # Main development command - starts all services
 dev:
@@ -206,7 +206,6 @@ graphql-generate: graphql-generate-local
 
 # Linting and Code Quality
 lint: lint-api lint-frontend
-lint-all: lint format-check
 format-check: format-check-api format-check-frontend
 format-check-api: format-check-api-black format-check-api-isort
 format-check-api-black:
@@ -216,26 +215,59 @@ format-check-api-isort:
 format-check-frontend:
 	cd frontend && yarn format:check
 
-# Run all API linting without short-circuiting - shows all issues at once
-lint-api-all:
-	@echo "=== Running all API linters (no short-circuit) ==="; \
-	FAIL=0; \
-	echo "\n--- flake8 ---"; \
-	(cd api && python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules) || FAIL=$$(($$FAIL + 1)); \
-	echo "\n--- black ---"; \
-	(cd api && python -m black --check --diff .) || FAIL=$$(($$FAIL + 1)); \
-	echo "\n--- isort ---"; \
-	(cd api && python -m isort --check-only --diff .) || FAIL=$$(($$FAIL + 1)); \
-	echo "\n--- mypy ---"; \
-	(cd api && python -m mypy src/ --config-file ../pyproject.toml) || FAIL=$$(($$FAIL + 1)); \
-	echo "\n--- bandit ---"; \
-	(mkdir -p reports && cd api && python -m bandit -r src/ library_manager/ -f json -o ../reports/bandit-report.json) || true; \
-	echo "\n--- pylint ---"; \
-	(cd api && python -m pylint src/ library_manager/ --rcfile ../pyproject.toml) || FAIL=$$(($$FAIL + 1)); \
-	echo "\n=== Linting complete: $$FAIL check(s) failed ==="; \
+# Run all API linting in parallel - shows results as each completes
+lint-api:
+	@mkdir -p .lint-tmp; \
+	rm -f .lint-tmp/*; \
+	echo "=== Running all API linters in parallel ==="; \
+	echo ""; \
+	(cd api && python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules) > .lint-tmp/flake8.log 2>&1 & \
+	PID_FLAKE8=$$!; \
+	(cd api && python -m black --check --diff .) > .lint-tmp/black.log 2>&1 & \
+	PID_BLACK=$$!; \
+	(cd api && python -m isort --check-only --diff .) > .lint-tmp/isort.log 2>&1 & \
+	PID_ISORT=$$!; \
+	(cd api && python -m mypy src/ --config-file ../pyproject.toml) > .lint-tmp/mypy.log 2>&1 & \
+	PID_MYPY=$$!; \
+	(mkdir -p reports && cd api && python -m bandit -r src/ library_manager/ -f json -o ../reports/bandit-report.json) > .lint-tmp/bandit.log 2>&1 & \
+	PID_BANDIT=$$!; \
+	(cd api && python -m pylint src/ library_manager/ --rcfile ../pyproject.toml) > .lint-tmp/pylint.log 2>&1 & \
+	PID_PYLINT=$$!; \
+	printf "$$PID_FLAKE8:flake8:0\n$$PID_BLACK:black:0\n$$PID_ISORT:isort:0\n$$PID_MYPY:mypy:0\n$$PID_BANDIT:bandit:1\n$$PID_PYLINT:pylint:0\n" > .lint-tmp/pids; \
+	TOTAL=6; COMPLETED=0; FAIL=0; SPIN=0; \
+	printf "\033[?25l"; \
+	while [ $$COMPLETED -lt $$TOTAL ]; do \
+		SPIN=$$(($$SPIN + 1)); \
+		SPINNER="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"; \
+		CHAR=$$(printf "$$SPINNER" | cut -c$$(($$SPIN % 10 + 1))); \
+		printf "\r🚀 Running: "; \
+		grep -v "^DONE:" .lint-tmp/pids > .lint-tmp/pids.active 2>/dev/null || touch .lint-tmp/pids.active; \
+		while IFS=: read -r PID NAME IGNORE_FAIL || [ -n "$$PID" ]; do \
+			[ -z "$$PID" ] && continue; \
+			if ! kill -0 $$PID 2>/dev/null; then \
+				wait $$PID; EXIT_CODE=$$?; \
+				printf "\r\033[K"; \
+				echo "--- $$NAME (done) ---"; \
+				cat .lint-tmp/$$NAME.log; \
+				echo ""; \
+				if [ "$$IGNORE_FAIL" != "1" ] && [ $$EXIT_CODE -ne 0 ]; then \
+					FAIL=$$(($$FAIL + 1)); \
+				fi; \
+				sed -i "s/^$$PID:$$NAME:$$IGNORE_FAIL$$/DONE:$$PID:$$NAME:$$IGNORE_FAIL/" .lint-tmp/pids; \
+				COMPLETED=$$(($$COMPLETED + 1)); \
+			else \
+				printf "$$CHAR $$NAME  "; \
+			fi; \
+		done < .lint-tmp/pids.active; \
+		sleep 0.1; \
+	done; \
+	printf "\r\033[K"; \
+	printf "\033[?25h"; \
+	rm -rf .lint-tmp; \
+	echo "=== Linting complete: $$FAIL check(s) failed ==="; \
 	exit $$FAIL
 
-lint-api: lint-api-flake8 lint-api-black lint-api-isort lint-api-mypy lint-api-bandit lint-api-pylint
+# Individual linter targets (for running specific linters manually)
 
 lint-api-flake8:
 	cd api && python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules
@@ -259,15 +291,50 @@ lint-api-pylint:
 lint-frontend:
 	cd frontend && yarn lint
 
-# Run all linting (API + Frontend) without short-circuiting - shows all issues at once
+# Run all linting (API + Frontend) in parallel - shows results as each completes
 lint-all:
-	@echo "=== Running all linters (API + Frontend, no short-circuit) ==="; \
-	FAIL=0; \
-	echo "\n========== API Linting =========="; \
-	$(MAKE) lint-api-all || FAIL=$$(($$FAIL + 1)); \
-	echo "\n========== Frontend Linting =========="; \
-	(cd frontend && yarn lint) || FAIL=$$(($$FAIL + 1)); \
-	echo "\n=== All linting complete: $$FAIL section(s) failed ==="; \
+	@mkdir -p .lint-tmp; \
+	rm -f .lint-tmp/*; \
+	echo "=== Running all linters (API + Frontend) in parallel ==="; \
+	echo ""; \
+	echo "🚀 Starting all linters in parallel..."; \
+	echo ""; \
+	(cd api && python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules) > .lint-tmp/flake8.log 2>&1 & \
+	PID_FLAKE8=$$!; \
+	(cd api && python -m black --check --diff .) > .lint-tmp/black.log 2>&1 & \
+	PID_BLACK=$$!; \
+	(cd api && python -m isort --check-only --diff .) > .lint-tmp/isort.log 2>&1 & \
+	PID_ISORT=$$!; \
+	(cd api && python -m mypy src/ --config-file ../pyproject.toml) > .lint-tmp/mypy.log 2>&1 & \
+	PID_MYPY=$$!; \
+	(mkdir -p reports && cd api && python -m bandit -r src/ library_manager/ -f json -o ../reports/bandit-report.json) > .lint-tmp/bandit.log 2>&1 & \
+	PID_BANDIT=$$!; \
+	(cd api && python -m pylint src/ library_manager/ --rcfile ../pyproject.toml) > .lint-tmp/pylint.log 2>&1 & \
+	PID_PYLINT=$$!; \
+	(cd frontend && yarn lint) > .lint-tmp/frontend.log 2>&1 & \
+	PID_FRONTEND=$$!; \
+	printf "$$PID_FLAKE8:flake8:0\n$$PID_BLACK:black:0\n$$PID_ISORT:isort:0\n$$PID_MYPY:mypy:0\n$$PID_BANDIT:bandit:1\n$$PID_PYLINT:pylint:0\n$$PID_FRONTEND:frontend:0\n" > .lint-tmp/pids; \
+	TOTAL=7; COMPLETED=0; FAIL=0; \
+	while [ $$COMPLETED -lt $$TOTAL ]; do \
+		grep -v "^DONE:" .lint-tmp/pids > .lint-tmp/pids.active 2>/dev/null || touch .lint-tmp/pids.active; \
+		while IFS=: read -r PID NAME IGNORE_FAIL || [ -n "$$PID" ]; do \
+			[ -z "$$PID" ] && continue; \
+			if ! kill -0 $$PID 2>/dev/null; then \
+				wait $$PID; EXIT_CODE=$$?; \
+				echo "--- $$NAME (done) ---"; \
+				cat .lint-tmp/$$NAME.log; \
+				echo ""; \
+				if [ "$$IGNORE_FAIL" != "1" ] && [ $$EXIT_CODE -ne 0 ]; then \
+					FAIL=$$(($$FAIL + 1)); \
+				fi; \
+				sed -i "s/^$$PID:$$NAME:$$IGNORE_FAIL$$/DONE:$$PID:$$NAME:$$IGNORE_FAIL/" .lint-tmp/pids; \
+				COMPLETED=$$(($$COMPLETED + 1)); \
+			fi; \
+		done < .lint-tmp/pids.active; \
+		sleep 0.1; \
+	done; \
+	rm -rf .lint-tmp; \
+	echo "=== All linting complete: $$FAIL check(s) failed ==="; \
 	exit $$FAIL
 
 # Code formatting and auto-fix linting issues

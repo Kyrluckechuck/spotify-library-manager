@@ -131,10 +131,11 @@ class TaskManagementService:
                     await sync_to_async(task_history.save)()
 
                     # Also mark as REVOKED in TaskResult if it exists
-                    def revoke_task_result():
-                        TaskResult.objects.filter(task_id=task_history.task_id).update(
-                            status="REVOKED"
-                        )
+                    # Capture task_id to avoid cell-var-from-loop
+                    task_id_to_revoke = task_history.task_id
+
+                    def revoke_task_result(tid: str = task_id_to_revoke) -> None:
+                        TaskResult.objects.filter(task_id=tid).update(status="REVOKED")
 
                     await sync_to_async(revoke_task_result)()
                     cancelled_running_count += 1

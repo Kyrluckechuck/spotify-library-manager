@@ -562,6 +562,7 @@ class Album(models.Model):
     Represents a music album/release.
 
     Fields:
+        id: Internal database primary key (auto-generated)
         spotify_gid: Spotify Album ID (22-character base62 string, e.g., "7K3BhSpAxZBzniskgIPUYj")
                      IMPORTANT: This MUST be a valid Spotify ID, not a hex-encoded GID.
         artist: Foreign key to Artist (using artist.gid)
@@ -575,6 +576,7 @@ class Album(models.Model):
         album_group: Group (album, appears_on, etc.)
     """
 
+    id: models.BigAutoField = models.BigAutoField(primary_key=True)
     spotify_gid: models.CharField = models.CharField(
         max_length=2048,
         unique=True,
