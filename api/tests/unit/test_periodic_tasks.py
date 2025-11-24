@@ -303,8 +303,9 @@ class TestRetryFailedSongsTask(TestCase):
             downloaded=True,
         )
 
+    @patch("library_manager.tasks.maintenance.require_download_capability")
     @patch("library_manager.tasks.maintenance.spotdl_wrapper")
-    def test_retry_failed_songs_basic(self, mock_spotdl):
+    def test_retry_failed_songs_basic(self, mock_spotdl, mock_require_download):
         """Test that retry_failed_songs attempts to download failed songs."""
         from library_manager.tasks import retry_failed_songs
 
@@ -329,8 +330,11 @@ class TestRetryFailedSongsTask(TestCase):
         assert self.song_not_failed.spotify_uri not in downloaded_uris
         assert self.song_downloaded.spotify_uri not in downloaded_uris
 
+    @patch("library_manager.tasks.maintenance.require_download_capability")
     @patch("library_manager.tasks.maintenance.spotdl_wrapper")
-    def test_retry_failed_songs_priority_order(self, mock_spotdl):
+    def test_retry_failed_songs_priority_order(
+        self, mock_spotdl, mock_require_download
+    ):
         """Test that songs with fewer failures are prioritized."""
         # Create songs with different failure counts (oldest created_at first)
         import time
@@ -368,8 +372,11 @@ class TestRetryFailedSongsTask(TestCase):
             # Just verify we got songs ordered by priority (manual inspection in logs)
             assert pos_five >= 0
 
+    @patch("library_manager.tasks.maintenance.require_download_capability")
     @patch("library_manager.tasks.maintenance.spotdl_wrapper")
-    def test_retry_failed_songs_respects_100_limit(self, mock_spotdl):
+    def test_retry_failed_songs_respects_100_limit(
+        self, mock_spotdl, mock_require_download
+    ):
         """Test that retry only processes 100 songs per run."""
         from library_manager.models import Song
         from library_manager.tasks import retry_failed_songs
@@ -396,8 +403,11 @@ class TestRetryFailedSongsTask(TestCase):
         # But limit is 100
         assert len(downloaded_uris) == 100
 
+    @patch("library_manager.tasks.maintenance.require_download_capability")
     @patch("library_manager.tasks.maintenance.spotdl_wrapper")
-    def test_retry_failed_songs_handles_no_songs(self, mock_spotdl):
+    def test_retry_failed_songs_handles_no_songs(
+        self, mock_spotdl, mock_require_download
+    ):
         """Test that task handles case when no songs need retry."""
         from library_manager.models import Song
         from library_manager.tasks import retry_failed_songs
@@ -411,8 +421,11 @@ class TestRetryFailedSongsTask(TestCase):
         # Should not call execute
         assert mock_spotdl.execute.call_count == 0
 
+    @patch("library_manager.tasks.maintenance.require_download_capability")
     @patch("library_manager.tasks.maintenance.spotdl_wrapper")
-    def test_retry_failed_songs_skips_high_failure_count(self, mock_spotdl):
+    def test_retry_failed_songs_skips_high_failure_count(
+        self, mock_spotdl, mock_require_download
+    ):
         """Test that songs with >10 failures are not retried."""
         from library_manager.models import Song
         from library_manager.tasks import retry_failed_songs
