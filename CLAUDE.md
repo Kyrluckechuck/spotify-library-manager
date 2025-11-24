@@ -443,3 +443,4 @@ ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 - Local testing needs to test port 3000, always
 - Do not kill my servers -- I leave them running on purpose. Only restart/update them when the changes actually require it, and don't shut them down when you're done unless I ask. If you have a good reason to do it, you can ask first.
+- Do not add comments that explain *what* the code does when the code is self-explanatory. Only add comments when they provide genuine value for future readers (e.g., explaining *why* something non-obvious is done, documenting gotchas, or clarifying complex business logic).

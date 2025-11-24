@@ -91,13 +91,12 @@ class SongService(BaseService[Song]):
                 if sort_direction == "desc":
                     order_field = f"-{order_field}"
 
+        total_count = await sync_to_async(queryset.count)()
+
         # Apply cursor-based pagination
         if after:
             id_after = self.decode_cursor(after)
             queryset = queryset.filter(id__gt=id_after)
-
-        # Get total count before slicing
-        total_count = await sync_to_async(queryset.count)()
 
         # Get one extra item to determine if there are more pages
         def fetch_items() -> List[DjangoSong]:
