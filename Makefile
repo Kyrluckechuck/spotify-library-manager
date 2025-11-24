@@ -238,8 +238,10 @@ lint-api:
 	printf "\033[?25l"; \
 	while [ $$COMPLETED -lt $$TOTAL ]; do \
 		SPIN=$$(($$SPIN + 1)); \
-		SPINNER="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"; \
-		CHAR=$$(printf "$$SPINNER" | cut -c$$(($$SPIN % 10 + 1))); \
+		case $$(($$SPIN % 10)) in \
+			0) CHAR="⠋" ;; 1) CHAR="⠙" ;; 2) CHAR="⠹" ;; 3) CHAR="⠸" ;; 4) CHAR="⠼" ;; \
+			5) CHAR="⠴" ;; 6) CHAR="⠦" ;; 7) CHAR="⠧" ;; 8) CHAR="⠇" ;; 9) CHAR="⠏" ;; \
+		esac; \
 		printf "\r🚀 Running: "; \
 		grep -v "^DONE:" .lint-tmp/pids > .lint-tmp/pids.active 2>/dev/null || touch .lint-tmp/pids.active; \
 		while IFS=: read -r PID NAME IGNORE_FAIL || [ -n "$$PID" ]; do \
@@ -256,7 +258,7 @@ lint-api:
 				sed -i "s/^$$PID:$$NAME:$$IGNORE_FAIL$$/DONE:$$PID:$$NAME:$$IGNORE_FAIL/" .lint-tmp/pids; \
 				COMPLETED=$$(($$COMPLETED + 1)); \
 			else \
-				printf "$$CHAR $$NAME  "; \
+				printf "%s" "$$CHAR $$NAME  "; \
 			fi; \
 		done < .lint-tmp/pids.active; \
 		sleep 0.1; \
@@ -297,8 +299,6 @@ lint-all:
 	rm -f .lint-tmp/*; \
 	echo "=== Running all linters (API + Frontend) in parallel ==="; \
 	echo ""; \
-	echo "🚀 Starting all linters in parallel..."; \
-	echo ""; \
 	(cd api && python -m flake8 --extend-ignore=E501,W503 --exclude=.venv,__pycache__,node_modules) > .lint-tmp/flake8.log 2>&1 & \
 	PID_FLAKE8=$$!; \
 	(cd api && python -m black --check --diff .) > .lint-tmp/black.log 2>&1 & \
@@ -314,13 +314,21 @@ lint-all:
 	(cd frontend && yarn lint) > .lint-tmp/frontend.log 2>&1 & \
 	PID_FRONTEND=$$!; \
 	printf "$$PID_FLAKE8:flake8:0\n$$PID_BLACK:black:0\n$$PID_ISORT:isort:0\n$$PID_MYPY:mypy:0\n$$PID_BANDIT:bandit:1\n$$PID_PYLINT:pylint:0\n$$PID_FRONTEND:frontend:0\n" > .lint-tmp/pids; \
-	TOTAL=7; COMPLETED=0; FAIL=0; \
+	TOTAL=7; COMPLETED=0; FAIL=0; SPIN=0; \
+	printf "\033[?25l"; \
 	while [ $$COMPLETED -lt $$TOTAL ]; do \
+		SPIN=$$(($$SPIN + 1)); \
+		case $$(($$SPIN % 10)) in \
+			0) CHAR="⠋" ;; 1) CHAR="⠙" ;; 2) CHAR="⠹" ;; 3) CHAR="⠸" ;; 4) CHAR="⠼" ;; \
+			5) CHAR="⠴" ;; 6) CHAR="⠦" ;; 7) CHAR="⠧" ;; 8) CHAR="⠇" ;; 9) CHAR="⠏" ;; \
+		esac; \
+		printf "\r🚀 Running: "; \
 		grep -v "^DONE:" .lint-tmp/pids > .lint-tmp/pids.active 2>/dev/null || touch .lint-tmp/pids.active; \
 		while IFS=: read -r PID NAME IGNORE_FAIL || [ -n "$$PID" ]; do \
 			[ -z "$$PID" ] && continue; \
 			if ! kill -0 $$PID 2>/dev/null; then \
 				wait $$PID; EXIT_CODE=$$?; \
+				printf "\r\033[K"; \
 				echo "--- $$NAME (done) ---"; \
 				cat .lint-tmp/$$NAME.log; \
 				echo ""; \
@@ -329,10 +337,14 @@ lint-all:
 				fi; \
 				sed -i "s/^$$PID:$$NAME:$$IGNORE_FAIL$$/DONE:$$PID:$$NAME:$$IGNORE_FAIL/" .lint-tmp/pids; \
 				COMPLETED=$$(($$COMPLETED + 1)); \
+			else \
+				printf "%s" "$$CHAR $$NAME  "; \
 			fi; \
 		done < .lint-tmp/pids.active; \
 		sleep 0.1; \
 	done; \
+	printf "\r\033[K"; \
+	printf "\033[?25h"; \
 	rm -rf .lint-tmp; \
 	echo "=== All linting complete: $$FAIL check(s) failed ==="; \
 	exit $$FAIL
