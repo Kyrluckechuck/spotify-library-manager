@@ -288,6 +288,12 @@ class AuthenticationStatus:
         "public"  # 'public' (public playlists only) or 'user-authenticated' (includes private)
     )
 
+    # Spotify OAuth token status (when using user-authenticated mode)
+    spotify_token_valid: bool = True
+    spotify_token_expired: bool = False
+    spotify_token_expires_in_hours: Optional[int] = None
+    spotify_token_error_message: Optional[str] = None
+
 
 @strawberry.type
 class SystemHealth:

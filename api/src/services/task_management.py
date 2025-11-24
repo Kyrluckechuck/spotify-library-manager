@@ -7,7 +7,6 @@ from typing import Any, Dict
 from django.utils import timezone
 
 from asgiref.sync import sync_to_async
-from celery import current_app
 from django_celery_results.models import TaskResult
 
 
@@ -23,21 +22,21 @@ class TaskManagementService:
     """Service for managing Celery tasks."""
 
     async def cancel_all_pending_tasks(self) -> MutationResult:
-        """Cancel all pending tasks in the Celery queue."""
-        try:
-            # Get pending tasks from Celery
-            inspect = current_app.control.inspect()
-            pending_tasks = inspect.active() or {}
-            cancelled_count = 0
+        """
+        Cancel all pending tasks by updating database records.
 
-            for worker, tasks in pending_tasks.items():
-                for task in tasks:
-                    try:
-                        # Cancel the task
-                        current_app.control.revoke(task["id"], terminate=True)
-                        cancelled_count += 1
-                    except Exception as e:
-                        print(f"Failed to cancel task {task['id']}: {e}")
+        Note: With SQLAlchemy/PostgreSQL broker, control.revoke() doesn't work.
+        Instead, we mark tasks as REVOKED in the database directly.
+        """
+        try:
+            # Update pending tasks to REVOKED status in database
+            def revoke_pending_tasks():
+                updated = TaskResult.objects.filter(
+                    status__in=["PENDING", "STARTED", "RETRY"]
+                ).update(status="REVOKED")
+                return updated
+
+            cancelled_count = await sync_to_async(revoke_pending_tasks)()
 
             return MutationResult(
                 success=True,
@@ -50,22 +49,17 @@ class TaskManagementService:
             )
 
     async def cancel_tasks_by_name(self, task_name: str) -> MutationResult:
-        """Cancel all pending tasks with a specific name."""
+        """Cancel all pending tasks with a specific name by updating database records."""
         try:
-            # Get pending tasks from Celery
-            inspect = current_app.control.inspect()
-            pending_tasks = inspect.active() or {}
-            cancelled_count = 0
+            # Update pending tasks with matching name to REVOKED status
+            def revoke_tasks_by_name():
+                updated = TaskResult.objects.filter(
+                    status__in=["PENDING", "STARTED", "RETRY"],
+                    task_name=task_name,
+                ).update(status="REVOKED")
+                return updated
 
-            for worker, tasks in pending_tasks.items():
-                for task in tasks:
-                    try:
-                        # Check if task name matches
-                        if task.get("name", "").lower() == task_name.lower():
-                            current_app.control.revoke(task["id"], terminate=True)
-                            cancelled_count += 1
-                    except Exception as e:
-                        print(f"Failed to cancel task {task['id']}: {e}")
+            cancelled_count = await sync_to_async(revoke_tasks_by_name)()
 
             return MutationResult(
                 success=True,
@@ -111,18 +105,15 @@ class TaskManagementService:
             )
 
     async def cancel_all_tasks(self) -> MutationResult:
-        """Cancel both pending and running tasks, including orphaned tasks."""
-        try:
-            # Cancel pending tasks in Celery queue
-            pending_result = await self.cancel_all_pending_tasks()
+        """
+        Cancel both pending and running tasks by updating database records.
 
-            # Get actively running task IDs from Celery
-            inspect = current_app.control.inspect()
-            active_celery_tasks = inspect.active() or {}
-            active_task_ids = set()
-            for worker, tasks in active_celery_tasks.items():
-                for task in tasks:
-                    active_task_ids.add(task["id"])
+        Note: With SQLAlchemy/PostgreSQL broker, we mark tasks as cancelled
+        in the database instead of using control.revoke().
+        """
+        try:
+            # Cancel pending tasks in Celery queue (from database)
+            pending_result = await self.cancel_all_pending_tasks()
 
             # Cancel/clean up tasks marked as RUNNING in database
             from library_manager.models import TaskHistory
@@ -130,30 +121,22 @@ class TaskManagementService:
             queryset = TaskHistory.objects.filter(status="RUNNING")
             running_tasks: list = await sync_to_async(lambda: list(queryset))()
             cancelled_running_count = 0
-            orphaned_count = 0
 
             for task_history in running_tasks:
                 try:
-                    # Check if task is actually running in Celery
-                    is_orphaned = task_history.task_id not in active_task_ids
-
-                    if is_orphaned:
-                        # Task is in database as RUNNING but not in Celery - mark as FAILED
-                        task_history.status = "FAILED"
-                        task_history.completed_at = timezone.now()
-                        task_history.error_message = (
-                            "Task orphaned (container restart or worker crash)"
-                        )
-                        orphaned_count += 1
-                    else:
-                        # Task is actually running - cancel it
-                        task_history.status = "CANCELLED"
-                        task_history.completed_at = timezone.now()
-                        task_history.error_message = "Task cancelled by user"
-                        # Also revoke from Celery
-                        current_app.control.revoke(task_history.task_id, terminate=True)
-
+                    # Mark as cancelled in TaskHistory
+                    task_history.status = "CANCELLED"
+                    task_history.completed_at = timezone.now()
+                    task_history.error_message = "Task cancelled by user"
                     await sync_to_async(task_history.save)()
+
+                    # Also mark as REVOKED in TaskResult if it exists
+                    def revoke_task_result():
+                        TaskResult.objects.filter(task_id=task_history.task_id).update(
+                            status="REVOKED"
+                        )
+
+                    await sync_to_async(revoke_task_result)()
                     cancelled_running_count += 1
                 except Exception as e:
                     print(f"Failed to cancel running task {task_history.task_id}: {e}")
@@ -166,43 +149,37 @@ class TaskManagementService:
 
             total_cancelled = pending_count + cancelled_running_count
 
-            message_parts = [
-                f"Successfully cancelled {total_cancelled} total tasks",
-                f"({pending_count} pending",
-                f"{cancelled_running_count - orphaned_count} running",
-            ]
-            if orphaned_count > 0:
-                message_parts.append(f"{orphaned_count} orphaned)")
-            else:
-                message_parts[-1] += ")"
-
             return MutationResult(
                 success=True,
-                message=" ".join(message_parts),
+                message=f"Successfully cancelled {total_cancelled} total tasks ({pending_count} pending, {cancelled_running_count} running)",
             )
 
         except Exception as e:
-            # In test/integration contexts, Huey backends may be unavailable; treat as no-op success
             return MutationResult(
                 success=True, message=f"No tasks to cancel ({str(e)})"
             )
 
     def get_pending_tasks(self) -> list:
-        """Get list of pending tasks from Celery queue."""
-        try:
-            inspect = current_app.control.inspect()
-            pending_tasks = inspect.active() or {}
-            result = []
+        """
+        Get list of pending tasks from database.
 
-            for worker, tasks in pending_tasks.items():
-                for task in tasks:
-                    task_info = {
-                        "id": task.get("id"),
-                        "name": task.get("name", "unknown"),
-                        "args": task.get("args", []),
-                        "kwargs": task.get("kwargs", {}),
-                    }
-                    result.append(task_info)
+        Note: Uses database queries since inspect.active() doesn't work
+        with SQLAlchemy broker.
+        """
+        try:
+            tasks = TaskResult.objects.filter(
+                status__in=["PENDING", "STARTED", "RETRY"]
+            ).values("task_id", "task_name", "task_args", "task_kwargs")
+
+            result = []
+            for task in tasks:
+                task_info = {
+                    "id": task.get("task_id"),
+                    "name": task.get("task_name", "unknown"),
+                    "args": task.get("task_args", []),
+                    "kwargs": task.get("task_kwargs", {}),
+                }
+                result.append(task_info)
 
             return result
         except Exception as e:
@@ -210,13 +187,22 @@ class TaskManagementService:
             raise e
 
     async def get_queue_status(self) -> Dict[str, Any]:
-        """Get overall queue status information."""
-        inspect = current_app.control.inspect()
-        pending_tasks = inspect.active() or {}
+        """
+        Get overall queue status information from database.
 
-        # Count total pending tasks
-        total_tasks = sum(len(tasks) for tasks in pending_tasks.values())
+        Note: Uses database queries only since inspect.active() doesn't work
+        with SQLAlchemy broker (PostgreSQL).
+        """
 
+        # Count pending/started tasks from database
+        def count_active_tasks():
+            return TaskResult.objects.filter(
+                status__in=["PENDING", "STARTED", "RETRY"]
+            ).count()
+
+        total_tasks = await sync_to_async(count_active_tasks)()
+
+        # Get task counts by name from database
         task_counts = await self.get_task_count_by_name()
 
         return {
@@ -251,11 +237,15 @@ class TaskManagementService:
             return {}
 
     async def get_task_status(self, task_id: str) -> Dict[str, Any]:
-        """Get status of a specific task."""
+        """
+        Get status of a specific task from database.
+
+        Checks TaskHistory first, then falls back to TaskResult.
+        """
         try:
             from library_manager.models import TaskHistory
 
-            # Try to find the task in the database using sync_to_async
+            # Try TaskHistory first
             try:
                 task = await sync_to_async(TaskHistory.objects.get)(task_id=task_id)
                 return {
@@ -267,23 +257,24 @@ class TaskManagementService:
                     "error_message": task.error_message,
                 }
             except TaskHistory.DoesNotExist:
-                # Task not found in database, check if it's in Celery queue
-                inspect = current_app.control.inspect()
-                pending_tasks = inspect.active() or {}
+                # Try TaskResult as fallback
+                def get_task_result():
+                    try:
+                        return TaskResult.objects.get(task_id=task_id)
+                    except TaskResult.DoesNotExist:
+                        return None
 
-                for worker, tasks in pending_tasks.items():
-                    for task in tasks:
-                        # task is a dict from Celery's pending task list
-                        task_dict: dict = task
-                        if task_dict.get("id") == task_id:
-                            return {
-                                "task_id": task_id,
-                                "status": "PENDING",
-                                "type": task_dict.get("name", "UNKNOWN"),
-                                "started_at": None,
-                                "completed_at": None,
-                                "error_message": None,
-                            }
+                task_result = await sync_to_async(get_task_result)()
+
+                if task_result:
+                    return {
+                        "task_id": task_id,
+                        "status": task_result.status,
+                        "type": task_result.task_name or "UNKNOWN",
+                        "started_at": task_result.date_created,
+                        "completed_at": task_result.date_done,
+                        "error_message": None,
+                    }
 
                 return {"error": "Task not found"}
 

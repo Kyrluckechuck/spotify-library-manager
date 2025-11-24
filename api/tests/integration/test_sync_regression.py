@@ -16,14 +16,14 @@ class TestSyncRegression:
         """Test that sync_artist doesn't fail with Connection Refused error."""
         # Mock the Celery task to avoid actual external API calls
         with patch(
-            "library_manager.tasks.fetch_all_albums_for_artist.delay"
-        ) as mock_delay:
-            mock_delay.return_value = MagicMock(id="test-task-id")
+            "library_manager.tasks.artist.fetch_all_albums_for_artist"
+        ) as mock_task:
+            mock_task.delay.return_value = MagicMock(id="test-task-id")
 
             # This should not raise a Connection Refused error
             try:
                 fetch_all_albums_for_artist_sync(sample_artist.id)
-                assert mock_delay.called, "Celery task should have been called"
+                assert mock_task.delay.called, "Celery task should have been called"
             except ConnectionRefusedError:
                 pytest.fail(
                     "fetch_all_albums_for_artist_sync raised Connection Refused - Celery broker misconfigured"

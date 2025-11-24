@@ -8,6 +8,11 @@ query GetSystemHealth {
       cookiesErrorMessage
       cookiesExpireInDays
       poTokenConfigured
+      spotifyAuthMode
+      spotifyTokenValid
+      spotifyTokenExpired
+      spotifyTokenExpiresInHours
+      spotifyTokenErrorMessage
     }
   }
 }

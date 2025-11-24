@@ -15,6 +15,59 @@ export function AuthStatusBanner() {
   const { canDownload, downloadBlockerReason, authentication } =
     data.systemHealth;
 
+  // Show critical error if Spotify OAuth token is expired (when using user-authenticated mode)
+  if (
+    authentication.spotifyAuthMode === 'user-authenticated' &&
+    authentication.spotifyTokenExpired
+  ) {
+    return (
+      <div
+        className='border-l-4 border-red-400 bg-red-50 p-4 mb-4'
+        role='alert'
+      >
+        <div className='flex items-start'>
+          <div className='flex-shrink-0'>
+            <svg
+              className='h-5 w-5 text-red-400'
+              xmlns='http://www.w3.org/2000/svg'
+              viewBox='0 0 20 20'
+              fill='currentColor'
+              aria-hidden='true'
+            >
+              <path
+                fillRule='evenodd'
+                d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z'
+                clipRule='evenodd'
+              />
+            </svg>
+          </div>
+          <div className='ml-3 flex-1'>
+            <h3 className='text-sm font-medium text-red-800'>
+              Spotify Authentication Expired
+            </h3>
+            <div className='mt-2 text-sm text-red-800'>
+              <p>
+                {authentication.spotifyTokenErrorMessage ||
+                  'Your Spotify OAuth token has expired. Album downloads and private playlist access may fail.'}
+              </p>
+              <p className='mt-2'>
+                <strong>How to fix:</strong>
+              </p>
+              <ol className='list-decimal list-inside mt-1 space-y-1'>
+                <li>
+                  Click the &ldquo;Connect Spotify&rdquo; button to
+                  re-authenticate
+                </li>
+                <li>Grant the necessary permissions when prompted</li>
+                <li>The system will automatically refresh your access</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show error banner if downloads are blocked
   if (!canDownload) {
     const errorType = authentication.cookiesErrorType;

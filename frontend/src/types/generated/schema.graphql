@@ -45,6 +45,10 @@ type AuthenticationStatus {
   poTokenErrorMessage: String
   poTokenValid: Boolean!
   spotifyAuthMode: String!
+  spotifyTokenErrorMessage: String
+  spotifyTokenExpired: Boolean!
+  spotifyTokenExpiresInHours: Int
+  spotifyTokenValid: Boolean!
   spotifyUserAuthEnabled: Boolean!
 }
 

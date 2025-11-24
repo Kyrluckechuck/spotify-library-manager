@@ -4,7 +4,7 @@ System health service for monitoring authentication and configuration status.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from downloader.cookie_validator import CookieValidationResult, CookieValidator
 from downloader.premium_detector import PremiumDetector
@@ -29,6 +29,12 @@ class AuthenticationStatus:  # pylint: disable=too-many-instance-attributes
     spotify_auth_mode: str = (
         "public"  # 'public' (public playlists only) or 'user-authenticated' (includes private)
     )
+
+    # Spotify OAuth token status (when using user-authenticated mode)
+    spotify_token_valid: bool = True
+    spotify_token_expired: bool = False
+    spotify_token_expires_in_hours: Optional[int] = None
+    spotify_token_error_message: Optional[str] = None
 
 
 class SystemHealthService:
@@ -65,6 +71,70 @@ class SystemHealthService:
                 f"OAuth token check: Exception occurred: {type(e).__name__}: {e}"
             )
             return False
+
+    @staticmethod
+    def _check_spotify_oauth_token_status() -> Dict[str, Any]:
+        """
+        Check Spotify OAuth token validity and expiration status.
+
+        Returns:
+            Dict with token status information:
+            - valid: bool - Whether token exists and is not expired
+            - expired: bool - Whether token is expired
+            - expires_in_hours: Optional[int] - Hours until expiration
+            - error_message: Optional[str] - Error message if any
+        """
+        import logging
+
+        from django.utils import timezone
+
+        from library_manager.models import SpotifyOAuthToken
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            token = SpotifyOAuthToken.objects.get(id=1)
+
+            # Check if token is expired
+            now = timezone.now()
+            is_expired = token.expires_at <= now
+
+            if is_expired:
+                return {
+                    "valid": False,
+                    "expired": True,
+                    "expires_in_hours": None,
+                    "error_message": "Spotify OAuth token has expired. Please re-authenticate.",
+                }
+
+            # Calculate hours until expiration
+            time_until_expiry = token.expires_at - now
+            hours_until_expiry = int(time_until_expiry.total_seconds() / 3600)
+
+            # Token is valid but may be expiring soon
+            return {
+                "valid": True,
+                "expired": False,
+                "expires_in_hours": hours_until_expiry,
+                "error_message": None,
+            }
+
+        except SpotifyOAuthToken.DoesNotExist:
+            # No token stored - not an error if not using OAuth
+            return {
+                "valid": True,  # Consider valid if not using OAuth
+                "expired": False,
+                "expires_in_hours": None,
+                "error_message": None,
+            }
+        except Exception as e:
+            logger.error(f"Error checking Spotify OAuth token status: {e}")
+            return {
+                "valid": False,
+                "expired": False,
+                "expires_in_hours": None,
+                "error_message": f"Error checking token: {str(e)}",
+            }
 
     @staticmethod
     def _get_detector(config: Config) -> PremiumDetector:
@@ -165,6 +235,9 @@ class SystemHealthService:
             f"Spotify auth check: has_oauth_token={has_oauth_token}, spotify_mode={spotify_mode}"
         )
 
+        # Check Spotify OAuth token status (expiration, validity)
+        spotify_token_status = SystemHealthService._check_spotify_oauth_token_status()
+
         return AuthenticationStatus(
             cookies_valid=cookie_result.valid,
             cookies_error_type=cookie_result.error_type,
@@ -175,6 +248,10 @@ class SystemHealthService:
             po_token_error_message=po_token_result.error_message,
             spotify_user_auth_enabled=spotify_user_auth,
             spotify_auth_mode=spotify_mode,
+            spotify_token_valid=spotify_token_status["valid"],
+            spotify_token_expired=spotify_token_status["expired"],
+            spotify_token_expires_in_hours=spotify_token_status["expires_in_hours"],
+            spotify_token_error_message=spotify_token_status["error_message"],
         )
 
     @staticmethod

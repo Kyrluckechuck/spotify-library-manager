@@ -29,22 +29,16 @@ class TestTaskManagementGraphQL:
         """
 
         with (
-            patch("src.services.task_management.current_app") as mock_celery_app,
+            patch("src.services.task_management.TaskResult") as mock_task_result,
             patch(
                 "src.services.task_management.TaskManagementService.get_task_count_by_name"
             ) as mock_task_count,
         ):
 
-            # Mock Celery to return some active tasks
-            mock_inspect = Mock()
-            mock_inspect.active.return_value = {
-                "worker1": [
-                    {"id": "task_1", "name": "download_playlist"},
-                    {"id": "task_2", "name": "download_playlist"},
-                    {"id": "task_3", "name": "sync_playlist"},
-                ]
-            }
-            mock_celery_app.control.inspect.return_value = mock_inspect
+            # Mock database query to return count of 3 pending tasks
+            mock_queryset = Mock()
+            mock_queryset.count.return_value = 3
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             # Mock the task count method to return expected data
             mock_task_count.return_value = {
@@ -103,15 +97,16 @@ class TestTaskManagementGraphQL:
         """
 
         with (
-            patch("src.services.task_management.current_app") as mock_celery_app,
+            patch("src.services.task_management.TaskResult") as mock_task_result,
             patch(
                 "src.services.task_management.TaskManagementService.get_task_count_by_name"
             ) as mock_task_count,
         ):
 
-            mock_inspect = Mock()
-            mock_inspect.active.return_value = {}
-            mock_celery_app.control.inspect.return_value = mock_inspect
+            # Mock database query to return count of 0
+            mock_queryset = Mock()
+            mock_queryset.count.return_value = 0
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             # Mock empty task counts
             mock_task_count.return_value = {}
@@ -138,17 +133,11 @@ class TestTaskManagementGraphQL:
         }
         """
 
-        with patch("src.services.task_management.current_app") as mock_celery_app:
-            # Mock some active tasks
-            mock_inspect = Mock()
-            mock_inspect.active.return_value = {
-                "worker1": [
-                    {"id": "task_1", "name": "download_playlist"},
-                    {"id": "task_2", "name": "sync_playlist"},
-                ]
-            }
-            mock_celery_app.control.inspect.return_value = mock_inspect
-            mock_celery_app.control.revoke.return_value = None
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 2 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 2
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation)
 
@@ -161,8 +150,8 @@ class TestTaskManagementGraphQL:
                 "Successfully cancelled 2 pending tasks" in mutation_result["message"]
             )
 
-            # Verify revoke was called
-            mock_celery_app.control.revoke.assert_called()
+            # Verify update was called
+            mock_queryset.update.assert_called_once_with(status="REVOKED")
 
     @pytest.mark.django_db
     @pytest.mark.asyncio
@@ -177,10 +166,11 @@ class TestTaskManagementGraphQL:
         }
         """
 
-        with patch("src.services.task_management.current_app") as mock_celery_app:
-            mock_inspect = Mock()
-            mock_inspect.active.return_value = {}
-            mock_celery_app.control.inspect.return_value = mock_inspect
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 0 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 0
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation)
 
@@ -208,18 +198,11 @@ class TestTaskManagementGraphQL:
 
         variables = {"taskName": "download_playlist"}
 
-        with patch("src.services.task_management.current_app") as mock_celery_app:
-            # Mock tasks with the specified name
-            mock_inspect = Mock()
-            mock_inspect.active.return_value = {
-                "worker1": [
-                    {"id": "task_1", "name": "download_playlist"},
-                    {"id": "task_2", "name": "download_playlist"},
-                    {"id": "task_3", "name": "sync_playlist"},
-                ]
-            }
-            mock_celery_app.control.inspect.return_value = mock_inspect
-            mock_celery_app.control.revoke.return_value = None
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 2 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 2
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation, variable_values=variables)
 
@@ -245,10 +228,11 @@ class TestTaskManagementGraphQL:
 
         variables = {"taskName": "non_existent_task"}
 
-        with patch("src.services.task_management.current_app") as mock_celery_app:
-            mock_inspect = Mock()
-            mock_inspect.active.return_value = {}
-            mock_celery_app.control.inspect.return_value = mock_inspect
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 0 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 0
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation, variable_values=variables)
 
@@ -261,8 +245,8 @@ class TestTaskManagementGraphQL:
 
     @pytest.mark.django_db
     @pytest.mark.asyncio
-    async def test_cancel_tasks_by_name_mutation_partial_failure(self):
-        """Test cancel tasks by name mutation with partial failures."""
+    async def test_cancel_tasks_by_name_mutation_multiple_tasks(self):
+        """Test cancel tasks by name mutation with multiple matching tasks."""
         mutation = """
         mutation CancelTasksByName($taskName: String!) {
             cancelTasksByName(taskName: $taskName) {
@@ -274,17 +258,11 @@ class TestTaskManagementGraphQL:
 
         variables = {"taskName": "download_playlist"}
 
-        with patch("src.services.task_management.current_app") as mock_celery_app:
-            task1 = {"id": "task_1", "name": "download_playlist"}
-            task2 = {"id": "task_2", "name": "download_playlist"}
-
-            mock_inspect = Mock()
-            mock_inspect.active.return_value = {"worker1": [task1, task2]}
-            mock_celery_app.control.inspect.return_value = mock_inspect
-            mock_celery_app.control.revoke.side_effect = [
-                None,
-                Exception("Revoke failed"),
-            ]
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 5 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 5
+            mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation, variable_values=variables)
 
@@ -293,7 +271,7 @@ class TestTaskManagementGraphQL:
 
             mutation_result = result.data["cancelTasksByName"]
             assert mutation_result["success"] is True
-            assert "Successfully cancelled 1 tasks" in mutation_result["message"]
+            assert "Successfully cancelled 5 tasks" in mutation_result["message"]
 
     @pytest.mark.django_db
     @pytest.mark.asyncio
@@ -342,7 +320,7 @@ class TestTaskManagementGraphQL:
     @pytest.mark.django_db
     @pytest.mark.asyncio
     async def test_queue_status_query_exception_handling(self):
-        """Test queue status query handles Celery exceptions gracefully."""
+        """Test queue status query handles database exceptions gracefully."""
         query = """
         query {
             queueStatus {
@@ -355,9 +333,9 @@ class TestTaskManagementGraphQL:
         }
         """
 
-        with patch("src.services.task_management.current_app") as mock_celery_app:
-            mock_celery_app.control.inspect.side_effect = Exception(
-                "Celery connection error"
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            mock_task_result.objects.filter.side_effect = Exception(
+                "Database connection error"
             )
 
             result = await schema.execute(query)
@@ -365,13 +343,13 @@ class TestTaskManagementGraphQL:
             # GraphQL should propagate the exception as an error
             assert result.errors is not None
             assert len(result.errors) == 1
-            assert "Celery connection error" in str(result.errors[0])
+            assert "Database connection error" in str(result.errors[0])
             assert result.data is None
 
     @pytest.mark.django_db
     @pytest.mark.asyncio
     async def test_cancel_all_pending_tasks_mutation_exception_handling(self):
-        """Test cancel all pending tasks mutation handles Celery exceptions gracefully."""
+        """Test cancel all pending tasks mutation handles database exceptions gracefully."""
         mutation = """
         mutation {
             cancelAllPendingTasks {
@@ -381,9 +359,9 @@ class TestTaskManagementGraphQL:
         }
         """
 
-        with patch("src.services.task_management.current_app") as mock_celery_app:
-            mock_celery_app.control.inspect.side_effect = Exception(
-                "Celery connection error"
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            mock_task_result.objects.filter.side_effect = Exception(
+                "Database connection error"
             )
 
             result = await schema.execute(mutation)

@@ -41,14 +41,21 @@ class TestTaskManagementService:
         assert hasattr(task_management_service, "cancel_tasks_by_name")
         assert hasattr(task_management_service, "get_queue_status")
 
-    @patch("src.services.task_management.current_app")
+    @patch("src.services.task_management.TaskResult")
     def test_get_pending_tasks_success(
-        self, mock_celery_app, task_management_service, mock_celery_task
+        self, mock_task_result, task_management_service, mock_celery_task
     ):
         """Test getting pending tasks successfully."""
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {"worker1": [mock_celery_task]}
-        mock_celery_app.control.inspect.return_value = mock_inspect
+        mock_queryset = Mock()
+        mock_queryset.values.return_value = [
+            {
+                "task_id": "task_123",
+                "task_name": "test_task",
+                "task_args": ["arg1", "arg2"],
+                "task_kwargs": {"key1": "value1"},
+            }
+        ]
+        mock_task_result.objects.filter.return_value = mock_queryset
 
         result = task_management_service.get_pending_tasks()
 
@@ -58,26 +65,28 @@ class TestTaskManagementService:
         assert result[0]["args"] == ["arg1", "arg2"]
         assert result[0]["kwargs"] == {"key1": "value1"}
 
-    @patch("src.services.task_management.current_app")
-    def test_get_pending_tasks_empty(self, mock_celery_app, task_management_service):
+    @patch("src.services.task_management.TaskResult")
+    def test_get_pending_tasks_empty(self, mock_task_result, task_management_service):
         """Test getting pending tasks when queue is empty."""
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {}
-        mock_celery_app.control.inspect.return_value = mock_inspect
+        mock_queryset = Mock()
+        mock_queryset.values.return_value = []
+        mock_task_result.objects.filter.return_value = mock_queryset
 
         result = task_management_service.get_pending_tasks()
 
         assert result == []
 
-    @patch("src.services.task_management.current_app")
+    @patch("src.services.task_management.TaskResult")
     def test_get_pending_tasks_exception(
-        self, mock_celery_app, task_management_service
+        self, mock_task_result, task_management_service
     ):
-        """Test getting pending tasks when Celery raises an exception."""
-        mock_celery_app.control.inspect.side_effect = Exception("Celery error")
+        """Test getting pending tasks when database raises an exception."""
+        mock_task_result.objects.filter.side_effect = Exception(
+            "Database connection error"
+        )
 
         # The actual implementation doesn't handle exceptions, so this should raise
-        with pytest.raises(Exception, match="Celery error"):
+        with pytest.raises(Exception, match="Database connection error"):
             task_management_service.get_pending_tasks()
 
     @pytest.mark.asyncio
@@ -119,133 +128,123 @@ class TestTaskManagementService:
 
             assert result == {}
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_all_pending_tasks_success(
-        self, mock_celery_app, task_management_service, mock_celery_task
+        self, task_management_service, mock_celery_task
     ):
         """Test cancelling all pending tasks successfully."""
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {"worker1": [mock_celery_task]}
-        mock_celery_app.control.inspect.return_value = mock_inspect
-        mock_celery_app.control.revoke.return_value = None
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 1 updated row
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 1
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        result = await task_management_service.cancel_all_pending_tasks()
+            result = await task_management_service.cancel_all_pending_tasks()
 
-        assert isinstance(result, MutationResult)
-        assert result.success is True
-        assert "Successfully cancelled 1 pending tasks" in result.message
-        mock_celery_app.control.revoke.assert_called_once_with(
-            "task_123", terminate=True
-        )
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 1 pending tasks" in result.message
+            # Verify update was called with REVOKED status
+            mock_queryset.update.assert_called_once_with(status="REVOKED")
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_all_pending_tasks_empty_queue(
-        self, mock_celery_app, task_management_service
-    ):
+    async def test_cancel_all_pending_tasks_empty_queue(self, task_management_service):
         """Test cancelling all pending tasks when queue is empty."""
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {}
-        mock_celery_app.control.inspect.return_value = mock_inspect
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 0 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 0
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        result = await task_management_service.cancel_all_pending_tasks()
+            result = await task_management_service.cancel_all_pending_tasks()
 
-        assert isinstance(result, MutationResult)
-        assert result.success is True
-        assert "Successfully cancelled 0 pending tasks" in result.message
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 0 pending tasks" in result.message
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_all_pending_tasks_partial_failure(
-        self, mock_celery_app, task_management_service
+    async def test_cancel_all_pending_tasks_multiple_tasks(
+        self, task_management_service
     ):
-        """Test cancelling all pending tasks with some failures."""
-        task1 = {"id": "task_1", "name": "test_task"}
-        task2 = {"id": "task_2", "name": "test_task"}
+        """Test cancelling multiple pending tasks."""
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 5 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 5
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {"worker1": [task1, task2]}
-        mock_celery_app.control.inspect.return_value = mock_inspect
-        mock_celery_app.control.revoke.side_effect = [None, Exception("Revoke failed")]
+            result = await task_management_service.cancel_all_pending_tasks()
 
-        result = await task_management_service.cancel_all_pending_tasks()
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 5 pending tasks" in result.message
 
-        assert isinstance(result, MutationResult)
-        assert result.success is True
-        assert "Successfully cancelled 1 pending tasks" in result.message
-
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
     async def test_cancel_all_pending_tasks_celery_exception(
-        self, mock_celery_app, task_management_service
+        self, task_management_service
     ):
-        """Test cancelling all pending tasks when Celery raises an exception."""
-        mock_celery_app.control.inspect.side_effect = Exception("Celery error")
+        """Test cancelling all pending tasks when database raises an exception."""
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            mock_task_result.objects.filter.side_effect = Exception(
+                "Database connection error"
+            )
 
-        result = await task_management_service.cancel_all_pending_tasks()
+            result = await task_management_service.cancel_all_pending_tasks()
 
-        assert isinstance(result, MutationResult)
-        assert result.success is False
-        assert "Failed to cancel tasks" in result.message
+            assert isinstance(result, MutationResult)
+            assert result.success is False
+            assert "Failed to cancel tasks" in result.message
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_tasks_by_name_success(
-        self, mock_celery_app, task_management_service
-    ):
+    async def test_cancel_tasks_by_name_success(self, task_management_service):
         """Test cancelling tasks by name successfully."""
-        task1 = {"id": "task_1", "name": "test_task"}
-        task2 = {"id": "task_2", "name": "test_task"}
-        task3 = {"id": "task_3", "name": "other_task"}
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 2 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 2
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {"worker1": [task1, task2, task3]}
-        mock_celery_app.control.inspect.return_value = mock_inspect
-        mock_celery_app.control.revoke.return_value = None
+            result = await task_management_service.cancel_tasks_by_name("test_task")
 
-        result = await task_management_service.cancel_tasks_by_name("test_task")
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 2 tasks" in result.message
+            # Verify update was called with REVOKED status
+            mock_queryset.update.assert_called_once_with(status="REVOKED")
 
-        assert isinstance(result, MutationResult)
-        assert result.success is True
-        assert "Successfully cancelled 2 tasks" in result.message
-        assert mock_celery_app.control.revoke.call_count == 2
-
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_tasks_by_name_not_found(
-        self, mock_celery_app, task_management_service
-    ):
+    async def test_cancel_tasks_by_name_not_found(self, task_management_service):
         """Test cancelling tasks by name when no matching tasks exist."""
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {}
-        mock_celery_app.control.inspect.return_value = mock_inspect
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 0 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 0
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        result = await task_management_service.cancel_tasks_by_name("non_existent_task")
+            result = await task_management_service.cancel_tasks_by_name(
+                "non_existent_task"
+            )
 
-        assert isinstance(result, MutationResult)
-        assert result.success is True
-        assert "Successfully cancelled 0 tasks" in result.message
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 0 tasks" in result.message
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_tasks_by_name_partial_failure(
-        self, mock_celery_app, task_management_service
-    ):
-        """Test cancelling tasks by name with some failures."""
-        task1 = {"id": "task_1", "name": "test_task"}
-        task2 = {"id": "task_2", "name": "test_task"}
+    async def test_cancel_tasks_by_name_multiple_tasks(self, task_management_service):
+        """Test cancelling multiple tasks with the same name."""
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database update to return 3 updated rows
+            mock_queryset = Mock()
+            mock_queryset.update.return_value = 3
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {"worker1": [task1, task2]}
-        mock_celery_app.control.inspect.return_value = mock_inspect
-        mock_celery_app.control.revoke.side_effect = [None, Exception("Revoke failed")]
+            result = await task_management_service.cancel_tasks_by_name(
+                "download_playlist"
+            )
 
-        result = await task_management_service.cancel_tasks_by_name("test_task")
-
-        assert isinstance(result, MutationResult)
-        assert result.success is True
-        assert "Successfully cancelled 1 tasks" in result.message
+            assert isinstance(result, MutationResult)
+            assert result.success is True
+            assert "Successfully cancelled 3 tasks" in result.message
 
     @pytest.mark.asyncio
     async def test_cancel_running_tasks_by_name_success(self, task_management_service):
@@ -272,21 +271,28 @@ class TestTaskManagementService:
             assert result.success is True
             assert "Successfully cancelled 2 running tasks" in result.message
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_cancel_all_tasks_success(
-        self, mock_celery_app, task_management_service
-    ):
+    async def test_cancel_all_tasks_success(self, task_management_service):
         """Test cancelling all tasks (pending and running) successfully."""
-        # Mock pending tasks
-        task1 = {"id": "task_1", "name": "test_task"}
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {"worker1": [task1]}
-        mock_celery_app.control.inspect.return_value = mock_inspect
-        mock_celery_app.control.revoke.return_value = None
+        with (
+            patch("src.services.task_management.TaskResult") as mock_task_result,
+            patch("library_manager.models.TaskHistory") as mock_task_history,
+        ):
+            # Mock pending tasks update to return 1 updated row
+            mock_pending_queryset = Mock()
+            mock_pending_queryset.update.return_value = 1
 
-        # Mock running tasks
-        with patch("library_manager.models.TaskHistory") as mock_task_history:
+            # Mock TaskResult.objects.filter for running task updates
+            mock_running_queryset = Mock()
+            mock_running_queryset.update.return_value = 1
+
+            # Configure mock_task_result to return different querysets for different calls
+            mock_task_result.objects.filter.side_effect = [
+                mock_pending_queryset,  # First call for pending tasks
+                mock_running_queryset,  # Second call for running task
+            ]
+
+            # Mock running tasks
             mock_running_task = Mock()
             mock_running_task.task_id = "task_2"
             mock_running_task.status = "RUNNING"
@@ -300,62 +306,56 @@ class TestTaskManagementService:
             assert result.success is True
             assert "Successfully cancelled 2 total tasks" in result.message
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_get_queue_status_success(
-        self, mock_celery_app, task_management_service
-    ):
+    async def test_get_queue_status_success(self, task_management_service):
         """Test getting queue status successfully."""
-        task1 = {"id": "task_1", "name": "task_a"}
-        task2 = {"id": "task_2", "name": "task_a"}
-        task3 = {"id": "task_3", "name": "task_b"}
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database query to return count of 3 pending tasks
+            mock_queryset = Mock()
+            mock_queryset.count.return_value = 3
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {"worker1": [task1, task2, task3]}
-        mock_celery_app.control.inspect.return_value = mock_inspect
+            # Mock the async get_task_count_by_name method
+            with patch.object(
+                task_management_service,
+                "get_task_count_by_name",
+                return_value={"task_a": 2, "task_b": 1},
+            ):
+                result = await task_management_service.get_queue_status()
 
-        # Mock the async get_task_count_by_name method
-        with patch.object(
-            task_management_service,
-            "get_task_count_by_name",
-            return_value={"task_a": 2, "task_b": 1},
-        ):
-            result = await task_management_service.get_queue_status()
+            assert result["total_pending_tasks"] == 3
+            assert result["task_counts"]["task_a"] == 2
+            assert result["task_counts"]["task_b"] == 1
 
-        assert result["total_pending_tasks"] == 3
-        assert result["task_counts"]["task_a"] == 2
-        assert result["task_counts"]["task_b"] == 1
-
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_get_queue_status_empty(
-        self, mock_celery_app, task_management_service
-    ):
+    async def test_get_queue_status_empty(self, task_management_service):
         """Test getting queue status when queue is empty."""
-        mock_inspect = Mock()
-        mock_inspect.active.return_value = {}
-        mock_celery_app.control.inspect.return_value = mock_inspect
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            # Mock database query to return count of 0
+            mock_queryset = Mock()
+            mock_queryset.count.return_value = 0
+            mock_task_result.objects.filter.return_value = mock_queryset
 
-        # Mock the async get_task_count_by_name method
-        with patch.object(
-            task_management_service, "get_task_count_by_name", return_value={}
-        ):
-            result = await task_management_service.get_queue_status()
+            # Mock the async get_task_count_by_name method
+            with patch.object(
+                task_management_service, "get_task_count_by_name", return_value={}
+            ):
+                result = await task_management_service.get_queue_status()
 
-        assert result["total_pending_tasks"] == 0
-        assert result["task_counts"] == {}
+            assert result["total_pending_tasks"] == 0
+            assert result["task_counts"] == {}
 
-    @patch("src.services.task_management.current_app")
     @pytest.mark.asyncio
-    async def test_get_queue_status_exception(
-        self, mock_celery_app, task_management_service
-    ):
-        """Test getting queue status when Celery raises an exception."""
-        mock_celery_app.control.inspect.side_effect = Exception("Celery error")
+    async def test_get_queue_status_exception(self, task_management_service):
+        """Test getting queue status when database raises an exception."""
+        with patch("src.services.task_management.TaskResult") as mock_task_result:
+            mock_task_result.objects.filter.side_effect = Exception(
+                "Database connection error"
+            )
 
-        # The actual implementation doesn't handle exceptions, so this should raise
-        with pytest.raises(Exception, match="Celery error"):
-            await task_management_service.get_queue_status()
+            # The actual implementation doesn't handle exceptions, so this should raise
+            with pytest.raises(Exception, match="Database connection error"):
+                await task_management_service.get_queue_status()
 
     def test_mutation_result_creation(self):
         """Test MutationResult creation for task management."""

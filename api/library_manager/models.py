@@ -651,8 +651,16 @@ class SpotifyOAuthToken(models.Model):
         return f"Spotify OAuth Token (expires: {self.expires_at})"
 
     def is_expired(self) -> bool:
-        """Check if the access token has expired"""
-        return bool(timezone.now() >= self.expires_at)
+        """
+        Check if the access token has expired or will expire soon.
+
+        Returns True if expired or expires within 5 minutes, to trigger proactive refresh.
+        """
+        from datetime import timedelta
+
+        # Refresh proactively when token has less than 5 minutes left
+        threshold = timezone.now() + timedelta(minutes=5)
+        return bool(threshold >= self.expires_at)
 
     class Meta(TypedModelMeta):
         app_label = "library_manager"

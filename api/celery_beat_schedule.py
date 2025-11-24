@@ -17,6 +17,11 @@ CELERY_BEAT_SCHEDULE = {
         ),  # Weekly on Sunday at 3 AM
         "options": {"priority": 1},
     },
+    "retry-failed-songs": {
+        "task": "library_manager.tasks.retry_failed_songs",
+        "schedule": crontab(minute=0, hour="*/6"),  # Every 6 hours
+        "options": {"priority": 2},
+    },
     "queue-missing-albums-for-tracked-artists": {
         "task": "library_manager.tasks.queue_missing_albums_for_tracked_artists",
         "schedule": crontab(minute=0),  # Every hour

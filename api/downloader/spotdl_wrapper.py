@@ -26,6 +26,7 @@ from spotdl.types.song import Song as SpotdlSong
 from spotdl.utils.config import create_settings
 from spotdl.utils.logging import init_logging
 from spotdl.utils.spotify import SpotifyClient
+from spotipy.exceptions import SpotifyException
 
 from library_manager.models import (
     Album,
@@ -190,6 +191,54 @@ class SpotdlWrapper:
 
         self.logger.debug("Completed SpotdlWrapper Initialization")
 
+    def refresh_spotify_client(self) -> bool:
+        """
+        Refresh the Spotify OAuth token and reset the SpotifyClient singleton.
+
+        This method is called when a 401 error is detected, indicating the OAuth token
+        has expired. It refreshes the token from the database and reinitializes the
+        SpotifyClient singleton with the new token.
+
+        Returns:
+            bool: True if refresh was successful, False otherwise
+        """
+        try:
+            from downloader.spotify_auth_helper import get_spotify_oauth_credentials
+
+            self.logger.info("Attempting to refresh Spotify OAuth token...")
+
+            # Force refresh by checking token expiration and refreshing if needed
+            oauth_creds = get_spotify_oauth_credentials()
+
+            if not oauth_creds:
+                self.logger.error(
+                    "Failed to refresh Spotify OAuth token - no credentials available"
+                )
+                return False
+
+            # Reset the SpotifyClient singleton to force re-initialization
+            SpotifyClient._instance = None
+            self.logger.info("Reset SpotifyClient singleton")
+
+            # Reinitialize with the fresh token
+            SpotifyClient.init(
+                client_id="",  # Not needed when using auth_token
+                client_secret="",
+                user_auth=False,
+                auth_token=oauth_creds["access_token"],
+            )
+
+            # Update our reference to the new client instance
+            self.spotipy_client = SpotifyClient()
+            self.downloader.spotipy_client = self.spotipy_client
+
+            self.logger.info("✓ Successfully refreshed Spotify OAuth token")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Failed to refresh Spotify OAuth token: {e}")
+            return False
+
     def execute(self, config: Config, task_progress_callback=None) -> int:
         download_queue = []
         download_queue_urls: list[str] = []
@@ -197,27 +246,105 @@ class SpotdlWrapper:
 
         if config.artist_to_fetch is not None:
             # Do not track the artist if it's mass downloaded
-            albums = self.downloader.get_artist_albums(config.artist_to_fetch)
-            self.logger.info(f"Fetched latest {len(albums)} album(s) for this artist")
-            return 0
+            try:
+                albums = self.downloader.get_artist_albums(config.artist_to_fetch)
+                self.logger.info(
+                    f"Fetched latest {len(albums)} album(s) for this artist"
+                )
+                return 0
+            except SpotifyException as spotify_exception:
+                # Check if this is a 401 Unauthorized error (expired token)
+                if (
+                    "401" in str(spotify_exception)
+                    or "access token expired" in str(spotify_exception).lower()
+                ):
+                    self.logger.warning(
+                        "Spotify OAuth token expired while fetching artist albums, attempting refresh..."
+                    )
+
+                    # Try to refresh the token
+                    if self.refresh_spotify_client():
+                        # Retry the operation once with the refreshed token
+                        try:
+                            albums = self.downloader.get_artist_albums(
+                                config.artist_to_fetch
+                            )
+                            self.logger.info(
+                                f"Fetched latest {len(albums)} album(s) for this artist after token refresh"
+                            )
+                            return 0
+                        except Exception as retry_exception:
+                            self.logger.error(
+                                f"Failed to fetch artist albums after token refresh: {retry_exception}"
+                            )
+                            raise
+                    else:
+                        self.logger.error("Failed to refresh Spotify OAuth token")
+                        raise
+                else:
+                    # Not a 401 error, re-raise
+                    raise
         for url_index, url in enumerate(config.urls, start=1):
             current_url = f"URL {url_index}/{len(config.urls)}"
             try:
                 self.logger.info(f'({current_url}) Checking "{url}"')
                 download_queue.append(self.downloader.get_download_queue(url=url))
                 download_queue_urls.append(url)
-            except Exception as exception:
+            except SpotifyException as spotify_exception:
+                # Check if this is a 401 Unauthorized error (expired token)
+                if (
+                    "401" in str(spotify_exception)
+                    or "access token expired" in str(spotify_exception).lower()
+                ):
+                    self.logger.warning(
+                        f"({current_url}) Spotify OAuth token expired, attempting refresh..."
+                    )
+
+                    # Try to refresh the token
+                    if self.refresh_spotify_client():
+                        # Retry the operation once with the refreshed token
+                        try:
+                            self.logger.info(
+                                f'({current_url}) Retrying after token refresh: "{url}"'
+                            )
+                            download_queue.append(
+                                self.downloader.get_download_queue(url=url)
+                            )
+                            download_queue_urls.append(url)
+                            continue  # Success, move to next URL
+                        except Exception as retry_exception:
+                            error_count += 1
+                            self.logger.error(
+                                f"({current_url}) Failed to check after token refresh: {retry_exception}"
+                            )
+                            if config.print_exceptions:
+                                self.logger.error(traceback.format_exc())
+                            continue  # Move to next URL
+                    else:
+                        error_count += 1
+                        self.logger.error(
+                            f"({current_url}) Failed to refresh Spotify OAuth token"
+                        )
+                        continue  # Move to next URL
+
+                # Not a 401 error, treat as generic exception
                 error_count += 1
                 self.logger.error(f'({current_url}) Failed to check "{url}"')
-                self.logger.error(f"exception: {exception}")
+                self.logger.error(f"Spotify exception: {spotify_exception}")
+                if config.print_exceptions:
+                    self.logger.error(traceback.format_exc())
+            except Exception as general_exception:
+                error_count += 1
+                self.logger.error(f'({current_url}) Failed to check "{url}"')
+                self.logger.error(f"exception: {general_exception}")
                 if config.print_exceptions:
                     self.logger.error(traceback.format_exc())
 
                 # Handle (gracefully) playlists that are inaccessible
                 if (
-                    "too many 404 error responses" in str(exception)
-                    or "http status: 429" in str(exception)
-                    or "Max Retries" in str(exception)
+                    "too many 404 error responses" in str(general_exception)
+                    or "http status: 429" in str(general_exception)
+                    or "Max Retries" in str(general_exception)
                 ) and (
                     url.startswith("spotify:playlist:")
                     or url.startswith("https://open.spotify.com/playlist")
@@ -253,8 +380,8 @@ class SpotdlWrapper:
 
                 # Handle (gracefully) songs that no longer exist (at all) with Spotify
                 if (
-                    "too many 404 error responses" in str(exception)
-                    or "Track no longer exists" in str(exception)
+                    "too many 404 error responses" in str(general_exception)
+                    or "Track no longer exists" in str(general_exception)
                 ) and (
                     url.startswith("spotify:track:")
                     or url.startswith("https://open.spotify.com/track")
@@ -578,23 +705,105 @@ class SpotdlWrapper:
                 except PremiumExpiredException:
                     # Re-raise to abort the entire download task
                     raise
-                except SpotdlDownloadError as exception:
+                except SpotifyException as spotify_exception:
+                    # Check if this is a 401 Unauthorized error (expired token)
+                    if (
+                        "401" in str(spotify_exception)
+                        or "access token expired" in str(spotify_exception).lower()
+                    ):
+                        self.logger.warning(
+                            f"({current_track}) Spotify OAuth token expired during download, attempting refresh..."
+                        )
+
+                        # Try to refresh the token
+                        if self.refresh_spotify_client():
+                            # Retry the download once with the refreshed token
+                            try:
+                                self.logger.info(
+                                    f'({current_track}) Retrying download after token refresh: "{track["name"]}"'
+                                )
+                                song_success, output_path = self.spotdl.download(
+                                    SpotdlSong.from_url(
+                                        track["external_urls"]["spotify"]
+                                    )
+                                )
+                                if song_success is None or output_path is None:
+                                    raise SpotdlDownloadError(
+                                        "Failed to download correctly after token refresh"
+                                    )
+
+                                # Success! Continue with bitrate validation...
+                                # (Reuse the same validation logic)
+                                media_info = MediaInfo.parse(output_path)
+                                audio_track = None
+                                bit_rate = 0
+                                for media_track in media_info.tracks:
+                                    if media_track.track_type == "Audio":
+                                        audio_track = media_track
+                                        bit_rate = audio_track.bit_rate / 1000
+                                        break
+
+                                if audio_track is not None and bit_rate > 0:
+                                    db_song.bitrate = bit_rate
+                                    db_song.set_file_path(output_path)
+                                    db_song.downloaded = True
+                                    db_song.save()
+                                    self.logger.info(
+                                        f"({current_track}) Successfully downloaded after token refresh"
+                                    )
+                                continue  # Success, move to next track
+
+                            except Exception as retry_exception:
+                                # Retry failed - log but DON'T increment failed_count
+                                # This allows automatic retry later
+                                error_count += 1
+                                self.logger.error(
+                                    f"({current_track}) Failed to download after token refresh: {retry_exception}"
+                                )
+                                self.logger.warning(
+                                    f"({current_track}) Not incrementing failed_count - will retry later"
+                                )
+                                if config.print_exceptions:
+                                    self.logger.error(traceback.format_exc())
+                                continue  # Move to next track
+                        else:
+                            # Token refresh failed - log but DON'T increment failed_count
+                            error_count += 1
+                            self.logger.error(
+                                f"({current_track}) Failed to refresh Spotify OAuth token during download"
+                            )
+                            self.logger.warning(
+                                f"({current_track}) Not incrementing failed_count - will retry later"
+                            )
+                            continue  # Move to next track
+
+                    # Not a 401 error, treat as general exception
+                    error_count += 1
+                    self.logger.error(
+                        f"({current_track}) Spotify exception during download: {spotify_exception}"
+                    )
+                    if config.print_exceptions:
+                        self.logger.error(traceback.format_exc())
+                    # Increment failed_count for non-401 Spotify errors
+                    db_song.failed_count += 1
+                    db_song.save()
+                except SpotdlDownloadError as spotdl_download_exception:
                     error_count += 1
                     self.logger.error(
                         f'({current_track}) Failed to download "{db_song.name}"'
                     )
-                    self.logger.error(f"Exception: {exception}")
+                    self.logger.error(f"Exception: {spotdl_download_exception}")
                     self.logger.error(
                         "This track is possibly not available in your region"
                     )
                     # Don't infinitely retry missing songs
                     db_song.increment_failed_count()
-                except Exception as exception:
+                except Exception as general_exception:
                     error_count += 1
                     self.logger.error(
                         f'({current_track}) Failed to download "{db_song.name}"'
                     )
-                    self.logger.error(f"General Exception: {exception}")
+                    self.logger.error(f"General Exception: {general_exception}")
                     db_song.failed_count += 1
                     db_song.save()
                     if config.print_exceptions:

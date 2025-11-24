@@ -292,5 +292,9 @@ class Query:
                 po_token_error_message=auth_status.po_token_error_message,
                 spotify_user_auth_enabled=auth_status.spotify_user_auth_enabled,
                 spotify_auth_mode=auth_status.spotify_auth_mode,
+                spotify_token_valid=auth_status.spotify_token_valid,
+                spotify_token_expired=auth_status.spotify_token_expired,
+                spotify_token_expires_in_hours=auth_status.spotify_token_expires_in_hours,
+                spotify_token_error_message=auth_status.spotify_token_error_message,
             ),
         )
