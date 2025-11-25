@@ -17,6 +17,11 @@ from ..graphql_types.models import (
     QueueStatus,
     Song,
     SongConnection,
+    SpotifySearchAlbum,
+    SpotifySearchArtist,
+    SpotifySearchPlaylist,
+    SpotifySearchResults,
+    SpotifySearchTrack,
     SystemHealth,
     TaskCount,
     TaskHistoryConnection,
@@ -307,4 +312,91 @@ class Query:
                 spotify_token_expires_in_hours=auth_status.spotify_token_expires_in_hours,
                 spotify_token_error_message=auth_status.spotify_token_error_message,
             ),
+        )
+
+    @strawberry.field
+    async def spotify_search(
+        self,
+        query: str,
+        types: Optional[List[str]] = None,
+        limit: Optional[int] = 10,
+    ) -> SpotifySearchResults:
+        """
+        Search Spotify's catalog for artists, albums, tracks, and playlists.
+
+        This searches the Spotify API directly, not the local database.
+        Results include an 'in_library' flag to indicate if items already exist locally.
+
+        Args:
+            query: Search query string
+            types: List of types to search ('artist', 'album', 'track', 'playlist').
+                   Defaults to all types.
+            limit: Max results per type (default 10, max 50)
+        """
+        results = await services.spotify_search.search(
+            query=query,
+            types=types,
+            limit=limit or 10,
+        )
+
+        # Convert service dataclasses to GraphQL types
+        return SpotifySearchResults(
+            artists=[
+                SpotifySearchArtist(
+                    id=a.id,
+                    name=a.name,
+                    spotify_uri=a.spotify_uri,
+                    image_url=a.image_url,
+                    follower_count=a.follower_count,
+                    genres=a.genres,
+                    in_library=a.in_library,
+                    local_id=a.local_id,
+                )
+                for a in results.artists
+            ],
+            albums=[
+                SpotifySearchAlbum(
+                    id=a.id,
+                    name=a.name,
+                    spotify_uri=a.spotify_uri,
+                    image_url=a.image_url,
+                    artist_name=a.artist_name,
+                    artist_id=a.artist_id,
+                    release_date=a.release_date,
+                    album_type=a.album_type,
+                    total_tracks=a.total_tracks,
+                    in_library=a.in_library,
+                    local_id=a.local_id,
+                )
+                for a in results.albums
+            ],
+            tracks=[
+                SpotifySearchTrack(
+                    id=t.id,
+                    name=t.name,
+                    spotify_uri=t.spotify_uri,
+                    artist_name=t.artist_name,
+                    artist_id=t.artist_id,
+                    album_name=t.album_name,
+                    album_id=t.album_id,
+                    duration_ms=t.duration_ms,
+                    in_library=t.in_library,
+                    local_id=t.local_id,
+                )
+                for t in results.tracks
+            ],
+            playlists=[
+                SpotifySearchPlaylist(
+                    id=p.id,
+                    name=p.name,
+                    spotify_uri=p.spotify_uri,
+                    image_url=p.image_url,
+                    owner_name=p.owner_name,
+                    track_count=p.track_count,
+                    description=p.description,
+                    in_library=p.in_library,
+                    local_id=p.local_id,
+                )
+                for p in results.playlists
+            ],
         )

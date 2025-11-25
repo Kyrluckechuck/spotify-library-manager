@@ -16,8 +16,8 @@
 
 ## Frontend
 - [x] **Add `useRequestState` helper** - Wire to routes for better request handling
-- [ ] **Spotify search feature** - Add search for artists, albums, songs, playlists
-- [ ] **Add search UI components** - Frontend components for search functionality
+- [x] **Spotify search feature** - Add search for artists, albums, songs, playlists
+- [x] **Add search UI components** - Frontend components for search functionality
 
 ## Frontend (Rejected Ideas - Do Not Implement)
 - **Retries for mutations** - Most mutations either succeed or indicate real problems (DB/auth issues). Task operations enqueue jobs, don't need retries.

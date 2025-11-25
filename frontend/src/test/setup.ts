@@ -29,6 +29,10 @@ vi.mock('@apollo/client/react', () => ({
     loading: false,
     error: undefined,
   })),
+  useLazyQuery: vi.fn(() => [
+    vi.fn(),
+    { data: undefined, loading: false, error: undefined },
+  ]),
   useMutation: vi.fn(() => [vi.fn(), { loading: false, error: undefined }]),
   useApolloClient: vi.fn(() => ({ query: vi.fn() })),
   ApolloProvider: ({ children }: { children: React.ReactNode }) => children,

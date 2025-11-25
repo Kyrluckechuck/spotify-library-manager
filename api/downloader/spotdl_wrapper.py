@@ -203,6 +203,8 @@ class SpotdlWrapper:
             bool: True if refresh was successful, False otherwise
         """
         try:
+            from django.conf import settings as django_settings
+
             from downloader.spotify_auth_helper import get_spotify_oauth_credentials
 
             self.logger.info("Attempting to refresh Spotify OAuth token...")
@@ -220,10 +222,14 @@ class SpotdlWrapper:
             SpotifyClient._instance = None
             self.logger.info("Reset SpotifyClient singleton")
 
-            # Reinitialize with the fresh token
+            # Get client credentials from Django settings
+            client_id = getattr(django_settings, "SPOTIPY_CLIENT_ID", "")
+            client_secret = getattr(django_settings, "SPOTIPY_CLIENT_SECRET", "")
+
+            # Reinitialize with the fresh token and client credentials
             SpotifyClient.init(
-                client_id="",  # Not needed when using auth_token
-                client_secret="",
+                client_id=client_id,
+                client_secret=client_secret,
                 user_auth=False,
                 auth_token=oauth_creds["access_token"],
             )

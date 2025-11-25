@@ -3,14 +3,17 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { Navbar } from '../Navbar';
 import { DownloadModalProvider } from '../ui/DownloadModalProvider';
+import { SpotifySearchProvider } from '../ui/SpotifySearchProvider';
 import { ToastProvider } from '../ui/ToastProvider';
 
 const renderNavbar = () => {
   return render(
     <ToastProvider>
-      <DownloadModalProvider>
-        <Navbar />
-      </DownloadModalProvider>
+      <SpotifySearchProvider>
+        <DownloadModalProvider>
+          <Navbar />
+        </DownloadModalProvider>
+      </SpotifySearchProvider>
     </ToastProvider>
   );
 };
@@ -31,11 +34,12 @@ describe('Navbar', () => {
       expect(screen.getByText(linkText)).toBeInTheDocument();
     });
 
-    // Download is now a button, not a link
+    // Search and Download are buttons, not links
     expect(screen.getByText('Download')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /download/i })
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
   });
 
   it('has proper navigation structure', () => {
@@ -48,7 +52,9 @@ describe('Navbar', () => {
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(7); // Title + 6 nav links (Home, Artists, Albums, Songs, Playlists, Tasks)
 
-    // Check that download button exists
+    // Check that search and download buttons exist
+    const searchButton = screen.getByRole('button', { name: /search/i });
+    expect(searchButton).toBeInTheDocument();
     const downloadButton = screen.getByRole('button', { name: /download/i });
     expect(downloadButton).toBeInTheDocument();
   });

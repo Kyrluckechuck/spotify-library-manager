@@ -320,3 +320,79 @@ class SystemHealth:
     can_download: bool
     download_blocker_reason: Optional[str] = None
     authentication: AuthenticationStatus
+
+
+# Spotify Search Result Types
+# These represent search results from Spotify's API (not our local database)
+
+
+@strawberry.type
+class SpotifySearchArtist:
+    """Artist result from Spotify search API."""
+
+    id: str
+    name: str
+    spotify_uri: str
+    image_url: Optional[str]
+    follower_count: int
+    genres: List[str]
+    in_library: bool  # True if this artist is already in our local database
+    local_id: Optional[int]  # Database ID if in_library is True
+
+
+@strawberry.type
+class SpotifySearchAlbum:
+    """Album result from Spotify search API."""
+
+    id: str
+    name: str
+    spotify_uri: str
+    image_url: Optional[str]
+    artist_name: str
+    artist_id: str
+    release_date: Optional[str]
+    album_type: str
+    total_tracks: int
+    in_library: bool
+    local_id: Optional[int]
+
+
+@strawberry.type
+class SpotifySearchTrack:
+    """Track result from Spotify search API."""
+
+    id: str
+    name: str
+    spotify_uri: str
+    artist_name: str
+    artist_id: str
+    album_name: str
+    album_id: str
+    duration_ms: int
+    in_library: bool
+    local_id: Optional[int]
+
+
+@strawberry.type
+class SpotifySearchPlaylist:
+    """Playlist result from Spotify search API."""
+
+    id: str
+    name: str
+    spotify_uri: str
+    image_url: Optional[str]
+    owner_name: str
+    track_count: int
+    description: Optional[str]
+    in_library: bool
+    local_id: Optional[int]
+
+
+@strawberry.type
+class SpotifySearchResults:
+    """Combined search results from Spotify API."""
+
+    artists: List[SpotifySearchArtist]
+    albums: List[SpotifySearchAlbum]
+    tracks: List[SpotifySearchTrack]
+    playlists: List[SpotifySearchPlaylist]

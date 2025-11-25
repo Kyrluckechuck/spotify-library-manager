@@ -1,0 +1,50 @@
+query SpotifySearch($query: String!, $types: [String!], $limit: Int) {
+  spotifySearch(query: $query, types: $types, limit: $limit) {
+    artists {
+      id
+      name
+      spotifyUri
+      imageUrl
+      followerCount
+      genres
+      inLibrary
+      localId
+    }
+    albums {
+      id
+      name
+      spotifyUri
+      imageUrl
+      artistName
+      artistId
+      releaseDate
+      albumType
+      totalTracks
+      inLibrary
+      localId
+    }
+    tracks {
+      id
+      name
+      spotifyUri
+      artistName
+      artistId
+      albumName
+      albumId
+      durationMs
+      inLibrary
+      localId
+    }
+    playlists {
+      id
+      name
+      spotifyUri
+      imageUrl
+      ownerName
+      trackCount
+      description
+      inLibrary
+      localId
+    }
+  }
+}

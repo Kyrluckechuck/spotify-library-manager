@@ -191,3 +191,118 @@ class TestSpotdlWrapperIntegration:
 
         # Clean up
         passed_loop.close()
+
+
+class TestSpotdlWrapperTokenRefresh:
+    """Tests for Spotify OAuth token refresh functionality."""
+
+    @pytest.fixture
+    def mock_config(self):
+        """Create a mock config for testing."""
+        config = Mock(spec=Config)
+        config.log_level = "DEBUG"
+        config.youtube_cookies_location = None
+        config.po_token = None
+        config.spotify_user_auth_enabled = False
+        return config
+
+    @patch("downloader.spotdl_wrapper.SpotifyClient")
+    @patch("downloader.spotdl_wrapper.Spotdl")
+    def test_refresh_spotify_client_uses_credentials_from_settings(
+        self, mock_spotdl, mock_spotify_client_class, mock_config
+    ):
+        """
+        Regression test: Ensure refresh_spotify_client passes client credentials.
+
+        Previously, the method passed empty strings for client_id/client_secret,
+        causing spotipy to fail with "No client_id" error during token refresh.
+        """
+        wrapper = SpotdlWrapper(mock_config)
+
+        # Reset mock to capture the refresh call
+        mock_spotify_client_class.reset_mock()
+        mock_spotify_client_class._instance = None
+
+        # Mock get_spotify_oauth_credentials to return valid credentials
+        mock_oauth_creds = {
+            "access_token": "fresh_access_token",
+            "refresh_token": "refresh_token",
+            "token_type": "Bearer",
+            "expires_at": 1234567890.0,
+        }
+
+        with patch(
+            "downloader.spotify_auth_helper.get_spotify_oauth_credentials",
+            return_value=mock_oauth_creds,
+        ):
+            result = wrapper.refresh_spotify_client()
+
+        assert result is True
+
+        # Verify SpotifyClient.init was called with proper credentials
+        mock_spotify_client_class.init.assert_called_once()
+        call_kwargs = mock_spotify_client_class.init.call_args[1]
+
+        # THE KEY ASSERTION: client_id and client_secret must NOT be empty
+        # The fix was changing these from "" to actual values from Django settings
+        assert (
+            call_kwargs["client_id"] != ""
+        ), "client_id must NOT be empty - should come from Django settings"
+        assert (
+            call_kwargs["client_secret"] != ""
+        ), "client_secret must NOT be empty - should come from Django settings"
+        assert call_kwargs["auth_token"] == "fresh_access_token"
+        assert call_kwargs["user_auth"] is False
+
+    @patch("downloader.spotdl_wrapper.SpotifyClient")
+    @patch("downloader.spotdl_wrapper.Spotdl")
+    def test_refresh_spotify_client_returns_false_when_no_credentials(
+        self, mock_spotdl, mock_spotify_client_class, mock_config
+    ):
+        """Test that refresh_spotify_client returns False when OAuth credentials unavailable."""
+        wrapper = SpotdlWrapper(mock_config)
+
+        with patch(
+            "downloader.spotify_auth_helper.get_spotify_oauth_credentials",
+            return_value=None,
+        ):
+            result = wrapper.refresh_spotify_client()
+
+        assert result is False
+
+    @patch("downloader.spotdl_wrapper.SpotifyClient")
+    @patch("downloader.spotdl_wrapper.Spotdl")
+    def test_refresh_spotify_client_updates_wrapper_references(
+        self, mock_spotdl, mock_spotify_client_class, mock_config
+    ):
+        """Test that refresh_spotify_client updates the wrapper's client references."""
+        wrapper = SpotdlWrapper(mock_config)
+        _original_spotipy_client = wrapper.spotipy_client  # noqa: F841
+
+        # Create a new mock for the refreshed client
+        new_mock_client = Mock()
+        mock_spotify_client_class.return_value = new_mock_client
+        mock_spotify_client_class._instance = None
+
+        mock_settings = Mock()
+        mock_settings.SPOTIPY_CLIENT_ID = "client_id"
+        mock_settings.SPOTIPY_CLIENT_SECRET = "client_secret"
+
+        mock_oauth_creds = {
+            "access_token": "new_token",
+            "refresh_token": "refresh",
+            "token_type": "Bearer",
+            "expires_at": 1234567890.0,
+        }
+
+        with patch(
+            "downloader.spotify_auth_helper.get_spotify_oauth_credentials",
+            return_value=mock_oauth_creds,
+        ):
+            with patch("django.conf.settings", mock_settings):
+                result = wrapper.refresh_spotify_client()
+
+        assert result is True
+        # Verify the wrapper's client reference was updated
+        assert wrapper.spotipy_client == new_mock_client
+        assert wrapper.downloader.spotipy_client == new_mock_client

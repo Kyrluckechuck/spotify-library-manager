@@ -187,6 +187,7 @@ type Query {
   queueStatus: QueueStatus!
   song(id: String!): Song
   songs(after: String = null, artistId: Int = null, downloaded: Boolean = null, first: Int = 20, search: String = null, sortBy: String = null, sortDirection: String = null, unavailable: Boolean = null): SongConnection!
+  spotifySearch(limit: Int = 10, query: String!, types: [String!] = null): SpotifySearchResults!
   systemHealth: SystemHealth!
   taskHistory(after: String = null, entityType: String = null, first: Int = 20, search: String = null, status: String = null, type: String = null): TaskHistoryConnection!
 }
@@ -217,6 +218,63 @@ type SongConnection {
   edges: [Song!]!
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+type SpotifySearchAlbum {
+  albumType: String!
+  artistId: String!
+  artistName: String!
+  id: String!
+  imageUrl: String
+  inLibrary: Boolean!
+  localId: Int
+  name: String!
+  releaseDate: String
+  spotifyUri: String!
+  totalTracks: Int!
+}
+
+type SpotifySearchArtist {
+  followerCount: Int!
+  genres: [String!]!
+  id: String!
+  imageUrl: String
+  inLibrary: Boolean!
+  localId: Int
+  name: String!
+  spotifyUri: String!
+}
+
+type SpotifySearchPlaylist {
+  description: String
+  id: String!
+  imageUrl: String
+  inLibrary: Boolean!
+  localId: Int
+  name: String!
+  ownerName: String!
+  spotifyUri: String!
+  trackCount: Int!
+}
+
+type SpotifySearchResults {
+  albums: [SpotifySearchAlbum!]!
+  artists: [SpotifySearchArtist!]!
+  playlists: [SpotifySearchPlaylist!]!
+  tracks: [SpotifySearchTrack!]!
+}
+
+type SpotifySearchTrack {
+  albumId: String!
+  albumName: String!
+  artistId: String!
+  artistName: String!
+  durationMs: Int!
+  id: String!
+  inLibrary: Boolean!
+  localId: Int
+  name: String!
+  spotifyUri: String!
 }
 
 type Subscription {

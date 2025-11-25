@@ -8,6 +8,7 @@ from .history import DownloadHistoryService
 from .periodic_task import PeriodicTaskService
 from .playlist import PlaylistService
 from .song import SongService
+from .spotify_search import SpotifySearchService
 from .task_history import TaskHistoryService
 from .task_management import TaskManagementService
 
@@ -55,6 +56,10 @@ class ServiceRegistry:
     @cached_property
     def periodic_task(self) -> PeriodicTaskService:
         return PeriodicTaskService()
+
+    @cached_property
+    def spotify_search(self) -> SpotifySearchService:
+        return SpotifySearchService()
 
 
 services = ServiceRegistry()
