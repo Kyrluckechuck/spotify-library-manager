@@ -29,21 +29,18 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const [executeSearch, { data, loading, error }] =
     useLazyQuery<SpotifySearchQuery>(SpotifySearchDocument);
 
-  const [trackArtist, { loading: trackingArtist }] =
-    useMutation(TrackArtistDocument);
-  const [untrackArtist, { loading: untrackingArtist }] = useMutation(
-    UntrackArtistDocument
-  );
-  const [downloadUrl, { loading: downloading }] =
-    useMutation(DownloadUrlDocument);
-  const [savePlaylist, { loading: savingPlaylist }] =
-    useMutation(SavePlaylistDocument);
+  const [trackArtist] = useMutation(TrackArtistDocument);
+  const [untrackArtist] = useMutation(UntrackArtistDocument);
+  const [downloadUrl] = useMutation(DownloadUrlDocument);
+  const [savePlaylist] = useMutation(SavePlaylistDocument);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -57,8 +54,38 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
     if (!isOpen) {
       setQuery('');
       setActiveTab('all');
+      setLoadingIds(new Set());
     }
   }, [isOpen]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isOpen &&
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onClose]);
+
+  // Helper to track loading state per item
+  const startLoading = useCallback((id: string) => {
+    setLoadingIds(prev => new Set(prev).add(id));
+  }, []);
+
+  const stopLoading = useCallback((id: string) => {
+    setLoadingIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
 
   // Debounced search
   useEffect(() => {
@@ -121,7 +148,13 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
   }, [query, activeTab]);
 
   const handleTrackArtist = useCallback(
-    async (localId: number | null, spotifyUri: string, name: string) => {
+    async (
+      id: string,
+      localId: number | null,
+      spotifyUri: string,
+      name: string
+    ) => {
+      startLoading(id);
       try {
         if (localId) {
           // Artist exists locally, track it
@@ -140,13 +173,23 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
         }
       } catch (err) {
         toast.error(`Failed to track artist: ${err}`);
+      } finally {
+        stopLoading(id);
       }
     },
-    [trackArtist, downloadUrl, toast, getSearchRefetchQueries]
+    [
+      trackArtist,
+      downloadUrl,
+      toast,
+      getSearchRefetchQueries,
+      startLoading,
+      stopLoading,
+    ]
   );
 
   const handleUntrackArtist = useCallback(
-    async (artistId: number, name: string) => {
+    async (id: string, artistId: number, name: string) => {
+      startLoading(id);
       try {
         await untrackArtist({
           variables: { artistId },
@@ -155,13 +198,16 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
         toast.success(`Stopped tracking "${name}"`);
       } catch (err) {
         toast.error(`Failed to untrack artist: ${err}`);
+      } finally {
+        stopLoading(id);
       }
     },
-    [untrackArtist, toast, getSearchRefetchQueries]
+    [untrackArtist, toast, getSearchRefetchQueries, startLoading, stopLoading]
   );
 
   const handleDownload = useCallback(
-    async (spotifyUri: string, name: string) => {
+    async (id: string, spotifyUri: string, name: string) => {
+      startLoading(id);
       try {
         const result = await downloadUrl({
           variables: { url: spotifyUri, autoTrackArtists: false },
@@ -175,13 +221,16 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
         }
       } catch (err) {
         toast.error(`Failed to start download: ${err}`);
+      } finally {
+        stopLoading(id);
       }
     },
-    [downloadUrl, toast]
+    [downloadUrl, toast, startLoading, stopLoading]
   );
 
   const handleSavePlaylist = useCallback(
-    async (spotifyId: string, name: string) => {
+    async (id: string, spotifyId: string, name: string) => {
+      startLoading(id);
       try {
         await savePlaylist({
           variables: { spotifyId, autoTrackArtists: false },
@@ -194,9 +243,11 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
         toast.success(`Saved playlist "${name}" for tracking`);
       } catch (err) {
         toast.error(`Failed to save playlist: ${err}`);
+      } finally {
+        stopLoading(id);
       }
     },
-    [savePlaylist, toast, getSearchRefetchQueries]
+    [savePlaylist, toast, getSearchRefetchQueries, startLoading, stopLoading]
   );
 
   const handleNavigate = useCallback(
@@ -227,7 +278,10 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
 
   return (
     <div className='fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 pt-[10vh]'>
-      <div className='bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col shadow-2xl'>
+      <div
+        ref={modalRef}
+        className='bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col shadow-2xl'
+      >
         {/* Header with search input */}
         <div className='p-4 border-b'>
           <div className='flex items-center gap-3'>
@@ -366,6 +420,7 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                         artist={artist}
                         onTrack={() =>
                           handleTrackArtist(
+                            artist.id,
                             artist.localId ?? null,
                             artist.spotifyUri,
                             artist.name
@@ -375,6 +430,7 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                           artist.localId
                             ? () =>
                                 handleUntrackArtist(
+                                  artist.id,
                                   artist.localId as number,
                                   artist.name
                                 )
@@ -385,9 +441,7 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                             ? () => handleNavigate(`/artists/${artist.localId}`)
                             : undefined
                         }
-                        isLoading={
-                          trackingArtist || untrackingArtist || downloading
-                        }
+                        isLoading={loadingIds.has(artist.id)}
                       />
                     ))}
                   </ResultSection>
@@ -402,9 +456,9 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                         key={album.id}
                         album={album}
                         onDownload={() =>
-                          handleDownload(album.spotifyUri, album.name)
+                          handleDownload(album.id, album.spotifyUri, album.name)
                         }
-                        isLoading={downloading}
+                        isLoading={loadingIds.has(album.id)}
                       />
                     ))}
                   </ResultSection>
@@ -419,9 +473,9 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                         key={track.id}
                         track={track}
                         onDownload={() =>
-                          handleDownload(track.spotifyUri, track.name)
+                          handleDownload(track.id, track.spotifyUri, track.name)
                         }
-                        isLoading={downloading}
+                        isLoading={loadingIds.has(track.id)}
                       />
                     ))}
                   </ResultSection>
@@ -436,12 +490,20 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                         key={playlist.id}
                         playlist={playlist}
                         onSave={() =>
-                          handleSavePlaylist(playlist.id, playlist.name)
+                          handleSavePlaylist(
+                            playlist.id,
+                            playlist.id,
+                            playlist.name
+                          )
                         }
                         onDownload={() =>
-                          handleDownload(playlist.spotifyUri, playlist.name)
+                          handleDownload(
+                            playlist.id,
+                            playlist.spotifyUri,
+                            playlist.name
+                          )
                         }
-                        isLoading={downloading || savingPlaylist}
+                        isLoading={loadingIds.has(playlist.id)}
                       />
                     ))}
                   </ResultSection>
@@ -498,6 +560,13 @@ const ButtonSpinner: React.FC = () => (
   </svg>
 );
 
+// Spotify icon for external links
+const SpotifyIcon: React.FC = () => (
+  <svg className='w-4 h-4' viewBox='0 0 24 24' fill='currentColor'>
+    <path d='M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z' />
+  </svg>
+);
+
 interface ArtistResultProps {
   artist: SpotifySearchQuery['spotifySearch']['artists'][0];
   onTrack: () => void;
@@ -548,6 +617,15 @@ const ArtistResult: React.FC<ArtistResultProps> = ({
           In Library
         </span>
       )}
+      <a
+        href={`https://open.spotify.com/artist/${artist.id}`}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='px-3 py-1 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded'
+        title='View on Spotify'
+      >
+        <SpotifyIcon />
+      </a>
       {onNavigate && (
         <button
           onClick={onNavigate}
@@ -615,7 +693,17 @@ const AlbumResult: React.FC<AlbumResultProps> = ({
     <div className='flex-1 min-w-0'>
       <div className='font-medium text-gray-900 truncate'>{album.name}</div>
       <div className='text-sm text-gray-500 truncate'>
-        {album.artistName} · {album.albumType} · {album.totalTracks} tracks
+        <a
+          href={`https://open.spotify.com/artist/${album.artistId}`}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='hover:text-green-600 hover:underline'
+          onClick={e => e.stopPropagation()}
+        >
+          {album.artistName}
+        </a>
+        {' · '}
+        {album.albumType} · {album.totalTracks} tracks
         {album.releaseDate && (
           <span className='ml-1'>· {album.releaseDate.slice(0, 4)}</span>
         )}
@@ -627,12 +715,21 @@ const AlbumResult: React.FC<AlbumResultProps> = ({
           In Library
         </span>
       )}
+      <a
+        href={`https://open.spotify.com/album/${album.id}`}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='px-3 py-1 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded'
+        title='View on Spotify'
+      >
+        <SpotifyIcon />
+      </a>
       <button
         onClick={onDownload}
         disabled={isLoading}
-        className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50'
+        className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 min-w-[80px] flex items-center justify-center'
       >
-        Download
+        {isLoading ? <ButtonSpinner /> : 'Download'}
       </button>
     </div>
   </div>
@@ -669,7 +766,25 @@ const TrackResult: React.FC<TrackResultProps> = ({
       <div className='flex-1 min-w-0'>
         <div className='font-medium text-gray-900 truncate'>{track.name}</div>
         <div className='text-sm text-gray-500 truncate'>
-          {track.artistName} · {track.albumName}
+          <a
+            href={`https://open.spotify.com/artist/${track.artistId}`}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='hover:text-green-600 hover:underline'
+            onClick={e => e.stopPropagation()}
+          >
+            {track.artistName}
+          </a>
+          {' · '}
+          <a
+            href={`https://open.spotify.com/album/${track.albumId}`}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='hover:text-green-600 hover:underline'
+            onClick={e => e.stopPropagation()}
+          >
+            {track.albumName}
+          </a>
         </div>
       </div>
       <div className='text-sm text-gray-400'>
@@ -681,12 +796,21 @@ const TrackResult: React.FC<TrackResultProps> = ({
             In Library
           </span>
         )}
+        <a
+          href={`https://open.spotify.com/track/${track.id}`}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='px-3 py-1 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded'
+          title='View on Spotify'
+        >
+          <SpotifyIcon />
+        </a>
         <button
           onClick={onDownload}
           disabled={isLoading}
-          className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50'
+          className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 min-w-[80px] flex items-center justify-center'
         >
-          Download
+          {isLoading ? <ButtonSpinner /> : 'Download'}
         </button>
       </div>
     </div>
@@ -744,17 +868,26 @@ const PlaylistResult: React.FC<PlaylistResultProps> = ({
         <button
           onClick={onSave}
           disabled={isLoading}
-          className='px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50 disabled:opacity-50'
+          className='px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50 disabled:opacity-50 min-w-[50px] flex items-center justify-center'
         >
-          Save
+          {isLoading ? <ButtonSpinner /> : 'Save'}
         </button>
       )}
+      <a
+        href={`https://open.spotify.com/playlist/${playlist.id}`}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='px-3 py-1 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded'
+        title='View on Spotify'
+      >
+        <SpotifyIcon />
+      </a>
       <button
         onClick={onDownload}
         disabled={isLoading}
-        className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50'
+        className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 min-w-[80px] flex items-center justify-center'
       >
-        Download
+        {isLoading ? <ButtonSpinner /> : 'Download'}
       </button>
     </div>
   </div>
