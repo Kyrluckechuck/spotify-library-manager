@@ -5,8 +5,10 @@ import type { SpotifySearchQuery } from '../../types/generated/graphql';
 import {
   SpotifySearchDocument,
   TrackArtistDocument,
+  UntrackArtistDocument,
   DownloadUrlDocument,
   SavePlaylistDocument,
+  GetPlaylistsDocument,
 } from '../../types/generated/graphql';
 import { useToast } from './useToast';
 
@@ -35,6 +37,9 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
 
   const [trackArtist, { loading: trackingArtist }] =
     useMutation(TrackArtistDocument);
+  const [untrackArtist, { loading: untrackingArtist }] = useMutation(
+    UntrackArtistDocument
+  );
   const [downloadUrl, { loading: downloading }] =
     useMutation(DownloadUrlDocument);
   const [savePlaylist, { loading: savingPlaylist }] =
@@ -97,17 +102,39 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Build refetch queries for search results
+  const getSearchRefetchQueries = useCallback(() => {
+    if (query.trim().length < 2) return [];
+    return [
+      {
+        query: SpotifySearchDocument,
+        variables: {
+          query: query.trim(),
+          types:
+            activeTab === 'all'
+              ? ['artist', 'album', 'track', 'playlist']
+              : [activeTab.slice(0, -1)],
+          limit: 10,
+        },
+      },
+    ];
+  }, [query, activeTab]);
+
   const handleTrackArtist = useCallback(
     async (localId: number | null, spotifyUri: string, name: string) => {
       try {
         if (localId) {
           // Artist exists locally, track it
-          await trackArtist({ variables: { artistId: localId } });
+          await trackArtist({
+            variables: { artistId: localId },
+            refetchQueries: getSearchRefetchQueries(),
+          });
           toast.success(`Now tracking "${name}"`);
         } else {
           // Artist doesn't exist, download/add by URI
           await downloadUrl({
             variables: { url: spotifyUri, autoTrackArtists: true },
+            refetchQueries: getSearchRefetchQueries(),
           });
           toast.success(`Adding "${name}" to library`);
         }
@@ -115,16 +142,37 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
         toast.error(`Failed to track artist: ${err}`);
       }
     },
-    [trackArtist, downloadUrl, toast]
+    [trackArtist, downloadUrl, toast, getSearchRefetchQueries]
+  );
+
+  const handleUntrackArtist = useCallback(
+    async (artistId: number, name: string) => {
+      try {
+        await untrackArtist({
+          variables: { artistId },
+          refetchQueries: getSearchRefetchQueries(),
+        });
+        toast.success(`Stopped tracking "${name}"`);
+      } catch (err) {
+        toast.error(`Failed to untrack artist: ${err}`);
+      }
+    },
+    [untrackArtist, toast, getSearchRefetchQueries]
   );
 
   const handleDownload = useCallback(
     async (spotifyUri: string, name: string) => {
       try {
-        await downloadUrl({
+        const result = await downloadUrl({
           variables: { url: spotifyUri, autoTrackArtists: false },
         });
-        toast.success(`Started downloading "${name}"`);
+        if (result.data?.downloadUrl?.success) {
+          toast.success(`Started downloading "${name}"`);
+        } else {
+          toast.error(
+            result.data?.downloadUrl?.message || `Failed to download "${name}"`
+          );
+        }
       } catch (err) {
         toast.error(`Failed to start download: ${err}`);
       }
@@ -137,13 +185,18 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
       try {
         await savePlaylist({
           variables: { spotifyId, autoTrackArtists: false },
+          refetchQueries: [
+            ...getSearchRefetchQueries(),
+            // Refetch playlists page if it's in the cache
+            { query: GetPlaylistsDocument },
+          ],
         });
         toast.success(`Saved playlist "${name}" for tracking`);
       } catch (err) {
         toast.error(`Failed to save playlist: ${err}`);
       }
     },
-    [savePlaylist, toast]
+    [savePlaylist, toast, getSearchRefetchQueries]
   );
 
   const handleNavigate = useCallback(
@@ -318,12 +371,23 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                             artist.name
                           )
                         }
+                        onUntrack={
+                          artist.localId
+                            ? () =>
+                                handleUntrackArtist(
+                                  artist.localId as number,
+                                  artist.name
+                                )
+                            : undefined
+                        }
                         onNavigate={
                           artist.localId
                             ? () => handleNavigate(`/artists/${artist.localId}`)
                             : undefined
                         }
-                        isLoading={trackingArtist || downloading}
+                        isLoading={
+                          trackingArtist || untrackingArtist || downloading
+                        }
                       />
                     ))}
                   </ResultSection>
@@ -415,9 +479,29 @@ const ResultSection: React.FC<ResultSectionProps> = ({ title, children }) => (
   </div>
 );
 
+// Reusable loading spinner for buttons
+const ButtonSpinner: React.FC = () => (
+  <svg className='animate-spin h-4 w-4' fill='none' viewBox='0 0 24 24'>
+    <circle
+      className='opacity-25'
+      cx='12'
+      cy='12'
+      r='10'
+      stroke='currentColor'
+      strokeWidth='4'
+    />
+    <path
+      className='opacity-75'
+      fill='currentColor'
+      d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+    />
+  </svg>
+);
+
 interface ArtistResultProps {
   artist: SpotifySearchQuery['spotifySearch']['artists'][0];
   onTrack: () => void;
+  onUntrack?: () => void;
   onNavigate?: () => void;
   isLoading: boolean;
 }
@@ -425,6 +509,7 @@ interface ArtistResultProps {
 const ArtistResult: React.FC<ArtistResultProps> = ({
   artist,
   onTrack,
+  onUntrack,
   onNavigate,
   isLoading,
 }) => (
@@ -458,15 +543,11 @@ const ArtistResult: React.FC<ArtistResultProps> = ({
       </div>
     </div>
     <div className='flex items-center gap-2'>
-      {artist.isTracked ? (
-        <span className='px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded'>
-          Tracked
-        </span>
-      ) : artist.inLibrary ? (
+      {artist.inLibrary && !artist.isTracked && (
         <span className='px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded'>
           In Library
         </span>
-      ) : null}
+      )}
       {onNavigate && (
         <button
           onClick={onNavigate}
@@ -475,13 +556,27 @@ const ArtistResult: React.FC<ArtistResultProps> = ({
           View
         </button>
       )}
-      {!artist.isTracked && (
+      {artist.isTracked && onUntrack ? (
+        <button
+          onClick={onUntrack}
+          disabled={isLoading}
+          className='px-3 py-1 text-sm bg-orange-100 text-orange-800 rounded hover:bg-orange-200 disabled:opacity-50 min-w-[70px] flex items-center justify-center'
+        >
+          {isLoading ? <ButtonSpinner /> : 'Untrack'}
+        </button>
+      ) : (
         <button
           onClick={onTrack}
           disabled={isLoading}
-          className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50'
+          className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 min-w-[70px] flex items-center justify-center'
         >
-          {artist.inLibrary ? 'Start Tracking' : 'Track'}
+          {isLoading ? (
+            <ButtonSpinner />
+          ) : artist.inLibrary ? (
+            'Start Tracking'
+          ) : (
+            'Track'
+          )}
         </button>
       )}
     </div>

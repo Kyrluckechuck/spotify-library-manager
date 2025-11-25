@@ -7,6 +7,7 @@ import {
   SyncPlaylistDocument,
   ForceSyncPlaylistDocument,
   DownloadAllPlaylistsDocument,
+  DeletePlaylistDocument,
   type Playlist,
   type GetPlaylistsQuery,
 } from '../types/generated/graphql';
@@ -65,6 +66,7 @@ export function usePlaylistsPage() {
   const [syncPlaylist] = useMutation(SyncPlaylistDocument);
   const [forceSyncPlaylist] = useMutation(ForceSyncPlaylistDocument);
   const [downloadAllPlaylists] = useMutation(DownloadAllPlaylistsDocument);
+  const [deletePlaylist] = useMutation(DeletePlaylistDocument);
 
   // Mutation states
   const {
@@ -90,6 +92,12 @@ export function usePlaylistsPage() {
     loadingIds: forceSyncMutatingIds,
     startLoading: startForceSync,
     stopLoading: stopForceSync,
+  } = useMutationLoadingState();
+
+  const {
+    loadingIds: deleteMutatingIds,
+    startLoading: startDelete,
+    stopLoading: stopDelete,
   } = useMutationLoadingState();
 
   // Prefetching setup
@@ -193,6 +201,35 @@ export function usePlaylistsPage() {
       toast.error(error instanceof Error ? error.message : 'Force sync failed');
     } finally {
       stopForceSync(playlistId);
+    }
+  };
+
+  const handleDeletePlaylist = async (
+    playlistId: number,
+    playlistName: string
+  ) => {
+    if (!window.confirm(`Are you sure you want to delete "${playlistName}"?`)) {
+      return;
+    }
+
+    try {
+      startDelete(playlistId);
+      const result = await deletePlaylist({
+        variables: { playlistId },
+        refetchQueries: [
+          { query: GetPlaylistsDocument, variables: queryVariables },
+        ],
+      });
+
+      if (result.data?.deletePlaylist?.success) {
+        toast.success(result.data.deletePlaylist.message || 'Playlist deleted');
+      } else {
+        toast.error(result.data?.deletePlaylist?.message || 'Delete failed');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Delete failed');
+    } finally {
+      stopDelete(playlistId);
     }
   };
 
@@ -307,6 +344,7 @@ export function usePlaylistsPage() {
     autoPulseIds,
     syncMutatingIds,
     forceSyncMutatingIds,
+    deleteMutatingIds,
     errorById,
 
     // Handlers
@@ -318,6 +356,7 @@ export function usePlaylistsPage() {
     handleTogglePlaylist,
     handleSyncPlaylist,
     handleForceSyncPlaylist,
+    handleDeletePlaylist,
     handleToggleAutoTrack,
     handleEditPlaylist,
     handleClosePlaylistModal,

@@ -407,6 +407,27 @@ class PlaylistService(BaseService[Playlist]):
                 playlist=None,
             )
 
+    async def delete_playlist(self, playlist_id: int) -> MutationResult:
+        """Delete a tracked playlist from the database."""
+        try:
+            django_playlist = await sync_to_async(self.model.objects.get)(
+                id=playlist_id
+            )
+            playlist_name = django_playlist.name
+            await sync_to_async(django_playlist.delete)()
+
+            return MutationResult(
+                success=True,
+                message=f"Playlist '{playlist_name}' deleted successfully",
+            )
+        except self.model.DoesNotExist:
+            return MutationResult(success=False, message="Playlist not found")
+        except Exception as e:
+            return MutationResult(
+                success=False,
+                message=f"Error deleting playlist: {str(e)}",
+            )
+
     def _to_graphql_type(self, django_playlist: DjangoPlaylist) -> Playlist:
         return Playlist(
             id=int(django_playlist.id),

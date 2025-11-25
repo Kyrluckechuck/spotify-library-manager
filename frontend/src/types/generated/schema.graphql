@@ -111,6 +111,7 @@ type Mutation {
   cancelRunningTasksByName(taskName: String!): MutationResult!
   cancelTasksByName(taskName: String!): MutationResult!
   createPlaylist(autoTrackArtists: Boolean! = false, name: String!, url: String!): Playlist!
+  deletePlaylist(playlistId: Int!): MutationResult!
   disconnectSpotify: MutationResult!
   downloadAlbum(albumId: String!): Album!
   downloadAllPlaylists: MutationResult!

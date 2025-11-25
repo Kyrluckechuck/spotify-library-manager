@@ -15,3 +15,10 @@ mutation SavePlaylist($spotifyId: String!, $autoTrackArtists: Boolean) {
     lastSyncedAt
   }
 }
+
+mutation DeletePlaylist($playlistId: Int!) {
+  deletePlaylist(playlistId: $playlistId) {
+    success
+    message
+  }
+}

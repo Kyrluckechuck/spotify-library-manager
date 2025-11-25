@@ -19,11 +19,13 @@ interface PlaylistsTableProps {
   onSyncPlaylist: (playlistId: number) => void;
   onForceSyncPlaylist?: (playlistId: number) => void;
   onEditPlaylist?: (playlist: Playlist) => void;
+  onDeletePlaylist?: (playlistId: number, playlistName: string) => void;
   loading?: boolean;
   enabledMutatingIds?: Set<number>;
   autoMutatingIds?: Set<number>;
   syncMutatingIds?: Set<number>;
   forceSyncMutatingIds?: Set<number>;
+  deleteMutatingIds?: Set<number>;
   enabledPulseIds?: Set<number>;
   autoPulseIds?: Set<number>;
   errorById?: Record<number, string>;
@@ -39,11 +41,13 @@ export function PlaylistsTable({
   onSyncPlaylist,
   onForceSyncPlaylist,
   onEditPlaylist,
+  onDeletePlaylist,
   loading = false,
   enabledMutatingIds,
   autoMutatingIds,
   syncMutatingIds,
   forceSyncMutatingIds,
+  deleteMutatingIds,
   enabledPulseIds,
   autoPulseIds,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -218,6 +222,24 @@ export function PlaylistsTable({
                       className='px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors'
                     >
                       Edit
+                    </button>
+                  )}
+                  {onDeletePlaylist && (
+                    <button
+                      onClick={() =>
+                        onDeletePlaylist(playlist.id, playlist.name)
+                      }
+                      disabled={deleteMutatingIds?.has(playlist.id)}
+                      className='px-3 py-1 rounded text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors disabled:opacity-50'
+                    >
+                      {deleteMutatingIds?.has(playlist.id) ? (
+                        <span className='inline-flex items-center gap-2'>
+                          <span className='w-3 h-3 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin' />
+                          <span>Deleting…</span>
+                        </span>
+                      ) : (
+                        'Delete'
+                      )}
                     </button>
                   )}
                   <a

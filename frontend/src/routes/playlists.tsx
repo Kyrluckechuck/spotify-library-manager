@@ -42,6 +42,7 @@ function Playlists() {
     autoPulseIds,
     syncMutatingIds,
     forceSyncMutatingIds,
+    deleteMutatingIds,
     errorById,
 
     // Handlers
@@ -53,6 +54,7 @@ function Playlists() {
     handleTogglePlaylist,
     handleSyncPlaylist,
     handleForceSyncPlaylist,
+    handleDeletePlaylist,
     handleToggleAutoTrack,
     handleEditPlaylist,
     handleClosePlaylistModal,
@@ -138,11 +140,13 @@ function Playlists() {
           onSyncPlaylist={handleSyncPlaylist}
           onForceSyncPlaylist={handleForceSyncPlaylist}
           onEditPlaylist={handleEditPlaylist}
+          onDeletePlaylist={handleDeletePlaylist}
           loading={loading}
           enabledMutatingIds={enabledMutatingIds}
           autoMutatingIds={autoMutatingIds}
           syncMutatingIds={syncMutatingIds}
           forceSyncMutatingIds={forceSyncMutatingIds}
+          deleteMutatingIds={deleteMutatingIds}
           enabledPulseIds={enabledPulseIds}
           autoPulseIds={autoPulseIds}
           errorById={errorById}

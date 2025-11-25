@@ -18,13 +18,30 @@ from ..graphql_types.models import (
 from ..services import services
 
 
-def validate_url(url: str) -> MutationResult:
-    """Validate URL format and scheme."""
+# pylint: disable-next=too-many-return-statements
+def validate_url(
+    url: str,
+) -> MutationResult:
+    """Validate URL format and scheme. Accepts both HTTP URLs and Spotify URIs."""
     if not url or not url.strip():
         return MutationResult(success=False, message="URL cannot be empty")
 
+    url = url.strip()
+
+    # Accept Spotify URIs in format: spotify:type:id
+    # Valid types: artist, album, track, playlist
+    if url.startswith("spotify:"):
+        spotify_uri_pattern = r"^spotify:(artist|album|track|playlist):[a-zA-Z0-9]+$"
+        if re.match(spotify_uri_pattern, url):
+            return MutationResult(success=True, message="URL valid")
+        return MutationResult(
+            success=False,
+            message="Invalid Spotify URI format. Expected: spotify:type:id",
+        )
+
+    # Accept HTTP/HTTPS URLs
     try:
-        parsed = urlparse(url.strip())
+        parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
             return MutationResult(success=False, message="Invalid URL format")
         if parsed.scheme not in ("http", "https"):
@@ -107,6 +124,11 @@ class Mutation:  # pylint: disable=too-many-public-methods
         return await services.playlist.toggle_playlist_auto_track(
             playlist_id=playlist_id
         )
+
+    @strawberry.mutation
+    async def delete_playlist(self, playlist_id: int) -> "MutationResult":
+        """Delete a tracked playlist from the database."""
+        return await services.playlist.delete_playlist(playlist_id=playlist_id)
 
     @strawberry.mutation
     async def track_playlist(self, input: TrackPlaylistInput) -> Playlist:
