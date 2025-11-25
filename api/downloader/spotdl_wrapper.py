@@ -49,7 +49,11 @@ class BitrateException(Exception):
 
 
 class SpotdlDownloadError(Exception):
-    pass
+    """Raised when spotdl fails to download a song."""
+
+    def __init__(self, message: str, spotdl_errors: list | None = None):
+        super().__init__(message)
+        self.spotdl_errors = spotdl_errors or []
 
 
 class PremiumExpiredException(Exception):
@@ -629,7 +633,11 @@ class SpotdlWrapper:
                     if song_success is None or output_path is None:
                         self.logger.debug(song_success)
                         self.logger.debug(f"output_path: {output_path}")
-                        raise SpotdlDownloadError("Failed to download correctly")
+                        # Capture spotdl error details for debugging
+                        spotdl_errors = list(self.spotdl.downloader.errors)
+                        raise SpotdlDownloadError(
+                            "Failed to download correctly", spotdl_errors=spotdl_errors
+                        )
 
                     # Validate the song is in the correct audio bitrate using premium detection
                     spotify_url = track["external_urls"]["spotify"]
@@ -734,8 +742,10 @@ class SpotdlWrapper:
                                     )
                                 )
                                 if song_success is None or output_path is None:
+                                    spotdl_errors = list(self.spotdl.downloader.errors)
                                     raise SpotdlDownloadError(
-                                        "Failed to download correctly after token refresh"
+                                        "Failed to download correctly after token refresh",
+                                        spotdl_errors=spotdl_errors,
                                     )
 
                                 # Success! Continue with bitrate validation...
@@ -802,6 +812,10 @@ class SpotdlWrapper:
                     self.logger.error(
                         "This track is possibly not available in your region"
                     )
+                    # Log detailed spotdl errors at debug level for troubleshooting
+                    if spotdl_download_exception.spotdl_errors:
+                        for err in spotdl_download_exception.spotdl_errors:
+                            self.logger.debug(f"Spotdl error detail: {err}")
                     # Don't infinitely retry missing songs
                     db_song.increment_failed_count()
                 except Exception as general_exception:
