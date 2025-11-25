@@ -79,24 +79,26 @@ class DownloaderService:
     async def _handle_playlist_download(
         self, playlist_url: str, auto_track_artists: bool
     ) -> MutationResult:
-        """Handle playlist download and tracking."""
-        try:
-            # Extract playlist ID from URL
-            playlist_id = self._extract_id_from_url(playlist_url)
+        """Handle one-time playlist download (without tracking)."""
+        from asgiref.sync import sync_to_async
 
-            # Create or update playlist
-            playlist = await self.playlist_service.track_playlist(
-                playlist_id=playlist_id, auto_track_artists=auto_track_artists
+        from library_manager.tasks import download_playlist
+
+        try:
+            # Queue the download task directly - no need to save playlist to DB
+            await sync_to_async(download_playlist.delay)(
+                playlist_url=playlist_url,
+                tracked=auto_track_artists,  # Whether to track artists found in playlist
+                force_playlist_resync=False,
             )
 
             return MutationResult(
                 success=True,
-                message=f"Successfully started tracking playlist: {playlist.name}",
-                playlist=playlist,
+                message="Started downloading playlist",
             )
         except Exception as e:
             return MutationResult(
-                success=False, message=f"Failed to track playlist: {str(e)}"
+                success=False, message=f"Failed to download playlist: {str(e)}"
             )
 
     async def _handle_artist_download(self, artist_url: str) -> MutationResult:

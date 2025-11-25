@@ -206,10 +206,11 @@ class TestSpotdlWrapperTokenRefresh:
         config.spotify_user_auth_enabled = False
         return config
 
+    @pytest.mark.django_db(transaction=False, databases=[])
     @patch("downloader.spotdl_wrapper.SpotifyClient")
     @patch("downloader.spotdl_wrapper.Spotdl")
     def test_refresh_spotify_client_uses_credentials_from_settings(
-        self, mock_spotdl, mock_spotify_client_class, mock_config
+        self, mock_spotdl, mock_spotify_client_class, mock_config, settings
     ):
         """
         Regression test: Ensure refresh_spotify_client passes client credentials.
@@ -217,6 +218,10 @@ class TestSpotdlWrapperTokenRefresh:
         Previously, the method passed empty strings for client_id/client_secret,
         causing spotipy to fail with "No client_id" error during token refresh.
         """
+        # Set test credentials in Django settings using pytest-django's settings fixture
+        settings.SPOTIPY_CLIENT_ID = "test_client_id_from_settings"
+        settings.SPOTIPY_CLIENT_SECRET = "test_client_secret_from_settings"
+
         wrapper = SpotdlWrapper(mock_config)
 
         # Reset mock to capture the refresh call
@@ -243,14 +248,14 @@ class TestSpotdlWrapperTokenRefresh:
         mock_spotify_client_class.init.assert_called_once()
         call_kwargs = mock_spotify_client_class.init.call_args[1]
 
-        # THE KEY ASSERTION: client_id and client_secret must NOT be empty
+        # THE KEY ASSERTION: client_id and client_secret must come from settings
         # The fix was changing these from "" to actual values from Django settings
         assert (
-            call_kwargs["client_id"] != ""
-        ), "client_id must NOT be empty - should come from Django settings"
+            call_kwargs["client_id"] == "test_client_id_from_settings"
+        ), "client_id must come from Django settings"
         assert (
-            call_kwargs["client_secret"] != ""
-        ), "client_secret must NOT be empty - should come from Django settings"
+            call_kwargs["client_secret"] == "test_client_secret_from_settings"
+        ), "client_secret must come from Django settings"
         assert call_kwargs["auth_token"] == "fresh_access_token"
         assert call_kwargs["user_auth"] is False
 

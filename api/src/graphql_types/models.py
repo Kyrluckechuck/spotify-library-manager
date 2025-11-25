@@ -338,6 +338,7 @@ class SpotifySearchArtist:
     genres: List[str]
     in_library: bool  # True if this artist is already in our local database
     local_id: Optional[int]  # Database ID if in_library is True
+    is_tracked: bool  # True if this artist is being tracked (only when in_library=True)
 
 
 @strawberry.type

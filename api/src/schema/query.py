@@ -351,6 +351,7 @@ class Query:
                     genres=a.genres,
                     in_library=a.in_library,
                     local_id=a.local_id,
+                    is_tracked=a.is_tracked,
                 )
                 for a in results.artists
             ],

@@ -9,6 +9,7 @@ query SpotifySearch($query: String!, $types: [String!], $limit: Int) {
       genres
       inLibrary
       localId
+      isTracked
     }
     albums {
       id

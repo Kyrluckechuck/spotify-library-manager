@@ -6,6 +6,7 @@ import {
   SpotifySearchDocument,
   TrackArtistDocument,
   DownloadUrlDocument,
+  SavePlaylistDocument,
 } from '../../types/generated/graphql';
 import { useToast } from './useToast';
 
@@ -36,6 +37,8 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
     useMutation(TrackArtistDocument);
   const [downloadUrl, { loading: downloading }] =
     useMutation(DownloadUrlDocument);
+  const [savePlaylist, { loading: savingPlaylist }] =
+    useMutation(SavePlaylistDocument);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -127,6 +130,20 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
       }
     },
     [downloadUrl, toast]
+  );
+
+  const handleSavePlaylist = useCallback(
+    async (spotifyId: string, name: string) => {
+      try {
+        await savePlaylist({
+          variables: { spotifyId, autoTrackArtists: false },
+        });
+        toast.success(`Saved playlist "${name}" for tracking`);
+      } catch (err) {
+        toast.error(`Failed to save playlist: ${err}`);
+      }
+    },
+    [savePlaylist, toast]
   );
 
   const handleNavigate = useCallback(
@@ -354,10 +371,13 @@ export const SpotifySearchModal: React.FC<SpotifySearchModalProps> = ({
                       <PlaylistResult
                         key={playlist.id}
                         playlist={playlist}
+                        onSave={() =>
+                          handleSavePlaylist(playlist.id, playlist.name)
+                        }
                         onDownload={() =>
                           handleDownload(playlist.spotifyUri, playlist.name)
                         }
-                        isLoading={downloading}
+                        isLoading={downloading || savingPlaylist}
                       />
                     ))}
                   </ResultSection>
@@ -438,11 +458,15 @@ const ArtistResult: React.FC<ArtistResultProps> = ({
       </div>
     </div>
     <div className='flex items-center gap-2'>
-      {artist.inLibrary && (
+      {artist.isTracked ? (
+        <span className='px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded'>
+          Tracked
+        </span>
+      ) : artist.inLibrary ? (
         <span className='px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded'>
           In Library
         </span>
-      )}
+      ) : null}
       {onNavigate && (
         <button
           onClick={onNavigate}
@@ -451,13 +475,15 @@ const ArtistResult: React.FC<ArtistResultProps> = ({
           View
         </button>
       )}
-      <button
-        onClick={onTrack}
-        disabled={isLoading}
-        className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50'
-      >
-        {artist.inLibrary ? 'Sync' : 'Track'}
-      </button>
+      {!artist.isTracked && (
+        <button
+          onClick={onTrack}
+          disabled={isLoading}
+          className='px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50'
+        >
+          {artist.inLibrary ? 'Start Tracking' : 'Track'}
+        </button>
+      )}
     </div>
   </div>
 );
@@ -574,12 +600,14 @@ const TrackResult: React.FC<TrackResultProps> = ({
 
 interface PlaylistResultProps {
   playlist: SpotifySearchQuery['spotifySearch']['playlists'][0];
+  onSave: () => void;
   onDownload: () => void;
   isLoading: boolean;
 }
 
 const PlaylistResult: React.FC<PlaylistResultProps> = ({
   playlist,
+  onSave,
   onDownload,
   isLoading,
 }) => (
@@ -613,10 +641,18 @@ const PlaylistResult: React.FC<PlaylistResultProps> = ({
       )}
     </div>
     <div className='flex items-center gap-2'>
-      {playlist.inLibrary && (
+      {playlist.inLibrary ? (
         <span className='px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded'>
-          Tracked
+          Saved
         </span>
+      ) : (
+        <button
+          onClick={onSave}
+          disabled={isLoading}
+          className='px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50 disabled:opacity-50'
+        >
+          Save
+        </button>
       )}
       <button
         onClick={onDownload}

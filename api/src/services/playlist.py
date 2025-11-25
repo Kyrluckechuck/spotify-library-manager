@@ -176,6 +176,58 @@ class PlaylistService(BaseService[Playlist]):
 
         return self._to_graphql_type(django_playlist)
 
+    async def save_playlist_by_spotify_id(
+        self, spotify_id: str, auto_track_artists: bool = False
+    ) -> Playlist:
+        """
+        Save a playlist by its Spotify ID, fetching the name from Spotify.
+        Creates the playlist if it doesn't exist, or returns existing one.
+        """
+        spotify_uri = f"spotify:playlist:{spotify_id}"
+
+        # Check if playlist already exists
+        existing_playlist = await sync_to_async(
+            lambda: self._find_duplicate_playlist(spotify_uri)
+        )()
+
+        if existing_playlist:
+            # Enable tracking if not already enabled
+            if not existing_playlist.enabled:
+                existing_playlist.enabled = True
+                existing_playlist.auto_track_artists = auto_track_artists
+                await sync_to_async(existing_playlist.save)()
+
+                # Queue sync tasks
+                from library_manager.tasks import (
+                    sync_tracked_playlist,
+                    sync_tracked_playlist_artists,
+                )
+
+                await sync_to_async(sync_tracked_playlist.delay)(existing_playlist.id)
+                if auto_track_artists:
+                    await sync_to_async(sync_tracked_playlist_artists.delay)(
+                        existing_playlist.id
+                    )
+
+            return self._to_graphql_type(existing_playlist)
+
+        # Fetch playlist name from Spotify
+        def get_playlist_name() -> str:
+            from downloader.spotipy_tasks import SpotifyClient
+
+            sp = SpotifyClient().sp
+            playlist_data = sp.playlist(spotify_id, fields="name")
+            return str(playlist_data.get("name", f"Playlist {spotify_id}"))
+
+        playlist_name = await sync_to_async(get_playlist_name)()
+
+        # Create the playlist
+        return await self.create_playlist(
+            name=playlist_name,
+            url=spotify_uri,
+            auto_track_artists=auto_track_artists,
+        )
+
     async def create_playlist(
         self, name: str, url: str, auto_track_artists: bool = False
     ) -> Playlist:

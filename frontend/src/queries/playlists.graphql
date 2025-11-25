@@ -4,3 +4,14 @@ mutation DownloadAllPlaylists {
     message
   }
 }
+
+mutation SavePlaylist($spotifyId: String!, $autoTrackArtists: Boolean) {
+  savePlaylist(spotifyId: $spotifyId, autoTrackArtists: $autoTrackArtists) {
+    id
+    name
+    url
+    enabled
+    autoTrackArtists
+    lastSyncedAt
+  }
+}

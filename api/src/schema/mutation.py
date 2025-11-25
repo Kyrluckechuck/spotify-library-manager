@@ -181,6 +181,18 @@ class Mutation:  # pylint: disable=too-many-public-methods
         )
 
     @strawberry.mutation
+    async def save_playlist(
+        self, spotify_id: str, auto_track_artists: bool = False
+    ) -> Playlist:
+        """
+        Save a playlist by its Spotify ID for ongoing tracking.
+        Fetches the playlist name from Spotify automatically.
+        """
+        return await services.playlist.save_playlist_by_spotify_id(
+            spotify_id=spotify_id.strip(), auto_track_artists=auto_track_artists
+        )
+
+    @strawberry.mutation
     async def cancel_all_pending_tasks(self) -> "MutationResult":
         """Cancel all pending tasks in the Celery queue."""
         return await services.task_management.cancel_all_pending_tasks()

@@ -25,6 +25,8 @@ class SpotifySearchArtist:  # pylint: disable=too-many-instance-attributes
     # Whether this artist is already in our local database
     in_library: bool = False
     local_id: Optional[int] = None
+    # Whether this artist is being tracked (only set if in_library is True)
+    is_tracked: bool = False
 
 
 @dataclass
@@ -201,6 +203,7 @@ class SpotifySearchService:
                     genres=item.get("genres", []),
                     in_library=local_artist is not None,
                     local_id=local_artist.id if local_artist else None,
+                    is_tracked=local_artist.tracked if local_artist else False,
                 )
             )
 

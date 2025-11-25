@@ -118,6 +118,7 @@ type Mutation {
   downloadArtist(artistId: String!): MutationResult!
   downloadUrl(autoTrackArtists: Boolean! = false, url: String!): MutationResult!
   runPeriodicTaskNow(taskId: Int!): MutationResult!
+  savePlaylist(autoTrackArtists: Boolean! = false, spotifyId: String!): Playlist!
   setAlbumWanted(albumId: Int!, wanted: Boolean!): MutationResult!
   setPeriodicTaskEnabled(enabled: Boolean!, taskId: Int!): PeriodicTask!
   syncAllTrackedArtists: MutationResult!
@@ -240,6 +241,7 @@ type SpotifySearchArtist {
   id: String!
   imageUrl: String
   inLibrary: Boolean!
+  isTracked: Boolean!
   localId: Int
   name: String!
   spotifyUri: String!
