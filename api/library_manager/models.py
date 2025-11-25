@@ -188,6 +188,7 @@ class Song(models.Model):
         unavailable: Whether song is unavailable on Spotify
         file_path_ref: Reference to file path (if downloaded)
         downloaded: Whether the song has been downloaded
+        last_download_attempt: When the song was last queued for download (for rate limiting)
     """
 
     id: models.BigAutoField = models.BigAutoField(primary_key=True)
@@ -208,6 +209,9 @@ class Song(models.Model):
         FilePath, on_delete=models.SET_NULL, null=True, blank=True, related_name="songs"
     )
     downloaded: models.BooleanField = models.BooleanField(default=False)
+    last_download_attempt: models.DateTimeField = models.DateTimeField(
+        null=True, blank=True, help_text="When the song was last queued for download"
+    )
 
     def clean(self) -> None:
         """

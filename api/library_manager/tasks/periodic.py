@@ -34,8 +34,8 @@ def queue_missing_albums_for_tracked_artists(self: Any) -> None:
     """
     Periodically find tracked artists with missing music and queue downloads.
 
-    Finds up to 300 albums that are marked as wanted but not yet downloaded
-    from tracked artists, and queues them for download.
+    Finds up to 50 albums that are marked as wanted but not yet downloaded
+    from tracked artists, and queues them for download. Runs hourly.
     """
     try:
         logger.info("Starting periodic queue of missing albums for tracked artists")
@@ -49,7 +49,7 @@ def queue_missing_albums_for_tracked_artists(self: Any) -> None:
                 album_type__in=ALBUM_TYPES_TO_DOWNLOAD,
             )
             .exclude(album_group__in=ALBUM_GROUPS_TO_IGNORE)
-            .order_by("id")[:300]
+            .order_by("id")[:50]
         )
 
         if not missing_albums.exists():

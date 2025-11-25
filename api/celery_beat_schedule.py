@@ -10,16 +10,16 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute=0, hour="*/8"),  # Every 8 hours
         "options": {"priority": 1},
     },
-    "retry-failed-playlist-songs": {
+    "validate-undownloaded-songs": {
         "task": "library_manager.tasks.validate_undownloaded_songs",
-        "schedule": crontab(
-            minute=0, hour=3, day_of_week=0
-        ),  # Weekly on Sunday at 3 AM
+        "schedule": crontab(minute=0, hour="*/12"),  # Every 12 hours
         "options": {"priority": 1},
     },
     "retry-failed-songs": {
         "task": "library_manager.tasks.retry_failed_songs",
-        "schedule": crontab(minute=0, hour="*/6"),  # Every 6 hours
+        "schedule": crontab(
+            minute=0, hour=4, day_of_week="1,3,5"
+        ),  # Mon/Wed/Fri at 4 AM
         "options": {"priority": 2},
     },
     "queue-missing-albums-for-tracked-artists": {

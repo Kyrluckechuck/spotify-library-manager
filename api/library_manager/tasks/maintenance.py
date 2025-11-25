@@ -95,20 +95,42 @@ def cleanup_celery_history(self: Any, days_to_keep: int = 30) -> None:
     autoretry_for=(Exception,),
     retry_kwargs={"max_retries": 2, "countdown": 30},
     name="library_manager.tasks.validate_undownloaded_songs",
-)
+)  # Scheduled via Celery Beat - Every 12 hours
 def validate_undownloaded_songs(
     self: Any,
     task_id: Optional[str] = None,
 ) -> None:
+    """
+    Validate and re-download songs that should exist but aren't downloaded.
+
+    Processes up to 100 songs per run. Each song can only be attempted once per week
+    (tracked via last_download_attempt field). Runs every 12 hours but respects
+    the weekly per-song limit.
+    """
+    from datetime import timedelta
+
+    from django.db.models import Q
+    from django.utils import timezone
+
     # Check authentication before proceeding with any DB queries
     require_download_capability()
 
-    non_downloaded_songs_that_should_exist = Song.objects.filter(
-        bitrate__gt=0, unavailable=False, downloaded=False
-    ).order_by("created_at")[:500]
-    non_downloaded_songs_that_maybe_should_exist = Song.objects.filter(
-        bitrate__gt=0, unavailable=True, downloaded=False
-    ).order_by("created_at")[:500]
+    # Only attempt songs that haven't been tried in the last 7 days
+    one_week_ago = timezone.now() - timedelta(days=7)
+    not_recently_attempted = Q(last_download_attempt__isnull=True) | Q(
+        last_download_attempt__lt=one_week_ago
+    )
+
+    non_downloaded_songs_that_should_exist = (
+        Song.objects.filter(bitrate__gt=0, unavailable=False, downloaded=False)
+        .filter(not_recently_attempted)
+        .order_by("created_at")[:100]
+    )
+    non_downloaded_songs_that_maybe_should_exist = (
+        Song.objects.filter(bitrate__gt=0, unavailable=True, downloaded=False)
+        .filter(not_recently_attempted)
+        .order_by("created_at")[:100]
+    )
 
     non_downloaded_songs = (
         non_downloaded_songs_that_should_exist
@@ -116,14 +138,17 @@ def validate_undownloaded_songs(
     )
 
     non_downloaded_songs_count = non_downloaded_songs.count()
-    non_downloaded_songs_that_should_exist_count = (
-        non_downloaded_songs_that_should_exist.count()
-    )
 
     # No songs to attempt
     if non_downloaded_songs_count == 0:
-        logger.info("All songs marked downloaded that should be!")
+        logger.info(
+            "No songs to validate (all downloaded or attempted within last week)"
+        )
         return
+
+    # Mark these songs as being attempted now
+    song_ids = [song.id for song in non_downloaded_songs]
+    Song.objects.filter(id__in=song_ids).update(last_download_attempt=timezone.now())
 
     missing_song_array = [song.spotify_uri for song in non_downloaded_songs]
 
@@ -146,18 +171,12 @@ def validate_undownloaded_songs(
             task_progress_callback = update_task_progress_callback
 
     spotdl_wrapper.execute(downloader_config, task_progress_callback)
-
-    # Don't call recursively if there weren't any songs that definitely should have existed
-    if non_downloaded_songs_that_should_exist_count == 0:
-        logger.info("All songs marked downloaded that should be!")
-        return
-    # Queue up next batch after ensuring rate limit has passed
-    validate_undownloaded_songs.delay()
+    logger.info(f"Completed validation attempt for {non_downloaded_songs_count} songs")
 
 
 @celery_app.task(
     bind=True, name="library_manager.tasks.retry_failed_songs"
-)  # Scheduled via Celery Beat - Every 6 hours
+)  # Scheduled via Celery Beat - 3 times per week
 def retry_failed_songs(self: Any) -> None:
     """
     Periodically retry downloading songs that have previously failed.
@@ -171,6 +190,7 @@ def retry_failed_songs(self: Any) -> None:
     2. created_at ASC (older songs = higher priority within same failure count)
 
     Songs with >10 failures are skipped (likely permanently unavailable).
+    Runs 3 times per week (Mon/Wed/Fri).
     """
     try:
         logger.info("Starting periodic retry of failed songs")
