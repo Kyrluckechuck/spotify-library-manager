@@ -9,6 +9,7 @@ from ..graphql_types.models import (
     Album,
     Artist,
     MutationResult,
+    PeriodicTask,
     Playlist,
     TrackPlaylistInput,
     UpdateAlbumInput,
@@ -181,7 +182,7 @@ class Mutation:  # pylint: disable=too-many-public-methods
 
     @strawberry.mutation
     async def cancel_all_pending_tasks(self) -> "MutationResult":
-        """Cancel all pending tasks in the Huey queue."""
+        """Cancel all pending tasks in the Celery queue."""
         return await services.task_management.cancel_all_pending_tasks()
 
     @strawberry.mutation
@@ -361,3 +362,28 @@ class Mutation:  # pylint: disable=too-many-public-methods
             return MutationResult(
                 success=False, message=f"Failed to disconnect: {str(e)}"
             )
+
+    @strawberry.mutation
+    async def set_periodic_task_enabled(
+        self, task_id: int, enabled: bool
+    ) -> PeriodicTask:
+        """Enable or disable a periodic task.
+
+        Core tasks (cleanup, stale task detection) cannot be disabled.
+        """
+        result = await services.periodic_task.toggle_enabled(task_id, enabled)
+        if result is None:
+            raise ValueError("Task not found or is a core task that cannot be toggled")
+        return result
+
+    @strawberry.mutation
+    async def run_periodic_task_now(self, task_id: int) -> MutationResult:
+        """Queue a periodic task to run immediately."""
+        success = await services.periodic_task.run_now(task_id)
+        if success:
+            return MutationResult(
+                success=True, message="Task queued for immediate execution"
+            )
+        return MutationResult(
+            success=False, message="Task not found or could not be queued"
+        )

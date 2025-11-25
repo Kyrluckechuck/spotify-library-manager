@@ -66,6 +66,7 @@ module = [
     "huey_monitor.*",
     "base62.*",
     "celery.*",
+    "django_celery_beat.*",
     "django_celery_results.*",
     "psutil",
     "psutil.*",

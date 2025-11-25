@@ -117,7 +117,9 @@ type Mutation {
   downloadAllTrackedArtists: MutationResult!
   downloadArtist(artistId: String!): MutationResult!
   downloadUrl(autoTrackArtists: Boolean! = false, url: String!): MutationResult!
+  runPeriodicTaskNow(taskId: Int!): MutationResult!
   setAlbumWanted(albumId: Int!, wanted: Boolean!): MutationResult!
+  setPeriodicTaskEnabled(enabled: Boolean!, taskId: Int!): PeriodicTask!
   syncAllTrackedArtists: MutationResult!
   syncArtist(artistId: String!): Artist!
   syncPlaylist(force: Boolean! = false, playlistId: Int!): MutationResult!
@@ -146,6 +148,18 @@ type PageInfo {
   startCursor: String
 }
 
+type PeriodicTask {
+  description: String
+  enabled: Boolean!
+  id: Int!
+  isCore: Boolean!
+  lastRunAt: DateTime
+  name: String!
+  scheduleDescription: String!
+  task: String!
+  totalRunCount: Int!
+}
+
 type Playlist {
   autoTrackArtists: Boolean!
   enabled: Boolean!
@@ -167,6 +181,7 @@ type Query {
   artist(id: String!): Artist
   artists(after: String = null, first: Int = 20, isTracked: Boolean = null, search: String = null, sortBy: String = null, sortDirection: String = null): ArtistConnection!
   downloadHistory(after: String = null, entityType: String = null, first: Int = 20, status: String = null): HistoryConnection!
+  periodicTasks(enabledOnly: Boolean = false): [PeriodicTask!]!
   playlist(id: String!): Playlist
   playlists(after: String = null, enabled: Boolean = null, first: Int = 20, search: String = null, sortBy: String = null, sortDirection: String = null): PlaylistConnection!
   queueStatus: QueueStatus!

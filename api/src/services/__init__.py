@@ -5,6 +5,7 @@ from .album import AlbumService
 from .artist import ArtistService
 from .downloader import DownloaderService
 from .history import DownloadHistoryService
+from .periodic_task import PeriodicTaskService
 from .playlist import PlaylistService
 from .song import SongService
 from .task_history import TaskHistoryService
@@ -50,6 +51,10 @@ class ServiceRegistry:
     @cached_property
     def task_management(self) -> TaskManagementService:
         return TaskManagementService()
+
+    @cached_property
+    def periodic_task(self) -> PeriodicTaskService:
+        return PeriodicTaskService()
 
 
 services = ServiceRegistry()

@@ -21,7 +21,7 @@ services:
     command: bash -c "
       echo '🚀 Starting web service (DEV MODE)...';
       echo '📦 Installing dev dependencies...';
-      pip install -r requirements-dev.txt &&
+      pip install -r /requirements/requirements.txt -r /requirements/requirements-dev.txt &&
       echo '📊 Environment check:';
       echo 'Python version:' $(python --version);
       echo 'Working directory:' $(pwd);
@@ -49,8 +49,9 @@ services:
     volumes:
       # Live code sync for development
       - ./api:/app
-      - ./requirements.txt:/app/requirements.txt
-      - ./requirements-dev.txt:/app/requirements-dev.txt
+      # Mount requirements to /requirements/ to avoid conflicts with ./api:/app mount
+      - ./requirements.txt:/requirements/requirements.txt:ro
+      - ./requirements-dev.txt:/requirements/requirements-dev.txt:ro
       - python_packages:/app/.venv
       - pip_cache:/root/.cache/pip
 
@@ -98,7 +99,7 @@ services:
     command: bash -c "
       echo '🔄 Starting Celery worker (DEV MODE with auto-restart)...';
       echo '📦 Installing dev dependencies...';
-      pip install -r requirements-dev.txt &&
+      pip install -r /requirements/requirements.txt -r /requirements/requirements-dev.txt &&
       echo '🔍 Checking watchdog installation...';
       python -c 'import watchdog; print(\"Watchdog installed successfully\")' &&
       echo '👷 Starting Celery worker with auto-restart on code changes...';
@@ -116,10 +117,11 @@ services:
     volumes:
       # Live code sync for development
       - ./api:/app
-      - ./requirements.txt:/app/requirements.txt
-      - ./requirements-dev.txt:/app/requirements-dev.txt
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./pytest.ini:/app/pytest.ini
+      # Mount config files to /requirements/ and /config/ to avoid conflicts with ./api:/app mount
+      - ./requirements.txt:/requirements/requirements.txt:ro
+      - ./requirements-dev.txt:/requirements/requirements-dev.txt:ro
+      - ./pyproject.toml:/config/pyproject.toml:ro
+      - ./pytest.ini:/config/pytest.ini:ro
       - python_packages:/app/.venv
       - pip_cache:/root/.cache/pip
 
@@ -133,7 +135,7 @@ services:
     command: bash -c "
       echo '📅 Starting Celery beat (DEV MODE with auto-restart)...';
       echo '📦 Installing dev dependencies...';
-      pip install -r requirements-dev.txt &&
+      pip install -r /requirements/requirements.txt -r /requirements/requirements-dev.txt &&
       echo '⏰ Starting Celery beat with auto-restart on code changes...';
       python -m watchdog.watchmedo auto-restart --directory=/app --pattern='*.py' --recursive --
       celery -A celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
@@ -149,10 +151,11 @@ services:
     volumes:
       # Live code sync for development
       - ./api:/app
-      - ./requirements.txt:/app/requirements.txt
-      - ./requirements-dev.txt:/app/requirements-dev.txt
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./pytest.ini:/app/pytest.ini
+      # Mount config files to /requirements/ and /config/ to avoid conflicts with ./api:/app mount
+      - ./requirements.txt:/requirements/requirements.txt:ro
+      - ./requirements-dev.txt:/requirements/requirements-dev.txt:ro
+      - ./pyproject.toml:/config/pyproject.toml:ro
+      - ./pytest.ini:/config/pytest.ini:ro
       - python_packages:/app/.venv
       - pip_cache:/root/.cache/pip
 

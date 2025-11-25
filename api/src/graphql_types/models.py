@@ -273,6 +273,21 @@ class QueueStatus:
 
 
 @strawberry.type
+class PeriodicTask:
+    """A scheduled periodic task from Celery Beat."""
+
+    id: int
+    name: str
+    task: str
+    enabled: bool
+    is_core: bool  # Core tasks (cleanup, stale task detection) shouldn't be toggled
+    description: Optional[str]
+    schedule_description: str
+    last_run_at: Optional[DateTime]
+    total_run_count: int
+
+
+@strawberry.type
 class AuthenticationStatus:
     """Authentication status for YouTube Music Premium downloads and Spotify access."""
 

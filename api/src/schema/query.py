@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import strawberry
 
@@ -11,6 +11,7 @@ from ..graphql_types.models import (
     HistoryConnection,
     HistoryEdge,
     PageInfo,
+    PeriodicTask,
     Playlist,
     PlaylistConnection,
     QueueStatus,
@@ -247,7 +248,7 @@ class Query:
 
     @strawberry.field
     async def queue_status(self) -> QueueStatus:
-        """Get the current status of the Huey task queue."""
+        """Get the current status of the Celery task queue."""
         status = await services.task_management.get_queue_status()
 
         # Convert the task_counts dict to a list of TaskCount objects
@@ -263,6 +264,15 @@ class Query:
             task_counts=task_counts,
             queue_size=status["queue_size"],
         )
+
+    @strawberry.field
+    async def periodic_tasks(
+        self, enabled_only: Optional[bool] = False
+    ) -> List[PeriodicTask]:
+        """Get all scheduled periodic tasks from Celery Beat."""
+        if enabled_only:
+            return await services.periodic_task.get_enabled()
+        return await services.periodic_task.get_all()
 
     @strawberry.field
     async def system_health(self) -> SystemHealth:

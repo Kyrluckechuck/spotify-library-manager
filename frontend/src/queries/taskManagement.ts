@@ -48,3 +48,39 @@ export const CancelAllTasksDocument = gql`
     }
   }
 `;
+
+export const GetPeriodicTasksDocument = gql`
+  query GetPeriodicTasks($enabledOnly: Boolean) {
+    periodicTasks(enabledOnly: $enabledOnly) {
+      id
+      name
+      task
+      enabled
+      isCore
+      description
+      scheduleDescription
+      lastRunAt
+      totalRunCount
+    }
+  }
+`;
+
+export const SetPeriodicTaskEnabledDocument = gql`
+  mutation SetPeriodicTaskEnabled($taskId: Int!, $enabled: Boolean!) {
+    setPeriodicTaskEnabled(taskId: $taskId, enabled: $enabled) {
+      id
+      name
+      enabled
+      isCore
+    }
+  }
+`;
+
+export const RunPeriodicTaskNowDocument = gql`
+  mutation RunPeriodicTaskNow($taskId: Int!) {
+    runPeriodicTaskNow(taskId: $taskId) {
+      success
+      message
+    }
+  }
+`;

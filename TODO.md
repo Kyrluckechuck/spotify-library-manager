@@ -9,10 +9,9 @@
 - [x] **Event bus: extract album ID from task args** - Improve task event handling
 - [x] **Async/await cleanup where needed** - Lightweight pass through codebase
 - [x] **API input validation for mutations** - Add incremental validation improvements
-- [ ] **Downloader fallback** - Implement `spotdl_wrapper` with settings gate
 - [x] **Fix Django 5.1 deprecation warnings** - No deprecation warnings found in testing
-- [ ] **Implement downloader fallback (`spotdl_wrapper`)** - Add fallback to yt-dlp when no Spotify AAC
-- [ ] **Task visualization dashboard** - Show scheduled tasks (beat periodic tasks + ad-hoc queued tasks)
+- [x] **Downloader with yt-dlp fallback** - spotdl_wrapper uses YouTube Music via yt-dlp (already implemented)
+- [x] **Task visualization dashboard** - Show scheduled tasks (beat periodic tasks + ad-hoc queued tasks)
 - [x] **Add periodic heartbeat updates during long downloads** - Implemented progress callbacks in spotdl_wrapper every 5 songs
 
 ## Frontend
@@ -44,12 +43,12 @@
 - [ ] **Optional: Fix branch name typo** - `overhual-frontend-tanstack` → `overhaul-frontend-tanstack`
 
 ## Features and Enhancements
-- [ ] **Artist Detail Page** - Dedicated page showing artist info, albums, and songs
-  - [ ] Backend: Add `albumCount`, `downloadedAlbumCount`, `songCount` to Artist GraphQL type
-  - [ ] Frontend: New route `artists.$artistId.tsx` with single scrollable layout
-  - [ ] Frontend: New hook `useArtistDetailPage.ts`
-  - [ ] Frontend: Update `GetArtist` query to include new counts
-  - [ ] Frontend: Make artist table rows clickable → navigate to detail page
+- [x] **Artist Detail Page** - Dedicated page showing artist info, albums, and songs
+  - [x] Backend: Add `albumCount`, `downloadedAlbumCount`, `songCount` to Artist GraphQL type
+  - [x] Frontend: New route `artists_.$artistId.tsx` with single scrollable layout
+  - [x] Frontend: New hook `useArtistDetailPage.ts`
+  - [x] Frontend: Update `GetArtist` query to include new counts
+  - [x] Frontend: Make artist table rows clickable → navigate to detail page
 - [ ] **Tracked Playlists improvements** - Improve update experience (not URL-locked)
 - [ ] **Configurable periodic task intervals** - Allow customization of sync intervals
 - [ ] **Add artists directly** - Add by artist name (not just URL)

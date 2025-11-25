@@ -20,7 +20,7 @@ export function QueueManagementSection({
       <div className='px-6 py-4 border-b border-gray-200'>
         <div className='flex items-center justify-between'>
           <h2 className='text-lg font-semibold text-gray-900'>
-            Huey Queue Management
+            Celery Task Queue
           </h2>
           <div className='flex items-center gap-2'>
             <span className='text-sm text-gray-600'>
@@ -36,8 +36,10 @@ export function QueueManagementSection({
         {totalPendingTasks === 0 ? (
           <div className='text-center py-8 text-gray-500'>
             <div className='text-4xl mb-4'>✅</div>
-            <p>No pending tasks in Huey queue</p>
-            <p className='text-sm'>All tasks are either running or completed</p>
+            <p>No tasks queued</p>
+            <p className='text-sm'>
+              Tasks will appear here when queued for processing
+            </p>
           </div>
         ) : (
           <div className='space-y-4'>

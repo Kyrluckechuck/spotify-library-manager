@@ -6,6 +6,7 @@ import { useRequestState } from '../hooks/useRequestState';
 import {
   GetTaskHistoryDocument,
   GetQueueStatusDocument,
+  GetPeriodicTasksDocument,
   CancelTasksByNameDocument,
   CancelRunningTasksByNameDocument,
   CancelAllTasksDocument,
@@ -19,6 +20,7 @@ import { TaskStatsHeader } from '../components/tasks/TaskStatsHeader';
 import { QueueManagementSection } from '../components/tasks/QueueManagementSection';
 import { ActiveTasksSection } from '../components/tasks/ActiveTasksSection';
 import { TaskHistorySection } from '../components/tasks/TaskHistorySection';
+import { ScheduledTasksSection } from '../components/tasks/ScheduledTasksSection';
 import type { TaskStatus, TaskType, EntityType } from '../types/shared';
 
 function Tasks() {
@@ -74,6 +76,13 @@ function Tasks() {
   } = useQuery(GetQueueStatusDocument, {
     pollInterval: 5000,
   });
+
+  const { data: periodicData, loading: periodicLoading } = useQuery(
+    GetPeriodicTasksDocument,
+    {
+      pollInterval: 60000, // Refresh every minute
+    }
+  );
 
   const { isRefreshing: isHistoryRefreshing } =
     useRequestState(historyNetworkStatus);
@@ -267,6 +276,11 @@ function Tasks() {
         taskCounts={queueData?.queueStatus?.taskCounts || []}
         onCancelTasksByName={handleCancelTasksByName}
         onCancelAllTasks={handleCancelAllTasks}
+      />
+
+      <ScheduledTasksSection
+        tasks={periodicData?.periodicTasks || []}
+        loading={periodicLoading}
       />
 
       <ActiveTasksSection

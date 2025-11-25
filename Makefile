@@ -40,9 +40,9 @@ dev-container-update:
 		docker compose up --build -d web frontend-dev worker beat; \
 	fi
 	@echo "🔄 Installing updated requirements in containers..."
-	@docker compose exec web pip install -r requirements.txt --quiet || echo "⚠️ Web requirements update failed"
-	@docker compose exec worker pip install -r requirements.txt --quiet || echo "⚠️ Worker requirements update failed"
-	@docker compose exec beat pip install -r requirements.txt --quiet || echo "⚠️ Beat requirements update failed"
+	@docker compose exec web pip install -r /requirements/requirements.txt -r /requirements/requirements-dev.txt --quiet || echo "⚠️ Web requirements update failed"
+	@docker compose exec worker pip install -r /requirements/requirements.txt -r /requirements/requirements-dev.txt --quiet || echo "⚠️ Worker requirements update failed"
+	@docker compose exec beat pip install -r /requirements/requirements.txt -r /requirements/requirements-dev.txt --quiet || echo "⚠️ Beat requirements update failed"
 	@echo "✅ App containers updated and running with latest dependencies. Use 'make dev-container-logs' to view logs."
 
 # Attach to the running dev container logs
