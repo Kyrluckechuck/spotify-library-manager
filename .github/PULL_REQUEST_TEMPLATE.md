@@ -1,11 +1,16 @@
 ## Summary
+Brief description of changes.
 
-- What does this PR change and why?
+## Type of change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+How was this tested?
 
 ## Checklist
-
-- [ ] Lint/tests pass locally
-- [ ] Updated docs or comments if needed
-- [ ] Considered migration/upgrade notes if applicable
-
-## Screenshots (optional)
+- [ ] Code follows project style (`make lint-all` passes)
+- [ ] Tests pass (`make test`)
+- [ ] Documentation updated (if needed)

@@ -69,19 +69,6 @@ docker compose down -v && git pull && docker compose up -d
 ### Full Migration Guide
 For development setups or data preservation, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed instructions.
 
-## TODO
-### Features To Add:
-- [ ] Fallback to yt-dlp when no Spotify AAC
-- [X] Tracked Playlists
-  - [ ] Improve update experience (not URL-locked)
-- [ ] Allow periodic tasks to be configurable intervals
-- [ ] Add artists directly (by artist name?)
-
-### Other Changes:
-- [ ] Re-add Downloader configuration(s) loading via `settings.yaml`
-- [ ] Improve onboarding documentation
-  - [ ] Add critical steps such as first startup, any missing examples, etc
-
 ## Screenshots
 ![Main Dashboard](https://github.com/Kyrluckechuck/spotify-library-manager/assets/7606153/6d32f8d5-fe6b-4884-a5a9-7970aaba284a)
 ![Example Artist Page](https://github.com/Kyrluckechuck/spotify-library-manager/assets/7606153/2dcceee2-41e4-4101-b257-2ca754017c20)
@@ -313,19 +300,3 @@ Notes:
 - The new `0001_initial` includes a `replaces = [...]` list mapping all legacy migrations, so environments that had applied those will upgrade cleanly.
 - Fresh installations are unaffected and will run the new migration sequence as normal.
 
-## Configuration (IGNORE, Half-updated and docker is the intended use)
-> [!CAUTION]
-> TO BE MIGRATED TO `settings.yaml` -- THESE WILL CHANGE NOTHING PRESENTLY
-
-spotify-aac-downloader can be configured using the command line arguments or the config file. The config file is created automatically when you run spotify-aac-downloader for the first time at `~/.spotify-aac-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-aac-downloader\config.json` on Windows. Config file values can be overridden using command line arguments.
-| Command line argument / Config file key                         | Description                                                           | Default value                                       |
-| --------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
-| `-c`, `--cookies-location` / `cookies_location`                 | Location of the cookies file.                                         | `./youtube_music_cookies.txt`                                     |
-| `-w`, `--po-token` / `po_token`                                 | PO Token for your Youtube Music account                                            | `null`                                              |
-| `--config-location` / -                                         | Location of the config file.                                          | `<home_folder>/.spotify-aac-downloader/config.json` |
-| `-l`, `--log-level` / `log_level`                               | Log level.                                                            | `INFO`                                              |
-| `-n`, `--no-lrc` / `no_lrc`                                     | Don't download the synced lyrics.                                     | `false`                                             |
-| `-o`, `--overwrite` / `overwrite`                               | Overwrite existing files.                                             | `false`                                             |
-| `--print-exceptions` / `print_exceptions`                       | Print exceptions.                                                     | `false`                                             |
-| `-u`, `--url-txt` / -                                           | Read URLs as location of text files containing URLs.                  | `false`                                             |
-| `-n`, `--no-config-file` / -                                    | Don't use the config file.                                            | `false`                                             |

@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.1",
   "type": "module",
+  "packageManager": "yarn@1.22.22",
   "description": "Spotify Library Manager - Full Stack Application",
   "scripts": {
     "dev": "vite",

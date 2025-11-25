@@ -1,21 +1,27 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ""
+name: Bug Report
+about: Report something that isn't working correctly
+title: ''
 labels: bug
-assignees: ""
+assignees: ''
 ---
 
-### Describe the bug
+**Describe the bug**
+A clear description of what's happening.
 
-### To Reproduce
-Steps to reproduce the behavior:
+**Steps to reproduce**
+1. Go to '...'
+2. Click on '...'
+3. See error
 
-### Expected behavior
+**Expected behavior**
+What you expected to happen.
 
-### Logs/screenshots
+**Environment**
+- Deployment: Docker / Local
+- Browser (if applicable):
 
-### Environment
-- Version/tag:
-- OS:
-- Docker or source:
+**Logs (if applicable)**
+```
+Paste relevant logs here
+```

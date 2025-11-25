@@ -24,23 +24,13 @@
 - **Optimistic updates** - Library management requires accuracy over perceived speed. False states confuse users about tracking/sync status.
 
 ## CI/CD and Operations
-- [ ] **Monitor CI on main after merge** - Address any flakes that arise
-- [ ] **Add nightly smoke test workflow** - `compose up + /healthz` check
-- [ ] **Optimize Docker image size** - Multi-stage builds and cache tuning
-
-## Monitoring and Observability  
-- [ ] **Dev: GraphQL query logging** - Simple logging implementation
-- [ ] **Prod: basic error tracking hook** - For production environments
+- [x] **Optimize Docker image size** - Multi-stage builds, static FFmpeg, cache mounts, cleanup
 
 ## Repository Hygiene and Developer Experience
-- [ ] **Unify Node package manager** - Standardize on Yarn, remove package-lock.json
+- [x] **Unify Node package manager** - Standardized on Yarn, added packageManager field
 - [x] **Align Python version requirements** - All components now use Python 3.13+
-- [ ] **Documentation and onboarding improvements**:
-  - [ ] Finish migration notes for settings.yaml
-  - [ ] Update README onboarding (first run, required env vars, cookie export, device.wvd)
-  - [ ] Replace README Docker placeholder with exact commands and expected URLs
-- [ ] **Repository templates** - `.github/ISSUE_TEMPLATE` and `PULL_REQUEST_TEMPLATE.md`
-- [ ] **Optional: Fix branch name typo** - `overhual-frontend-tanstack` → `overhaul-frontend-tanstack`
+- [x] **Documentation and onboarding improvements** - README cleaned up, deprecated sections removed
+- [x] **Repository templates** - Bug report, feature request, and PR templates added
 
 ## Features and Enhancements
 - [x] **Artist Detail Page** - Dedicated page showing artist info, albums, and songs
@@ -53,10 +43,6 @@
 - [ ] **Configurable periodic task intervals** - Allow customization of sync intervals
 - [ ] **Add artists directly** - Add by artist name (not just URL)
 - [ ] **Frontend UX improvements** - Loading skeletons for initial loads (optional)
-
-## Quality of Life
-- [ ] **Re-add Downloader configurations loading** - Via settings.yaml
-- [ ] **Improve onboarding documentation** - Add critical first startup steps
 
 ## Notes
 - Priority should be given to items affecting active development workflows
