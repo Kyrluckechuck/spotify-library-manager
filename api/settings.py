@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import dynaconf
+from celery_beat_schedule import CELERY_BEAT_SCHEDULE
 
 # django_stubs_ext is a dev-only dependency for type checking
 # Only import and monkeypatch if available (dev environment)
@@ -108,6 +109,7 @@ settings = dynaconf.DjangoDynaconf(
     CELERY_RESULT_EXTENDED=True,
     CELERY_TASK_TIME_LIMIT=30 * 60,  # 30 minutes
     CELERY_BEAT_SCHEDULER="django_celery_beat.schedulers:DatabaseScheduler",
+    CELERY_BEAT_SCHEDULE=CELERY_BEAT_SCHEDULE,
     # Store additional task metadata
     CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS={
         "master_name": "mymaster",
