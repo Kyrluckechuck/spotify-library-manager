@@ -4,7 +4,7 @@ from django.test import TransactionTestCase
 
 from asgiref.sync import sync_to_async
 
-from library_manager.models import Album, Artist
+from library_manager.models import Album, Artist, Song
 from src.schema import schema
 
 
@@ -126,6 +126,97 @@ class TestArtistQueries(TransactionTestCase):
 
         assert result.errors is None
         assert result.data["artists"]["totalCount"] >= 1
+
+    async def test_artist_detail_query_empty_counts(self):
+        """Test single artist query returns zero counts when no albums/songs."""
+        # Create test artist with no albums or songs
+        artist = await sync_to_async(Artist.objects.create)(
+            name="Empty Artist", gid="emptyartist123", tracked=True
+        )
+
+        query = """
+        query GetArtist($id: String!) {
+            artist(id: $id) {
+                id
+                name
+                albumCount
+                downloadedAlbumCount
+                songCount
+                undownloadedCount
+            }
+        }
+        """
+
+        variables = {"id": str(artist.id)}
+        result = await schema.execute(query, variable_values=variables)
+
+        assert result.errors is None
+        assert result.data["artist"]["name"] == "Empty Artist"
+        assert result.data["artist"]["albumCount"] == 0
+        assert result.data["artist"]["downloadedAlbumCount"] == 0
+        assert result.data["artist"]["songCount"] == 0
+        assert result.data["artist"]["undownloadedCount"] == 0
+
+    async def test_artist_detail_query_with_counts(self):
+        """Test single artist query returns album and song counts."""
+        # Create test artist
+        artist = await sync_to_async(Artist.objects.create)(
+            name="Count Test Artist", gid="counttest123", tracked=True
+        )
+
+        # Create albums (2 total, 1 downloaded)
+        await sync_to_async(Album.objects.create)(
+            name="Downloaded Album",
+            spotify_gid="dlalbum123",
+            artist=artist,
+            total_tracks=10,
+            wanted=True,
+            downloaded=True,
+            album_type="album",
+        )
+        await sync_to_async(Album.objects.create)(
+            name="Pending Album",
+            spotify_gid="pendingalbum123",
+            artist=artist,
+            total_tracks=8,
+            wanted=True,
+            downloaded=False,
+            album_type="album",
+        )
+
+        # Create songs (3 total)
+        for i in range(3):
+            await sync_to_async(Song.objects.create)(
+                name=f"Test Song {i}",
+                gid=f"testsong{i}123",
+                primary_artist=artist,
+                downloaded=i == 0,  # Only first song downloaded
+            )
+
+        query = """
+        query GetArtist($id: String!) {
+            artist(id: $id) {
+                id
+                name
+                albumCount
+                downloadedAlbumCount
+                songCount
+                undownloadedCount
+            }
+        }
+        """
+
+        variables = {"id": str(artist.id)}
+        result = await schema.execute(query, variable_values=variables)
+
+        assert result.errors is None
+        assert result.data["artist"]["name"] == "Count Test Artist"
+        assert result.data["artist"]["albumCount"] == 2
+        assert result.data["artist"]["downloadedAlbumCount"] == 1
+        assert result.data["artist"]["songCount"] == 3
+        assert (
+            result.data["artist"]["undownloadedCount"] == 1
+        )  # 1 wanted, not downloaded
 
 
 class TestAlbumQueries(TransactionTestCase):

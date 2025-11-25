@@ -29,6 +29,15 @@ class TestArtistService:
             patch.object(
                 artist_service, "_get_undownloaded_count", new_callable=AsyncMock
             ) as mock_undownloaded_count,
+            patch.object(
+                artist_service, "_get_album_count", new_callable=AsyncMock
+            ) as mock_album_count,
+            patch.object(
+                artist_service, "_get_downloaded_album_count", new_callable=AsyncMock
+            ) as mock_downloaded_album_count,
+            patch.object(
+                artist_service, "_get_song_count", new_callable=AsyncMock
+            ) as mock_song_count,
         ):
             mock_artist = Mock()
             mock_artist.gid = "test123"
@@ -38,7 +47,10 @@ class TestArtistService:
             mock_artist.id = 1  # Set the Django model ID
             mock_artist.spotify_uri = "spotify:artist:test123"
             mock_aget.return_value = mock_artist
-            mock_undownloaded_count.return_value = 5  # Mock undownloaded count
+            mock_undownloaded_count.return_value = 5
+            mock_album_count.return_value = 10
+            mock_downloaded_album_count.return_value = 8
+            mock_song_count.return_value = 50
 
             result = await artist_service.get_by_id("test123")
 
@@ -46,6 +58,9 @@ class TestArtistService:
             assert result.id == 1  # GraphQL type uses Django model ID
             assert result.name == "Test Artist"
             assert result.is_tracked is True
+            assert result.album_count == 10
+            assert result.downloaded_album_count == 8
+            assert result.song_count == 50
 
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, artist_service):

@@ -8,6 +8,7 @@ from asgiref.sync import sync_to_async
 
 from library_manager.models import Album
 from library_manager.models import Artist as DjangoArtist
+from library_manager.models import Song
 
 from ..graphql_types.models import Artist, MutationResult
 from .base import BaseService
@@ -22,12 +23,16 @@ class ArtistService(BaseService[Artist]):
         try:
             # First try to find by GID
             django_artist = await self.model.objects.aget(gid=id)
-            return await self._to_graphql_type_async(django_artist)
+            return await self._to_graphql_type_async(
+                django_artist, include_full_counts=True
+            )
         except self.model.DoesNotExist:
             try:
                 # If not found by GID, try to find by database ID
                 django_artist = await self.model.objects.aget(id=int(id))
-                return await self._to_graphql_type_async(django_artist)
+                return await self._to_graphql_type_async(
+                    django_artist, include_full_counts=True
+                )
             except (self.model.DoesNotExist, ValueError):
                 return None
 
@@ -260,17 +265,51 @@ class ArtistService(BaseService[Artist]):
             .count()
         )()
 
-    async def _to_graphql_type_async(self, django_artist: DjangoArtist) -> Artist:
-        """Convert Django artist to GraphQL type with async database operations."""
-        # Some unit tests use light mocks without an `id`; be defensive here
+    async def _get_album_count(self, django_artist: DjangoArtist) -> int:
+        """Get total album count for an artist."""
+        return await sync_to_async(
+            lambda: Album.objects.filter(artist=django_artist).count()
+        )()
+
+    async def _get_downloaded_album_count(self, django_artist: DjangoArtist) -> int:
+        """Get downloaded album count for an artist."""
+        return await sync_to_async(
+            lambda: Album.objects.filter(artist=django_artist, downloaded=True).count()
+        )()
+
+    async def _get_song_count(self, django_artist: DjangoArtist) -> int:
+        """Get total song count for an artist."""
+        return await sync_to_async(
+            lambda: Song.objects.filter(primary_artist=django_artist).count()
+        )()
+
+    async def _to_graphql_type_async(
+        self, django_artist: DjangoArtist, include_full_counts: bool = False
+    ) -> Artist:
+        """Convert Django artist to GraphQL type with async database operations.
+
+        Args:
+            django_artist: The Django model instance
+            include_full_counts: If True, fetch all counts (album, downloaded, song).
+                               Use for single-artist detail views, not lists.
+        """
         raw_id = getattr(django_artist, "id", None)
         safe_id: int = int(raw_id) if isinstance(raw_id, (int, str)) else 0
 
-        # Convert GID to Spotify URI for proper URL generation
         spotify_uri = django_artist.spotify_uri
 
-        # Calculate undownloaded count asynchronously
         undownloaded_count = await self._get_undownloaded_count(django_artist)
+
+        album_count = 0
+        downloaded_album_count = 0
+        song_count = 0
+
+        if include_full_counts:
+            album_count = await self._get_album_count(django_artist)
+            downloaded_album_count = await self._get_downloaded_album_count(
+                django_artist
+            )
+            song_count = await self._get_song_count(django_artist)
 
         return Artist(
             id=safe_id,
@@ -294,15 +333,16 @@ class ArtistService(BaseService[Artist]):
                 else None
             ),
             undownloaded_count=undownloaded_count,
+            album_count=album_count,
+            downloaded_album_count=downloaded_album_count,
+            song_count=song_count,
         )
 
     def _to_graphql_type(self, django_artist: DjangoArtist) -> Artist:
-        """Convert Django artist to GraphQL type (sync version without count)."""
-        # Some unit tests use light mocks without an `id`; be defensive here
+        """Convert Django artist to GraphQL type (sync version without counts)."""
         raw_id = getattr(django_artist, "id", None)
         safe_id: int = int(raw_id) if isinstance(raw_id, (int, str)) else 0
 
-        # Convert GID to Spotify URI for proper URL generation
         spotify_uri = django_artist.spotify_uri
 
         return Artist(
@@ -326,5 +366,8 @@ class ArtistService(BaseService[Artist]):
                 if hasattr(django_artist, "added_at") and django_artist.added_at
                 else None
             ),
-            undownloaded_count=0,  # Default to 0 for sync contexts
+            undownloaded_count=0,
+            album_count=0,
+            downloaded_album_count=0,
+            song_count=0,
         )

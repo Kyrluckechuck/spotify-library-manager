@@ -50,6 +50,9 @@ class Artist:
     last_downloaded: Optional[DateTime] = None
     added_at: Optional[DateTime] = None
     undownloaded_count: int = 0
+    album_count: int = 0
+    downloaded_album_count: int = 0
+    song_count: int = 0
 
 
 @strawberry.type

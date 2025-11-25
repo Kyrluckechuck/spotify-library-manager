@@ -39,7 +39,6 @@ export default defineConfig({
   },
   plugins: [
     tanstackRouter({
-      tmpDir: '/tmp/tanstack-router',
       routeTreeFileDir: './src',
       routeTreeFileName: 'routeTree.gen.ts',
     }),

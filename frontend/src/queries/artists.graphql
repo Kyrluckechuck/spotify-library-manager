@@ -9,6 +9,9 @@ query GetArtist($id: String!) {
     lastSynced
     lastDownloaded
     undownloadedCount
+    albumCount
+    downloadedAlbumCount
+    songCount
   }
 }
 

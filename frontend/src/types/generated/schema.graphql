@@ -20,12 +20,15 @@ type AlbumConnection {
 
 type Artist {
   addedAt: DateTime
+  albumCount: Int!
+  downloadedAlbumCount: Int!
   gid: String!
   id: Int!
   isTracked: Boolean!
   lastDownloaded: DateTime
   lastSynced: DateTime
   name: String!
+  songCount: Int!
   spotifyUri: String!
   undownloadedCount: Int!
 }

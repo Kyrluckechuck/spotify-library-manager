@@ -108,15 +108,14 @@ export function ArtistsTable({
               <tr key={artist.id} className='hover:bg-gray-50'>
                 <td className='px-6 py-4 whitespace-nowrap'>
                   <div className='text-sm font-medium'>
-                    <a
-                      href={`https://open.spotify.com/artist/${artist.gid}`}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-green-600 hover:text-green-800 hover:underline'
-                      title={`Open ${artist.name} on Spotify`}
+                    <Link
+                      to='/artists/$artistId'
+                      params={{ artistId: artist.id.toString() }}
+                      className='text-indigo-600 hover:text-indigo-800 hover:underline'
+                      title={`View ${artist.name} details`}
                     >
                       {artist.name}
-                    </a>
+                    </Link>
                   </div>
                 </td>
                 <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
@@ -195,11 +194,11 @@ export function ArtistsTable({
                     )}
                   </button>
                   <Link
-                    to='/albums'
-                    search={{ artistId: artist.id }}
+                    to='/artists/$artistId'
+                    params={{ artistId: artist.id.toString() }}
                     className='text-indigo-600 hover:text-indigo-900 underline'
                   >
-                    View Albums
+                    View Details
                   </Link>
                   {errorById?.[artist.id] && (
                     <div className='text-xs text-red-600 mt-1'>

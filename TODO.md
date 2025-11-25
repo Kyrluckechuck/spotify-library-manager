@@ -44,8 +44,14 @@
 - [ ] **Optional: Fix branch name typo** - `overhual-frontend-tanstack` → `overhaul-frontend-tanstack`
 
 ## Features and Enhancements
+- [ ] **Artist Detail Page** - Dedicated page showing artist info, albums, and songs
+  - [ ] Backend: Add `albumCount`, `downloadedAlbumCount`, `songCount` to Artist GraphQL type
+  - [ ] Frontend: New route `artists.$artistId.tsx` with single scrollable layout
+  - [ ] Frontend: New hook `useArtistDetailPage.ts`
+  - [ ] Frontend: Update `GetArtist` query to include new counts
+  - [ ] Frontend: Make artist table rows clickable → navigate to detail page
 - [ ] **Tracked Playlists improvements** - Improve update experience (not URL-locked)
-- [ ] **Configurable periodic task intervals** - Allow customization of sync intervals  
+- [ ] **Configurable periodic task intervals** - Allow customization of sync intervals
 - [ ] **Add artists directly** - Add by artist name (not just URL)
 - [ ] **Frontend UX improvements** - Loading skeletons for initial loads (optional)
 
