@@ -452,20 +452,51 @@ class SpotdlWrapper:
                 # Check if this playlist has ever been synced
                 if tracked_playlist.last_synced_at is not None:
                     playlist_needs_update = False
-                    for track_index, track in enumerate(queue_item, start=1):
+                    # Collect all track GIDs to batch-check which are already downloaded
+                    from library_manager.validators import extract_spotify_id_from_uri
+
+                    track_gids = [
+                        gid
+                        for track in queue_item
+                        if (gid := extract_spotify_id_from_uri(track["id"]))
+                    ]
+
+                    # Get all downloaded songs in one query
+                    downloaded_gids = set(
+                        Song.objects.filter(
+                            gid__in=track_gids, downloaded=True
+                        ).values_list("gid", flat=True)
+                    )
+
+                    for track in queue_item:
                         track_added_at = utils.convert_date_string_to_datetime(
                             track["added_at"]
                         )
+                        # Playlist needs update if track is newer OR if track isn't downloaded yet
                         if track_added_at > tracked_playlist.last_synced_at:
                             playlist_needs_update = True
+                            break
+                        else:
+                            # Check if this older track is missing from our downloads
+                            track_gid = extract_spotify_id_from_uri(track["id"])
+                            if track_gid and track_gid not in downloaded_gids:
+                                self.logger.debug(
+                                    f"Found undownloaded track '{track['name']}' added before last sync"
+                                )
+                                playlist_needs_update = True
+                                break
+
                     if not playlist_needs_update:
                         self.logger.info(
-                            f"Playlist has no newer tracks than the last time it synced at {tracked_playlist.last_synced_at}, skipping"
+                            f"Playlist has no newer tracks and all older tracks are downloaded (last sync: {tracked_playlist.last_synced_at}), skipping"
                         )
+                        # Update last_synced_at even when skipping - we still checked for updates
+                        tracked_playlist.last_synced_at = Now()
+                        tracked_playlist.save()
                         continue
                     else:
                         self.logger.info(
-                            f"Playlist has newer tracks than the last time it synced at {tracked_playlist.last_synced_at}, resyncing"
+                            f"Playlist has tracks to process (last sync: {tracked_playlist.last_synced_at}), resyncing"
                         )
             except TrackedPlaylist.DoesNotExist:
                 tracked_playlist = None
@@ -475,6 +506,7 @@ class SpotdlWrapper:
             for track_index, track in enumerate(queue_item, start=1):
 
                 # Check if this is a tracked playlist, and if so let's only sync if the track is newer than the last sync
+                # OR if the track hasn't been downloaded yet (catches songs added before we started tracking)
                 if (
                     tracked_playlist is not None
                     and tracked_playlist.last_synced_at is not None
@@ -483,10 +515,25 @@ class SpotdlWrapper:
                         track["added_at"]
                     )
                     if track_added_at < tracked_playlist.last_synced_at:
-                        self.logger.debug(
-                            "track older than last playlist sync, skipping"
+                        # Track is older than last sync - check if we already have it downloaded
+                        from library_manager.validators import (
+                            extract_spotify_id_from_uri,
                         )
-                        continue
+
+                        track_gid = extract_spotify_id_from_uri(track["id"])
+                        if track_gid:
+                            song_exists_downloaded = Song.objects.filter(
+                                gid=track_gid, downloaded=True
+                            ).exists()
+                            if song_exists_downloaded:
+                                self.logger.debug(
+                                    "track older than last playlist sync and already downloaded, skipping"
+                                )
+                                continue
+                            else:
+                                self.logger.debug(
+                                    "track older than last playlist sync but not downloaded, processing"
+                                )
 
                 current_track = f"Track {track_index}/{len(queue_item)} from URL {queue_item_index}/{len(download_queue)}"
                 download_queue_item.progress = round(
