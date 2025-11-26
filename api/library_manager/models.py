@@ -92,29 +92,15 @@ class Artist(models.Model):
     )
 
     def clean(self) -> None:
-        """
-        Validate model fields before saving.
-
-        Note: GID validation is lenient to support legacy hex-encoded GIDs.
-        Tasks and services handle auto-conversion to base62 format.
-        """
+        """Validate model fields before saving."""
         from library_manager.validators import is_valid_spotify_id
 
         super().clean()
-        if self.gid:
-            # Allow both base62 (22 chars) and hex (32 chars) for migration
-            is_base62 = is_valid_spotify_id(self.gid)
-            is_hex = (
-                len(self.gid) == 32
-                and self.gid.replace("-", "").replace("_", "").isalnum()
+        if self.gid and not is_valid_spotify_id(self.gid):
+            raise ValueError(
+                f"Invalid Spotify artist GID: '{self.gid}'. "
+                f"Expected 22-character base62 ID, got {len(self.gid)}-character string."
             )
-
-            if not (is_base62 or is_hex):
-                raise ValueError(
-                    f"Invalid Spotify artist GID: '{self.gid}'. "
-                    f"Expected either 22-character base62 ID or 32-character hex GID, "
-                    f"got {len(self.gid)}-character string."
-                )
 
     @property
     def number_songs(self) -> int:
@@ -214,29 +200,15 @@ class Song(models.Model):
     )
 
     def clean(self) -> None:
-        """
-        Validate model fields before saving.
-
-        Note: GID validation is lenient to support legacy hex-encoded GIDs.
-        Tasks and services handle auto-conversion to base62 format.
-        """
+        """Validate model fields before saving."""
         from library_manager.validators import is_valid_spotify_id
 
         super().clean()
-        if self.gid:
-            # Allow both base62 (22 chars) and hex (32 chars) for migration
-            is_base62 = is_valid_spotify_id(self.gid)
-            is_hex = (
-                len(self.gid) == 32
-                and self.gid.replace("-", "").replace("_", "").isalnum()
+        if self.gid and not is_valid_spotify_id(self.gid):
+            raise ValueError(
+                f"Invalid Spotify track GID: '{self.gid}'. "
+                f"Expected 22-character base62 ID, got {len(self.gid)}-character string."
             )
-
-            if not (is_base62 or is_hex):
-                raise ValueError(
-                    f"Invalid Spotify track GID: '{self.gid}'. "
-                    f"Expected either 22-character base62 ID or 32-character hex GID, "
-                    f"got {len(self.gid)}-character string."
-                )
 
     @property
     def file_path(self) -> str | None:

@@ -238,9 +238,22 @@ class TestSpotdlWrapperTokenRefresh:
             "expires_at": 1234567890.0,
         }
 
-        with patch(
-            "downloader.spotify_auth_helper.get_spotify_oauth_credentials",
-            return_value=mock_oauth_creds,
+        # Patch django.conf.settings directly since that's what refresh_spotify_client imports
+        from django.conf import settings as django_settings
+
+        with (
+            patch(
+                "downloader.spotify_auth_helper.get_spotify_oauth_credentials",
+                return_value=mock_oauth_creds,
+            ),
+            patch.object(
+                django_settings, "SPOTIPY_CLIENT_ID", "test_client_id_from_settings"
+            ),
+            patch.object(
+                django_settings,
+                "SPOTIPY_CLIENT_SECRET",
+                "test_client_secret_from_settings",
+            ),
         ):
             result = wrapper.refresh_spotify_client()
 

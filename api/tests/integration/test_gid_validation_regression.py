@@ -15,10 +15,7 @@ Root Cause:
 Fix:
     - Database migration 0015_normalize_gids.py converts all hex GIDs to base62 format
     - Added validate_spotify_gid() function for validation
-    - Added model documentation and clean() validation
-
-Note: Legacy hex-to-base62 conversion was originally done live in tasks, but is now
-      handled by a one-time database migration for better performance and maintainability.
+    - Added model clean() validation that rejects non-base62 GIDs
 """
 
 from unittest.mock import patch
@@ -61,23 +58,23 @@ class TestGidValidationRegression:
             artist.refresh_from_db()
             assert artist.gid == "4iV5W9uYEdYUVa79Axb7Rh"
 
-    def test_model_allows_hex_gid_for_migration(self):
+    def test_model_rejects_hex_gid(self):
         """
-        Artist model should allow hex GIDs for backward compatibility during migration.
+        Artist model should reject hex GIDs now that migration is complete.
 
-        Hex GIDs will be auto-converted to base62 when accessed by tasks/services.
+        Migration 0015_normalize_gids converted all hex GIDs to base62 format,
+        so we no longer need to accept hex GIDs.
         """
         artist = Artist(
             name="Test Artist",
             gid="85273dc1a556464e98d5faae420a5cbb",  # 32-char hex (legacy format)
         )
 
-        # Should be able to create artist with hex GID
-        artist.save()
+        # clean() should reject hex GID
+        with pytest.raises(ValueError) as exc_info:
+            artist.clean()
 
-        # Verify it was saved
-        assert artist.id is not None
-        assert artist.gid == "85273dc1a556464e98d5faae420a5cbb"
+        assert "Invalid Spotify artist GID" in str(exc_info.value)
 
     def test_model_clean_validation_accepts_valid_gid(self):
         """Artist.clean() should accept valid Spotify IDs."""
@@ -95,14 +92,11 @@ class TestGidValidationRegression:
             "tooshort",  # Too short
             "waytoolongtobeaspotifyidstring",  # Wrong length (30 chars)
             "4iV5W9uYEdYUVa79Axb7R-",  # Invalid characters (has dash)
+            "85273dc1a556464e98d5faae420a5cbb",  # 32-char hex (no longer allowed)
         ],
     )
     def test_various_invalid_gids_rejected(self, invalid_gid):
-        """
-        Test that truly invalid GIDs (not hex format) are rejected.
-
-        Note: 32-char hex GIDs are now accepted for backward compatibility during migration.
-        """
+        """Test that invalid GIDs are rejected by model validation."""
         artist = Artist.objects.create(
             name="Test Artist",
             gid="4iV5W9uYEdYUVa79Axb7Rh",  # Start with valid, then update
@@ -118,8 +112,7 @@ class TestGidValidationRegression:
 
         error_msg = str(exc_info.value)
         assert "Invalid Spotify artist GID" in error_msg
-        # Should mention expected formats
-        assert "22-character base62" in error_msg or "32-character hex" in error_msg
+        assert "22-character base62" in error_msg
 
 
 @pytest.mark.django_db

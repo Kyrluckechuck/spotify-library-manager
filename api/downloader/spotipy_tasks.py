@@ -72,7 +72,7 @@ def track_artists_in_playlist(playlist_url: str, task_id: Optional[str] = None) 
 
     for artist_info in artists_to_track:
         artist_gid = artist_info["gid"]
-        # Get or create artist, handling both hex and base62 GIDs
+        # Get or create artist
         try:
             artist = Artist.objects.get(gid=artist_gid)
             # Update existing artist
@@ -80,29 +80,6 @@ def track_artists_in_playlist(playlist_url: str, task_id: Optional[str] = None) 
             artist.tracked = artist_info["tracked"]
             artist.save()
         except Artist.DoesNotExist:
-            # Check if artist exists with hex GID (legacy format)
-            from . import utils
-
-            hex_gid = utils.uri_to_gid(artist_gid)
-            try:
-                artist = Artist.objects.get(gid=hex_gid)
-                # Found with hex GID - update to base62
-                from django.db import connection, transaction
-
-                with transaction.atomic():
-                    # Update albums' artist_gid FK column
-                    with connection.cursor() as cursor:
-                        cursor.execute(
-                            "UPDATE albums SET artist_gid = %s WHERE artist_gid = %s",
-                            [artist_gid, hex_gid],
-                        )
-                    # Now safe to update artist's GID
-                    artist.gid = artist_gid
-                    artist.name = artist_info["name"]
-                    artist.tracked = artist_info["tracked"]
-                    artist.save()
-            except Artist.DoesNotExist:
-                # Doesn't exist with either format - create new
-                Artist.objects.create(**artist_info)
+            Artist.objects.create(**artist_info)
 
     print(f"ensured {len(artists_to_track)} artists were tracked")
