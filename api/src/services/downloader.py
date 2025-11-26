@@ -1,10 +1,12 @@
 # pylint: disable=R1705  # allow explicit elif after return for clarity
+# pylint: disable=R0911  # allow many return statements for routing logic
 import re
 
 from ..graphql_types.models import MutationResult
 from .album import AlbumService
 from .artist import ArtistService
 from .playlist import PlaylistService
+from .spotify_validation import validate_spotify_resource_async
 
 
 class DownloaderService:
@@ -24,19 +26,31 @@ class DownloaderService:
             # Normalize the URL/URI
             normalized_url = self._normalize_spotify_url(url)
 
+            # Validate that the resource exists on Spotify before queueing
+            validation = await validate_spotify_resource_async(normalized_url)
+            if not validation.valid:
+                return MutationResult(
+                    success=False,
+                    message=validation.error_message or "Invalid Spotify URL",
+                )
+
             # Determine the type of content
             content_type = self._get_content_type(normalized_url)
 
             if content_type == "playlist":
                 return await self._handle_playlist_download(
-                    normalized_url, auto_track_artists
+                    normalized_url, auto_track_artists, validation.resource_name
                 )
             elif content_type == "artist":
                 return await self._handle_artist_download(normalized_url)
             elif content_type == "album":
-                return await self._handle_album_download(normalized_url)
+                return await self._handle_album_download(
+                    normalized_url, validation.resource_name
+                )
             elif content_type == "track":
-                return await self._handle_track_download(normalized_url)
+                return await self._handle_track_download(
+                    normalized_url, validation.resource_name
+                )
             else:
                 return MutationResult(
                     success=False,
@@ -77,7 +91,10 @@ class DownloaderService:
         return "unknown"
 
     async def _handle_playlist_download(
-        self, playlist_url: str, auto_track_artists: bool
+        self,
+        playlist_url: str,
+        auto_track_artists: bool,
+        playlist_name: str | None = None,
     ) -> MutationResult:
         """Handle one-time playlist download (without tracking)."""
         from asgiref.sync import sync_to_async
@@ -92,10 +109,12 @@ class DownloaderService:
                 force_playlist_resync=False,
             )
 
-            return MutationResult(
-                success=True,
-                message="Started downloading playlist",
-            )
+            if playlist_name:
+                message = f"Started downloading playlist: {playlist_name}"
+            else:
+                message = "Started downloading playlist"
+
+            return MutationResult(success=True, message=message)
         except Exception as e:
             return MutationResult(
                 success=False, message=f"Failed to download playlist: {str(e)}"
@@ -120,7 +139,9 @@ class DownloaderService:
                 success=False, message=f"Failed to sync artist: {str(e)}"
             )
 
-    async def _handle_album_download(self, album_url: str) -> MutationResult:
+    async def _handle_album_download(
+        self, album_url: str, album_name: str | None = None
+    ) -> MutationResult:
         """Handle album download."""
         try:
             # Extract album ID from URL
@@ -129,9 +150,14 @@ class DownloaderService:
             # Download album
             album = await self.album_service.download_album(album_id)
 
+            # Use validated name if album object has placeholder name
+            display_name = (
+                album_name if album.name == "Download queued..." else album.name
+            )
+
             return MutationResult(
                 success=True,
-                message=f"Successfully started downloading album: {album.name}",
+                message=f"Successfully started downloading album: {display_name}",
                 album=album,
             )
         except Exception as e:
@@ -139,43 +165,27 @@ class DownloaderService:
                 success=False, message=f"Failed to download album: {str(e)}"
             )
 
-    async def _handle_track_download(self, track_url: str) -> MutationResult:
-        """Handle track download by fetching track metadata and downloading its album."""
+    async def _handle_track_download(
+        self, track_url: str, track_name: str | None = None
+    ) -> MutationResult:
+        """Handle track download by queueing a Celery task."""
         try:
             from asgiref.sync import sync_to_async
+
+            from library_manager.tasks import download_single_track
 
             # Extract track ID from URL
             track_id = self._extract_id_from_url(track_url)
 
-            # Fetch track metadata from Spotify to get album ID
-            def get_track_album_id() -> tuple[str, str]:
-                from downloader.downloader import Downloader
-                from spotdl.utils.spotify import SpotifyClient
+            # Queue the download task - runs in worker where SpotifyClient is initialized
+            await sync_to_async(download_single_track.delay)(track_id)
 
-                # Create Spotify client and downloader
-                spotify_client = SpotifyClient()
-                downloader = Downloader(spotify_client)
+            if track_name:
+                message = f"Started downloading track: {track_name}"
+            else:
+                message = f"Started downloading track (ID: {track_id})"
 
-                # Get track metadata (includes artist, name, ISRC, album info)
-                track_data = downloader.get_track(track_id)
-
-                if not track_data or "album" not in track_data:
-                    raise ValueError(f"Track {track_id} has no album data")
-
-                album_id = track_data["album"]["id"]
-                track_name = track_data["name"]
-                return album_id, track_name
-
-            album_id, track_name = await sync_to_async(get_track_album_id)()
-
-            # Download the album containing this track
-            album = await self.album_service.download_album(album_id)
-
-            return MutationResult(
-                success=True,
-                message=f"Successfully started downloading track: {track_name} (from album: {album.name})",
-                album=album,
-            )
+            return MutationResult(success=True, message=message)
         except Exception as e:
             return MutationResult(
                 success=False, message=f"Failed to download track: {str(e)}"

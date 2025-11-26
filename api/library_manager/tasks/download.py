@@ -396,3 +396,180 @@ def download_extra_album_types_for_artist(
     # Update last_downloaded_at timestamp (extra albums download completed)
     artist.last_downloaded_at = Now()
     artist.save()
+
+
+@celery_app.task(bind=True, name="library_manager.tasks.download_album_by_spotify_id")
+def download_album_by_spotify_id(self: Any, spotify_album_id: str) -> None:
+    """
+    Download an album by its Spotify ID (not database ID).
+
+    This task fetches album metadata from Spotify if needed, creates/gets the album
+    in the database, and then queues the actual download.
+    """
+    task_history = None
+    try:
+        from downloader.downloader import Downloader
+
+        from library_manager.validators import (
+            extract_spotify_id_from_uri,
+            normalize_spotify_gid,
+        )
+
+        # Create task history record
+        task_history = create_task_history(
+            task_id=self.request.id,
+            task_type="DOWNLOAD",
+            entity_id=spotify_album_id,
+            entity_type="ALBUM",
+        )
+        update_task_progress(
+            task_history, 0.0, f"Starting download for album {spotify_album_id}"
+        )
+
+        # Check authentication before proceeding
+        require_download_capability(task_history)
+
+        # Check for cancellation before proceeding
+        if check_task_cancellation(task_history):
+            logger.info(f"Task cancelled for album {spotify_album_id}")
+            return
+
+        # Check if album already exists in DB
+        try:
+            album = Album.objects.get(spotify_gid=spotify_album_id)
+            logger.info(f"Album {album.name} already exists in database")
+        except Album.DoesNotExist:
+            # Fetch from Spotify
+            update_task_progress(
+                task_history, 25.0, "Fetching album metadata from Spotify"
+            )
+
+            # Get SpotifyClient from spotdl_wrapper
+            spotify_client = spotdl_wrapper.spotipy_client
+            downloader = Downloader(spotify_client)
+
+            album_data = downloader.get_album(spotify_album_id)
+            if not album_data:
+                raise ValueError(
+                    f"Album {spotify_album_id} not found on Spotify"
+                ) from None
+
+            # Get or create the artist
+            artist_data = album_data.get("artists", [{}])[0]
+            if not artist_data:
+                raise ValueError(
+                    f"Album {spotify_album_id} has no artist data"
+                ) from None
+
+            raw_artist_id = artist_data.get("id") or artist_data.get("uri")
+            if not raw_artist_id:
+                raise ValueError(
+                    "Album artist missing both 'id' and 'uri' fields"
+                ) from None
+
+            artist_gid = extract_spotify_id_from_uri(raw_artist_id)
+            if not artist_gid:
+                raise ValueError(f"Invalid artist ID/URI: {raw_artist_id}") from None
+
+            artist_gid = normalize_spotify_gid(artist_gid)
+
+            artist, _ = Artist.objects.get_or_create(
+                gid=artist_gid,
+                defaults={"name": artist_data.get("name", "Unknown Artist")},
+            )
+
+            # Create the album
+            album = Album.objects.create(
+                spotify_gid=album_data["id"],
+                artist=artist,
+                spotify_uri=album_data.get("uri", f"spotify:album:{album_data['id']}"),
+                total_tracks=album_data.get("total_tracks", 0),
+                name=album_data.get("name", "Unknown Album"),
+                album_type=album_data.get("album_type"),
+                wanted=True,
+            )
+            logger.info(f"Created album: {album.name}")
+
+        # Mark album as wanted if not already
+        if not album.wanted:
+            album.wanted = True
+            album.save()
+
+        update_task_progress(task_history, 50.0, f"Downloading album: {album.name}")
+
+        # Now download using the standard single album task logic inline
+        # (avoiding task chaining complexity)
+        downloader_config = Config()
+        downloader_config.urls = [album.spotify_uri]
+
+        spotdl_wrapper.execute(downloader_config)
+
+        # Mark album as downloaded
+        album.downloaded = True
+        album.save()
+
+        complete_task(task_history, success=True)
+        logger.info(f"Successfully downloaded album: {album.name}")
+
+    except Exception as e:
+        error_msg = f"Error downloading album: {str(e)}"
+        logger.error(error_msg)
+        if task_history:
+            complete_task(task_history, success=False, error_message=error_msg)
+        raise
+
+
+@celery_app.task(bind=True, name="library_manager.tasks.download_single_track")
+def download_single_track(self: Any, track_id: str) -> None:
+    """
+    Download a single track by its Spotify ID.
+
+    Downloads only the requested track, not the entire album.
+    """
+    task_history = None
+    try:
+        # Create task history record
+        task_history = create_task_history(
+            task_id=self.request.id,
+            task_type="DOWNLOAD",
+            entity_id=track_id,
+            entity_type="TRACK",
+        )
+        update_task_progress(
+            task_history, 0.0, f"Starting download for track {track_id}"
+        )
+
+        # Check authentication before proceeding
+        require_download_capability(task_history)
+
+        # Check for cancellation before proceeding
+        if check_task_cancellation(task_history):
+            logger.info(f"Task cancelled for track {track_id}")
+            return
+
+        # Build the track URI
+        track_uri = f"spotify:track:{track_id}"
+
+        update_task_progress(task_history, 25.0, f"Downloading track: {track_id}")
+
+        # Download just this single track using spotdl
+        downloader_config = Config()
+        downloader_config.urls = [track_uri]
+
+        # Execute download with progress callback
+        def task_progress_callback(progress_pct: float, message: str = "") -> None:
+            # Scale progress: 25% (start) to 95% (before completion)
+            scaled_progress = 25.0 + (progress_pct * 0.70)
+            update_task_progress(task_history, scaled_progress, message)
+
+        spotdl_wrapper.execute(downloader_config, task_progress_callback)
+
+        complete_task(task_history, success=True)
+        logger.info(f"Successfully downloaded track: {track_id}")
+
+    except Exception as e:
+        error_msg = f"Error downloading track: {str(e)}"
+        logger.error(error_msg)
+        if task_history:
+            complete_task(task_history, success=False, error_message=error_msg)
+        raise

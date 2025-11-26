@@ -122,7 +122,8 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def startup_event() -> None:
-        """Run startup tasks including orphaned task cleanup."""
+        """Run startup tasks including orphaned task cleanup and SpotifyClient init."""
+        startup_logger = logging.getLogger("api.startup")
 
         @sync_to_async
         def cleanup_orphaned_tasks() -> None:
@@ -131,15 +132,71 @@ def create_app() -> FastAPI:
 
                 stuck_count = TaskHistory.cleanup_stuck_tasks()
                 if stuck_count > 0:
-                    logging.getLogger("api.startup").info(
+                    startup_logger.info(
                         f"Cleaned up {stuck_count} orphaned task(s) on startup"
                     )
             except Exception as e:
-                logging.getLogger("api.startup").error(
+                startup_logger.error(
                     f"Failed to cleanup orphaned tasks on startup: {e}"
                 )
 
+        @sync_to_async
+        def initialize_spotify_client() -> None:
+            """Initialize SpotifyClient for URL validation in web container."""
+            try:
+                from spotdl.utils.spotify import SpotifyClient
+
+                # Skip if already initialized (singleton pattern requires _instance access)
+                # pylint: disable=protected-access
+                if SpotifyClient._instance is not None:
+                    startup_logger.debug("SpotifyClient already initialized")
+                    return
+
+                from downloader.spotify_auth_helper import get_spotify_oauth_credentials
+
+                # Get OAuth token from database (same as spotdl_override.py)
+                oauth_creds = get_spotify_oauth_credentials()
+
+                if oauth_creds:
+                    # OAuth auth - use placeholder values (required but unused with token)
+                    SpotifyClient.init(
+                        client_id="oauth-placeholder",
+                        client_secret="oauth-placeholder",
+                        user_auth=False,
+                        no_cache=True,
+                        auth_token=oauth_creds["access_token"],
+                    )
+                    startup_logger.info("✓ SpotifyClient initialized with OAuth token")
+                else:
+                    # No OAuth token - try client credentials from env/settings
+                    client_id = getattr(dj_settings, "SPOTIPY_CLIENT_ID", "")
+                    client_secret = getattr(dj_settings, "SPOTIPY_CLIENT_SECRET", "")
+
+                    if not client_id or not client_secret:
+                        startup_logger.warning(
+                            "No Spotify OAuth token or client credentials - "
+                            "URL existence validation will be skipped"
+                        )
+                        return
+
+                    SpotifyClient.init(
+                        client_id=client_id,
+                        client_secret=client_secret,
+                        user_auth=False,
+                        no_cache=True,
+                    )
+                    startup_logger.info(
+                        "✓ SpotifyClient initialized with client credentials"
+                    )
+
+            except Exception as e:
+                startup_logger.warning(
+                    f"Failed to initialize SpotifyClient: {e} - "
+                    "URL existence validation will be skipped"
+                )
+
         await cleanup_orphaned_tasks()
+        await initialize_spotify_client()
 
     # Local import to ensure Django setup is complete and satisfy flake8 E402
     from .schema import schema  # pylint: disable=import-error,no-name-in-module

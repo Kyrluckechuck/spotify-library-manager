@@ -158,6 +158,7 @@ class AlbumService(BaseService[Album]):
     async def download_album(self, album_id: str) -> Album:
         try:
             # Try to get existing album from database first
+            django_album: Optional[DjangoAlbum] = None
             try:
                 if album_id.isdigit():
                     django_album = await sync_to_async(self.model.objects.get)(
@@ -168,89 +169,47 @@ class AlbumService(BaseService[Album]):
                         spotify_gid=album_id
                     )
             except self.model.DoesNotExist:
-                # Album doesn't exist - fetch from Spotify and create it
-                # Move all sync operations into a single function
-                def fetch_and_create_album() -> DjangoAlbum:
-                    from downloader.downloader import Downloader
-                    from spotdl.utils.spotify import SpotifyClient
+                # Album doesn't exist in DB - queue task that fetches metadata in worker
+                # This avoids needing SpotifyClient in the web container
+                def queue_spotify_album_task() -> None:
+                    from library_manager.tasks import download_album_by_spotify_id
 
-                    from library_manager.models import Artist as DjangoArtist
+                    download_album_by_spotify_id.delay(album_id)
 
-                    # Create Spotify client and downloader
-                    spotify_client = SpotifyClient()
-                    downloader = Downloader(spotify_client)
+                await sync_to_async(queue_spotify_album_task)()
 
-                    album_data = downloader.get_album(album_id)
+                # Return a placeholder album object since we don't have metadata yet
+                # The frontend will show the task in progress
+                return Album(
+                    id=0,
+                    spotify_gid=album_id,
+                    name="Download queued...",
+                    downloaded=False,
+                    wanted=True,
+                    album_type=None,
+                    album_group=None,
+                    total_tracks=0,
+                    artist="Loading...",
+                    artist_id=None,
+                    artist_gid=None,
+                )
 
-                    # Get or create the artist
-                    artist_data = (
-                        album_data["artists"][0] if album_data.get("artists") else None
-                    )
-                    if not artist_data:
-                        raise ValueError(f"Album {album_id} has no artist data")
-
-                    # Validate and sanitize artist GID
-                    from library_manager.validators import (
-                        extract_spotify_id_from_uri,
-                        normalize_spotify_gid,
-                    )
-
-                    raw_artist_id = artist_data.get("id") or artist_data.get("uri")
-                    if not raw_artist_id:
-                        raise ValueError(
-                            f"Album {album_id} artist data missing both 'id' and 'uri' fields"
-                        )
-
-                    # Extract Spotify ID from URI if needed
-                    artist_gid = extract_spotify_id_from_uri(raw_artist_id)
-                    if not artist_gid:
-                        raise ValueError(
-                            f"Album {album_id} has invalid artist ID/URI: {raw_artist_id}"
-                        )
-
-                    # Normalize to base62 format (handles both hex and base62)
-                    artist_gid = normalize_spotify_gid(artist_gid)
-
-                    artist, _ = DjangoArtist.objects.get_or_create(
-                        gid=artist_gid,
-                        defaults={
-                            "name": artist_data["name"],
-                        },
-                    )
-
-                    # Create the album
-                    album: DjangoAlbum = self.model.objects.create(
-                        spotify_gid=album_data["id"],
-                        artist=artist,
-                        spotify_uri=album_data["uri"],
-                        total_tracks=album_data["total_tracks"],
-                        name=album_data["name"],
-                        album_type=album_data.get("album_type"),
-                        wanted=True,  # Mark as wanted immediately
-                    )
-                    return album
-
-                django_album = await sync_to_async(fetch_and_create_album)()
-
-            # Ensure album is marked as wanted
+            # Album exists in DB - ensure it's marked as wanted
             if not django_album.wanted:
                 django_album.wanted = True
                 await sync_to_async(django_album.save)()
 
             # Queue download for this specific album
-            # Extract the ID to avoid any potential async issues with model attribute access
             album_db_id = django_album.id
 
-            # Queue the task in a sync context
             def queue_task() -> AsyncResult:
-                # Local import to avoid circular import during module initialization
                 from library_manager.tasks import download_single_album
 
                 return download_single_album.delay(album_db_id)
 
             await sync_to_async(queue_task)()
 
-            # Convert to GraphQL type - wrap to ensure no lazy-loading in async context
+            # Convert to GraphQL type
             return await sync_to_async(self._to_graphql_type)(django_album)
         except ValueError as exc:
             raise ValueError(f"Invalid album ID format: {album_id}") from exc

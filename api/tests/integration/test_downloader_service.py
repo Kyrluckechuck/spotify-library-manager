@@ -70,189 +70,99 @@ class TestDownloaderService:
         assert track_id == "13TJT0oh9TdIZxQJfVWSKb"
 
     # ========================================================================
-    # Track Download Tests (Regression test for bug fix)
+    # Track Download Tests
     # ========================================================================
 
     @pytest.mark.asyncio
-    async def test_handle_track_download_fetches_metadata_and_album_id(
-        self, downloader_service
-    ):
+    async def test_handle_track_download_queues_celery_task(self, downloader_service):
         """
-        Test that track downloads:
-        1. Fetch track metadata from /v1/tracks/{id} (NOT /v1/albums/{id})
-        2. Extract album ID from track metadata
-        3. Download the correct album
+        Test that track downloads queue a Celery task.
 
-        This is a regression test for the bug where track IDs were incorrectly
-        passed to download_album(), causing 404 errors.
+        The actual metadata fetching and album download happens in the worker,
+        not in the web container. This test verifies the service correctly
+        queues the download_single_track task.
         """
         track_url = "https://open.spotify.com/track/13TJT0oh9TdIZxQJfVWSKb"
         expected_track_id = "13TJT0oh9TdIZxQJfVWSKb"
-        expected_album_id = "3dKJ6zmafq708xGTk94ibd"
 
-        # Mock track metadata from Spotify
-        mock_track_data = {
-            "id": expected_track_id,
-            "name": "Last Hurrah",
-            "artists": [{"name": "Folded Dragons"}],
-            "album": {
-                "id": expected_album_id,
-                "name": "Last Hurrah",
-            },
-            "external_ids": {"isrc": "USZUD1952123"},
-            "duration_ms": 151000,
-        }
+        # Mock the task's delay method
+        mock_delay = MagicMock()
 
-        # Mock album object returned from download_album
-        mock_album = MagicMock()
-        mock_album.name = "Last Hurrah"
-        mock_album.id = expected_album_id
+        with patch("library_manager.tasks.download_single_track") as mock_task:
+            mock_task.delay = mock_delay
 
-        with (
-            patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
-            patch.object(
-                downloader_service.album_service,
-                "download_album",
-                new_callable=AsyncMock,
-                return_value=mock_album,
-            ) as mock_download_album,
-        ):
-            # Mock sync_to_async to wrap the function and make it callable
-            def fake_sync_to_async(func):
-                async def wrapper():
-                    return func()
+            # Patch sync_to_async where it's imported
+            def sync_to_async_passthrough(func):
+                async def wrapper(*args, **kwargs):
+                    return func(*args, **kwargs)
 
                 return wrapper
 
-            mock_sync_to_async.side_effect = fake_sync_to_async
-
-            # Mock the downloader.get_track() call
-            with (
-                patch("downloader.downloader.Downloader") as mock_downloader_class,
-                patch("spotdl.utils.spotify.SpotifyClient"),
+            with patch(
+                "asgiref.sync.sync_to_async", side_effect=sync_to_async_passthrough
             ):
-                mock_downloader = MagicMock()
-                mock_downloader.get_track.return_value = mock_track_data
-                mock_downloader_class.return_value = mock_downloader
-
                 result = await downloader_service._handle_track_download(track_url)
 
-                # Verify track metadata was fetched (not album metadata)
-                mock_downloader.get_track.assert_called_once_with(expected_track_id)
-
-                # Verify album was downloaded with ALBUM ID, not TRACK ID
-                mock_download_album.assert_called_once_with(expected_album_id)
+                # Verify task was queued with the correct track ID
+                mock_delay.assert_called_once_with(expected_track_id)
 
                 # Verify success result
                 assert result.success is True
-                assert "Last Hurrah" in result.message
-                assert result.album == mock_album
+                assert (
+                    expected_track_id in result.message
+                    or "track" in result.message.lower()
+                )
 
     @pytest.mark.asyncio
-    async def test_handle_track_download_track_without_album_fails(
-        self, downloader_service
-    ):
-        """Test that tracks without album metadata raise an error."""
-        track_url = "https://open.spotify.com/track/13TJT0oh9TdIZxQJfVWSKb"
+    async def test_handle_track_download_with_track_name(self, downloader_service):
+        """Test that track name is included in success message when provided."""
+        track_url = "spotify:track:13TJT0oh9TdIZxQJfVWSKb"
+        track_name = "Last Hurrah"
 
-        # Mock track data missing album info
-        mock_track_data = {
-            "id": "13TJT0oh9TdIZxQJfVWSKb",
-            "name": "Orphan Track",
-            # No album field!
-        }
+        mock_delay = MagicMock()
 
-        with patch("asgiref.sync.sync_to_async") as mock_sync_to_async:
+        with patch("library_manager.tasks.download_single_track") as mock_task:
+            mock_task.delay = mock_delay
 
-            def fake_sync_to_async(func):
-                async def wrapper():
-                    return func()
+            def sync_to_async_passthrough(func):
+                async def wrapper(*args, **kwargs):
+                    return func(*args, **kwargs)
 
                 return wrapper
 
-            mock_sync_to_async.side_effect = fake_sync_to_async
-
-            with (
-                patch("downloader.downloader.Downloader") as mock_downloader_class,
-                patch("spotdl.utils.spotify.SpotifyClient"),
+            with patch(
+                "asgiref.sync.sync_to_async", side_effect=sync_to_async_passthrough
             ):
-                mock_downloader = MagicMock()
-                mock_downloader.get_track.return_value = mock_track_data
-                mock_downloader_class.return_value = mock_downloader
+                result = await downloader_service._handle_track_download(
+                    track_url, track_name=track_name
+                )
 
+                assert result.success is True
+                assert track_name in result.message
+
+    @pytest.mark.asyncio
+    async def test_handle_track_download_handles_task_queue_error(
+        self, downloader_service
+    ):
+        """Test that errors during task queueing are handled gracefully."""
+        track_url = "spotify:track:13TJT0oh9TdIZxQJfVWSKb"
+
+        with patch("library_manager.tasks.download_single_track") as mock_task:
+            mock_task.delay.side_effect = Exception("Celery broker connection failed")
+
+            def sync_to_async_passthrough(func):
+                async def wrapper(*args, **kwargs):
+                    return func(*args, **kwargs)
+
+                return wrapper
+
+            with patch(
+                "asgiref.sync.sync_to_async", side_effect=sync_to_async_passthrough
+            ):
                 result = await downloader_service._handle_track_download(track_url)
 
                 assert result.success is False
-                assert "no album data" in result.message.lower()
-
-    @pytest.mark.asyncio
-    async def test_handle_track_download_unavailable_track_with_metadata(
-        self, downloader_service
-    ):
-        """
-        Test that tracks unavailable for streaming but with metadata still work.
-
-        This tests the scenario where:
-        - Track is removed from Spotify streaming (unavailable in region)
-        - But Spotify API still returns metadata (name, artist, ISRC, album ID)
-        - System should successfully download from YouTube Music via album
-        """
-        track_url = "https://open.spotify.com/track/13TJT0oh9TdIZxQJfVWSKb"
-        expected_album_id = "3dKJ6zmafq708xGTk94ibd"
-
-        # Simulate track metadata available but not streamable
-        # (available_markets is empty or restricted)
-        mock_track_data = {
-            "id": "13TJT0oh9TdIZxQJfVWSKb",
-            "name": "Last Hurrah",
-            "artists": [{"name": "Folded Dragons"}],
-            "album": {
-                "id": expected_album_id,
-                "name": "Last Hurrah",
-            },
-            "external_ids": {"isrc": "USZUD1952123"},
-            "is_playable": False,  # Not streamable
-            "available_markets": [],  # Not available in any market
-        }
-
-        mock_album = MagicMock()
-        mock_album.name = "Last Hurrah"
-        mock_album.id = expected_album_id
-
-        with (
-            patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
-            patch.object(
-                downloader_service.album_service,
-                "download_album",
-                new_callable=AsyncMock,
-                return_value=mock_album,
-            ) as mock_download_album,
-        ):
-
-            def fake_sync_to_async(func):
-                async def wrapper():
-                    return func()
-
-                return wrapper
-
-            mock_sync_to_async.side_effect = fake_sync_to_async
-
-            with (
-                patch("downloader.downloader.Downloader") as mock_downloader_class,
-                patch("spotdl.utils.spotify.SpotifyClient"),
-            ):
-                mock_downloader = MagicMock()
-                mock_downloader.get_track.return_value = mock_track_data
-                mock_downloader_class.return_value = mock_downloader
-
-                result = await downloader_service._handle_track_download(track_url)
-
-                # Should succeed despite track being unavailable for streaming
-                assert result.success is True
-                assert "Last Hurrah" in result.message
-
-                # Should download album (which will attempt YouTube Music download)
-                mock_download_album.assert_called_once_with(expected_album_id)
+                assert "failed to download track" in result.message.lower()
 
     # ========================================================================
     # Album Download Tests
@@ -289,13 +199,47 @@ class TestDownloaderService:
 
         mock_result = MutationResult(success=True, message="Track downloaded")
 
-        with patch.object(
-            downloader_service,
-            "_handle_track_download",
-            new_callable=AsyncMock,
-            return_value=mock_result,
-        ) as mock_handle:
+        # Mock validation to return valid
+        mock_validation = MagicMock()
+        mock_validation.valid = True
+        mock_validation.resource_name = "Test Track"
+
+        with (
+            patch(
+                "src.services.downloader.validate_spotify_resource_async",
+                new_callable=AsyncMock,
+                return_value=mock_validation,
+            ),
+            patch.object(
+                downloader_service,
+                "_handle_track_download",
+                new_callable=AsyncMock,
+                return_value=mock_result,
+            ) as mock_handle,
+        ):
             result = await downloader_service.download_url(track_url)
 
             mock_handle.assert_called_once()
             assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_download_url_returns_error_for_invalid_resource(
+        self, downloader_service
+    ):
+        """Test that invalid Spotify resources return an error before queueing."""
+        track_url = "https://open.spotify.com/track/invalidtrackid123"
+
+        # Mock validation to return invalid (track not found)
+        mock_validation = MagicMock()
+        mock_validation.valid = False
+        mock_validation.error_message = "Track not found on Spotify"
+
+        with patch(
+            "src.services.downloader.validate_spotify_resource_async",
+            new_callable=AsyncMock,
+            return_value=mock_validation,
+        ):
+            result = await downloader_service.download_url(track_url)
+
+            assert result.success is False
+            assert "not found" in result.message.lower()

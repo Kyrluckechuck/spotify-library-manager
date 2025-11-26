@@ -20,6 +20,7 @@ class TestSpotdlWrapperIntegration:
         """Create a mock config for testing."""
         config = Mock(spec=Config)
         config.log_level = "DEBUG"
+        config.spotdl_log_level = "INFO"
         config.youtube_cookies_location = None
         config.po_token = None
         config.spotify_user_auth_enabled = False
@@ -201,6 +202,7 @@ class TestSpotdlWrapperTokenRefresh:
         """Create a mock config for testing."""
         config = Mock(spec=Config)
         config.log_level = "DEBUG"
+        config.spotdl_log_level = "INFO"
         config.youtube_cookies_location = None
         config.po_token = None
         config.spotify_user_auth_enabled = False

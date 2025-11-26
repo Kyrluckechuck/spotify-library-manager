@@ -36,10 +36,12 @@ from .core import (
 
 # Re-export download tasks
 from .download import (
+    download_album_by_spotify_id,
     download_extra_album_types_for_artist,
     download_missing_albums_for_artist,
     download_playlist,
     download_single_album,
+    download_single_track,
 )
 
 # Re-export maintenance tasks
@@ -87,10 +89,12 @@ __all__ = [
     "sync_tracked_playlist",
     "sync_tracked_playlist_artists",
     # Download tasks
+    "download_album_by_spotify_id",
     "download_extra_album_types_for_artist",
     "download_missing_albums_for_artist",
     "download_playlist",
     "download_single_album",
+    "download_single_track",
     # Maintenance tasks
     "cleanup_celery_history",
     "cleanup_stuck_tasks_periodic",

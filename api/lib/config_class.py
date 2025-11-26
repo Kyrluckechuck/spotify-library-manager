@@ -13,6 +13,7 @@ class Config:
         spotify_user_auth_enabled: Optional[bool] = None,
         po_token: Optional[str] = None,
         log_level: Optional[str] = None,
+        spotdl_log_level: Optional[str] = None,
         no_lrc: Optional[bool] = None,
         overwrite: Optional[bool] = None,
         track_artists: bool = False,
@@ -46,6 +47,12 @@ class Config:
             log_level
             if log_level is not None
             else getattr(settings, "log_level", "INFO")
+        )
+        # Separate log level for spotdl library (defaults to INFO to avoid excessive verbosity)
+        self.spotdl_log_level = (
+            spotdl_log_level
+            if spotdl_log_level is not None
+            else getattr(settings, "spotdl_log_level", "INFO")
         )
         self.no_lrc = (
             no_lrc if no_lrc is not None else getattr(settings, "no_lrc", False)

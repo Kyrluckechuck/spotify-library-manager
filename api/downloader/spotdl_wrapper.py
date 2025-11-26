@@ -85,7 +85,7 @@ def generate_spotdl_settings(config: Config) -> Any:
     del spotify_settings["use_cache_file"]
     spotify_settings["downloader_settings"] = downloader_settings
 
-    spotify_settings["downloader_settings"]["log_level"] = config.log_level
+    spotify_settings["downloader_settings"]["log_level"] = config.spotdl_log_level
 
     for key in DEFAULT_DOWNLOAD_SETTINGS.keys():
         if key in spotify_settings:
@@ -111,22 +111,24 @@ def generate_spotdl_settings(config: Config) -> Any:
     return spotify_settings
 
 
-def initiate_logger(log_level: str) -> logging.Logger:
+def initiate_logger(app_log_level: str, spotdl_log_level: str) -> logging.Logger:
     logging.basicConfig(
         format="[%(levelname)-8s %(asctime)s] %(message)s",
         datefmt="%H:%M:%S",
     )
     logger = logging.getLogger(__name__)
-    logger.setLevel(log_level)
-    init_logging(log_level)
+    logger.setLevel(app_log_level)
+    # Initialize spotdl's internal loggers with separate (typically quieter) log level
+    init_logging(spotdl_log_level)
 
     return logger
 
 
 class SpotdlWrapper:
     def __init__(self, config: Config):
-        log_level = config.log_level or "INFO"
-        self.logger = initiate_logger(log_level)
+        app_log_level = config.log_level or "INFO"
+        spotdl_log_level = config.spotdl_log_level or "INFO"
+        self.logger = initiate_logger(app_log_level, spotdl_log_level)
         self.logger.info(f"SpotdlWrapper Version: {__version__}")
 
         spotdl_settings = generate_spotdl_settings(config)
