@@ -30,13 +30,9 @@ class TaskManagementService:
         """
         try:
             # Update pending tasks to REVOKED status in database
-            def revoke_pending_tasks():
-                updated = TaskResult.objects.filter(
-                    status__in=["PENDING", "STARTED", "RETRY"]
-                ).update(status="REVOKED")
-                return updated
-
-            cancelled_count = await sync_to_async(revoke_pending_tasks)()
+            cancelled_count = await TaskResult.objects.filter(
+                status__in=["PENDING", "STARTED", "RETRY"]
+            ).aupdate(status="REVOKED")
 
             return MutationResult(
                 success=True,
@@ -52,14 +48,10 @@ class TaskManagementService:
         """Cancel all pending tasks with a specific name by updating database records."""
         try:
             # Update pending tasks with matching name to REVOKED status
-            def revoke_tasks_by_name():
-                updated = TaskResult.objects.filter(
-                    status__in=["PENDING", "STARTED", "RETRY"],
-                    task_name=task_name,
-                ).update(status="REVOKED")
-                return updated
-
-            cancelled_count = await sync_to_async(revoke_tasks_by_name)()
+            cancelled_count = await TaskResult.objects.filter(
+                status__in=["PENDING", "STARTED", "RETRY"],
+                task_name=task_name,
+            ).aupdate(status="REVOKED")
 
             return MutationResult(
                 success=True,
@@ -85,11 +77,11 @@ class TaskManagementService:
             cancelled_count = 0
             for task_history in running_tasks:
                 try:
-                    # Mark the task as cancelled using sync_to_async
+                    # Mark the task as cancelled
                     task_history.status = "CANCELLED"
                     task_history.completed_at = timezone.now()
                     task_history.error_message = "Task cancelled by user"
-                    await sync_to_async(task_history.save)()
+                    await task_history.asave()
                     cancelled_count += 1
                 except Exception as e:
                     print(f"Failed to cancel running task {task_history.task_id}: {e}")
@@ -128,16 +120,12 @@ class TaskManagementService:
                     task_history.status = "CANCELLED"
                     task_history.completed_at = timezone.now()
                     task_history.error_message = "Task cancelled by user"
-                    await sync_to_async(task_history.save)()
+                    await task_history.asave()
 
                     # Also mark as REVOKED in TaskResult if it exists
-                    # Capture task_id to avoid cell-var-from-loop
-                    task_id_to_revoke = task_history.task_id
-
-                    def revoke_task_result(tid: str = task_id_to_revoke) -> None:
-                        TaskResult.objects.filter(task_id=tid).update(status="REVOKED")
-
-                    await sync_to_async(revoke_task_result)()
+                    await TaskResult.objects.filter(
+                        task_id=task_history.task_id
+                    ).aupdate(status="REVOKED")
                     cancelled_running_count += 1
                 except Exception as e:
                     print(f"Failed to cancel running task {task_history.task_id}: {e}")
@@ -196,12 +184,9 @@ class TaskManagementService:
         """
 
         # Count pending/started tasks from database
-        def count_active_tasks():
-            return TaskResult.objects.filter(
-                status__in=["PENDING", "STARTED", "RETRY"]
-            ).count()
-
-        total_tasks = await sync_to_async(count_active_tasks)()
+        total_tasks = await TaskResult.objects.filter(
+            status__in=["PENDING", "STARTED", "RETRY"]
+        ).acount()
 
         # Get task counts by name from database
         task_counts = await self.get_task_count_by_name()
@@ -248,7 +233,7 @@ class TaskManagementService:
 
             # Try TaskHistory first
             try:
-                task = await sync_to_async(TaskHistory.objects.get)(task_id=task_id)
+                task = await TaskHistory.objects.aget(task_id=task_id)
                 return {
                     "task_id": task.task_id,
                     "status": task.status,
@@ -259,13 +244,10 @@ class TaskManagementService:
                 }
             except TaskHistory.DoesNotExist:
                 # Try TaskResult as fallback
-                def get_task_result():
-                    try:
-                        return TaskResult.objects.get(task_id=task_id)
-                    except TaskResult.DoesNotExist:
-                        return None
-
-                task_result = await sync_to_async(get_task_result)()
+                try:
+                    task_result = await TaskResult.objects.aget(task_id=task_id)
+                except TaskResult.DoesNotExist:
+                    task_result = None
 
                 if task_result:
                     return {

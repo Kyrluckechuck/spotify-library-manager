@@ -91,7 +91,7 @@ class SongService(BaseService[Song]):
                 if sort_direction == "desc":
                     order_field = f"-{order_field}"
 
-        total_count = await sync_to_async(queryset.count)()
+        total_count = await queryset.acount()
 
         # Apply cursor-based pagination
         if after:

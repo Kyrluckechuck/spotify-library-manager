@@ -29,32 +29,20 @@ class TestAlbumServiceExtended:
         album.downloaded = False
         album.album_type = "album"
         album.album_group = "album"
+        album.artist = Mock()
         album.artist.name = "Test Artist"
         album.artist.id = 1
+        album.artist.gid = "artist_gid"
+        album.asave = AsyncMock()
         return album
 
     @pytest.mark.asyncio
     async def test_get_by_id_found(self, album_service, mock_django_album):
         """Test get_by_id when album is found."""
-        with patch("src.services.album.sync_to_async") as mock_sync_to_async:
-            # Mock the database query and _to_graphql_type conversion
-            mock_get = AsyncMock(return_value=mock_django_album)
-            mock_to_graphql = AsyncMock(
-                return_value=Album(
-                    id=1,
-                    name="Test Album",
-                    spotify_gid="test_gid",
-                    total_tracks=10,
-                    wanted=True,
-                    downloaded=False,
-                    album_type="album",
-                    album_group="album",
-                    artist="Test Artist",
-                    artist_id=1,
-                    artist_gid=None,
-                )
-            )
-            mock_sync_to_async.side_effect = [mock_get, mock_to_graphql]
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
+            mock_aget.return_value = mock_django_album
 
             result = await album_service.get_by_id("test_gid")
 
@@ -65,10 +53,10 @@ class TestAlbumServiceExtended:
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, album_service):
         """Test get_by_id when album is not found."""
-        with patch("src.services.album.sync_to_async") as mock_sync_to_async:
-            # Mock DoesNotExist exception
-            mock_get = AsyncMock(side_effect=DjangoAlbum.DoesNotExist)
-            mock_sync_to_async.return_value = mock_get
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
+            mock_aget.side_effect = DjangoAlbum.DoesNotExist
 
             result = await album_service.get_by_id("nonexistent")
 
@@ -79,25 +67,10 @@ class TestAlbumServiceExtended:
         self, album_service, mock_django_album
     ):
         """Test update_album with database ID format."""
-        with patch("src.services.album.sync_to_async") as mock_sync_to_async:
-            mock_get = AsyncMock(return_value=mock_django_album)
-            mock_save = AsyncMock()
-            mock_to_graphql = AsyncMock(
-                return_value=Album(
-                    id=1,
-                    name="Test Album",
-                    spotify_gid="test_gid",
-                    total_tracks=10,
-                    wanted=True,
-                    downloaded=False,
-                    album_type="album",
-                    album_group="album",
-                    artist="Test Artist",
-                    artist_id=1,
-                    artist_gid=None,
-                )
-            )
-            mock_sync_to_async.side_effect = [mock_get, mock_save, mock_to_graphql]
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
+            mock_aget.return_value = mock_django_album
 
             result = await album_service.update_album("123", is_wanted=True)
 
@@ -108,25 +81,10 @@ class TestAlbumServiceExtended:
         self, album_service, mock_django_album
     ):
         """Test update_album with Spotify GID format."""
-        with patch("src.services.album.sync_to_async") as mock_sync_to_async:
-            mock_get = AsyncMock(return_value=mock_django_album)
-            mock_save = AsyncMock()
-            mock_to_graphql = AsyncMock(
-                return_value=Album(
-                    id=1,
-                    name="Test Album",
-                    spotify_gid="test_gid",
-                    total_tracks=10,
-                    wanted=False,
-                    downloaded=False,
-                    album_type="album",
-                    album_group="album",
-                    artist="Test Artist",
-                    artist_id=1,
-                    artist_gid=None,
-                )
-            )
-            mock_sync_to_async.side_effect = [mock_get, mock_save, mock_to_graphql]
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
+            mock_aget.return_value = mock_django_album
 
             result = await album_service.update_album(
                 "spotify_gid_123", is_wanted=False
@@ -136,20 +94,22 @@ class TestAlbumServiceExtended:
 
     @pytest.mark.asyncio
     async def test_update_album_value_error(self, album_service):
-        """Test update_album with invalid ID raises ValueError."""
-        with patch("src.services.album.sync_to_async") as mock_sync_to_async:
-            mock_get = AsyncMock(side_effect=ValueError("Invalid ID"))
-            mock_sync_to_async.return_value = mock_get
+        """Test update_album with non-existent album raises ValueError."""
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
+            mock_aget.side_effect = DjangoAlbum.DoesNotExist
 
-            with pytest.raises(ValueError, match="Invalid album ID format"):
+            with pytest.raises(ValueError, match="Album with ID .* not found"):
                 await album_service.update_album("invalid", is_wanted=True)
 
     @pytest.mark.asyncio
     async def test_update_album_does_not_exist(self, album_service):
         """Test update_album when album doesn't exist."""
-        with patch("src.services.album.sync_to_async") as mock_sync_to_async:
-            mock_get = AsyncMock(side_effect=DjangoAlbum.DoesNotExist)
-            mock_sync_to_async.return_value = mock_get
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_aget:
+            mock_aget.side_effect = DjangoAlbum.DoesNotExist
 
             with pytest.raises(ValueError, match="Album with ID .* not found"):
                 await album_service.update_album("123", is_wanted=True)
@@ -160,35 +120,17 @@ class TestAlbumServiceExtended:
     ):
         """Test download_album with database ID."""
         with (
-            patch("src.services.album.sync_to_async") as mock_sync_to_async,
+            patch(
+                "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+            ) as mock_aget,
+            patch(
+                "src.services.album.sync_to_async",
+                side_effect=lambda func: AsyncMock(side_effect=func),
+            ),
             patch("library_manager.tasks.download_single_album") as mock_download_task,
         ):
             mock_download_task.delay = Mock()
-
-            mock_get = AsyncMock(return_value=mock_django_album)
-            mock_queue_task = AsyncMock()
-            mock_to_graphql = AsyncMock(
-                return_value=Album(
-                    id=1,
-                    name="Test Album",
-                    spotify_gid="test_gid",
-                    total_tracks=10,
-                    wanted=True,
-                    downloaded=False,
-                    album_type="album",
-                    album_group="album",
-                    artist="Test Artist",
-                    artist_id=1,
-                    artist_gid=None,
-                )
-            )
-            # Note: mock_save is not included because album.wanted is already True,
-            # so the save operation in download_album is skipped
-            mock_sync_to_async.side_effect = [
-                mock_get,
-                mock_queue_task,
-                mock_to_graphql,
-            ]
+            mock_aget.return_value = mock_django_album
 
             result = await album_service.download_album("123")
 
@@ -215,7 +157,6 @@ class TestAlbumServiceExtended:
         """Test set_album_wanted successful operation."""
         with patch("src.services.album.sync_to_async") as mock_sync_to_async:
             mock_get = AsyncMock(return_value=mock_django_album)
-            mock_save = AsyncMock()
             mock_to_graphql = AsyncMock(
                 return_value=Album(
                     id=1,
@@ -231,7 +172,7 @@ class TestAlbumServiceExtended:
                     artist_gid=None,
                 )
             )
-            mock_sync_to_async.side_effect = [mock_get, mock_save, mock_to_graphql]
+            mock_sync_to_async.side_effect = [mock_get, mock_to_graphql]
 
             result = await album_service.set_album_wanted(123, True)
 
@@ -243,10 +184,10 @@ class TestAlbumServiceExtended:
     @pytest.mark.asyncio
     async def test_set_album_wanted_save_error(self, album_service, mock_django_album):
         """Test set_album_wanted when save fails."""
+        mock_django_album.asave = AsyncMock(side_effect=Exception("Save failed"))
         with patch("src.services.album.sync_to_async") as mock_sync_to_async:
             mock_get = AsyncMock(return_value=mock_django_album)
-            mock_save = AsyncMock(side_effect=Exception("Save failed"))
-            mock_sync_to_async.side_effect = [mock_get, mock_save]
+            mock_sync_to_async.return_value = mock_get
 
             result = await album_service.set_album_wanted(123, True)
 

@@ -1,6 +1,6 @@
 """Unit tests for task management GraphQL schema."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from asgiref.sync import sync_to_async
@@ -31,13 +31,14 @@ class TestTaskManagementGraphQL:
         with (
             patch("src.services.task_management.TaskResult") as mock_task_result,
             patch(
-                "src.services.task_management.TaskManagementService.get_task_count_by_name"
+                "src.services.task_management.TaskManagementService.get_task_count_by_name",
+                new_callable=AsyncMock,
             ) as mock_task_count,
         ):
 
             # Mock database query to return count of 3 pending tasks
             mock_queryset = Mock()
-            mock_queryset.count.return_value = 3
+            mock_queryset.acount = AsyncMock(return_value=3)
             mock_task_result.objects.filter.return_value = mock_queryset
 
             # Mock the task count method to return expected data
@@ -99,13 +100,14 @@ class TestTaskManagementGraphQL:
         with (
             patch("src.services.task_management.TaskResult") as mock_task_result,
             patch(
-                "src.services.task_management.TaskManagementService.get_task_count_by_name"
+                "src.services.task_management.TaskManagementService.get_task_count_by_name",
+                new_callable=AsyncMock,
             ) as mock_task_count,
         ):
 
             # Mock database query to return count of 0
             mock_queryset = Mock()
-            mock_queryset.count.return_value = 0
+            mock_queryset.acount = AsyncMock(return_value=0)
             mock_task_result.objects.filter.return_value = mock_queryset
 
             # Mock empty task counts
@@ -136,7 +138,7 @@ class TestTaskManagementGraphQL:
         with patch("src.services.task_management.TaskResult") as mock_task_result:
             # Mock database update to return 2 updated rows
             mock_queryset = Mock()
-            mock_queryset.update.return_value = 2
+            mock_queryset.aupdate = AsyncMock(return_value=2)
             mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation)
@@ -150,8 +152,8 @@ class TestTaskManagementGraphQL:
                 "Successfully cancelled 2 pending tasks" in mutation_result["message"]
             )
 
-            # Verify update was called
-            mock_queryset.update.assert_called_once_with(status="REVOKED")
+            # Verify aupdate was called
+            mock_queryset.aupdate.assert_called_once_with(status="REVOKED")
 
     @pytest.mark.django_db
     @pytest.mark.asyncio
@@ -169,7 +171,7 @@ class TestTaskManagementGraphQL:
         with patch("src.services.task_management.TaskResult") as mock_task_result:
             # Mock database update to return 0 updated rows
             mock_queryset = Mock()
-            mock_queryset.update.return_value = 0
+            mock_queryset.aupdate = AsyncMock(return_value=0)
             mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation)
@@ -201,7 +203,7 @@ class TestTaskManagementGraphQL:
         with patch("src.services.task_management.TaskResult") as mock_task_result:
             # Mock database update to return 2 updated rows
             mock_queryset = Mock()
-            mock_queryset.update.return_value = 2
+            mock_queryset.aupdate = AsyncMock(return_value=2)
             mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation, variable_values=variables)
@@ -231,7 +233,7 @@ class TestTaskManagementGraphQL:
         with patch("src.services.task_management.TaskResult") as mock_task_result:
             # Mock database update to return 0 updated rows
             mock_queryset = Mock()
-            mock_queryset.update.return_value = 0
+            mock_queryset.aupdate = AsyncMock(return_value=0)
             mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation, variable_values=variables)
@@ -261,7 +263,7 @@ class TestTaskManagementGraphQL:
         with patch("src.services.task_management.TaskResult") as mock_task_result:
             # Mock database update to return 5 updated rows
             mock_queryset = Mock()
-            mock_queryset.update.return_value = 5
+            mock_queryset.aupdate = AsyncMock(return_value=5)
             mock_task_result.objects.filter.return_value = mock_queryset
 
             result = await schema.execute(mutation, variable_values=variables)

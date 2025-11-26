@@ -86,7 +86,7 @@ class TaskHistoryService(BaseService[TaskHistory]):
             queryset = queryset.filter(id__gt=id_after)
 
         # Get total count before slicing
-        total_count = await sync_to_async(queryset.count)()
+        total_count = await queryset.acount()
 
         # Get one extra item to determine if there are more pages
         def fetch_items() -> List[DjangoTaskHistory]:
@@ -186,5 +186,5 @@ class TaskHistoryService(BaseService[TaskHistory]):
             entity_type=entity_mapping.get(entity_type, "ARTIST"),
             status="PENDING",
         )
-        await sync_to_async(task.save)()
+        await task.asave()
         return task

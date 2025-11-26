@@ -85,7 +85,7 @@ class TestArtistService:
         ):
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
-            mock_queryset.count = Mock(return_value=5)
+            mock_queryset.acount = AsyncMock(return_value=5)
             mock_queryset.order_by.return_value = mock_queryset
 
             # Return 4 items when first=3 to test has_next logic
@@ -130,7 +130,7 @@ class TestSongService:
         with patch("library_manager.models.Song.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
-            mock_queryset.count = Mock(return_value=3)  # Sync Mock, not AsyncMock
+            mock_queryset.acount = AsyncMock(return_value=3)  # Async count
 
             # Create mock songs with different names for sorting
             mock_songs = []
@@ -169,7 +169,7 @@ class TestSongService:
         with patch("library_manager.models.Song.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
-            mock_queryset.count = Mock(return_value=2)  # Sync Mock
+            mock_queryset.acount = AsyncMock(return_value=2)  # Async count
             mock_queryset.order_by.return_value = mock_queryset
             mock_queryset.__getitem__ = Mock(return_value=[])
             mock_all.return_value = mock_queryset
@@ -194,7 +194,9 @@ class TestAlbumService:
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, album_service):
         """Test successful album retrieval by ID."""
-        with patch("library_manager.models.Album.objects.get") as mock_get:
+        with patch(
+            "library_manager.models.Album.objects.aget", new_callable=AsyncMock
+        ) as mock_get:
             mock_album = Mock()
             mock_album.spotify_gid = "album123"
             mock_album.name = "Test Album"
@@ -265,7 +267,8 @@ class TestPlaylistService:
     async def test_get_by_id_success(self, playlist_service):
         """Test successful playlist retrieval by ID."""
         with patch(
-            "library_manager.models.TrackedPlaylist.objects.get",
+            "library_manager.models.TrackedPlaylist.objects.aget",
+            new_callable=AsyncMock,
         ) as mock_get:
             mock_playlist = Mock()
             mock_playlist.id = 1
@@ -276,7 +279,7 @@ class TestPlaylistService:
             mock_playlist.last_synced_at = None
             mock_get.return_value = mock_playlist
 
-            result = await playlist_service.get_by_id("test123")
+            result = await playlist_service.get_by_id("1")
 
             assert result is not None
             assert result.id == 1
@@ -293,20 +296,22 @@ class TestPlaylistService:
         mock_playlist.name = "Original Name"
         mock_playlist.url = "https://open.spotify.com/playlist/original"
         mock_playlist.auto_track_artists = False
-        mock_playlist.save = Mock()
+        mock_playlist.asave = AsyncMock()
 
         with (
-            patch("library_manager.models.TrackedPlaylist.objects.get") as mock_get,
             patch(
-                "library_manager.models.TrackedPlaylist.objects.filter"
-            ) as mock_filter,
+                "library_manager.models.TrackedPlaylist.objects.aget",
+                new_callable=AsyncMock,
+            ) as mock_aget,
+            patch.object(
+                playlist_service, "_find_duplicate_playlist"
+            ) as mock_find_duplicate,
             patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
         ):
-
             # Configure mocks
-            mock_get.return_value = mock_playlist
-            # Mock the duplicate check filter to return no existing playlists
-            mock_filter.return_value.exclude.return_value.first.return_value = None
+            mock_aget.return_value = mock_playlist
+            # Mock the duplicate check to return no existing playlists
+            mock_find_duplicate.return_value = None
             mock_sync_to_async.side_effect = lambda func: AsyncMock(return_value=func())
 
             result = await playlist_service.update_playlist(
@@ -370,17 +375,18 @@ class TestPlaylistService:
         mock_duplicate_playlist.name = "Existing Duplicate"
 
         with (
-            patch("library_manager.models.TrackedPlaylist.objects.get") as mock_get,
             patch(
-                "library_manager.models.TrackedPlaylist.objects.filter"
-            ) as mock_filter,
+                "library_manager.models.TrackedPlaylist.objects.aget",
+                new_callable=AsyncMock,
+            ) as mock_aget,
+            patch.object(
+                playlist_service, "_find_duplicate_playlist"
+            ) as mock_find_duplicate,
             patch("asgiref.sync.sync_to_async") as mock_sync_to_async,
         ):
             # Configure mocks
-            mock_get.return_value = mock_current_playlist
-            mock_filter.return_value.exclude.return_value.first.return_value = (
-                mock_duplicate_playlist
-            )
+            mock_aget.return_value = mock_current_playlist
+            mock_find_duplicate.return_value = mock_duplicate_playlist
             mock_sync_to_async.side_effect = lambda func: AsyncMock(return_value=func())
 
             result = await playlist_service.update_playlist(
@@ -492,7 +498,7 @@ class TestPlaylistService:
         with patch("library_manager.models.TrackedPlaylist.objects.all") as mock_all:
             mock_queryset = Mock()
             mock_queryset.filter.return_value = mock_queryset
-            mock_queryset.count = Mock(return_value=2)  # Sync Mock
+            mock_queryset.acount = AsyncMock(return_value=2)  # Async count
 
             mock_playlists = []
             for name in ["Playlist B", "Playlist A"]:

@@ -189,9 +189,7 @@ class SpotifySearchService:
             image_url = images[0]["url"] if images else None
 
             # Check if artist exists locally (by GID which is the Spotify ID)
-            local_artist = await sync_to_async(
-                lambda sid=spotify_id: DjangoArtist.objects.filter(gid=sid).first()
-            )()
+            local_artist = await DjangoArtist.objects.filter(gid=spotify_id).afirst()
 
             processed.append(
                 SpotifySearchArtist(
@@ -231,11 +229,9 @@ class SpotifySearchService:
             image_url = images[0]["url"] if images else None
 
             # Check if album exists locally (by spotify_gid)
-            local_album = await sync_to_async(
-                lambda sid=spotify_id: DjangoAlbum.objects.filter(
-                    spotify_gid=sid
-                ).first()
-            )()
+            local_album = await DjangoAlbum.objects.filter(
+                spotify_gid=spotify_id
+            ).afirst()
 
             processed.append(
                 SpotifySearchAlbum(
@@ -278,9 +274,7 @@ class SpotifySearchService:
             album_id = album.get("id", "")
 
             # Check if track exists locally (by gid)
-            local_song = await sync_to_async(
-                lambda sid=spotify_id: DjangoSong.objects.filter(gid=sid).first()
-            )()
+            local_song = await DjangoSong.objects.filter(gid=spotify_id).afirst()
 
             processed.append(
                 SpotifySearchTrack(
@@ -322,11 +316,9 @@ class SpotifySearchService:
             owner_name = owner.get("display_name", "Unknown")
 
             # Check if playlist is tracked locally
-            local_playlist = await sync_to_async(
-                lambda sid=spotify_id: TrackedPlaylist.objects.filter(
-                    url__contains=sid
-                ).first()
-            )()
+            local_playlist = await TrackedPlaylist.objects.filter(
+                url__contains=spotify_id
+            ).afirst()
 
             processed.append(
                 SpotifySearchPlaylist(

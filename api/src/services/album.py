@@ -19,7 +19,7 @@ class AlbumService(BaseService[Album]):
 
     async def get_by_id(self, id: str) -> Optional[Album]:
         try:
-            django_album = await sync_to_async(self.model.objects.get)(spotify_gid=id)
+            django_album = await self.model.objects.aget(spotify_gid=id)
             return await sync_to_async(self._to_graphql_type)(django_album)
         except self.model.DoesNotExist:
             return None
@@ -129,18 +129,14 @@ class AlbumService(BaseService[Album]):
         try:
             # Try to parse as database ID first (for internal operations)
             if album_id.isdigit():
-                django_album = await sync_to_async(self.model.objects.get)(
-                    id=int(album_id)
-                )
+                django_album = await self.model.objects.aget(id=int(album_id))
             else:
                 # Fall back to spotify_gid for external API calls
-                django_album = await sync_to_async(self.model.objects.get)(
-                    spotify_gid=album_id
-                )
+                django_album = await self.model.objects.aget(spotify_gid=album_id)
 
             if is_wanted is not None:
                 django_album.wanted = is_wanted
-                await sync_to_async(django_album.save)()
+                await django_album.asave()
 
                 if is_wanted:
                     # Queue download if marked as wanted
@@ -161,13 +157,9 @@ class AlbumService(BaseService[Album]):
             django_album: Optional[DjangoAlbum] = None
             try:
                 if album_id.isdigit():
-                    django_album = await sync_to_async(self.model.objects.get)(
-                        id=int(album_id)
-                    )
+                    django_album = await self.model.objects.aget(id=int(album_id))
                 else:
-                    django_album = await sync_to_async(self.model.objects.get)(
-                        spotify_gid=album_id
-                    )
+                    django_album = await self.model.objects.aget(spotify_gid=album_id)
             except self.model.DoesNotExist:
                 # Album doesn't exist in DB - queue task that fetches metadata in worker
                 # This avoids needing SpotifyClient in the web container
@@ -197,7 +189,7 @@ class AlbumService(BaseService[Album]):
             # Album exists in DB - ensure it's marked as wanted
             if not django_album.wanted:
                 django_album.wanted = True
-                await sync_to_async(django_album.save)()
+                await django_album.asave()
 
             # Queue download for this specific album
             album_db_id = django_album.id
@@ -231,7 +223,7 @@ class AlbumService(BaseService[Album]):
 
         try:
             django_album.wanted = wanted
-            await sync_to_async(django_album.save)()
+            await django_album.asave()
         except Exception as e:
             return MutationResult(
                 success=False, message=f"Error updating album: {e}", album=None

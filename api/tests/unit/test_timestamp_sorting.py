@@ -1,7 +1,7 @@
 """Tests for timestamp field sorting with proper null handling."""
 
 from datetime import timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from django.utils import timezone
 
@@ -56,11 +56,14 @@ async def test_artist_sorting_last_synced_ascending_nulls_first(
 
     with (
         patch("library_manager.models.Artist.objects.all") as mock_all,
-        patch.object(artist_service, "_get_undownloaded_count", return_value=0),
+        patch.object(
+            artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+        ) as mock_undownloaded,
     ):
+        mock_undownloaded.return_value = 0
         mock_queryset = Mock()
         mock_queryset.filter.return_value = mock_queryset
-        mock_queryset.count = Mock(return_value=3)
+        mock_queryset.acount = AsyncMock(return_value=3)
 
         # Simulate ordering with nulls_first for ascending
         def order_by_mock(*args):
@@ -101,11 +104,14 @@ async def test_artist_sorting_last_synced_descending_nulls_last(
 
     with (
         patch("library_manager.models.Artist.objects.all") as mock_all,
-        patch.object(artist_service, "_get_undownloaded_count", return_value=0),
+        patch.object(
+            artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+        ) as mock_undownloaded,
     ):
+        mock_undownloaded.return_value = 0
         mock_queryset = Mock()
         mock_queryset.filter.return_value = mock_queryset
-        mock_queryset.count = Mock(return_value=3)
+        mock_queryset.acount = AsyncMock(return_value=3)
 
         # Simulate ordering with nulls_last for descending
         def order_by_mock(*args):
@@ -144,11 +150,14 @@ async def test_artist_sorting_last_downloaded_nulls_handling(
 
     with (
         patch("library_manager.models.Artist.objects.all") as mock_all,
-        patch.object(artist_service, "_get_undownloaded_count", return_value=0),
+        patch.object(
+            artist_service, "_get_undownloaded_count", new_callable=AsyncMock
+        ) as mock_undownloaded,
     ):
+        mock_undownloaded.return_value = 0
         mock_queryset = Mock()
         mock_queryset.filter.return_value = mock_queryset
-        mock_queryset.count = Mock(return_value=2)
+        mock_queryset.acount = AsyncMock(return_value=2)
 
         # Ascending: nulls first
         def order_by_asc(*args):

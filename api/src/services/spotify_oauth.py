@@ -188,17 +188,9 @@ class SpotifyOAuthService:
         Returns:
             SpotifyOAuthToken with valid access token, or None if not authenticated
         """
-
-        def _get_token() -> Optional[SpotifyOAuthToken]:
-            try:
-                token = SpotifyOAuthToken.objects.get(id=1)
-                return token
-            except SpotifyOAuthToken.DoesNotExist:
-                return None
-
-        token = await sync_to_async(_get_token)()
-
-        if token is None:
+        try:
+            token = await SpotifyOAuthToken.objects.aget(id=1)
+        except SpotifyOAuthToken.DoesNotExist:
             return None
 
         # Check if token needs refresh

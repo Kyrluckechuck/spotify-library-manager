@@ -85,7 +85,7 @@ async def test_get_connection(
     ):
         mock_queryset = Mock()
         mock_queryset.filter.return_value = mock_queryset
-        mock_queryset.count = Mock(return_value=1)
+        mock_queryset.acount = AsyncMock(return_value=1)
         mock_queryset.order_by.return_value = mock_queryset
         mock_queryset.__getitem__ = Mock(return_value=[mock_django_artist])
 

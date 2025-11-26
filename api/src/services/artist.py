@@ -101,7 +101,7 @@ class ArtistService(BaseService[Artist]):
                     else:
                         order_expressions = [order_field, "id"]
 
-        total_count = await sync_to_async(queryset.count)()
+        total_count = await queryset.acount()
 
         # Apply cursor-based pagination
         if after:
@@ -131,9 +131,9 @@ class ArtistService(BaseService[Artist]):
 
     async def track_artist(self, artist_id: int) -> MutationResult:
         try:
-            django_artist = await sync_to_async(self.model.objects.get)(id=artist_id)
+            django_artist = await self.model.objects.aget(id=artist_id)
             django_artist.tracked = True
-            await sync_to_async(django_artist.save)()
+            await django_artist.asave()
 
             # Queue tasks
             # await sync_to_async(fetch_all_albums_for_artist)(django_artist.id)
@@ -154,9 +154,9 @@ class ArtistService(BaseService[Artist]):
 
     async def untrack_artist(self, artist_id: int) -> MutationResult:
         try:
-            django_artist = await sync_to_async(self.model.objects.get)(id=artist_id)
+            django_artist = await self.model.objects.aget(id=artist_id)
             django_artist.tracked = False
-            await sync_to_async(django_artist.save)()
+            await django_artist.asave()
 
             return MutationResult(
                 success=True,
@@ -202,7 +202,7 @@ class ArtistService(BaseService[Artist]):
         try:
             # Convert string to int since frontend sends database ID
             artist_db_id = int(artist_id)
-            django_artist = await sync_to_async(self.model.objects.get)(id=artist_db_id)
+            django_artist = await self.model.objects.aget(id=artist_db_id)
             # Local import to avoid circular import during module initialization
             from library_manager.tasks import fetch_all_albums_for_artist_sync
 
@@ -219,7 +219,7 @@ class ArtistService(BaseService[Artist]):
         try:
             # Convert string to int since frontend sends database ID
             artist_db_id = int(artist_id)
-            django_artist = await sync_to_async(self.model.objects.get)(id=artist_db_id)
+            django_artist = await self.model.objects.aget(id=artist_db_id)
 
             # Start download task for missing albums
             # Local import to avoid circular import during module initialization
@@ -254,34 +254,30 @@ class ArtistService(BaseService[Artist]):
             settings, "ALBUM_GROUPS_TO_IGNORE", ["appears_on"]
         )
 
-        return await sync_to_async(
-            lambda: Album.objects.filter(
+        return await (
+            Album.objects.filter(
                 artist=django_artist,
                 downloaded=False,
                 wanted=True,
                 album_type__in=album_types_to_download,
             )
             .exclude(album_group__in=album_groups_to_ignore)
-            .count()
-        )()
+            .acount()
+        )
 
     async def _get_album_count(self, django_artist: DjangoArtist) -> int:
         """Get total album count for an artist."""
-        return await sync_to_async(
-            lambda: Album.objects.filter(artist=django_artist).count()
-        )()
+        return await Album.objects.filter(artist=django_artist).acount()
 
     async def _get_downloaded_album_count(self, django_artist: DjangoArtist) -> int:
         """Get downloaded album count for an artist."""
-        return await sync_to_async(
-            lambda: Album.objects.filter(artist=django_artist, downloaded=True).count()
-        )()
+        return await Album.objects.filter(
+            artist=django_artist, downloaded=True
+        ).acount()
 
     async def _get_song_count(self, django_artist: DjangoArtist) -> int:
         """Get total song count for an artist."""
-        return await sync_to_async(
-            lambda: Song.objects.filter(primary_artist=django_artist).count()
-        )()
+        return await Song.objects.filter(primary_artist=django_artist).acount()
 
     async def _to_graphql_type_async(
         self, django_artist: DjangoArtist, include_full_counts: bool = False

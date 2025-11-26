@@ -77,14 +77,12 @@ class PlaylistService(BaseService[Playlist]):
     async def get_by_id(self, id: str) -> Optional[Playlist]:
         try:
             # First try to find by database ID (more specific)
-            django_playlist = await sync_to_async(self.model.objects.get)(id=int(id))
+            django_playlist = await self.model.objects.aget(id=int(id))
             return self._to_graphql_type(django_playlist)
         except (self.model.DoesNotExist, ValueError):
             try:
                 # If not found by database ID, try to find by URL containing the ID
-                django_playlist = await sync_to_async(self.model.objects.get)(
-                    url__contains=id
-                )
+                django_playlist = await self.model.objects.aget(url__contains=id)
                 return self._to_graphql_type(django_playlist)
             except (self.model.DoesNotExist, self.model.MultipleObjectsReturned):
                 return None
@@ -132,7 +130,7 @@ class PlaylistService(BaseService[Playlist]):
                 if sort_direction == "desc":
                     order_field = f"-{order_field}"
 
-        total_count = await sync_to_async(queryset.count)()
+        total_count = await queryset.acount()
 
         # Apply cursor-based pagination
         if after:
@@ -157,12 +155,10 @@ class PlaylistService(BaseService[Playlist]):
     async def track_playlist(
         self, playlist_id: str, auto_track_artists: bool = False
     ) -> Playlist:
-        django_playlist = await sync_to_async(self.model.objects.get)(
-            url__contains=playlist_id
-        )
+        django_playlist = await self.model.objects.aget(url__contains=playlist_id)
         django_playlist.enabled = True
         django_playlist.auto_track_artists = auto_track_artists
-        await sync_to_async(django_playlist.save)()
+        await django_playlist.asave()
 
         # Queue tasks - local imports to avoid circular import during module initialization
         from library_manager.tasks import (
@@ -195,7 +191,7 @@ class PlaylistService(BaseService[Playlist]):
             if not existing_playlist.enabled:
                 existing_playlist.enabled = True
                 existing_playlist.auto_track_artists = auto_track_artists
-                await sync_to_async(existing_playlist.save)()
+                await existing_playlist.asave()
 
                 # Queue sync tasks
                 from library_manager.tasks import (
@@ -250,7 +246,7 @@ class PlaylistService(BaseService[Playlist]):
             enabled=True,
             auto_track_artists=auto_track_artists,
         )
-        await sync_to_async(django_playlist.save)()
+        await django_playlist.asave()
 
         # Queue tasks - local imports to avoid circular import during module initialization
         from library_manager.tasks import (
@@ -272,9 +268,7 @@ class PlaylistService(BaseService[Playlist]):
         auto_track_artists: bool,
     ) -> MutationResult:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(
-                id=playlist_id
-            )
+            django_playlist = await self.model.objects.aget(id=playlist_id)
 
             # Normalize the URL to strip tracking parameters
             normalized_url = self._normalize_spotify_url(url)
@@ -299,7 +293,7 @@ class PlaylistService(BaseService[Playlist]):
             django_playlist.url = normalized_url
             django_playlist.auto_track_artists = auto_track_artists
 
-            await sync_to_async(django_playlist.save)()
+            await django_playlist.asave()
 
             return MutationResult(
                 success=True,
@@ -321,9 +315,7 @@ class PlaylistService(BaseService[Playlist]):
         self, playlist_id: int, force: bool = False
     ) -> MutationResult:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(
-                id=playlist_id
-            )
+            django_playlist = await self.model.objects.aget(id=playlist_id)
 
             if force:
                 # For force sync, directly queue the download_playlist task with force_playlist_resync=True
@@ -361,11 +353,9 @@ class PlaylistService(BaseService[Playlist]):
 
     async def toggle_playlist(self, playlist_id: int) -> MutationResult:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(
-                id=playlist_id
-            )
+            django_playlist = await self.model.objects.aget(id=playlist_id)
             django_playlist.enabled = not django_playlist.enabled
-            await sync_to_async(django_playlist.save)()
+            await django_playlist.asave()
 
             return MutationResult(
                 success=True,
@@ -385,11 +375,9 @@ class PlaylistService(BaseService[Playlist]):
 
     async def toggle_playlist_auto_track(self, playlist_id: int) -> MutationResult:
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(
-                id=playlist_id
-            )
+            django_playlist = await self.model.objects.aget(id=playlist_id)
             django_playlist.auto_track_artists = not django_playlist.auto_track_artists
-            await sync_to_async(django_playlist.save)()
+            await django_playlist.asave()
 
             return MutationResult(
                 success=True,
@@ -410,11 +398,9 @@ class PlaylistService(BaseService[Playlist]):
     async def delete_playlist(self, playlist_id: int) -> MutationResult:
         """Delete a tracked playlist from the database."""
         try:
-            django_playlist = await sync_to_async(self.model.objects.get)(
-                id=playlist_id
-            )
+            django_playlist = await self.model.objects.aget(id=playlist_id)
             playlist_name = django_playlist.name
-            await sync_to_async(django_playlist.delete)()
+            await django_playlist.adelete()
 
             return MutationResult(
                 success=True,
