@@ -1,3 +1,5 @@
+This project has been archived, since my intents have moved and I'm now maintaing https://github.com/Kyrluckechuck/tunestash, which is more what I'm after
+
 # Spotify Library Manager
 Originally derived as a fork of [glomatico/spotify-aac-downloader](https://github.com/glomatico/spotify-aac-downloader), this has grown into a completely different behemoth.
 
