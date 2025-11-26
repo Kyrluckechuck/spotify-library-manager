@@ -42,7 +42,6 @@ settings = dynaconf.DjangoDynaconf(
         "django.contrib.sessions",
         "django.contrib.messages",
         "django.contrib.staticfiles",
-        "bx_django_utils",
         "django_celery_results",
         "django_celery_beat",
         "kombu.transport.sqlalchemy",
@@ -125,20 +124,23 @@ settings = dynaconf.DjangoDynaconf(
 if settings.DEBUG:  # type: ignore[name-defined]
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]  # For Docker, VMs
 
-    # Add dev-only apps if available
+    # Add dev-only apps if available (use settings.set() for dynaconf compatibility)
+    _installed_apps = list(settings.INSTALLED_APPS)
     try:
         import django_extensions  # noqa: F401
 
-        settings.INSTALLED_APPS.append("django_extensions")
+        _installed_apps.append("django_extensions")
     except ImportError:
         pass
 
     try:
         import django_stubs_ext  # noqa: F401
 
-        settings.INSTALLED_APPS.append("django_stubs_ext")
+        _installed_apps.append("django_stubs_ext")
     except ImportError:
         pass
+
+    settings.set("INSTALLED_APPS", _installed_apps)
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"

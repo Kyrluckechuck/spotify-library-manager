@@ -9,7 +9,6 @@
 django-stubs[compatible-mypy]==5.2.5
 django-stubs-ext==5.2.5
 types-requests>=2.32.4
-types-pyasn1
 types-psutil>=5.9.0
 
 # Testing frameworks
@@ -32,9 +31,8 @@ pylint-django>=2.5.0
 bandit>=1.7.0
 mypy==1.18.2
 
-# Django development tools
-django-debug-toolbar>=6.0.0
-django-extensions>=3.2.0
-
 # File system monitoring for development
 watchdog>=2.1.0
+
+# Django development tools
+django-extensions>=3.2.0  # Provides shell_plus, show_urls, and other useful commands
