@@ -77,6 +77,9 @@ class SystemHealthService:
         """
         Check Spotify OAuth token validity and expiration status.
 
+        If the token is expired or expiring soon, this will attempt to refresh it
+        automatically using the refresh token.
+
         Returns:
             Dict with token status information:
             - valid: bool - Whether token exists and is not expired
@@ -95,23 +98,38 @@ class SystemHealthService:
         try:
             token = SpotifyOAuthToken.objects.get(id=1)
 
-            # Check if token is expired
-            now = timezone.now()
-            is_expired = token.expires_at <= now
+            # Check if token needs refresh (expired or expiring within 5 minutes)
+            if token.is_expired():
+                # Attempt to refresh the token proactively
+                logger.info(
+                    "Spotify OAuth token expired or expiring soon, attempting refresh"
+                )
+                try:
+                    from src.services.spotify_oauth import SpotifyOAuthService
 
-            if is_expired:
-                return {
-                    "valid": False,
-                    "expired": True,
-                    "expires_in_hours": None,
-                    "error_message": "Spotify OAuth token has expired. Please re-authenticate.",
-                }
+                    new_token_data = SpotifyOAuthService.refresh_access_token(
+                        token.refresh_token
+                    )
+                    token = SpotifyOAuthService.save_tokens(new_token_data)
+                    logger.info("Successfully refreshed Spotify OAuth token")
+                except Exception as refresh_error:
+                    logger.error(
+                        f"Failed to refresh Spotify OAuth token: {refresh_error}"
+                    )
+                    return {
+                        "valid": False,
+                        "expired": True,
+                        "expires_in_hours": None,
+                        "error_message": "Spotify OAuth token has expired and refresh failed. Please re-authenticate.",
+                    }
+
+            # Token is now valid (either it was valid, or we just refreshed it)
+            now = timezone.now()
 
             # Calculate hours until expiration
             time_until_expiry = token.expires_at - now
             hours_until_expiry = int(time_until_expiry.total_seconds() / 3600)
 
-            # Token is valid but may be expiring soon
             return {
                 "valid": True,
                 "expired": False,
